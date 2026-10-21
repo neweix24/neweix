@@ -145,12 +145,8 @@ export async function onRequestDelete({ request, env, params }) {
       "DELETE FROM products WHERE id = ?"
     ).bind(id).run();
 
-    if (!result.meta.changes) {
-      return json({ error: "পণ্য পাওয়া যায়নি" }, 404);
-    }
-
     return json({ success: true, message: "পণ্য ডিলিট হয়েছে" });
-  } catch {
-    return json({ error: "পণ্য ডিলিট করা যায়নি" }, 500);
+  } catch (error) {
+    return json({ error: "পণ্য ডিলিট করা যায়নি: " + error.message }, 500);
   }
 }
