@@ -1,60 +1,93 @@
 <!doctype html>
-<html lang="en">
+<html lang="bn">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Neweix — premium, accessible gadgets and tech accessories in Bangladesh.">
-  <title>Neweix — Premium Tech & Accessories</title>
+  <meta name="theme-color" content="#172554">
+  <meta name="description" content="Neweix — দৈনন্দিন প্রয়োজনের পণ্য অনলাইনে কিনুন।">
+  <title>Neweix — Shop Smart, Live Better</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="announcement">PREMIUM, ACCESSIBLE LUXURY · MADE FOR EVERYDAY</div>
+  <div class="topline">বাংলাদেশজুড়ে ডেলিভারি • নিরাপদে কেনাকাটা করুন</div>
   <header class="site-header">
-    <a class="logo" href="#" aria-label="Neweix home">NEWEIX<span>.</span></a>
-    <nav><a href="#categories">Categories</a><a href="#about">Our standard</a><a href="#contact">Contact</a></nav>
-    <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+    <a class="brand" href="#" aria-label="Neweix Home"><span class="brand-mark">N</span><span>neweix</span></a>
+    <form class="search" id="searchForm" role="search">
+      <input id="searchInput" type="search" placeholder="পণ্য খুঁজুন..." aria-label="পণ্য খুঁজুন">
+      <button aria-label="Search" type="submit">⌕</button>
+    </form>
+    <button class="icon-btn cart-open" id="cartOpen" aria-label="কার্ট খুলুন">🛒 <span>কার্ট</span><b id="cartCount">0</b></button>
   </header>
-
+  <nav class="category-nav" aria-label="পণ্যের ক্যাটাগরি">
+    <button class="category-chip active" data-category="সব">সব পণ্য</button>
+    <button class="category-chip" data-category="ইলেকট্রনিকস">ইলেকট্রনিকস</button>
+    <button class="category-chip" data-category="ফ্যাশন">ফ্যাশন</button>
+    <button class="category-chip" data-category="ঘর ও জীবনযাপন">ঘর ও জীবনযাপন</button>
+    <button class="category-chip" data-category="বিউটি">বিউটি</button>
+  </nav>
   <main>
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">Thoughtfully selected technology</p>
-        <h1>Upgrade your<br><em>everyday.</em></h1>
-        <p class="hero-description">Discover gadgets and tech accessories chosen to bring more ease, style and value to your everyday life.</p>
-        <a class="button" href="#categories">Explore Neweix <span>↗</span></a>
-        <p class="hero-note">A new kind of everyday premium.</p>
+        <span class="eyebrow">WELCOME TO NEWEIX</span>
+        <h1>Shop smart.<br><em>Live better.</em></h1>
+        <p>আপনার পছন্দের পণ্য, এক জায়গায়। সহজ কেনাকাটা, সাশ্রয়ী দাম।</p>
+        <a class="primary-btn" href="#products">এখনই কেনাকাটা করুন <span>→</span></a>
+        <div class="trust-row"><span>✓ মানসম্মত পণ্য</span><span>✓ সহজ অর্ডার</span></div>
       </div>
-      <div class="hero-art" aria-label="Decorative abstract product display">
-        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
-        <div class="device device-one"><div class="device-screen"></div></div>
-        <div class="device device-two"><div class="device-dot"></div><div class="device-dot"></div></div>
-        <div class="art-label">NEWEIX / EST. 2026</div>
-      </div>
-    </section>
-
-    <section class="section categories" id="categories">
-      <div class="section-heading"><div><p class="eyebrow">Discover your essentials</p><h2>Explore categories</h2></div><p>Thoughtful picks for your<br>everyday setup.</p></div>
-      <div class="category-grid">
-        <a class="category-card" href="#catalogue"><span class="category-number">01 / AUDIO</span><span class="category-icon">◖))</span><h3>Audio & Sound</h3><span class="category-link">Explore <b>↗</b></span></a>
-        <a class="category-card" href="#catalogue"><span class="category-number">02 / POWER</span><span class="category-icon">ϟ</span><h3>Charging & Power</h3><span class="category-link">Explore <b>↗</b></span></a>
-        <a class="category-card" href="#catalogue"><span class="category-number">03 / MOBILE</span><span class="category-icon">▯</span><h3>Mobile Accessories</h3><span class="category-link">Explore <b>↗</b></span></a>
-        <a class="category-card" href="#catalogue"><span class="category-number">04 / SMART</span><span class="category-icon">✳</span><h3>Smart Gadgets</h3><span class="category-link">Explore <b>↗</b></span></a>
+      <div class="hero-art" aria-label="শপিং ইলাস্ট্রেশন">
+        <div class="orb orb-one"></div><div class="orb orb-two"></div>
+        <div class="shopping-bag"><span>N</span></div>
+        <div class="floating-card card-a">✦ নতুন কালেকশন</div>
+        <div class="floating-card card-b">৳ সাশ্রয়ী দাম</div>
       </div>
     </section>
-
-    <section class="catalogue section" id="catalogue">
-      <div class="section-heading"><div><p class="eyebrow">Coming soon</p><h2>Our first collection</h2></div><p>We’re preparing a carefully<br>selected collection for you.</p></div>
-      <div class="catalogue-placeholder"><div class="placeholder-mark">N<span>.</span></div><h3>Good things are taking shape.</h3><p>Our product catalogue is being prepared. Product listings and ordering will be enabled in a later step.</p></div>
+    <section class="benefits" aria-label="কেন Neweix">
+      <div><span class="benefit-icon">🚚</span><span><b>ডেলিভারি সুবিধা</b><small>আপনার ঠিকানায় পৌঁছে যাবে</small></span></div>
+      <div><span class="benefit-icon">🔒</span><span><b>সহজ ও নিরাপদ</b><small>নিরাপদ কেনাকাটার অভিজ্ঞতা</small></span></div>
+      <div><span class="benefit-icon">💬</span><span><b>কাস্টমার সাপোর্ট</b><small>প্রশ্ন থাকলে যোগাযোগ করুন</small></span></div>
     </section>
-
-    <section class="brand-story" id="about">
-      <p class="eyebrow">The Neweix standard</p><h2>Premium feel.<br><em>Thoughtful value.</em></h2>
-      <p>Neweix is being built for customers in Bangladesh who want thoughtfully selected gadgets and accessories without unnecessary complexity. Our aim is a considered shopping experience, clear product information and value you can feel.</p>
-      <span class="story-signature">NEWEIX<span>.</span></span>
+    <section class="products-section" id="products">
+      <div class="section-heading">
+        <div><span class="eyebrow">OUR COLLECTION</span><h2>জনপ্রিয় পণ্য</h2><p>আপনার দৈনন্দিন পছন্দের কিছু পণ্য</p></div>
+        <label class="sort-label">সাজান
+          <select id="sortSelect" aria-label="পণ্য সাজান"><option value="featured">প্রস্তাবিত</option><option value="low">দাম: কম থেকে বেশি</option><option value="high">দাম: বেশি থেকে কম</option></select>
+        </label>
+      </div>
+      <div class="product-grid" id="productGrid" aria-live="polite"></div>
+      <p class="empty-state" id="emptyState" hidden>কোনো পণ্য পাওয়া যায়নি। অন্য শব্দ দিয়ে খুঁজুন।</p>
     </section>
-    <section class="contact section" id="contact"><p class="eyebrow">Stay connected</p><h2>Something better is on its way.</h2><p>Follow Neweix for launch updates and the first collection.</p><a class="button button-light" href="mailto:hello@neweix.com">Contact Neweix <span>↗</span></a><p class="small-note">Replace this contact email with your official business email before launch.</p></section>
+    <section class="newsletter">
+      <div><span class="eyebrow">STAY IN THE LOOP</span><h2>নতুন পণ্য ও অফার সম্পর্কে জানুন</h2><p>ইমেইল সাবস্ক্রিপশন সুবিধা পরে সংযুক্ত করা যাবে।</p></div>
+      <form id="newsletterForm"><input type="email" placeholder="আপনার ইমেইল (ডেমো)" aria-label="ইমেইল"><button type="submit">সাবস্ক্রাইব</button></form>
+    </section>
   </main>
-  <footer><a class="logo footer-logo" href="#">NEWEIX<span>.</span></a><span>© <span id="year"></span> Neweix. All rights reserved.</span><span>Bangladesh · Premium, accessible luxury</span></footer>
+  <footer class="footer">
+    <div><a class="brand footer-brand" href="#"><span class="brand-mark">N</span><span>neweix</span></a><p>Shop smart. Live better.</p></div>
+    <div><b>তথ্য</b><a href="#about" id="aboutLink">আমাদের সম্পর্কে</a><a href="#delivery" id="deliveryLink">ডেলিভারি নীতি</a><a href="#privacy" id="privacyLink">গোপনীয়তা নীতি</a></div>
+    <div><b>যোগাযোগ</b><span>আপনার ব্যবসার ফোন/ইমেইল এখানে যোগ করুন</span><span>বাংলাদেশ</span></div>
+    <div class="copyright">© <span id="year"></span> Neweix. সর্বস্বত্ব সংরক্ষিত।</div>
+  </footer>
+
+  <div class="overlay" id="overlay" hidden></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-label="শপিং কার্ট" aria-modal="true" role="dialog" hidden>
+    <div class="drawer-head"><div><span class="eyebrow">YOUR CART</span><h2>আপনার কার্ট</h2></div><button class="close-btn" id="cartClose" aria-label="বন্ধ করুন">×</button></div>
+    <div id="cartItems" class="cart-items"></div>
+    <div class="cart-bottom"><div class="total-row"><span>মোট</span><strong id="cartTotal">৳০</strong></div><button class="primary-btn full" id="checkoutBtn">অর্ডার সম্পন্ন করুন</button><small>ডেমো: অর্ডার পাঠাতে চেকআউট ফর্ম পূরণ করুন।</small></div>
+  </aside>
+  <div class="modal" id="checkoutModal" hidden>
+    <div class="modal-card">
+      <div class="drawer-head"><div><span class="eyebrow">CHECKOUT</span><h2>ডেলিভারির তথ্য</h2></div><button class="close-btn" id="checkoutClose" aria-label="বন্ধ করুন">×</button></div>
+      <form id="checkoutForm" class="checkout-form">
+        <label>আপনার নাম<input name="name" required autocomplete="name" placeholder="পূর্ণ নাম"></label>
+        <label>মোবাইল নম্বর<input name="phone" required inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" pattern="01[0-9]{9}"></label>
+        <label>সম্পূর্ণ ঠিকানা<textarea name="address" required rows="3" placeholder="বাড়ি, রাস্তা, এলাকা, জেলা"></textarea></label>
+        <label>পেমেন্ট পদ্ধতি<select name="payment" required><option value="ক্যাশ অন ডেলিভারি">ক্যাশ অন ডেলিভারি</option><option value="বিকাশ (ম্যানুয়াল নিশ্চিতকরণ প্রয়োজন)">বিকাশ (ম্যানুয়াল নিশ্চিতকরণ প্রয়োজন)</option><option value="নগদ (ম্যানুয়াল নিশ্চিতকরণ প্রয়োজন)">নগদ (ম্যানুয়াল নিশ্চিতকরণ প্রয়োজন)</option><option value="অনলাইন পেমেন্ট গেটওয়ে (এখনো সংযুক্ত নয়)">অনলাইন পেমেন্ট গেটওয়ে (এখনো সংযুক্ত নয়)</option></select></label>
+        <p class="payment-note">বিকাশ/নগদ ও অনলাইন গেটওয়ের বাস্তব পেমেন্ট এখনো সংযুক্ত নয়। টাকা নেওয়ার আগে পেমেন্ট যাচাই ও সার্ভার-সাইড অর্ডার ব্যবস্থা যুক্ত করতে হবে।</p>
+        <button class="primary-btn full" type="submit">অর্ডার অনুরোধ তৈরি করুন</button>
+      </form>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="script.js"></script>
 </body>
 </html>
