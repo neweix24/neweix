@@ -1,75 +1,153 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Neweix Admin Dashboard</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 24px;
-      background: #f4f5f7;
-      color: #222;
-    }
-    main {
-      max-width: 700px;
-      margin: 30px auto;
-      padding: 24px;
-      background: white;
-      border-radius: 12px;
-    }
-    button {
-      padding: 12px 18px;
-      border: 0;
-      border-radius: 6px;
-      background: #111;
-      color: white;
-      cursor: pointer;
-    }
-    #status { color: #555; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neweix Admin Dashboard</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f5f7;margin:0;padding:20px;color:#222}
+main{max-width:700px;margin:auto}
+section{background:white;padding:22px;margin-bottom:20px;border-radius:12px}
+label{display:block;margin-top:14px;font-weight:bold}
+input,textarea{box-sizing:border-box;width:100%;padding:12px;margin-top:6px;border:1px solid #ccc;border-radius:6px}
+textarea{min-height:80px}
+button{margin-top:18px;padding:12px 18px;background:#111;color:white;border:0;border-radius:6px}
+#message{white-space:pre-wrap}
+</style>
 </head>
 <body>
-  <main>
-    <h1>Neweix Admin</h1>
-    <p id="status">লগইন যাচাই হচ্ছে...</p>
-    <section id="dashboard" hidden>
-      <h2>স্বাগতম!</h2>
-      <p>তোমার অ্যাডমিন পেজ প্রস্তুত হচ্ছে।</p>
-      <p>পরবর্তী ধাপে পণ্য পরিচালনার সুবিধা যোগ করা হবে।</p>
-    </section>
-  </main>
+<main>
+<section>
+<h1>Neweix Admin</h1>
+<p id="status">লগইন যাচাই হচ্ছে...</p>
+</section>
 
-  <script>
-    async function checkLogin() {
-      const status = document.getElementById("status");
-      try {
-        const response = await fetch("/api/admin/verify", {
-          credentials: "same-origin"
-        });
+<section id="dashboard" hidden>
+<h2>নতুন পণ্য যোগ করুন</h2>
+<form id="productForm">
+<label>পণ্যের নাম *</label>
+<input name="name" required maxlength="200">
 
-        if (!response.ok) {
-          window.location.replace("/admin.html");
-          return;
-        }
+<label>পণ্যের বিবরণ</label>
+<textarea name="description"></textarea>
 
-        const data = await response.json();
+<label>দাম (টাকা) *</label>
+<input name="price" type="number" min="0" step="0.01" required>
 
-        if (data.authenticated !== true) {
-          window.location.replace("/admin.html");
-          return;
-        }
+<label>ছবির HTTPS লিংক</label>
+<input name="image_url" type="url">
 
-        status.hidden = true;
-        document.getElementById("dashboard").hidden = false;
-      } catch {
-        status.textContent =
-          "যাচাই করা যায়নি। ইন্টারনেট সংযোগ পরীক্ষা করো।";
-      }
+<label>ক্যাটাগরি</label>
+<input name="category">
+
+<label>স্টকের পরিমাণ</label>
+<input name="stock" type="number" min="0" step="1" value="0" required>
+
+<button id="submitButton" type="submit">পণ্য যোগ করুন</button>
+<p id="message" role="status"></p>
+</form>
+
+<hr>
+<h2>পণ্যের তালিকা</h2>
+<button id="reload" type="button">তালিকা রিফ্রেশ</button>
+<div id="products"></div>
+</section>
+</main>
+
+<script>
+const dashboard = document.getElementById("dashboard");
+const statusEl = document.getElementById("status");
+const message = document.getElementById("message");
+
+async function start() {
+  try {
+    const r = await fetch("/api/admin/verify", {
+      credentials: "same-origin"
+    });
+    if (!r.ok) {
+      location.replace("/admin.html");
+      return;
     }
+    const data = await r.json();
+    if (data.authenticated !== true) {
+      location.replace("/admin.html");
+      return;
+    }
+    statusEl.hidden = true;
+    dashboard.hidden = false;
+    await loadProducts();
+  } catch {
+    statusEl.textContent = "লগইন যাচাই করা যায়নি।";
+  }
+}
 
-    checkLogin();
-  </script>
+async function loadProducts() {
+  const box = document.getElementById("products");
+  box.textContent = "পণ্য লোড হচ্ছে...";
+  try {
+    const r = await fetch("/api/products", {
+      credentials: "same-origin"
+    });
+    const data = await r.json();
+    if (!r.ok || data.success !== true) {
+      throw new Error(data.error || "পণ্য লোড হয়নি");
+    }
+    box.replaceChildren();
+    if (!data.products.length) {
+      box.textContent = "এখনো কোনো পণ্য নেই।";
+      return;
+    }
+    data.products.forEach(p => {
+      const item = document.createElement("p");
+      item.textContent = p.name + " — ৳" + p.price +
+        " | স্টক: " + p.stock;
+      box.appendChild(item);
+    });
+  } catch (e) {
+    box.textContent = e.message;
+  }
+}
+
+document.getElementById("productForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const button = document.getElementById("submitButton");
+  button.disabled = true;
+  message.textContent = "পণ্য যোগ হচ্ছে...";
+
+  const f = new FormData(e.target);
+  const payload = {
+    name: String(f.get("name") || "").trim(),
+    description: String(f.get("description") || "").trim(),
+    price: String(f.get("price") || ""),
+    image_url: String(f.get("image_url") || "").trim(),
+    category: String(f.get("category") || "").trim(),
+    stock: Number(f.get("stock") || 0)
+  };
+
+  try {
+    const r = await fetch("/api/products", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json();
+    if (!r.ok || data.success !== true) {
+      throw new Error(data.error || "পণ্য যোগ করা যায়নি");
+    }
+    message.textContent = "সফল! পণ্য যোগ হয়েছে।";
+    e.target.reset();
+    e.target.elements.stock.value = 0;
+    await loadProducts();
+  } catch (err) {
+    message.textContent = err.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.getElementById("reload").addEventListener("click", loadProducts);
+start();
+</script>
 </body>
 </html>
