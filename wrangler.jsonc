@@ -1,0 +1,12 @@
+{
+  "name": "neweix",
+  "pages_build_output_dir": ".",
+  "compatibility_date": "2026-10-21",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "neweix-db",
+      "database_id": "ad5eb811-0fe0-43df-85e4-410e99e03dd2"
+    }
+  ]
+}
