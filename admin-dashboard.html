@@ -197,6 +197,14 @@ const productForm = document.getElementById("productForm");
 const submitButton = document.getElementById("submitButton");
 const reloadButton = document.getElementById("reload");
 
+let editingId = null;
+
+const cancelButton = document.createElement("button");
+cancelButton.type = "button";
+cancelButton.textContent = "সম্পাদনা বাতিল";
+cancelButton.hidden = true;
+submitButton.insertAdjacentElement("afterend", cancelButton);
+
 async function apiRequest(url, options = {}) {
   const response = await fetch(url, {
     credentials: "same-origin",
@@ -207,10 +215,10 @@ async function apiRequest(url, options = {}) {
 
   if (response.status === 401 || response.status === 403) {
     location.replace("/admin.html");
-    throw new Error("লগইন মেয়াদ শেষ। আবার লগইন করুন।");
+    throw new Error("আবার Admin Login করুন।");
   }
 
-  if (!response.ok || data.success === false) {
+  if (!response.ok) {
     throw new Error(data.error || "অনুরোধ সম্পন্ন হয়নি।");
   }
 
@@ -228,25 +236,27 @@ async function start() {
 
     statusEl.hidden = true;
     dashboard.hidden = false;
-
     await loadProducts();
-
   } catch (error) {
-    statusEl.textContent =
-      "লগইন যাচাই করা যায়নি: " + error.message;
+    statusEl.textContent = "লগইন যাচাই করা যায়নি: " + error.message;
   }
 }
 
 function addText(parent, tag, text, className = "") {
   const element = document.createElement(tag);
   element.textContent = text;
-
-  if (className) {
-    element.className = className;
-  }
-
+  if (className) element.className = className;
   parent.appendChild(element);
   return element;
+}
+
+function makeButton(parent, label, action) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = label;
+  button.addEventListener("click", action);
+  parent.appendChild(button);
+  return button;
 }
 
 function renderProduct(p) {
@@ -255,49 +265,27 @@ function renderProduct(p) {
 
   if (p.image_url) {
     try {
-      const imageUrl = new URL(p.image_url);
-
-      if (imageUrl.protocol === "https:") {
+      const url = new URL(p.image_url);
+      if (url.protocol === "https:") {
         const img = document.createElement("img");
         img.className = "product-image";
-        img.src = imageUrl.href;
+        img.src = url.href;
         img.alt = p.name || "পণ্যের ছবি";
         img.loading = "lazy";
         img.onerror = () => img.remove();
         item.appendChild(img);
       }
-    } catch {
-      // ভুল ছবির URL হলে ছবি দেখানো হবে না।
-    }
+    } catch {}
   }
 
   addText(item, "h3", p.name || "নাম নেই");
+  addText(item, "p", "দাম: ৳" + (p.price ?? 0));
+  addText(item, "p", "বিবরণ: " + (p.description || "নেই"));
+  addText(item, "p", "ক্যাটাগরি: " + (p.category || "নির্ধারিত নয়"));
+  addText(item, "p", "স্টক: " + (p.stock ?? 0));
 
-  addText(
-    item,
-    "p",
-    "দাম: ৳" + (p.price ?? 0)
-  );
-
-  addText(
-    item,
-    "p",
-    "বিস্তারিত: " +
-      (p.description || "বিবরণ দেওয়া হয়নি")
-  );
-
-  addText(
-    item,
-    "p",
-    "ক্যাটাগরি: " +
-      (p.category || "নির্ধারিত নয়")
-  );
-
-  addText(
-    item,
-    "p",
-    "স্টক: " + (p.stock ?? 0)
-  );
+  makeButton(item, "✏️ সম্পাদনা", () => editProduct(p));
+  makeButton(item, "🗑️ ডিলিট", () => deleteProduct(p));
 
   return item;
 }
@@ -310,7 +298,7 @@ async function loadProducts() {
     const data = await apiRequest("/api/products");
 
     if (!Array.isArray(data.products)) {
-      throw new Error("পণ্যের তালিকার তথ্য সঠিক নয়।");
+      throw new Error("পণ্যের তালিকা সঠিক নয়।");
     }
 
     productsBox.replaceChildren();
@@ -320,95 +308,130 @@ async function loadProducts() {
       return;
     }
 
-    data.products.forEach(product => {
-      productsBox.appendChild(renderProduct(product));
+    data.products.forEach(p => {
+      productsBox.appendChild(renderProduct(p));
     });
-
   } catch (error) {
-    productsBox.textContent =
-      "পণ্য লোড করা যায়নি: " + error.message;
-
+    productsBox.textContent = "পণ্য লোড করা যায়নি: " + error.message;
   } finally {
     reloadButton.disabled = false;
+  }
+}
+
+function editProduct(p) {
+  editingId = p.id;
+
+  productForm.elements.name.value = p.name || "";
+  productForm.elements.description.value = p.description || "";
+  productForm.elements.price.value = p.price ?? "";
+  productForm.elements.image_url.value = p.image_url || "";
+  productForm.elements.category.value = p.category || "";
+  productForm.elements.stock.value = p.stock ?? 0;
+
+  submitButton.textContent = "পরিবর্তন সংরক্ষণ করুন";
+  cancelButton.hidden = false;
+  message.textContent = "পণ্যের তথ্য পরিবর্তন করে সংরক্ষণ করুন।";
+
+  document.getElementById("name").scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+}
+
+function resetEdit() {
+  editingId = null;
+  productForm.reset();
+  productForm.elements.stock.value = 0;
+  submitButton.textContent = "পণ্য যোগ করুন";
+  cancelButton.hidden = true;
+  message.textContent = "";
+}
+
+cancelButton.addEventListener("click", resetEdit);
+reloadButton.addEventListener("click", loadProducts);
+
+async function deleteProduct(p) {
+  if (!confirm('"' + p.name + '" পণ্যটি স্থায়ীভাবে ডিলিট করবেন?')) {
+    return;
+  }
+
+  try {
+    const data = await apiRequest(
+      "/api/products/" + encodeURIComponent(p.id),
+      { method: "DELETE" }
+    );
+
+    message.textContent = data.message || "পণ্য ডিলিট হয়েছে।";
+    if (String(editingId) === String(p.id)) resetEdit();
+    await loadProducts();
+  } catch (error) {
+    message.textContent = "ডিলিট করা যায়নি: " + error.message;
   }
 }
 
 productForm.addEventListener("submit", async event => {
   event.preventDefault();
 
-  if (!productForm.reportValidity()) {
-    return;
-  }
+  if (!productForm.reportValidity()) return;
 
   submitButton.disabled = true;
-  message.textContent = "পণ্য যোগ হচ্ছে...";
+  cancelButton.disabled = true;
+  message.textContent = editingId === null
+    ? "পণ্য যোগ হচ্ছে..."
+    : "পরিবর্তন সংরক্ষণ হচ্ছে...";
 
   const formData = new FormData(productForm);
 
   const payload = {
     name: String(formData.get("name") || "").trim(),
-    description: String(
-      formData.get("description") || ""
-    ).trim(),
+    description: String(formData.get("description") || "").trim(),
     price: String(formData.get("price") || ""),
-    image_url: String(
-      formData.get("image_url") || ""
-    ).trim(),
-    category: String(
-      formData.get("category") || ""
-    ).trim(),
-    stock: Number(formData.get("stock") || 0)
+    image_url: String(formData.get("image_url") || "").trim(),
+    category: String(formData.get("category") || "").trim(),
+    stock: Number(formData.get("stock"))
   };
 
   try {
-    if (payload.image_url) {
-      const imageUrl = new URL(payload.image_url);
+    const price = Number(payload.price);
 
-      if (imageUrl.protocol !== "https:") {
-        throw new Error(
-          "ছবির লিংক অবশ্যই HTTPS হতে হবে।"
-        );
+    if (!payload.name || !Number.isFinite(price) || price < 0) {
+      throw new Error("পণ্যের নাম ও সঠিক দাম দিন।");
+    }
+
+    if (!Number.isSafeInteger(payload.stock) || payload.stock < 0) {
+      throw new Error("স্টকের সঠিক সংখ্যা দিন।");
+    }
+
+    if (payload.image_url) {
+      const url = new URL(payload.image_url);
+      if (url.protocol !== "https:") {
+        throw new Error("ছবির লিংক অবশ্যই HTTPS হতে হবে।");
       }
     }
 
-    if (!Number.isFinite(payload.stock) ||
-        payload.stock < 0 ||
-        !Number.isInteger(payload.stock)) {
-      throw new Error("স্টকের পরিমাণ সঠিকভাবে লিখুন।");
-    }
+    const isEditing = editingId !== null;
+    const url = isEditing
+      ? "/api/products/" + encodeURIComponent(editingId)
+      : "/api/products";
 
-    const price = Number(payload.price);
-
-    if (!Number.isFinite(price) || price < 0) {
-      throw new Error("সঠিক পণ্যমূল্য লিখুন।");
-    }
-
-    const data = await apiRequest("/api/products", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+    const data = await apiRequest(url, {
+      method: isEditing ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
-    message.textContent =
-      data.message || "সফল! পণ্য যোগ হয়েছে।";
+    message.textContent = data.message ||
+      (isEditing ? "পণ্য আপডেট হয়েছে।" : "পণ্য যোগ হয়েছে।");
 
-    productForm.reset();
-    productForm.elements.stock.value = 0;
-
+    resetEdit();
     await loadProducts();
-
   } catch (error) {
-    message.textContent =
-      "পণ্য যোগ করা যায়নি: " + error.message;
-
+    message.textContent = "সমস্যা: " + error.message;
   } finally {
     submitButton.disabled = false;
+    cancelButton.disabled = false;
   }
 });
-
-reloadButton.addEventListener("click", loadProducts);
 
 start();
 </script>
