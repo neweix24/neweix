@@ -1,13 +1,15 @@
-// functions/api/supreme-login.js
 export async function onRequestPost(context) {
   const { request } = context;
-  
-  // আপনার Supabase URL এবং Key (এখানে সরাসরি দেওয়া হলো যাতে সহজে কাজ করে)
+
   const SUPABASE_URL = 'https://grhybvlhdnzlopwbaqun.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyaHlidmxoZG56bG9wd2JhcXVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NDYyMjEsImV4cCI6MjEwODIyMjIyMX0.27nR0VFbxwVYQKb5A06BRwizp02CHAmoD9IRMwiJ0Ss';
 
   try {
     const { email, password } = await request.json();
+
+    if (!email || !password) {
+      return new Response(JSON.stringify({ error: 'ইমেইল ও পাসওয়ার্ড দিন!' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
 
     // ১. Supabase Auth দিয়ে পাসওয়ার্ড চেক
     const authRes = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
@@ -26,17 +28,18 @@ export async function onRequestPost(context) {
     const authData = await authRes.json();
     const userId = authData.user.id;
 
-    // ২. ডাটাবেস থেকে রোল চেক (সুপ্রিম কি না)
+    // ২. ডাটাবেস থেকে রোল চেক
     const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/admins?id=eq.${userId}&select=role`, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${authData.access_token}`
+        'Authorization': `Bearer ${authData.access_token}`,
+        'Content-Type': 'application/json'
       }
     });
 
     const dbData = await dbRes.json();
 
-    if (!dbData || dbData.length === 0 || dbData[0].role !== 'supreme') {
+    if (!dbRes.ok || !dbData || dbData.length === 0 || dbData[0].role !== 'supreme') {
       return new Response(JSON.stringify({ error: 'আপনি সুপ্রিম নন! অ্যাক্সেস ডিনাইড।' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
     }
 
