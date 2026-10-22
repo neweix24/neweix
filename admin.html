@@ -25,6 +25,7 @@ button{background:none;border:0;cursor:pointer}
 .dr #drawer{transform:none}
 #drawer h3{padding:0 16px 12px;font-size:18px}
 #drawer button{display:block;width:100%;text-align:left;padding:13px 16px;font-size:16px}
+#drawer .lo{color:var(--red);border-top:1px solid var(--line);margin-top:8px}
 #drawer .on{background:var(--soft);color:var(--acc);font-weight:600}
 #shade{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:40}
 .dr #shade,.ed #shade{display:block}
@@ -61,11 +62,12 @@ textarea{min-height:80px}
 <main id="main"></main>
 <nav id="nav"></nav>
 <div id="shade"></div>
-<aside id="drawer"><h3>Neweix Admin</h3><div id="dMenu"></div></aside>
+<aside id="drawer"><h3>Neweix Admin</h3><div id="dMenu"></div><button id="dOut" class="lo">লগআউট</button></aside>
 <div class="sheet" id="sheet"></div>
 
 <div id="login">
   <h1>Neweix Admin</h1>
+  <input id="un" placeholder="ইউজারনেম" autocomplete="username" autocapitalize="none">
   <input id="pw" type="password" placeholder="অ্যাডমিন পাসওয়ার্ড" autocomplete="current-password">
   <button class="btn g" id="lb" style="padding:12px">লগইন</button>
   <div id="lm" style="color:var(--red);font-size:13px"></div>
@@ -98,18 +100,18 @@ const name=k=>(R[k]||SET[k]||{}).t||'এনালিটিক্স';
 
 /* ===== নেটওয়ার্ক ===== */
 async function call(path,method='GET',body){
-  const r=await fetch('/api/admin/'+path,{method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:body?JSON.stringify(body):undefined});
+  const r=await fetch('/api/nx/'+path,{method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:body?JSON.stringify(body):undefined});
   if(r.status===401){logout();throw new Error('auth')}
   if(!r.ok)throw new Error('http');
   return r.json();
 }
-function logout(){tok='';localStorage.removeItem('nx_admin');$('login').style.display='flex'}
-$('out').onclick=logout;
+function logout(){document.body.classList.remove('dr');$('main').innerHTML='';tok='';localStorage.removeItem('nx_admin');$('login').style.display='flex'}
+$('out').onclick=logout;$('dOut').onclick=logout;
 $('lb').onclick=async()=>{
   $('lm').textContent='';
-  try{const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})});
-    if(!r.ok){$('lm').textContent='পাসওয়ার্ড সঠিক নয়';return}
-    tok=(await r.json()).token;localStorage.setItem('nx_admin',tok);$('pw').value='';$('login').style.display='none';go(cur)}
+  try{const r=await fetch('/api/nx/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:$('un').value.trim(),password:$('pw').value})});
+    if(!r.ok){$('lm').textContent='ইউজারনেম বা পাসওয়ার্ড সঠিক নয়';return}
+    tok=(await r.json()).token;localStorage.setItem('nx_admin',tok);$('pw').value='';$('un').value='';$('login').style.display='none';go(cur)}
   catch(e){$('lm').textContent='সংযোগ হচ্ছে না, আবার চেষ্টা করুন'}
 };
 
