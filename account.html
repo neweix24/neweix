@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Account | Neweix</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#232019;--bg:#fff;--soft:#f1f0ee;--line:#e3e1dc;--acc:#1f7a5a;--mut:#6f6b63}
+@media (prefers-color-scheme:dark){:root{--ink:#f3f1ec;--bg:#1b1913;--soft:#26231c;--line:#37332a;--acc:#4cc59a;--mut:#a39e92}}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Hind Siliguri',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100%;padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}
+button,input,textarea{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+#bar{display:flex;align-items:center;justify-content:space-between;padding:12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+#bar .l{display:flex;align-items:center;gap:10px;font-weight:600;font-size:17px}
+#bar a,#bar button{display:grid;place-items:center;width:34px;height:34px;color:var(--ink);text-decoration:none}
+#menu{display:none;position:absolute;right:12px;top:50px;background:var(--bg);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);min-width:170px;overflow:hidden}
+#menu.on{display:block}
+#menu button{display:block;width:100%;text-align:left;padding:12px 14px;border-bottom:1px solid var(--line)}
+.hello{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:16px 14px}
+.hello span{font-size:16px;line-height:1.4}
+.btn{background:var(--ink);color:var(--bg);border-radius:10px;padding:9px 14px;font-weight:500;font-size:14px;white-space:nowrap}
+.btn.g{background:var(--acc);color:#fff}
+.btn[disabled]{opacity:.5}
+.sec{border-top:1px solid var(--line);padding:16px 14px}
+.sec h2{font-size:16px;font-weight:600;margin-bottom:4px}
+.sec p{font-size:13px;color:var(--mut);margin-bottom:10px}
+.sec textarea,.sec input,.sheet input{width:100%;border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:10px 12px;font-size:15px;margin-bottom:8px}
+textarea{min-height:90px;resize:vertical}
+.chat{display:flex;justify-content:space-between;align-items:center;text-decoration:none;color:inherit;width:100%}
+.lang{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;width:max-content}
+.lang button{padding:8px 18px;font-weight:500}.lang .on{background:var(--ink);color:var(--bg)}
+.stars{display:flex;gap:4px;margin-bottom:8px}
+.stars button{font-size:30px;line-height:1;color:var(--line)}.stars .on{color:#e0a100}
+.lock{background:var(--soft);border-radius:10px;padding:12px;font-size:14px;color:var(--mut);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.msg{font-size:13px;color:var(--acc);min-height:18px}
+#shade{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:30}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-radius:16px 16px 0 0;z-index:31;display:none;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0))}
+.login #shade,.login .sheet{display:block}
+.sheet h2{font-size:18px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div id="bar">
+  <div class="l">
+    <a href="/" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg></a>
+    <span>My account</span>
+  </div>
+  <button id="dots" aria-label="Menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+  <div id="menu"><button id="mOrders"></button><button id="mOut"></button></div>
+</div>
+
+<div class="hello"><span id="hi"></span><button class="btn" id="authBtn"></button></div>
+
+<div class="sec">
+  <h2 id="tFb"></h2><p id="dFb"></p>
+  <textarea id="fb"></textarea>
+  <button class="btn" id="fbSend"></button>
+  <div class="msg" id="fbMsg"></div>
+</div>
+
+<div class="sec">
+  <a class="chat" id="wa" href="#" target="_blank" rel="noopener">
+    <div><h2 id="tChat"></h2><p id="dChat" style="margin:0"></p></div>
+    <span class="btn g">WhatsApp</span>
+  </a>
+</div>
+
+<div class="sec">
+  <h2>BN / EN</h2>
+  <div class="lang"><button id="bn">বাংলা</button><button id="en">English</button></div>
+</div>
+
+<div class="sec" id="rate">
+  <h2 id="tRate"></h2>
+  <div id="rateBox"></div>
+</div>
+
+<div id="shade"></div>
+<div class="sheet" id="sheet">
+  <h2 id="tLogin"></h2>
+  <input id="ph" inputmode="tel" autocomplete="tel">
+  <input id="otp" inputmode="numeric" maxlength="6" hidden>
+  <div class="msg" id="lMsg"></div>
+  <button class="btn g" id="lBtn" style="width:100%;padding:12px"></button>
+</div>
+
+<script>
+/* ===== ভাষা ===== */
+const T={
+ bn:{hi_o:"Hello, Welcome to Neweix!",hi_i:n=>`Hello, ${n}!`,login:"Login/Signup",out:"লগআউট",orders:"আমার অর্ডার",
+  fb:"মতামত",fbd:"আপনার মতামত সরাসরি আমাদের ইমেইলে পৌঁছাবে।",fbp:"আপনার মতামত লিখুন",send:"পাঠান",fbOk:"ধন্যবাদ, মতামত পাঠানো হয়েছে",fbErr:"পাঠানো যায়নি, আবার চেষ্টা করুন",fbEmpty:"কিছু লিখুন",
+  chat:"আমাদের সাথে চ্যাট করুন",chatd:"সরাসরি WhatsApp-এ কথা বলুন",
+  rate:"রেটিং ও কমেন্ট",rLock:"রেটিং ও কমেন্ট করতে লগইন করুন",rP:"আপনার কমেন্ট লিখুন",rOk:"ধন্যবাদ, আপনার রেটিং জমা হয়েছে",rNeed:"স্টার দিয়ে রেটিং দিন",
+  lt:"মোবাইল নম্বর দিয়ে লগইন",phP:"মোবাইল নম্বর (01XXXXXXXXX)",otpP:"৬ ডিজিটের OTP কোড",getOtp:"OTP পাঠান",ver:"যাচাই করুন",
+  badPh:"সঠিক মোবাইল নম্বর দিন",otpSent:"OTP পাঠানো হয়েছে",otpBad:"কোডটি সঠিক নয়",neterr:"সমস্যা হয়েছে, আবার চেষ্টা করুন"},
+ en:{hi_o:"Hello, Welcome to Neweix!",hi_i:n=>`Hello, ${n}!`,login:"Login/Signup",out:"Log out",orders:"My orders",
+  fb:"Feedback",fbd:"Your feedback goes straight to our email.",fbp:"Write your feedback",send:"Send",fbOk:"Thank you, feedback sent",fbErr:"Could not send, please try again",fbEmpty:"Please write something",
+  chat:"Chat with us",chatd:"Talk to us directly on WhatsApp",
+  rate:"Rating and comment",rLock:"Log in to rate and comment",rP:"Write your comment",rOk:"Thank you, your rating is saved",rNeed:"Tap the stars to rate",
+  lt:"Log in with mobile number",phP:"Mobile number (01XXXXXXXXX)",otpP:"6-digit OTP code",getOtp:"Send OTP",ver:"Verify",
+  badPh:"Enter a valid mobile number",otpSent:"OTP sent",otpBad:"Incorrect code",neterr:"Something went wrong, try again"}
+};
+const $=id=>document.getElementById(id);
+let lang=localStorage.getItem('nx_lang')||'bn', user=null, stars=0, step='phone', phone='';
+try{user=JSON.parse(localStorage.getItem('nx_user')||'null')}catch(e){}
+const t=()=>T[lang];
+
+function paint(){
+  const x=t();
+  $('bn').classList.toggle('on',lang==='bn');$('en').classList.toggle('on',lang==='en');
+  $('hi').textContent=user?x.hi_i(user.name||user.phone):x.hi_o;
+  $('authBtn').textContent=user?x.out:x.login;
+  $('mOrders').textContent=x.orders;$('mOut').textContent=x.out;$('mOut').hidden=!user;
+  $('tFb').textContent=x.fb;$('dFb').textContent=x.fbd;$('fb').placeholder=x.fbp;$('fbSend').textContent=x.send;
+  $('tChat').textContent=x.chat;$('dChat').textContent=x.chatd;$('tRate').textContent=x.rate;
+  $('tLogin').textContent=x.lt;$('ph').placeholder=x.phP;$('otp').placeholder=x.otpP;
+  $('lBtn').textContent=step==='phone'?x.getOtp:x.ver;
+  drawRate();
+}
+function drawRate(){
+  const x=t();
+  if(!user){$('rateBox').innerHTML=`<div class="lock"><span>${x.rLock}</span><button class="btn" id="rLogin">${x.login}</button></div>`;$('rLogin').onclick=openLogin;return}
+  $('rateBox').innerHTML=`<div class="stars">${[1,2,3,4,5].map(n=>`<button data-s="${n}" class="${n<=stars?'on':''}">★</button>`).join('')}</div><textarea id="rc" placeholder="${x.rP}"></textarea><button class="btn" id="rSend">${x.send}</button><div class="msg" id="rMsg"></div>`;
+  $('rateBox').querySelector('.stars').onclick=e=>{const b=e.target.closest('[data-s]');if(b){stars=+b.dataset.s;drawRate()}};
+  $('rSend').onclick=sendRate;
+}
+const api=(u,b)=>fetch(u,{method:'POST',headers:{'Content-Type':'application/json','Authorization':user?'Bearer '+user.token:''},body:JSON.stringify(b)});
+
+/* ===== ইভেন্ট ===== */
+$('bn').onclick=()=>{lang='bn';localStorage.setItem('nx_lang',lang);paint()};
+$('en').onclick=()=>{lang='en';localStorage.setItem('nx_lang',lang);paint()};
+$('dots').onclick=e=>{e.stopPropagation();$('menu').classList.toggle('on')};
+document.addEventListener('click',()=>$('menu').classList.remove('on'));
+$('mOrders').onclick=()=>{location.href='/orders.html'};
+const logout=()=>{user=null;stars=0;localStorage.removeItem('nx_user');paint()};
+$('mOut').onclick=logout;
+$('authBtn').onclick=()=>user?logout():openLogin();
+
+$('fbSend').onclick=async()=>{
+  const m=$('fb').value.trim(),x=t();if(!m){$('fbMsg').textContent=x.fbEmpty;return}
+  $('fbSend').disabled=true;
+  try{const r=await api('/api/feedback',{message:m,phone:user&&user.phone});if(!r.ok)throw 0;$('fb').value='';$('fbMsg').textContent=x.fbOk}
+  catch(e){$('fbMsg').textContent=x.fbErr}
+  $('fbSend').disabled=false};
+
+async function sendRate(){
+  const x=t(),c=$('rc').value.trim();if(!stars){$('rMsg').textContent=x.rNeed;return}
+  try{const r=await api('/api/reviews',{rating:stars,comment:c});if(!r.ok)throw 0;$('rc').value='';stars=0;drawRate();$('rMsg').textContent=x.rOk}
+  catch(e){$('rMsg').textContent=x.neterr}}
+
+/* ===== লগইন (মোবাইল + OTP) ===== */
+function openLogin(){step='phone';$('otp').hidden=true;$('ph').hidden=false;$('lMsg').textContent='';paint();document.body.classList.add('login')}
+$('shade').onclick=()=>document.body.classList.remove('login');
+$('lBtn').onclick=async()=>{
+  const x=t();$('lBtn').disabled=true;
+  try{
+    if(step==='phone'){
+      phone=$('ph').value.replace(/\D/g,'').replace(/^88/,'');
+      if(!/^01\d{9}$/.test(phone)){$('lMsg').textContent=x.badPh;return}
+      const r=await api('/api/auth/otp',{phone});if(!r.ok)throw 0;
+      step='otp';$('otp').hidden=false;$('ph').hidden=true;$('lMsg').textContent=x.otpSent;paint();
+    }else{
+      const r=await api('/api/auth/verify',{phone,code:$('otp').value.trim()});
+      if(r.status===400||r.status===401){$('lMsg').textContent=x.otpBad;return}
+      if(!r.ok)throw 0;
+      user=await r.json();localStorage.setItem('nx_user',JSON.stringify(user));
+      document.body.classList.remove('login');paint();
+    }
+  }catch(e){$('lMsg').textContent=x.neterr}
+  finally{$('lBtn').disabled=false}
+};
+
+/* WhatsApp লিংক অ্যাডমিন সেটিং থেকে আসে */
+fetch('/api/store').then(r=>r.json()).then(s=>{const w=(s.contact||[]).find(c=>/whatsapp/i.test(c.t));if(w)$('wa').href=w.u}).catch(()=>{});
+paint();
+</script>
+</body>
+</html>
