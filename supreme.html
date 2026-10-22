@@ -3,140 +3,83 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Supreme Access - Neweix</title>
+  <title>Supreme Login - Neweix</title>
   <style>
-    /* ================= ফ্রন্টএন্ড ডিজাইন ================= */
-    body { font-family: system-ui, -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #1b1913; margin: 0; color: #f3f1ec; }
+    body { font-family: system-ui, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #1b1913; margin: 0; color: #fff; }
     .box { background: #26231c; padding: 30px 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 85%; max-width: 340px; border: 1px solid #37332a; }
-    h2 { text-align: center; color: #fff; margin-top: 0; margin-bottom: 25px; font-size: 24px; letter-spacing: 1px; }
-    .crown { text-align: center; font-size: 40px; margin-bottom: 10px; }
-    input { width: 100%; padding: 14px; margin: 8px 0; background: #1b1913; border: 1px solid #37332a; color: #fff; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; transition: 0.2s; }
+    h2 { text-align: center; color: #4cc59a; margin-bottom: 20px; font-size: 22px; }
+    input { width: 100%; padding: 12px; margin: 8px 0; background: #1b1913; border: 1px solid #37332a; color: #fff; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; }
     input:focus { border-color: #4cc59a; }
-    button { width: 100%; padding: 14px; background: #4cc59a; color: #111; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-top: 15px; font-weight: bold; transition: 0.2s; }
-    button:hover { background: #3ba87f; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    #msg { text-align: center; margin-top: 15px; font-size: 14px; font-weight: 500; min-height: 20px; }
-    .error { color: #ef7b6e; }
-    .success { color: #4cc59a; }
-    
-    /* ড্যাশবোর্ড ডিজাইন */
+    button { width: 100%; padding: 14px; background: #4cc59a; color: #111; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+    button:disabled { opacity: 0.5; }
+    #msg { text-align: center; margin-top: 15px; font-size: 14px; color: #ef7b6e; min-height: 20px; }
     #dashboard { display: none; text-align: center; }
-    .role-badge { background: #4cc59a; color: #111; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 15px; }
-    .btn-logout { background: #c0392b; color: #fff; margin-top: 20px; }
-    .btn-logout:hover { background: #a93226; }
+    .badge { background: #4cc59a; color: #111; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
   </style>
 </head>
 <body>
 
-  <!-- ১. লগইন স্ক্রিন -->
   <div class="box" id="login-box">
-    <div class="crown">👑</div>
-    <h2>Supreme Access</h2>
-    
-    <input id="email" type="email" placeholder="ইমেইল অ্যাড্রেস" required autocomplete="username">
-    <input id="pass" type="password" placeholder="পাসওয়ার্ড" required autocomplete="current-password">
-    
-    <button id="btn" onclick="login()">লগইন করুন</button>
+    <h2>👑 Supreme Access</h2>
+    <input id="email" type="email" placeholder="Supreme Email">
+    <input id="pass" type="password" placeholder="Password">
+    <button id="btn" onclick="handleLogin()">লগইন করুন</button>
     <div id="msg"></div>
   </div>
 
-  <!-- ২. ড্যাশবোর্ড (লগইন সফল হলে দেখাবে) -->
   <div class="box" id="dashboard">
     <h2>Supreme Panel</h2>
-    <span class="role-badge">SUPREME ADMIN</span>
-    <p style="color:#a39e92; font-size:14px;">আপনি সফলভাবে লগইন করেছেন।<br>এখান থেকে আপনি পুরো সিস্টেম কন্ট্রোল করতে পারবেন।</p>
-    
-    <button class="btn-logout" onclick="logout()">লগআউট</button>
+    <span class="badge">SUPREME ADMIN</span>
+    <p style="color:#a39e92; font-size:14px; margin-top:15px;">আপনি সফলভাবে লগইন করেছেন!</p>
+    <button onclick="handleLogout()" style="background:#c0392b; color:#fff; margin-top:20px;">লগআউট</button>
   </div>
 
-  <script type="module">
-    /* ================= ব্যাকএন্ড লজিক (Supabase) ================= */
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-    
-    // আপনার Supabase কানেকশন
-    const supabase = createClient(
-      'https://grhybvlhdnzlopwbaqun.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyaHlidmxoZG56bG9wd2JhcXVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NDYyMjEsImV4cCI6MjEwODIyMjIyMX0.27nR0VFbxwVYQKb5A06BRwizp02CHAmoD9IRMwiJ0Ss'
-    );
-
-    // লগইন ফাংশন
-    window.login = async function() {
+  <script>
+    async function handleLogin() {
       const email = document.getElementById('email').value.trim();
       const pass = document.getElementById('pass').value;
       const msg = document.getElementById('msg');
       const btn = document.getElementById('btn');
 
-      if(!email || !pass) { 
-        msg.innerText = 'ইমেইল ও পাসওয়ার্ড দিন'; 
-        msg.className = 'error'; 
-        return; 
-      }
+      if(!email || !pass) { msg.innerText = 'ইমেইল ও পাসওয়ার্ড দিন'; return; }
 
-      btn.disabled = true;
       msg.innerText = 'যাচাই করা হচ্ছে...';
-      msg.className = '';
+      msg.style.color = '#fff';
+      btn.disabled = true;
 
-      // ১. Supabase Auth দিয়ে পাসওয়ার্ড চেক
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: pass
-      });
+      try {
+        // এখানে আপনার ব্যাকএন্ড API-তে কল করা হচ্ছে
+        const res = await fetch('/api/supreme-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password: pass })
+        });
 
-      if (error) {
-        msg.innerText = 'ভুল ইমেইল বা পাসওয়ার্ড!';
-        msg.className = 'error';
-        btn.disabled = false;
-        return;
-      }
+        const data = await res.json();
 
-      // ২. ডাটাবেসে চেক করা সে আসলেই SUPREME কি না
-      const { data: adminData, error: adminError } = await supabase
-        .from('admins')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
-
-      // যদি সুপ্রিম না হয়, তবে তাকে ঢুকতে দেওয়া হবে না
-      if (adminError || adminData?.role !== 'supreme') {
-        await supabase.auth.signOut(); // আবার লগআউট করে দেওয়া
-        msg.innerText = 'আপনি সুপ্রিম নন! অ্যাক্সেস ডিনাইড।';
-        msg.className = 'error';
-        btn.disabled = false;
-        return;
-      }
-
-      // ৩. সব ঠিক থাকলে ড্যাশবোর্ড দেখানো
-      showDashboard();
-    }
-
-    // লগআউট ফাংশন
-    window.logout = async function() {
-      await supabase.auth.signOut();
-      document.getElementById('login-box').style.display = 'block';
-      document.getElementById('dashboard').style.display = 'none';
-      document.getElementById('msg').innerText = '';
-      document.getElementById('pass').value = '';
-      document.getElementById('btn').disabled = false;
-    }
-
-    // ড্যাশবোর্ড দেখানোর ফাংশন
-    function showDashboard() {
-      document.getElementById('login-box').style.display = 'none';
-      document.getElementById('dashboard').style.display = 'block';
-    }
-
-    // পেজ লোড হলে চেক করা সে আগে থেকেই লগইন করা আছে কি না (সেশন)
-    async function checkSession() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: adminData } = await supabase.from('admins').select('role').eq('id', session.user.id).single();
-        if (adminData?.role === 'supreme') {
-          showDashboard();
+        if (!res.ok) {
+          msg.innerText = data.error || 'লগইন ব্যর্থ হয়েছে';
+          msg.style.color = '#ef7b6e';
+          btn.disabled = false;
+          return;
         }
+
+        // সফল হলে টোকেন সেভ করে ড্যাশবোর্ড দেখাও
+        localStorage.setItem('supreme_token', data.token);
+        document.getElementById('login-box').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+
+      } catch (err) {
+        msg.innerText = 'সার্ভারের সাথে সংযোগ হচ্ছে না!';
+        msg.style.color = '#ef7b6e';
+        btn.disabled = false;
       }
     }
-    
-    checkSession();
+
+    function handleLogout() {
+      localStorage.removeItem('supreme_token');
+      location.reload();
+    }
   </script>
 </body>
 </html>
