@@ -1,105 +1,179 @@
-neweix24@gmail <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Neweix Admin Login</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background: #f4f5f7;
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    .card {
-      width: 100%;
-      max-width: 380px;
-      padding: 28px;
-      background: white;
-      border-radius: 14px;
-      box-shadow: 0 8px 30px #00000012;
-    }
-    h1 { margin-top: 0; text-align: center; }
-    p { color: #666; text-align: center; }
-    label { display: block; margin-top: 18px; }
-    input {
-      width: 100%;
-      padding: 12px;
-      margin-top: 7px;
-      border: 1px solid #ccc;
-      border-radius: 7px;
-      font-size: 16px;
-    }
-    button {
-      width: 100%;
-      padding: 13px;
-      margin-top: 22px;
-      background: #111;
-      color: white;
-      border: 0;
-      border-radius: 7px;
-      font-size: 16px;
-    }
-    #message { margin-top: 16px; font-size: 14px; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Neweix Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#232019;--bg:#fff;--soft:#f1f0ee;--line:#e3e1dc;--acc:#1f7a5a;--mut:#6f6b63;--red:#c0392b}
+@media (prefers-color-scheme:dark){:root{--ink:#f3f1ec;--bg:#1b1913;--soft:#26231c;--line:#37332a;--acc:#4cc59a;--mut:#a39e92;--red:#ef7b6e}}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'Hind Siliguri',system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+#bar{flex:none;display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line)}
+#bar button{width:34px;height:34px;display:grid;place-items:center}
+#ttl{font-weight:600;font-size:17px;flex:1}
+#main{flex:1;overflow-y:auto;padding:12px}
+#nav{flex:none;display:flex;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0)}
+#nav button{flex:1;padding:11px 0;font-size:13px;color:var(--mut)}
+#nav .on{color:var(--acc);font-weight:600;box-shadow:inset 0 2px 0 var(--acc)}
+#drawer{position:fixed;top:0;bottom:0;left:0;width:78%;max-width:300px;background:var(--bg);z-index:41;transform:translateX(-100%);transition:transform .2s;padding:calc(16px + env(safe-area-inset-top,0)) 0 16px;border-right:1px solid var(--line)}
+.dr #drawer{transform:none}
+#drawer h3{padding:0 16px 12px;font-size:18px}
+#drawer button{display:block;width:100%;text-align:left;padding:13px 16px;font-size:16px}
+#drawer .on{background:var(--soft);color:var(--acc);font-weight:600}
+#shade{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:40}
+.dr #shade,.ed #shade{display:block}
+.btn{background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 16px;font-weight:500;font-size:14px}
+.btn.g{background:var(--acc);color:#fff}.btn.r{background:none;color:var(--red);border:1px solid var(--red)}
+.btn[disabled]{opacity:.5}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--line);font-size:14px}
+.row b{font-weight:500}.row small{display:block;color:var(--mut);font-size:12px}
+.tag{background:var(--soft);border-radius:8px;padding:3px 8px;font-size:12px;white-space:nowrap}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px}
+.card small{color:var(--mut);display:block}.card b{font-size:20px}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:90vh;overflow:auto;background:var(--bg);border-radius:16px 16px 0 0;z-index:42;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0));display:none}
+.ed .sheet{display:block}
+.sheet h2{font-size:17px;margin-bottom:10px}
+label{display:block;font-size:13px;color:var(--mut);margin:8px 0 3px}
+input,select,textarea{width:100%;border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:10px 12px;font-size:15px}
+input[type=checkbox]{width:20px;height:20px}
+textarea{min-height:80px}
+.acts{display:flex;gap:8px;margin-top:14px}.acts .btn{flex:1}
+#msg{font-size:13px;color:var(--acc);min-height:18px;margin-top:8px}
+#login{position:fixed;inset:0;background:var(--bg);z-index:60;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:24px}
+#login h1{font-size:24px}
+.empty{padding:40px 0;text-align:center;color:var(--mut)}
+</style>
 </head>
 <body>
-  <main class="card">
-    <h1>Neweix Admin</h1>
-    <p>অ্যাডমিন অ্যাকাউন্টে লগইন করুন</p>
+<div id="bar">
+  <button id="mBtn" aria-label="Menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+  <span id="ttl">Neweix Admin</span>
+  <button id="out" aria-label="লগআউট" title="লগআউট"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9"/></svg></button>
+</div>
+<main id="main"></main>
+<nav id="nav"></nav>
+<div id="shade"></div>
+<aside id="drawer"><h3>Neweix Admin</h3><div id="dMenu"></div></aside>
+<div class="sheet" id="sheet"></div>
 
-    <form id="loginForm">
-      <label for="username">Username</label>
-      <input id="username" name="username"
-        autocomplete="username" required>
+<div id="login">
+  <h1>Neweix Admin</h1>
+  <input id="pw" type="password" placeholder="অ্যাডমিন পাসওয়ার্ড" autocomplete="current-password">
+  <button class="btn g" id="lb" style="padding:12px">লগইন</button>
+  <div id="lm" style="color:var(--red);font-size:13px"></div>
+</div>
 
-      <label for="password">Password</label>
-      <input id="password" name="password"
-        type="password" autocomplete="current-password"
-        required>
+<script>
+const $=id=>document.getElementById(id);
+const bn=n=>String(n??0).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const money=n=>'৳'+bn(Math.round(+n||0));
+let tok=localStorage.getItem('nx_admin')||'', cur='analytics', cache={};
+const STATUS=['pending','confirmed','shipped','delivered','cancelled'];
 
-      <button type="submit">Login</button>
-      <div id="message" role="status"></div>
-    </form>
-  </main>
+/* ===== প্রতিটি বিভাগের ফর্ম ও লিস্ট এখানে ঠিক করা আছে ===== */
+const R={
+ categories:{t:'ক্যাটাগরি',f:[['name','নাম'],['sort','ক্রম','number'],['active','সক্রিয়','check']],h:r=>[r.name,'ক্রম '+bn(r.sort)]},
+ customers:{t:'কাস্টমার',ro:1,f:[['name','নাম'],['phone','মোবাইল'],['address','ঠিকানা'],['orders','মোট অর্ডার'],['joined','যোগ দিয়েছেন']],h:r=>[r.name||r.phone,r.phone]},
+ landing:{t:'ল্যান্ডিং পেজ',f:[['slug','লিংকের নাম (যেমন eid-offer)'],['title','শিরোনাম'],['banner','ব্যানার ছবির লিংক'],['body','বিবরণ','textarea'],['products','পণ্যের আইডি (কমা দিয়ে)'],['active','সক্রিয়','check']],h:r=>[r.title,'/p/'+r.slug]},
+ promos:{t:'প্রমো কোড',f:[['code','কোড'],['type','ধরন','select:percent|fixed'],['value','পরিমাণ','number'],['min','সর্বনিম্ন অর্ডার','number'],['limit','কতবার ব্যবহার যাবে','number'],['expires','মেয়াদ','date'],['active','সক্রিয়','check']],h:r=>[r.code,(r.type==='percent'?bn(r.value)+'%':money(r.value))]},
+ products:{t:'প্রোডাক্টস',f:[['name','নাম'],['price','দাম','number'],['old','আগের দাম','number'],['cat','ক্যাটাগরি','cat'],['stock','স্টক','number'],['img','ছবির লিংক'],['desc','বিবরণ','textarea'],['active','সক্রিয়','check']],h:r=>[r.name,money(r.price)+' · স্টক '+bn(r.stock)]},
+ orders:{t:'অর্ডারস',noNew:1,f:[['orderNo','অর্ডার নম্বর','ro'],['name','নাম','ro'],['phone','মোবাইল','ro'],['address','ঠিকানা','ro'],['itemsText','পণ্য','ro'],['total','মোট','ro'],['status','অবস্থা','select:'+STATUS.join('|')]],h:r=>[r.orderNo+' · '+r.name,money(r.total)+' · '+r.status]},
+ delivery:{t:'ডেলিভারি',noNew:1,f:[['orderNo','অর্ডার নম্বর','ro'],['address','ঠিকানা','ro'],['courier','কুরিয়ার'],['tracking','ট্র্যাকিং কোড'],['status','অবস্থা','select:'+STATUS.join('|')]],h:r=>[r.orderNo+' · '+(r.name||''),(r.courier||'কুরিয়ার ঠিক হয়নি')+' · '+r.status]}
+};
+const SET={
+ bullet:{t:'বুলেট লাইন',f:[['bullet','হোম পেজের উপরের লেখা'],['bulletOn','দেখানো হবে','check']]},
+ shop:{t:'ম্যানেজ শপ',f:[['shopName','দোকানের নাম'],['whatsapp','WhatsApp লিংক (https://wa.me/8801...)'],['email','ফিডব্যাক ইমেইল'],['facebook','Facebook লিংক'],['returnUrl','রিটার্ন পলিসি লিংক'],['privacyUrl','প্রাইভেসি পলিসি লিংক'],['deliveryFee','ডেলিভারি চার্জ','number'],['open','দোকান খোলা','check']]}
+};
+const DRAWER=[['categories'],['customers'],['analytics','এনালিটিক্স'],['landing'],['bullet'],['promos']];
+const TABS=[['products'],['orders'],['delivery'],['shop']];
+const name=k=>(R[k]||SET[k]||{}).t||'এনালিটিক্স';
 
-  <script>
-    const form = document.getElementById("loginForm");
-    const message = document.getElementById("message");
+/* ===== নেটওয়ার্ক ===== */
+async function call(path,method='GET',body){
+  const r=await fetch('/api/admin/'+path,{method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:body?JSON.stringify(body):undefined});
+  if(r.status===401){logout();throw new Error('auth')}
+  if(!r.ok)throw new Error('http');
+  return r.json();
+}
+function logout(){tok='';localStorage.removeItem('nx_admin');$('login').style.display='flex'}
+$('out').onclick=logout;
+$('lb').onclick=async()=>{
+  $('lm').textContent='';
+  try{const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})});
+    if(!r.ok){$('lm').textContent='পাসওয়ার্ড সঠিক নয়';return}
+    tok=(await r.json()).token;localStorage.setItem('nx_admin',tok);$('pw').value='';$('login').style.display='none';go(cur)}
+  catch(e){$('lm').textContent='সংযোগ হচ্ছে না, আবার চেষ্টা করুন'}
+};
 
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      message.textContent = "লগইন যাচাই হচ্ছে...";
+/* ===== নেভিগেশন ===== */
+function menus(){
+  $('dMenu').innerHTML=DRAWER.map(([k,n])=>`<button data-k="${k}" class="${k===cur?'on':''}">${n||name(k)}</button>`).join('');
+  $('nav').innerHTML=TABS.map(([k])=>`<button data-k="${k}" class="${k===cur?'on':''}">${name(k)}</button>`).join('');
+}
+async function go(k){
+  cur=k;document.body.classList.remove('dr');$('ttl').textContent=name(k);menus();
+  $('main').innerHTML='<p class="empty">লোড হচ্ছে…</p>';
+  try{
+    if(k==='analytics')return drawAnalytics(await call('analytics'));
+    if(SET[k])return drawSettings(k,await call('settings'));
+    const rows=await call(k);cache[k]=rows;
+    if(k==='categories')cache.cat=rows;
+    if(k==='products'&&!cache.cat)try{cache.cat=await call('categories')}catch(e){}
+    drawList(k,rows);
+  }catch(e){if(e.message!=='auth')$('main').innerHTML='<p class="empty">ডেটা আনা যায়নি। ব্যাকএন্ড চালু আছে কি না দেখুন।</p>'}
+}
+$('mBtn').onclick=()=>document.body.classList.add('dr');
+$('shade').onclick=()=>document.body.classList.remove('dr','ed');
+$('dMenu').onclick=$('nav').onclick=e=>{const b=e.target.closest('[data-k]');if(b)go(b.dataset.k)};
 
-      try {
-        const response = await fetch("/api/admin/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify({
-            username: form.username.value,
-            password: form.password.value
-          })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          message.textContent =
-            data.error || "লগইন করা যায়নি। আবার চেষ্টা করুন।";
-          return;
-        }
-
-        window.location.href = "/admin-dashboard.html";
-      } catch {
-        message.textContent =
-          "সংযোগে সমস্যা হয়েছে। আবার চেষ্টা করুন।";
-      }
-    });
-  </script>
+/* ===== লিস্ট ===== */
+function drawList(k,rows){
+  const c=R[k];
+  $('main').innerHTML=`<div class="top"><span style="color:var(--mut);font-size:13px">মোট ${bn(rows.length)} টি</span>${c.ro||c.noNew?'':'<button class="btn g" id="new">+ নতুন</button>'}</div>`+
+    (rows.length?rows.map((r,i)=>{const[a,b]=c.h(r);return`<div class="row" data-i="${i}"><div><b>${a??''}</b><small>${b??''}</small></div><span class="tag">খুলুন</span></div>`}).join(''):'<p class="empty">কিছু নেই</p>');
+  $('main').onclick=e=>{if(e.target.id==='new')return edit(k,{});const r=e.target.closest('[data-i]');if(r)edit(k,rows[r.dataset.i])};
+}
+/* ===== ফর্ম ===== */
+function edit(k,rec){
+  const c=R[k];
+  const fld=([key,lab,type])=>{
+    const v=rec[key]??'';
+    if(type==='check')return`<label><input type="checkbox" data-f="${key}" ${rec[key]===undefined||rec[key]?'checked':''}> ${lab}</label>`;
+    if(type==='textarea')return`<label>${lab}</label><textarea data-f="${key}">${v}</textarea>`;
+    if(type&&type.startsWith('select:'))return`<label>${lab}</label><select data-f="${key}">${type.slice(7).split('|').map(o=>`<option ${o==v?'selected':''}>${o}</option>`).join('')}</select>`;
+    if(type==='cat')return`<label>${lab}</label><select data-f="${key}"><option value="">—</option>${(cache.cat||[]).map(o=>`<option value="${o.id}" ${o.id==v?'selected':''}>${o.name}</option>`).join('')}</select>`;
+    return`<label>${lab}</label><input data-f="${key}" type="${type==='number'||type==='date'?type:'text'}" value="${String(v).replace(/"/g,'&quot;')}" ${c.ro||type==='ro'?'readonly':''}>`};
+  $('sheet').innerHTML=`<h2>${c.t}</h2>${c.f.map(fld).join('')}<div id="msg"></div><div class="acts">${c.ro?'':'<button class="btn g" id="sv">সংরক্ষণ</button>'}${rec.id&&!c.ro&&!c.noNew?'<button class="btn r" id="dl">মুছুন</button>':''}</div>`;
+  document.body.classList.add('ed');
+  const done=()=>{document.body.classList.remove('ed');go(k)};
+  if($('sv'))$('sv').onclick=async()=>{
+    const o={...rec};$('sheet').querySelectorAll('[data-f]').forEach(el=>{if(!el.readOnly)o[el.dataset.f]=el.type==='checkbox'?el.checked:el.type==='number'?+el.value:el.value});
+    $('sv').disabled=true;try{await call(k,'POST',o);done()}catch(e){$('msg').textContent='সংরক্ষণ হয়নি, আবার চেষ্টা করুন';$('sv').disabled=false}};
+  if($('dl'))$('dl').onclick=async()=>{if(!confirm('মুছে ফেলবেন?'))return;try{await call(k+'?id='+encodeURIComponent(rec.id),'DELETE');done()}catch(e){$('msg').textContent='মোছা যায়নি'}};
+}
+/* ===== সেটিং (বুলেট লাইন, ম্যানেজ শপ) ===== */
+function drawSettings(k,s){
+  const c=SET[k];
+  $('main').innerHTML=c.f.map(([key,lab,type])=>type==='check'?`<label><input type="checkbox" data-f="${key}" ${s[key]===undefined||s[key]?'checked':''}> ${lab}</label>`:`<label>${lab}</label><input data-f="${key}" type="${type||'text'}" value="${String(s[key]??'').replace(/"/g,'&quot;')}">`).join('')+'<div class="acts"><button class="btn g" id="ss">সংরক্ষণ</button></div><div id="msg"></div>';
+  $('ss').onclick=async()=>{
+    const o={};$('main').querySelectorAll('[data-f]').forEach(el=>o[el.dataset.f]=el.type==='checkbox'?el.checked:el.type==='number'?+el.value:el.value);
+    try{await call('settings','POST',o);$('msg').textContent='সংরক্ষিত হয়েছে'}catch(e){$('msg').textContent='সংরক্ষণ হয়নি, আবার চেষ্টা করুন'}};
+}
+/* ===== এনালিটিক্স ===== */
+function drawAnalytics(a){
+  const cards=[['আজকের অর্ডার',bn(a.today)],['আজকের বিক্রি',money(a.todaySales)],['মোট অর্ডার',bn(a.orders)],['মোট বিক্রি',money(a.revenue)],['মোট কাস্টমার',bn(a.customers)],['অপেক্ষমাণ অর্ডার',bn(a.pending)]];
+  $('main').innerHTML=`<div class="cards">${cards.map(([l,v])=>`<div class="card"><small>${l}</small><b>${v}</b></div>`).join('')}</div>`+
+   ((a.top||[]).length?`<h3 style="margin:18px 0 4px;font-size:15px">সবচেয়ে বেশি বিক্রি</h3>`+a.top.map(p=>`<div class="row"><b>${p.name}</b><span class="tag">${bn(p.qty)} টি</span></div>`).join(''):'');
+}
+if(tok){$('login').style.display='none';go(cur)}else menus();
+</script>
 </body>
 </html>
