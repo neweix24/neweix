@@ -48,7 +48,6 @@
       btn.disabled = true;
 
       try {
-        // এখানে আপনার ব্যাকএন্ড API-তে কল করা হচ্ছে
         const res = await fetch('/api/supreme-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -64,7 +63,6 @@
           return;
         }
 
-        // সফল হলে টোকেন সেভ করে ড্যাশবোর্ড দেখাও
         localStorage.setItem('supreme_token', data.token);
         document.getElementById('login-box').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
