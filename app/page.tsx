@@ -1,93 +1,67 @@
 const products = [
-  { id: 1, name: "Premium T-Shirt", price: 650, category: "Fashion" },
-  { id: 2, name: "Classic Watch", price: 1850, category: "Lifestyle" },
-  { id: 3, name: "Wireless Earbuds", price: 1450, category: "Electronics" },
-  { id: 4, name: "Everyday Backpack", price: 1250, category: "Accessories" },
+  { id: "p1", name: "প্রিমিয়াম ওয়্যারলেস ইয়ারবাড", price: 1490 },
+  { id: "p2", name: "মিনিমাল ডেস্ক ল্যাম্প", price: 1890 },
+  { id: "p3", name: "ডেইলি ব্যাকপ্যাক", price: 2290 },
 ];
 
-export default function Home() {
-  return (
-    <main className="min-h-screen bg-white text-slate-900">
-      <div className="bg-[#101d35] px-4 py-2 text-center text-sm text-white">
-        সারা বাংলাদেশে ডেলিভারি সুবিধা
-      </div>
+function formatPrice(price: number) {
+  return new Intl.NumberFormat("bn-BD", {
+    style: "currency",
+    currency: "BDT",
+    maximumFractionDigits: 0,
+  }).format(price);
+}
 
-      <header className="flex items-center justify-between border-b px-5 py-5">
-        <a href="/" className="text-2xl font-bold text-[#101d35]">
-          NEWEIX<span className="text-[#b99551]">.</span>
-        </a>
-        <a href="/cart" className="rounded-lg border px-4 py-2 text-sm">
-          কার্ট
-        </a>
+export default function HomePage() {
+  return (
+    <main>
+      <header className="topbar">
+        <a className="brand" href="/">neweix<span>.</span></a>
+        <nav>
+          <a href="#products">পণ্য</a>
+          <a href="/track-order">অর্ডার ট্র্যাক</a>
+          <a className="nav-button" href="/cart">কার্ট</a>
+        </nav>
       </header>
 
-      <section className="bg-[#f5f3ee] px-5 py-16 md:py-24">
-        <div className="mx-auto max-w-6xl">
-          <p className="mb-4 text-sm font-semibold tracking-widest text-[#9a783b]">
-            WELCOME TO NEWEIX
-          </p>
-
-          <h1 className="max-w-2xl text-4xl font-bold leading-tight text-[#101d35] md:text-6xl">
-            আপনার পছন্দের পণ্য,
-            <br />
-            এখন এক জায়গায়।
-          </h1>
-
-          <p className="mt-5 max-w-xl leading-7 text-slate-600">
-            সহজ কেনাকাটা, মানসম্মত পণ্য এবং সুবিধাজনক ডেলিভারি।
-          </p>
-
-          <a
-            href="#products"
-            className="mt-8 inline-block rounded-lg bg-[#101d35] px-7 py-3 font-semibold text-white"
-          >
-            কেনাকাটা শুরু করুন
-          </a>
-        </div>
+      <section className="hero">
+        <p className="eyebrow">NEWEIX STORE · BANGLADESH</p>
+        <h1>প্রতিদিনের পছন্দ,<br />
+          <span>আরও সহজে।</span>
+        </h1>
+        <p className="hero-copy">
+          আপনার প্রয়োজনীয় পণ্য বেছে নিন—সহজ ও স্বচ্ছ কেনাকাটার অভিজ্ঞতায়।
+        </p>
+        <a className="primary-button" href="#products">
+          পণ্য দেখুন ↗
+        </a>
       </section>
 
-      <section id="products" className="mx-auto max-w-6xl px-5 py-14">
-        <h2 className="mb-8 text-3xl font-bold text-[#101d35]">
-          জনপ্রিয় পণ্য
-        </h2>
+      <section id="products" className="products-section">
+        <p className="eyebrow">বাছাই করা পণ্য</p>
+        <h2>আপনার জন্য নির্বাচিত</h2>
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {products.map((product) => (
-            <article
-              key={product.id}
-              className="overflow-hidden rounded-xl border border-slate-200"
-            >
-              <div className="flex aspect-square items-center justify-center bg-[#f5f3ee] p-3">
-                <span className="text-sm text-slate-500">
-                  {product.category}
-                </span>
+        <div className="product-grid">
+          {products.map((product, index) => (
+            <article className="product-card" key={product.id}>
+              <div className={`product-art art-${index + 1}`}>
+                <span>0{index + 1}</span>
               </div>
-
-              <div className="p-4">
-                <h3 className="font-semibold">{product.name}</h3>
-                <p className="mt-2 font-bold text-[#101d35]">
-                  ৳{product.price.toLocaleString("en-BD")}
-                </p>
-                <button
-                  type="button"
-                  className="mt-4 w-full rounded-lg bg-[#101d35] px-3 py-2 text-sm text-white"
-                >
-                  বিস্তারিত দেখুন
-                </button>
+              <p className="product-label">NEWEIX COLLECTION</p>
+              <h3>{product.name}</h3>
+              <div className="product-bottom">
+                <strong>{formatPrice(product.price)}</strong>
+                <a href="/cart" aria-label="কার্টে যান">＋</a>
               </div>
             </article>
           ))}
         </div>
       </section>
 
-      <footer className="bg-[#101d35] px-5 py-8 text-center text-white">
-        <p className="text-xl font-bold">NEWEIX.</p>
-        <p className="mt-3 text-sm text-slate-300">
-          আপনার কেনাকাটার বিশ্বস্ত ঠিকানা।
-        </p>
-        <p className="mt-5 text-xs text-slate-400">
-          © {new Date().getFullYear()} Neweix
-        </p>
+      <footer>
+        <a className="brand" href="/">neweix<span>.</span></a>
+        <p>স্মার্ট কেনাকাটা, সহজ অভিজ্ঞতা।</p>
+        <small>© {new Date().getFullYear()} Neweix</small>
       </footer>
     </main>
   );
