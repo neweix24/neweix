@@ -1,68 +1,203 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="bn">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Neweix — premium, accessible gadgets and tech accessories in Bangladesh.">
-  <title>Neweix — Premium Tech & Accessories</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="shop.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Neweix</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#232019;--bg:#fff;--soft:#f1f0ee;--line:#e3e1dc;--acc:#1f7a5a;--mut:#6f6b63}
+@media (prefers-color-scheme:dark){:root{--ink:#f3f1ec;--bg:#1b1913;--soft:#26231c;--line:#37332a;--acc:#4cc59a;--mut:#a39e92}}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'Hind Siliguri',system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+/* স্থির অংশ: ১,২,৩ */
+#top{flex:none;padding-top:env(safe-area-inset-top,0)}
+#bullet{background:var(--ink);color:var(--bg);font-size:13px;text-align:center;padding:6px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bar{display:flex;justify-content:space-between;align-items:center;padding:8px 12px}
+#bar a,#bar button{display:flex;align-items:center;gap:6px;font-weight:500;font-size:15px;text-decoration:none;color:var(--ink);position:relative}
+#badge{position:absolute;top:-6px;right:-8px;background:var(--acc);color:#fff;border-radius:10px;font-size:11px;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 4px}
+#search{display:flex;gap:0;padding:0 12px 8px;position:relative}
+#q{flex:0 0 90%;border:1px solid var(--line);border-right:0;border-radius:10px 0 0 10px;background:var(--soft);color:var(--ink);padding:10px 12px;font:inherit;font-size:15px;min-width:0}
+#sbtn{flex:1;border:1px solid var(--line);border-radius:0 10px 10px 0;background:var(--ink);color:var(--bg);display:grid;place-items:center}
+#cats{display:none;position:absolute;left:12px;right:12px;top:48px;background:var(--bg);border:1px solid var(--line);border-radius:10px;max-height:50vh;overflow:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+#cats.on{display:block}
+#cats button{display:block;width:100%;text-align:left;padding:11px 14px;border-bottom:1px solid var(--line)}
+#cats button.sel{color:var(--acc);font-weight:600}
+/* স্ক্রলযোগ্য অংশ: ৪ */
+#body{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:4px 12px 0}
+#grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.p{border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.p .im{aspect-ratio:1;background:var(--soft) center/cover;display:grid;place-items:center;color:var(--mut);font-size:12px}
+.p .in{padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;flex:1}
+.p h3{font-size:14px;font-weight:500;line-height:1.35}
+.pr{font-weight:600}.pr s{color:var(--mut);font-weight:400;font-size:12px;margin-left:4px}
+.add{margin-top:auto;background:var(--acc);color:#fff;border-radius:8px;padding:7px;font-size:14px;font-weight:500}
+.add[disabled]{background:var(--soft);color:var(--mut)}
+#empty{padding:40px 0;text-align:center;color:var(--mut)}
+footer{margin:22px -12px 0;background:var(--ink);color:var(--bg);padding:22px 16px 18px;font-size:14px}
+footer h4{font-size:13px;opacity:.7;font-weight:500;margin:14px 0 6px}
+footer a{color:inherit;display:block;padding:3px 0;text-decoration:none}
+footer .logo{font-size:26px;font-weight:600;letter-spacing:.5px;margin:20px 0 6px}
+footer .cp{opacity:.65;font-size:12px}
+/* স্থির অংশ: ৫ */
+#nav{flex:none;display:flex;border-top:1px solid var(--line);background:var(--bg);padding-bottom:env(safe-area-inset-bottom,0)}
+#nav button{flex:1;padding:9px 0 8px;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--mut)}
+#nav button.on{color:var(--acc);font-weight:600}
+/* কার্ট */
+#shade{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:30}
+#cart{position:fixed;left:0;right:0;bottom:0;max-height:88vh;background:var(--bg);border-radius:16px 16px 0 0;z-index:31;display:none;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0)}
+.open #shade{display:block}.open #cart{display:flex}
+#cart header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);font-weight:600}
+#items{overflow:auto;padding:4px 16px;flex:1}
+.it{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.it .t{flex:1;font-size:14px}.it .t small{display:block;color:var(--mut)}
+.qty{display:flex;align-items:center;gap:8px}
+.qty button{width:28px;height:28px;border-radius:8px;background:var(--soft);font-size:16px}
+#chk{padding:12px 16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+#chk input{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:8px;padding:9px 10px;font:inherit;font-size:14px;width:100%}
+.row{display:flex;gap:8px}.row input{flex:1}
+.row button{background:var(--ink);color:var(--bg);border-radius:8px;padding:0 14px;font-size:14px}
+.tot{display:flex;justify-content:space-between;font-size:14px}.tot.g{font-weight:600;font-size:16px}
+#order{background:var(--acc);color:#fff;border-radius:10px;padding:12px;font-weight:600}
+#msg{font-size:13px;color:var(--acc);min-height:16px}
+</style>
 </head>
 <body>
-  <div class="announcement">PREMIUM, ACCESSIBLE LUXURY · CASH ON DELIVERY ACROSS BANGLADESH</div>
-  <header class="site-header">
-    <a class="logo" href="#" aria-label="Neweix home">NEWEIX<span>.</span></a>
-    <nav><a href="#catalogue">Shop</a><a href="#about">Our standard</a><a href="#contact">Contact</a></nav>
-    <button class="cart-btn" id="cartBtn" aria-label="Cart">🛒 <b id="cartCount">0</b></button>
-    <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
-  </header>
+<div id="top">
+  <div id="bullet"></div>
+  <div id="bar">
+    <a href="/account.html" aria-label="My Account"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>My Account</a>
+    <button id="cartBtn" aria-label="কার্ট"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h2l2.5 11h10L20 7H6.5"/><circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>কার্ট<span id="badge" hidden>0</span></button>
+  </div>
+  <div id="search">
+    <input id="q" placeholder="পণ্য খুঁজুন" autocomplete="off">
+    <button id="sbtn" aria-label="খুঁজুন"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
+    <div id="cats"></div>
+  </div>
+</div>
 
-  <main>
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">Thoughtfully selected technology</p>
-        <h1>Upgrade your<br><em>everyday.</em></h1>
-        <p class="hero-description">Gadgets and tech accessories chosen to bring more ease, style and value to your everyday life.</p>
-        <a class="button" href="#catalogue">Shop now <span>↗</span></a>
-        <p class="hero-note">A new kind of everyday premium.</p>
-      </div>
-      <div class="hero-art" aria-label="Decorative abstract product display">
-        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
-        <div class="device device-one"><div class="device-screen"></div></div>
-        <div class="device device-two"><div class="device-dot"></div><div class="device-dot"></div></div>
-        <div class="art-label">NEWEIX / EST. 2026</div>
-      </div>
-    </section>
+<main id="body">
+  <div id="grid"></div>
+  <p id="empty" hidden>কোনো পণ্য পাওয়া যায়নি</p>
+  <footer>
+    <h4>নীতিমালা</h4><div id="fPol"></div>
+    <h4>যোগাযোগ</h4><div id="fCon"></div>
+    <h4>সোশ্যাল মিডিয়া</h4><div id="fSoc"></div>
+    <div class="logo">neweix</div>
+    <div class="cp">© <span id="yr"></span> Neweix</div>
+  </footer>
+</main>
 
-    <section class="catalogue section" id="catalogue">
-      <div class="section-heading"><div><p class="eyebrow">Our collection</p><h2>Shop Neweix</h2></div><p>Pay when your order arrives.</p></div>
-      <div id="products" class="product-grid">Loading…</div>
-    </section>
+<nav id="nav">
+  <button id="nHome" class="on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z"/></svg>Home</button>
+  <button id="nCat"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>ক্যাটাগরি</button>
+</nav>
 
-    <section class="brand-story" id="about">
-      <p class="eyebrow">The Neweix standard</p><h2>Premium feel.<br><em>Thoughtful value.</em></h2>
-      <p>Neweix is built for customers in Bangladesh who want thoughtfully selected gadgets and accessories without unnecessary complexity: a considered shopping experience, clear product information and value you can feel.</p>
-      <span class="story-signature">NEWEIX<span>.</span></span>
-    </section>
-    <section class="contact section" id="contact"><p class="eyebrow">Stay connected</p><h2>Questions about an order?</h2><p>Write to us and we will reply as soon as we can.</p><a class="button button-light" href="mailto:hello@neweix.com">Contact Neweix <span>↗</span></a></section>
-  </main>
-  <footer><a class="logo footer-logo" href="#">NEWEIX<span>.</span></a><span>© <span id="year"></span> Neweix. All rights reserved.</span><span>Bangladesh · Premium, accessible luxury</span></footer>
+<div id="shade"></div>
+<section id="cart">
+  <header><span>আপনার কার্ট</span><button id="cClose" aria-label="বন্ধ">✕</button></header>
+  <div id="items"></div>
+  <div id="chk">
+    <div class="row"><input id="promo" placeholder="প্রমো কোড"><button id="pBtn">প্রয়োগ</button></div>
+    <div class="tot"><span>সাবটোটাল</span><span id="sub">৳0</span></div>
+    <div class="tot"><span>ছাড়</span><span id="dis">৳0</span></div>
+    <div class="tot g"><span>মোট</span><span id="tot">৳0</span></div>
+    <input id="cn" placeholder="আপনার নাম">
+    <input id="cp" placeholder="মোবাইল নম্বর" inputmode="tel">
+    <input id="ca" placeholder="সম্পূর্ণ ঠিকানা">
+    <div id="msg"></div>
+    <button id="order">অর্ডার করুন</button>
+  </div>
+</section>
 
-  <aside id="cart" aria-label="Shopping cart">
-    <button id="closeCart" class="x" aria-label="Close cart">✕</button>
-    <h2>আপনার কার্ট</h2>
-    <div id="cartItems"></div>
-    <p id="cartTotal"></p>
-    <form id="orderForm" hidden>
-      <input name="name" placeholder="আপনার নাম" required minlength="2" maxlength="100">
-      <input name="phone" placeholder="মোবাইল (01XXXXXXXXX)" required inputmode="numeric" pattern="01[3-9][0-9]{8}">
-      <div class="otp"><button type="button" id="otpBtn" class="btn">OTP পাঠান</button><input name="otp" placeholder="৬ সংখ্যার OTP" required inputmode="numeric" maxlength="6" pattern="[0-9]{6}"></div>
-      <textarea name="address" placeholder="সম্পূর্ণ ঠিকানা" required minlength="10" maxlength="300"></textarea>
-      <select id="area" name="area"><option value="dhaka">ঢাকার ভেতরে</option><option value="other">ঢাকার বাইরে</option></select>
-      <button class="btn" type="submit">অর্ডার করুন (ক্যাশ অন ডেলিভারি)</button>
-    </form>
-    <p id="msg" role="status" aria-live="polite"></p>
-  </aside>
-  <script src="script.js"></script>
+<script>
+/* ===== সেটিং: ডেটা আসে /api/store থেকে (অ্যাডমিন প্যানেল নিয়ন্ত্রণ করবে) ===== */
+const DEMO={
+  bullet:"সারা বাংলাদেশে ক্যাশ অন ডেলিভারি",
+  categories:[{id:"c1",name:"বই"},{id:"c2",name:"স্টেশনারি"}],
+  products:[
+    {id:"p1",name:"English Grammar Guide",price:250,old:300,cat:"c1",img:"",stock:10},
+    {id:"p2",name:"Vocabulary Workbook",price:180,cat:"c1",img:"",stock:5},
+    {id:"p3",name:"নোটবুক সেট",price:120,cat:"c2",img:"",stock:0}
+  ],
+  policies:[{t:"রিটার্ন পলিসি",u:"/policy/return"},{t:"প্রাইভেসি পলিসি",u:"/policy/privacy"}],
+  contact:[{t:"WhatsApp",u:"https://wa.me/8801XXXXXXXXX"},{t:"ইমেইল",u:"mailto:info@neweix.com"}],
+  social:[{t:"Facebook",u:"https://facebook.com/"}]
+};
+const $=id=>document.getElementById(id), bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const money=n=>'৳'+bn(Math.round(n));
+let S=DEMO, cat='', term='', cart=[], promo=null;
+try{cart=JSON.parse(localStorage.getItem('nx_cart')||'[]')}catch(e){}
+const save=()=>{try{localStorage.setItem('nx_cart',JSON.stringify(cart))}catch(e){}};
+
+async function load(){
+  try{const r=await fetch('/api/store');if(r.ok)S=await r.json()}catch(e){}
+  $('bullet').textContent=S.bullet||'';$('bullet').hidden=!S.bullet;
+  $('yr').textContent=bn(new Date().getFullYear());
+  const link=a=>(a||[]).map(x=>`<a href="${x.u}" target="_blank" rel="noopener">${x.t}</a>`).join('');
+  $('fPol').innerHTML=link(S.policies);$('fCon').innerHTML=link(S.contact);$('fSoc').innerHTML=link(S.social);
+  drawCats();draw();drawCart();
+}
+function drawCats(){
+  $('cats').innerHTML=[{id:'',name:'সব ক্যাটাগরি'},...S.categories].map(c=>`<button data-c="${c.id}" class="${c.id===cat?'sel':''}">${c.name}</button>`).join('');
+}
+function draw(){
+  const t=term.trim().toLowerCase();
+  const list=S.products.filter(p=>(!cat||p.cat===cat)&&(!t||p.name.toLowerCase().includes(t)));
+  $('empty').hidden=list.length>0;
+  $('grid').innerHTML=list.map(p=>`<div class="p"><div class="im" ${p.img?`style="background-image:url('${p.img}')"`:''}>${p.img?'':'ছবি নেই'}</div><div class="in"><h3>${p.name}</h3><div class="pr">${money(p.price)}${p.old?`<s>${money(p.old)}</s>`:''}</div><button class="add" data-a="${p.id}" ${p.stock<=0?'disabled':''}>${p.stock<=0?'স্টক নেই':'কার্টে যোগ করুন'}</button></div></div>`).join('');
+}
+const prod=id=>S.products.find(p=>p.id===id);
+function calc(){
+  const sub=cart.reduce((s,i)=>s+(prod(i.id)?.price||0)*i.q,0);
+  let dis=0;
+  if(promo){dis=promo.type==='percent'?sub*promo.value/100:promo.value;dis=Math.min(dis,sub)}
+  return{sub,dis,tot:sub-dis};
+}
+function drawCart(){
+  cart=cart.filter(i=>prod(i.id));
+  const n=cart.reduce((s,i)=>s+i.q,0);
+  $('badge').hidden=!n;$('badge').textContent=bn(n);
+  $('items').innerHTML=cart.length?cart.map(i=>{const p=prod(i.id);return`<div class="it"><div class="t">${p.name}<small>${money(p.price)}</small></div><div class="qty"><button data-m="${i.id}">−</button><span>${bn(i.q)}</span><button data-p="${i.id}">+</button></div></div>`}).join(''):'<p style="padding:30px 0;text-align:center;color:var(--mut)">কার্ট খালি</p>';
+  const c=calc();$('sub').textContent=money(c.sub);$('dis').textContent='−'+money(c.dis);$('tot').textContent=money(c.tot);
+  $('order').disabled=!cart.length;save();
+}
+const setCart=o=>{$('cart').parentElement;document.body.classList.toggle('open',o)};
+
+/* ===== ইভেন্ট ===== */
+$('q').addEventListener('focus',()=>$('cats').classList.add('on'));
+$('q').addEventListener('input',e=>{term=e.target.value;draw()});
+$('sbtn').onclick=()=>{$('cats').classList.remove('on');$('q').blur();draw()};
+$('cats').onclick=e=>{const b=e.target.closest('button');if(!b)return;cat=b.dataset.c;drawCats();draw();$('cats').classList.remove('on');$('body').scrollTop=0};
+document.addEventListener('click',e=>{if(!e.target.closest('#search'))$('cats').classList.remove('on')});
+$('grid').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;const i=cart.find(x=>x.id===b.dataset.a);i?i.q++:cart.push({id:b.dataset.a,q:1});drawCart();b.textContent='যোগ হয়েছে ✓';setTimeout(draw,700)};
+$('items').onclick=e=>{const p=e.target.closest('[data-p]'),m=e.target.closest('[data-m]');
+  if(p)cart.find(x=>x.id===p.dataset.p).q++;
+  if(m){const i=cart.find(x=>x.id===m.dataset.m);if(--i.q<=0)cart=cart.filter(x=>x!==i)}
+  drawCart()};
+$('cartBtn').onclick=()=>setCart(true);$('cClose').onclick=$('shade').onclick=()=>setCart(false);
+$('nHome').onclick=()=>{cat='';term='';$('q').value='';drawCats();draw();$('body').scrollTo({top:0,behavior:'smooth'});mark('nHome')};
+$('nCat').onclick=()=>{$('cats').classList.add('on');mark('nCat')};
+const mark=id=>{$('nHome').classList.toggle('on',id==='nHome');$('nCat').classList.toggle('on',id==='nCat')};
+$('pBtn').onclick=async()=>{
+  const code=$('promo').value.trim();if(!code)return;
+  try{const r=await fetch('/api/promo?code='+encodeURIComponent(code));const d=await r.json();
+    if(r.ok&&d.valid){promo=d;$('msg').textContent='প্রমো কোড প্রয়োগ হয়েছে'}else{promo=null;$('msg').textContent='কোডটি সঠিক নয়'}}
+  catch(e){$('msg').textContent='এখন যাচাই করা যাচ্ছে না, আবার চেষ্টা করুন'}
+  drawCart()};
+$('order').onclick=async()=>{
+  const name=$('cn').value.trim(),phone=$('cp').value.trim(),addr=$('ca').value.trim();
+  if(!name||!/^01\d{9}$/.test(phone.replace(/\D/g,'').replace(/^88/,''))||!addr){$('msg').textContent='নাম, ১১ digit মোবাইল নম্বর ও ঠিকানা দিন';return}
+  $('order').disabled=true;$('msg').textContent='অর্ডার পাঠানো হচ্ছে…';
+  try{
+    const r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,phone,address:addr,items:cart,promo:promo&&promo.code})});
+    const d=await r.json();if(!r.ok)throw 0;
+    cart=[];promo=null;drawCart();$('msg').textContent='অর্ডার সম্পন্ন! অর্ডার নম্বর: '+(d.orderNo||'')
+  }catch(e){$('msg').textContent='অর্ডার হয়নি, আবার চেষ্টা করুন';$('order').disabled=false}
+};
+load();
+</script>
 </body>
 </html>
