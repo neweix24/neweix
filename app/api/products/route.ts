@@ -17,7 +17,7 @@ export async function GET() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!url || !key) {
-      console.error("Products API: Supabase bindings are missing.");
+      console.error("Supabase environment variables are missing.");
       return NextResponse.json(
         { error: "Supabase environment variables are missing." },
         { status: 500 }
