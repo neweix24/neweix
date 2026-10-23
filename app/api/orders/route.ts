@@ -155,26 +155,36 @@ export async function POST(request: Request) {
     });
   }
 
-  let url: string | undefined;
-  let serviceKey: string | undefined;
+  // প্রথমে process.env থেকে সেটিংস পড়ুন।
+  let url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  let serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+  // পাওয়া না গেলে Cloudflare runtime environment থেকে পড়ার চেষ্টা করুন।
   try {
     const { env } = getCloudflareContext();
-    const runtimeEnv = env as Record<string, string | undefined>;
+    const runtimeEnv = env as Record<string, unknown>;
 
-    url =
-      runtimeEnv.NEXT_PUBLIC_SUPABASE_URL ??
-      process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const runtimeUrl = runtimeEnv.NEXT_PUBLIC_SUPABASE_URL;
+    const runtimeServiceKey = runtimeEnv.SUPABASE_SERVICE_ROLE_KEY;
 
-    serviceKey =
-      runtimeEnv.SUPABASE_SERVICE_ROLE_KEY ??
-      process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (typeof runtimeUrl === "string" && runtimeUrl.length > 0) {
+      url = runtimeUrl;
+    }
+
+    if (
+      typeof runtimeServiceKey === "string" &&
+      runtimeServiceKey.length > 0
+    ) {
+      serviceKey = runtimeServiceKey;
+    }
   } catch (error) {
     console.error("Unable to read Cloudflare environment:", error);
   }
 
   if (!url || !serviceKey) {
-    console.error("Order API: Supabase environment variables are missing.");
+    console.error(
+      "Order API: Supabase environment variables are missing."
+    );
     return errorResponse("অর্ডার সার্ভার কনফিগার করা নেই।", 503);
   }
 
@@ -206,7 +216,10 @@ export async function POST(request: Request) {
 
     if (data == null) {
       console.error("Order API returned empty data.");
-      return errorResponse("অর্ডারের ফলাফল নিশ্চিত করা যায়নি।", 500);
+      return errorResponse(
+        "অর্ডারের ফলাফল নিশ্চিত করা যায়নি।",
+        500
+      );
     }
 
     return NextResponse.json(
@@ -218,6 +231,9 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error("Unexpected order API error:", error);
-    return errorResponse("সার্ভারে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।", 500);
+    return errorResponse(
+      "সার্ভারে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।",
+      500
+    );
   }
 }
