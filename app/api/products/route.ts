@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
@@ -20,7 +21,6 @@ export async function GET() {
 
     if (!url || !key) {
       console.error("Supabase environment variables are missing.");
-
       return NextResponse.json(
         { error: "Supabase environment variables are missing." },
         { status: 500 }
@@ -39,7 +39,6 @@ export async function GET() {
 
     if (error) {
       console.error("Products API error:", error.message);
-
       return NextResponse.json(
         { error: "পণ্য লোড করা যায়নি।" },
         { status: 500 }
@@ -49,7 +48,6 @@ export async function GET() {
     return NextResponse.json({ data: data ?? [] });
   } catch (error) {
     console.error("Products API runtime error:", error);
-
     return NextResponse.json(
       { error: "পণ্য লোড করা যায়নি।" },
       { status: 500 }
