@@ -21,6 +21,38 @@ function formatPrice(price: number) {
   }).format(price);
 }
 
+function addToCart(product: Product) {
+  if (product.stock < 1) {
+    alert("দুঃখিত, পণ্যটি স্টকে নেই।");
+    return;
+  }
+
+  try {
+    const saved = localStorage.getItem("neweix_cart");
+    const cart: { product_id: string; quantity: number }[] =
+      saved ? JSON.parse(saved) : [];
+
+    const existing = cart.find(
+      (item) => item.product_id === product.id
+    );
+
+    if (existing) {
+      if (existing.quantity >= product.stock) {
+        alert("স্টকে থাকা সর্বোচ্চ পরিমাণ ইতিমধ্যে কার্টে আছে।");
+        return;
+      }
+      existing.quantity += 1;
+    } else {
+      cart.push({ product_id: product.id, quantity: 1 });
+    }
+
+    localStorage.setItem("neweix_cart", JSON.stringify(cart));
+    window.location.href = "/cart";
+  } catch {
+    alert("কার্টে পণ্য যোগ করা যায়নি। আবার চেষ্টা করুন।");
+  }
+}
+
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +67,7 @@ export default function HomePage() {
         const result = await response.json();
 
         if (!response.ok) {
-          throw new Error(result.error || "পণ্য লোড করা যায়নি");
+          throw new Error("পণ্য লোড করা যায়নি");
         }
 
         if (!cancelled) {
@@ -43,17 +75,16 @@ export default function HomePage() {
         }
       } catch {
         if (!cancelled) {
-          setError("পণ্য লোড করা যায়নি। অনুগ্রহ করে পরে আবার চেষ্টা করুন।");
+          setError(
+            "পণ্য লোড করা যায়নি। পরে আবার চেষ্টা করুন।"
+          );
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
     loadProducts();
-
     return () => {
       cancelled = true;
     };
@@ -92,13 +123,9 @@ export default function HomePage() {
         <h2>আপনার জন্য নির্বাচিত</h2>
 
         {loading && <p>পণ্য লোড হচ্ছে...</p>}
-
-        {!loading && error && (
-          <p role="alert">{error}</p>
-        )}
-
+        {!loading && error && <p role="alert">{error}</p>}
         {!loading && !error && products.length === 0 && (
-          <p>এখনো কোনো সক্রিয় পণ্য নেই। শিগগিরই নতুন পণ্য আসছে।</p>
+          <p>এখনো কোনো সক্রিয় পণ্য নেই।</p>
         )}
 
         {!loading && !error && products.length > 0 && (
@@ -127,22 +154,21 @@ export default function HomePage() {
                 <p className="product-label">NEWEIX COLLECTION</p>
                 <h3>{product.name}</h3>
 
-                {product.description && (
-                  <p>{product.description}</p>
-                )}
+                {product.description && <p>{product.description}</p>}
 
                 <div className="product-bottom">
                   <strong>{formatPrice(Number(product.price))}</strong>
-                  <a href="/cart" aria-label={`${product.name} কিনুন`}>
+                  <button
+                    type="button"
+                    disabled={product.stock < 1}
+                    onClick={() => addToCart(product)}
+                    aria-label={`${product.name} কার্টে যোগ করুন`}
+                  >
                     ＋
-                  </a>
+                  </button>
                 </div>
 
-                <p>
-                  {product.stock > 0
-                    ? "স্টকে আছে"
-                    : "স্টক শেষ"}
-                </p>
+                <p>{product.stock > 0 ? "স্টকে আছে" : "স্টক শেষ"}</p>
               </article>
             ))}
           </div>
