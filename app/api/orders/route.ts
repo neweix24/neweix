@@ -40,7 +40,9 @@ export async function POST(request: Request) {
   for (const item of body.items) {
     if (
       typeof item.product_id !== "string" ||
-      !/^[0-9a-f-]{36}$/i.test(item.product_id) ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        item.product_id
+      ) ||
       !Number.isSafeInteger(item.quantity) ||
       item.quantity < 1 ||
       item.quantity > 100
@@ -54,7 +56,7 @@ export async function POST(request: Request) {
 
   if (body.payment_method && body.payment_method !== "cod") {
     return NextResponse.json(
-      { error: "এই মুহূর্তে শুধু ক্যাশ অন ডেলিভারি চালু আছে।" },
+      { error: "শুধু ক্যাশ অন ডেলিভারি আপাতত চালু আছে।" },
       { status: 400 }
     );
   }
