@@ -77,13 +77,18 @@ export default function CartPage() {
   }
 
   function changeQuantity(product: Product, change: number) {
-    const item = cart.find((entry) => entry.product_id === product.id);
+    const item = cart.find(
+      (entry) => entry.product_id === product.id
+    );
+
     if (!item) return;
 
     const nextQuantity = item.quantity + change;
 
     if (nextQuantity < 1) {
-      saveCart(cart.filter((entry) => entry.product_id !== product.id));
+      saveCart(
+        cart.filter((entry) => entry.product_id !== product.id)
+      );
       return;
     }
 
@@ -102,12 +107,18 @@ export default function CartPage() {
   }
 
   const items = cart.flatMap((entry) => {
-    const product = products.find((p) => p.id === entry.product_id);
-    return product ? [{ product, quantity: entry.quantity }] : [];
+    const product = products.find(
+      (p) => p.id === entry.product_id
+    );
+
+    return product
+      ? [{ product, quantity: entry.quantity }]
+      : [];
   });
 
   const total = items.reduce(
-    (sum, item) => sum + Number(item.product.price) * item.quantity,
+    (sum, item) =>
+      sum + Number(item.product.price) * item.quantity,
     0
   );
 
@@ -117,11 +128,17 @@ export default function CartPage() {
       <h1>আপনার কার্ট</h1>
 
       {loading && <p>কার্ট লোড হচ্ছে...</p>}
-      {!loading && error && <p role="alert">{error}</p>}
+
+      {!loading && error && (
+        <p role="alert">{error}</p>
+      )}
 
       {!loading && !error && items.length === 0 && (
         <>
-          <p className="hero-copy">আপনার কার্ট এখন খালি।</p>
+          <p className="hero-copy">
+            আপনার কার্ট এখন খালি।
+          </p>
+
           <a className="primary-button" href="/">
             পণ্য দেখুন ↗
           </a>
@@ -156,27 +173,48 @@ export default function CartPage() {
 
               <div style={{ flex: 1 }}>
                 <h3>{product.name}</h3>
-                <p>{formatPrice(Number(product.price))}</p>
-                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+
+                <p>
+                  {formatPrice(Number(product.price))}
+                </p>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
                   <button
                     type="button"
-                    onClick={() => changeQuantity(product, -1)}
+                    onClick={() =>
+                      changeQuantity(product, -1)
+                    }
                   >
                     −
                   </button>
+
                   <span>{quantity}</span>
+
                   <button
                     type="button"
                     disabled={quantity >= product.stock}
-                    onClick={() => changeQuantity(product, 1)}
+                    onClick={() =>
+                      changeQuantity(product, 1)
+                    }
                   >
                     +
                   </button>
+
                   <button
                     type="button"
                     onClick={() =>
                       saveCart(
-                        cart.filter((entry) => entry.product_id !== product.id)
+                        cart.filter(
+                          (entry) =>
+                            entry.product_id !== product.id
+                        )
                       )
                     }
                   >
@@ -186,21 +224,26 @@ export default function CartPage() {
               </div>
 
               <strong>
-                {formatPrice(Number(product.price) * quantity)}
+                {formatPrice(
+                  Number(product.price) * quantity
+                )}
               </strong>
             </article>
           ))}
 
           <h2>মোট: {formatPrice(total)}</h2>
-          <p>ডেলিভারি চার্জ চেকআউটের সময় নির্ধারণ করা হবে।</p>
-          <button
-            type="button"
-            onClick={() =>
-              alert("চেকআউট এখনো সম্পূর্ণভাবে চালু করা হয়নি।")
-            }
+
+          <p>
+            ডেলিভারি চার্জ চেকআউটের সময় নিশ্চিত করা হবে।
+          </p>
+
+          <a
+            className="primary-button"
+            href="/checkout"
           >
-            অর্ডার করতে এগিয়ে যান
-          </button>
+            অর্ডার করতে এগিয়ে যান →
+          </a>
+
           <p>
             <a href="/">আরও পণ্য দেখুন</a>
           </p>
