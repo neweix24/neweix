@@ -112,7 +112,11 @@ export async function POST(request: Request) {
 
     const { env } = await getCloudflareContext();
 
-    const secret = env.SUPABASE_SERVICE_ROLE_KEY;
+    const secret = (
+  env as typeof env & {
+    SUPABASE_SERVICE_ROLE_KEY?: string;
+  }
+).SUPABASE_SERVICE_ROLE_KEY;
     const supabaseUrl =
       process.env.NEXT_PUBLIC_SUPABASE_URL;
 
