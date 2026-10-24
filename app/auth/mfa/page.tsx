@@ -145,9 +145,13 @@ export default function MfaPage() {
         </button>
       </form>
 
-      <p className="hero-copy">
-        <a href="/auth/logout">লগইন থেকে বের হতে চাইলে এখানে চাপুন</a>
-      </p>
+      <
+<form action="/auth/logout" method="post">
+  <button className="primary-button" type="submit">
+    লগআউট করুন
+  </button>
+</form>
+
     </main>
   );
 }
