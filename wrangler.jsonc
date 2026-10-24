@@ -6,6 +6,12 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "keep_vars": true,
+  "secrets": {
+    "required": [
+      "SUPABASE_SERVICE_ROLE_KEY"
+    ]
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
