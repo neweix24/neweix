@@ -11,14 +11,29 @@ type Product = {
   id: string;
   name: string;
   price: number;
+  stock?: number;
 };
 
-function formatPrice(price: number) {
+function formatPrice(price: number): string {
   return new Intl.NumberFormat("bn-BD", {
     style: "currency",
     currency: "BDT",
     maximumFractionDigits: 0,
   }).format(price);
+}
+
+function isValidCartItem(item: unknown): item is CartItem {
+  if (!item || typeof item !== "object") return false;
+
+  const value = item as Record<string, unknown>;
+
+  return (
+    typeof value.product_id === "string" &&
+    value.product_id.length > 0 &&
+    Number.isSafeInteger(value.quantity) &&
+    Number(value.quantity) > 0 &&
+    Number(value.quantity) <= 100
+  );
 }
 
 export default function CheckoutPage() {
@@ -30,50 +45,111 @@ export default function CheckoutPage() {
   const [orderNumber, setOrderNumber] = useState("");
 
   useEffect(() => {
-    async function load() {
+    let cancelled = false;
+
+    async function loadCheckout() {
       try {
         const saved = localStorage.getItem("neweix_cart");
         const parsed: unknown = saved ? JSON.parse(saved) : [];
 
-        if (!Array.isArray(parsed) || parsed.length === 0) {
-          setCart([]);
-          return;
+        if (!Array.isArray(parsed)) {
+          throw new Error("কার্টের তথ্য সঠিক নয়।");
         }
 
-        const valid = parsed.filter(
-          (item): item is CartItem =>
-            item !== null &&
-            typeof item === "object" &&
-            typeof item.product_id === "string" &&
-            Number.isSafeInteger(item.quantity) &&
-            item.quantity > 0 &&
-            item.quantity <= 100
+        const validItems = parsed.filter(isValidCartItem);
+
+        // একই পণ্য একাধিকবার থাকলে পরিমাণ একত্র করা।
+        const merged = new Map<string, number>();
+
+        for (const item of validItems) {
+          const quantity =
+            (merged.get(item.product_id) ?? 0) + item.quantity;
+
+          if (quantity > 100) {
+            throw new Error("একটি পণ্যের সর্বোচ্চ পরিমাণ ১০০টি।");
+          }
+
+          merged.set(item.product_id, quantity);
+        }
+
+        const normalizedCart = Array.from(
+          merged,
+          ([product_id, quantity]) => ({ product_id, quantity })
         );
 
-        setCart(valid);
+        if (!cancelled) {
+          setCart(normalizedCart);
+        }
 
-        const response = await fetch("/api/products");
-        const result = await response.json();
+        if (normalizedCart.length === 0) return;
 
-        if (!response.ok) throw new Error();
-        setProducts(result.data ?? []);
-      } catch {
-        setError("কার্ট বা পণ্যের তথ্য লোড হয়নি। আবার চেষ্টা করুন।");
+        const response = await fetch("/api/products", {
+          cache: "no-store",
+        });
+
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok || !Array.isArray(result?.data)) {
+          throw new Error("পণ্যের তথ্য লোড করা যায়নি।");
+        }
+
+        if (!cancelled) {
+          setProducts(result.data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "কার্ট লোড করা যায়নি। আবার চেষ্টা করুন।"
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
-    load();
+    loadCheckout();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const total = cart.reduce((sum, item) => {
+  const cartDetails = cart.map((item) => {
     const product = products.find((p) => p.id === item.product_id);
-    return sum + (product ? Number(product.price) * item.quantity : 0);
-  }, 0);
+
+    return {
+      ...item,
+      product,
+      lineTotal: product ? Number(product.price) * item.quantity : 0,
+    };
+  });
+
+  const total = cartDetails.reduce(
+    (sum, item) => sum + item.lineTotal,
+    0
+  );
+
+  const missingProducts = cartDetails.some(
+    (item) =>
+      !item.product ||
+      !Number.isFinite(Number(item.product.price)) ||
+      Number(item.product.price) < 0
+  );
+
+  const stockIssues = cartDetails.filter(
+    (item) =>
+      item.product &&
+      typeof item.product.stock === "number" &&
+      item.quantity > item.product.stock
+  );
 
   async function submitOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (submitting) return;
+
     setError("");
 
     if (cart.length === 0) {
@@ -81,33 +157,86 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (missingProducts) {
+      setError(
+        "কার্টের কিছু পণ্য আর পাওয়া যাচ্ছে না। কার্ট যাচাই করে আবার চেষ্টা করুন।"
+      );
+      return;
+    }
+
+    if (stockIssues.length > 0) {
+      setError(
+        "কিছু পণ্যের মজুত পর্যাপ্ত নয়। কার্টে পণ্যের পরিমাণ কমিয়ে আবার চেষ্টা করুন।"
+      );
+      return;
+    }
+
+    const form = event.currentTarget;
+
+    if (!form.reportValidity()) return;
+
     setSubmitting(true);
-    const form = new FormData(event.currentTarget);
+
+    const formData = new FormData(form);
+
+    const payload = {
+      customer_name: String(
+        formData.get("customer_name") ?? ""
+      ).trim(),
+      customer_phone: String(
+        formData.get("customer_phone") ?? ""
+      ).trim(),
+      customer_email: String(
+        formData.get("customer_email") ?? ""
+      ).trim(),
+      shipping_address: String(
+        formData.get("shipping_address") ?? ""
+      ).trim(),
+      shipping_city: String(
+        formData.get("shipping_city") ?? ""
+      ).trim(),
+      payment_method: "cod",
+      items: cart.map(({ product_id, quantity }) => ({
+        product_id,
+        quantity,
+      })),
+    };
 
     try {
       const response = await fetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer_name: String(form.get("customer_name") ?? "").trim(),
-          customer_phone: String(form.get("customer_phone") ?? "").trim(),
-          customer_email: String(form.get("customer_email") ?? "").trim(),
-          shipping_address: String(form.get("shipping_address") ?? "").trim(),
-          shipping_city: String(form.get("shipping_city") ?? "").trim(),
-          payment_method: "cod",
-          items: cart,
-        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
-      const result = await response.json();
+      const result = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(result.error || "অর্ডার তৈরি করা যায়নি।");
+        throw new Error(
+          result?.error ||
+            result?.message ||
+            "অর্ডার তৈরি করা যায়নি। পণ্যের মজুত যাচাই করে আবার চেষ্টা করুন।"
+        );
       }
 
+      const createdOrderNumber =
+        result?.order?.order_number;
+
+      if (
+        typeof createdOrderNumber !== "string" ||
+        !createdOrderNumber
+      ) {
+        throw new Error(
+          "অর্ডারের উত্তর পাওয়া গেছে, কিন্তু অর্ডার নম্বর নিশ্চিত করা যায়নি। অর্ডারটি তৈরি হয়েছে কি না যাচাই করুন।"
+        );
+      }
+
+      // অর্ডার সফলভাবে নিশ্চিত হওয়ার পরেই কার্ট মুছুন।
       localStorage.removeItem("neweix_cart");
       setCart([]);
-      setOrderNumber(result.order?.order_number || "");
+      setOrderNumber(createdOrderNumber);
     } catch (err) {
       setError(
         err instanceof Error
@@ -120,18 +249,37 @@ export default function CheckoutPage() {
   }
 
   if (loading) {
-    return <main className="hero"><p>লোড হচ্ছে...</p></main>;
+    return (
+      <main className="hero" aria-live="polite">
+        <p>চেকআউট লোড হচ্ছে...</p>
+      </main>
+    );
   }
 
   if (orderNumber) {
     return (
-      <main className="hero">
-        <p className="eyebrow">ORDER RECEIVED</p>
+      <main
+        className="hero"
+        style={{ maxWidth: 720, margin: "0 auto", padding: 24 }}
+      >
+        <p className="eyebrow">ORDER CONFIRMED</p>
         <h1>অর্ডার গ্রহণ করা হয়েছে!</h1>
         <p>আপনার অর্ডার নম্বর:</p>
-        <h2>{orderNumber}</h2>
-        <p>অর্ডারের নম্বরটি সংরক্ষণ করুন।</p>
-        <a className="primary-button" href="/">হোমপেজে ফিরুন</a>
+
+        <h2 style={{ overflowWrap: "anywhere" }}>
+          {orderNumber}
+        </h2>
+
+        <p>
+          অর্ডার নম্বরটি সংরক্ষণ করুন। প্রয়োজনে এটি দেখিয়ে
+          আপনার অর্ডার সম্পর্কে জানতে পারবেন।
+        </p>
+
+        <p>পেমেন্ট: ক্যাশ অন ডেলিভারি (COD)</p>
+
+        <a className="primary-button" href="/">
+          হোমপেজে ফিরুন
+        </a>
       </main>
     );
   }
@@ -140,41 +288,129 @@ export default function CheckoutPage() {
     return (
       <main className="hero">
         <h1>আপনার কার্ট খালি</h1>
-        <a className="primary-button" href="/">পণ্য দেখুন</a>
+        {error && <p role="alert">{error}</p>}
+
+        <a className="primary-button" href="/">
+          পণ্য দেখুন
+        </a>
       </main>
     );
   }
 
   return (
-    <main className="hero">
+    <main
+      className="hero"
+      style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}
+    >
       <p className="eyebrow">CHECKOUT · CASH ON DELIVERY</p>
       <h1>অর্ডার সম্পন্ন করুন</h1>
-      <p>পণ্যের আনুমানিক মোট: {formatPrice(total)}</p>
-      <p>ডেলিভারি চার্জ পরে নিশ্চিত করা হবে।</p>
+      <p>আপনার ডেলিভারি তথ্য পূরণ করুন।</p>
+
+      <section
+        aria-labelledby="order-summary-heading"
+        style={{
+          maxWidth: 620,
+          margin: "24px auto",
+          padding: 20,
+          border: "1px solid #ddd",
+          borderRadius: 12,
+          textAlign: "left",
+        }}
+      >
+        <h2 id="order-summary-heading">অর্ডারের বিবরণ</h2>
+
+        {cartDetails.map((item) => (
+          <div
+            key={item.product_id}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 16,
+              padding: "12px 0",
+              borderBottom: "1px solid #eee",
+            }}
+          >
+            <div>
+              <p style={{ margin: 0 }}>
+                {item.product?.name ?? "অজানা পণ্য"}
+              </p>
+              <small>
+                {formatPrice(Number(item.product?.price ?? 0))} ×{" "}
+                {item.quantity}
+              </small>
+            </div>
+
+            <strong style={{ whiteSpace: "nowrap" }}>
+              {formatPrice(item.lineTotal)}
+            </strong>
+          </div>
+        ))}
+
+        <p>
+          <strong>পণ্যের মোট মূল্য: {formatPrice(total)}</strong>
+        </p>
+
+        <p>ডেলিভারি চার্জ: অর্ডার নিশ্চিত করার সময় জানানো হবে।</p>
+        <p>পেমেন্ট পদ্ধতি: ক্যাশ অন ডেলিভারি (COD)</p>
+
+        {missingProducts && (
+          <p role="alert">
+            কার্টের কিছু পণ্যের তথ্য পাওয়া যায়নি। অর্ডার দেওয়ার
+            আগে কার্ট যাচাই করুন।
+          </p>
+        )}
+
+        {stockIssues.length > 0 && (
+          <p role="alert">
+            কার্টে থাকা কিছু পণ্যের চাহিদা বর্তমান মজুতের চেয়ে বেশি।
+          </p>
+        )}
+      </section>
 
       <form
         onSubmit={submitOrder}
-        style={{ maxWidth: 520, margin: "24px auto", textAlign: "left" }}
+        style={{
+          maxWidth: 620,
+          margin: "24px auto",
+          textAlign: "left",
+        }}
       >
         <label htmlFor="customer_name">আপনার নাম *</label>
         <input
           id="customer_name"
           name="customer_name"
           required
+          minLength={2}
           maxLength={120}
           autoComplete="name"
-          style={{ display: "block", width: "100%", margin: "8px 0 16px", padding: 12 }}
+          disabled={submitting}
+          style={{
+            display: "block",
+            width: "100%",
+            boxSizing: "border-box",
+            margin: "8px 0 16px",
+            padding: 12,
+          }}
         />
 
         <label htmlFor="customer_phone">মোবাইল নম্বর *</label>
         <input
           id="customer_phone"
           name="customer_phone"
-          required
           type="tel"
+          required
+          minLength={7}
           maxLength={30}
           autoComplete="tel"
-          style={{ display: "block", width: "100%", margin: "8px 0 16px", padding: 12 }}
+          disabled={submitting}
+          placeholder="আপনার যোগাযোগের নম্বর"
+          style={{
+            display: "block",
+            width: "100%",
+            boxSizing: "border-box",
+            margin: "8px 0 16px",
+            padding: 12,
+          }}
         />
 
         <label htmlFor="customer_email">ইমেইল (ঐচ্ছিক)</label>
@@ -184,44 +420,103 @@ export default function CheckoutPage() {
           type="email"
           maxLength={254}
           autoComplete="email"
-          style={{ display: "block", width: "100%", margin: "8px 0 16px", padding: 12 }}
+          disabled={submitting}
+          style={{
+            display: "block",
+            width: "100%",
+            boxSizing: "border-box",
+            margin: "8px 0 16px",
+            padding: 12,
+          }}
         />
 
-        <label htmlFor="shipping_address">সম্পূর্ণ ডেলিভারি ঠিকানা *</label>
+        <label htmlFor="shipping_address">
+          সম্পূর্ণ ডেলিভারি ঠিকানা *
+        </label>
         <textarea
           id="shipping_address"
           name="shipping_address"
           required
+          minLength={5}
           maxLength={1000}
           autoComplete="street-address"
-          rows={3}
-          style={{ display: "block", width: "100%", margin: "8px 0 16px", padding: 12 }}
+          rows={4}
+          disabled={submitting}
+          placeholder="বাড়ি/ফ্ল্যাট, রোড, এলাকা ইত্যাদি লিখুন"
+          style={{
+            display: "block",
+            width: "100%",
+            boxSizing: "border-box",
+            margin: "8px 0 16px",
+            padding: 12,
+            resize: "vertical",
+          }}
         />
 
-        <label htmlFor="shipping_city">শহর / জেলা</label>
+        <label htmlFor="shipping_city">শহর / জেলা *</label>
         <input
           id="shipping_city"
           name="shipping_city"
+          required
+          minLength={2}
           maxLength={120}
           autoComplete="address-level2"
-          style={{ display: "block", width: "100%", margin: "8px 0 16px", padding: 12 }}
+          disabled={submitting}
+          placeholder="যেমন: ঢাকা"
+          style={{
+            display: "block",
+            width: "100%",
+            boxSizing: "border-box",
+            margin: "8px 0 16px",
+            padding: 12,
+          }}
         />
 
-        <p><strong>পেমেন্ট:</strong> ক্যাশ অন ডেলিভারি (COD)</p>
+        <p>
+          <strong>পেমেন্ট:</strong> ক্যাশ অন ডেলিভারি (COD)
+        </p>
+
+        <p>
+          <strong>সর্বমোট পণ্যমূল্য: {formatPrice(total)}</strong>
+        </p>
 
         {error && (
-          <p role="alert" style={{ color: "crimson" }}>{error}</p>
+          <p
+            role="alert"
+            style={{
+              color: "crimson",
+              padding: 12,
+              border: "1px solid currentColor",
+              borderRadius: 8,
+            }}
+          >
+            {error}
+          </p>
         )}
 
         <button
           type="submit"
-          disabled={submitting || cart.length === 0}
+          disabled={
+            submitting ||
+            cart.length === 0 ||
+            missingProducts ||
+            stockIssues.length > 0
+          }
+          style={{
+            width: "100%",
+            padding: 14,
+            cursor: submitting ? "wait" : "pointer",
+          }}
         >
-          {submitting ? "অর্ডার জমা হচ্ছে..." : "অর্ডার নিশ্চিত করুন"}
+          {submitting
+            ? "অর্ডার জমা হচ্ছে..."
+            : `অর্ডার নিশ্চিত করুন · ${formatPrice(total)}`}
         </button>
       </form>
 
-      <p><a href="/cart">← কার্টে ফিরে যান</a></p>
+      <p>
+        <a href="/cart">← কার্টে ফিরে যান</a>
+      </p>
     </main>
   );
 }
