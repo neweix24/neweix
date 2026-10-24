@@ -143,14 +143,15 @@ export default function MfaPage() {
         >
           {busy ? "যাচাই হচ্ছে…" : "কোড যাচাই করুন"}
         </button>
+      
       </form>
 
-      <
-<form action="/auth/logout" method="post">
-  <button className="primary-button" type="submit">
-    লগআউট করুন
-  </button>
-</form>
+      <form action="/auth/logout" method="post">
+        <button className="primary-button" type="submit">
+          লগআউট করুন
+        </button>
+      </form>
+
 
     </main>
   );
