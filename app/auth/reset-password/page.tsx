@@ -27,7 +27,7 @@ export default function ResetPasswordPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
+      const supabase = createBrowserSupabaseClient();
 
       const { data: sessionData, error: sessionError } =
         await supabase.auth.getSession();
