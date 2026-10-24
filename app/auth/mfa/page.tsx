@@ -146,7 +146,7 @@ export default function MfaPage() {
       
       </form>
 
-      <form action="/auth/logout" method="post">
+            <form action="/auth/logout" method="post">
         <button className="primary-button" type="submit">
           লগআউট করুন
         </button>
