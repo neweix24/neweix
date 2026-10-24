@@ -8,6 +8,7 @@ export default async function SupremePage() {
   return (
     <main className="hero">
       <p className="eyebrow">NEWEIX · SUPREME PANEL</p>
+
       <h1>Supreme Dashboard</h1>
 
       <p className="hero-copy">
@@ -22,6 +23,12 @@ export default async function SupremePage() {
         নিরাপত্তার কারণে এই পেজে প্রবেশের জন্য Supreme অনুমতি এবং
         প্রয়োজনীয় MFA যাচাইকরণ বাধ্যতামূলক।
       </p>
+
+      <form action="/auth/logout" method="post">
+        <button className="primary-button" type="submit">
+          লগআউট করুন
+        </button>
+      </form>
     </main>
   );
 }
