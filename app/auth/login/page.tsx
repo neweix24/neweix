@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,19 +47,49 @@ export default function LoginPage() {
         return;
       }
 
-      const next = searchParams.get("next");
+      if (profile.role === "supreme") {
+        const { data: factors, error: factorsError } =
+          await supabase.auth.mfa.listFactors();
 
-      if (next?.startsWith("/") && !next.startsWith("//")) {
-        router.replace(next);
-      } else if (profile.role === "supreme") {
-        router.replace("/supreme");
+        if (factorsError) {
+          setMessage("MFA তথ্য যাচাই করা যায়নি। আবার চেষ্টা করুন।");
+          return;
+        }
+
+        const verifiedFactor = factors.totp.find(
+          (factor) => factor.status === "verified"
+        );
+
+        if (!verifiedFactor) {
+          router.replace("/auth/mfa/setup");
+        } else {
+          const { data: assurance, error: assuranceError } =
+            await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+          if (assuranceError) {
+            setMessage("নিরাপত্তা যাচাই করা যায়নি। আবার চেষ্টা করুন।");
+            return;
+          }
+
+          if (assurance.currentLevel !== "aal2") {
+            router.replace("/auth/mfa");
+          } else {
+            router.replace("/supreme");
+          }
+        }
       } else {
-        router.replace("/admin");
+        const next = new URLSearchParams(window.location.search).get("next");
+
+        if (next?.startsWith("/") && !next.startsWith("//")) {
+          router.replace(next);
+        } else {
+          router.replace("/admin");
+        }
       }
 
       router.refresh();
     } catch {
-      setMessage("লগইন করা যায়নি। পরিবেশ ভেরিয়েবল পরীক্ষা করুন।");
+      setMessage("লগইন করা যায়নি। Supabase পরিবেশ ভেরিয়েবল পরীক্ষা করুন।");
     } finally {
       setBusy(false);
     }
@@ -70,7 +99,6 @@ export default function LoginPage() {
     <main className="hero">
       <p className="eyebrow">NEWEIX · STAFF ACCESS</p>
       <h1>নিরাপদ লগইন</h1>
-
       <p className="hero-copy">
         শুধু সক্রিয় ও অনুমোদিত স্টাফ অ্যাকাউন্ট প্রবেশ করতে পারবে।
       </p>
@@ -96,13 +124,9 @@ export default function LoginPage() {
           onChange={(event) => setPassword(event.target.value)}
         />
 
-        {message && <p role="alert" className="hero-copy">{message}</p>}
+        {message && <p role="alert">{message}</p>}
 
-        <button
-          className="primary-button"
-          type="submit"
-          disabled={busy}
-        >
+        <button className="primary-button" type="submit" disabled={busy}>
           {busy ? "লগইন হচ্ছে…" : "লগইন করুন"}
         </button>
       </form>
