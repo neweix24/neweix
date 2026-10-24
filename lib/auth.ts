@@ -30,9 +30,27 @@ export async function getCurrentStaff() {
     return null;
   }
 
+  // Supreme must complete MFA before accessing protected pages.
+  if (profile.role === "supreme") {
+    const { data: assurance, error: assuranceError } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+    if (
+      assuranceError ||
+      assurance.currentLevel !== "aal2"
+    ) {
+      return {
+        user,
+        role: profile.role as StaffRole,
+        mfaRequired: true,
+      };
+    }
+  }
+
   return {
     user,
     role: profile.role as StaffRole,
+    mfaRequired: false,
   };
 }
 
@@ -43,6 +61,10 @@ export async function requireStaff(
 
   if (!staff) {
     redirect("/auth/login?next=/admin");
+  }
+
+  if (staff.mfaRequired) {
+    redirect("/auth/mfa");
   }
 
   if (!allowedRoles.includes(staff.role)) {
