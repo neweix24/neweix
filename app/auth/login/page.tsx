@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
@@ -123,6 +124,12 @@ export default function LoginPage() {
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
+
+        <p>
+          <Link href="/auth/forgot-password">
+            পাসওয়ার্ড ভুলে গেছ?
+          </Link>
+        </p>
 
         {message && <p role="alert">{message}</p>}
 
