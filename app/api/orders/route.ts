@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
@@ -21,7 +20,11 @@ function errorResponse(message: string, status: number) {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value)
+  );
 }
 
 function cleanString(value: unknown): string | null {
@@ -35,9 +38,11 @@ export async function POST(request: Request) {
 
   if (contentLength !== null) {
     const size = Number(contentLength);
+
     if (!Number.isSafeInteger(size) || size < 0) {
       return errorResponse("অনুরোধের আকার সঠিক নয়।", 400);
     }
+
     if (size > MAX_BODY_BYTES) {
       return errorResponse("অনুরোধের আকার অনেক বড়।", 413);
     }
@@ -47,9 +52,11 @@ export async function POST(request: Request) {
 
   try {
     const text = await request.text();
+
     if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) {
       return errorResponse("অনুরোধের আকার অনেক বড়।", 413);
     }
+
     rawBody = JSON.parse(text);
   } catch {
     return errorResponse("সঠিক JSON তথ্য পাঠান।", 400);
@@ -90,7 +97,10 @@ export async function POST(request: Request) {
   }
 
   if (shippingAddress.length > 1000) {
-    return errorResponse("ঠিকানা সর্বোচ্চ ১০০০ অক্ষরের হতে পারবে।", 400);
+    return errorResponse(
+      "ঠিকানা সর্বোচ্চ ১০০০ অক্ষরের হতে পারবে।",
+      400
+    );
   }
 
   if (customerEmail !== null) {
@@ -107,7 +117,9 @@ export async function POST(request: Request) {
   }
 
   const paymentMethodValue =
-    rawBody.payment_method == null ? "cod" : rawBody.payment_method;
+    rawBody.payment_method == null
+      ? "cod"
+      : rawBody.payment_method;
 
   if (
     typeof paymentMethodValue !== "string" ||
@@ -165,16 +177,23 @@ export async function POST(request: Request) {
       (quantity as number) < 1 ||
       (quantity as number) > MAX_QUANTITY
     ) {
-      return errorResponse("পণ্যের ID অথবা পরিমাণ সঠিক নয়।", 400);
+      return errorResponse(
+        "পণ্যের ID অথবা পরিমাণ সঠিক নয়।",
+        400
+      );
     }
 
     const normalizedId = id.toLowerCase();
 
     if (seen.has(normalizedId)) {
-      return errorResponse("একই পণ্য একাধিকবার পাঠানো যাবে না।", 400);
+      return errorResponse(
+        "একই পণ্য একাধিকবার পাঠানো যাবে না।",
+        400
+      );
     }
 
     seen.add(normalizedId);
+
     items.push({
       product_id: normalizedId,
       quantity: quantity as number,
@@ -218,6 +237,24 @@ export async function POST(request: Request) {
       },
     });
 
+    // Expire eligible unpaid mobile-payment orders and restore stock.
+    // The SQL function must be created in Supabase before this is enabled.
+    const { error: expiryError } = await supabase.rpc(
+      "expire_unpaid_mobile_orders"
+    );
+
+    if (expiryError) {
+      console.error(
+        "Unpaid order expiry failed:",
+        expiryError.message
+      );
+
+      return errorResponse(
+        "অর্ডার সিস্টেম সাময়িকভাবে ব্যস্ত। একটু পরে আবার চেষ্টা করুন।",
+        503
+      );
+    }
+
     const { data, error } = await supabase.rpc(
       "create_order_with_payment",
       {
@@ -234,66 +271,63 @@ export async function POST(request: Request) {
     );
 
     if (error) {
-  const errorMessage = String(error.message ?? "").toLowerCase();
-  const errorCode = String(error.code ?? "");
+      const errorMessage = String(error.message ?? "").toLowerCase();
+      const errorCode = String(error.code ?? "");
 
-  console.error("Order creation failed:", {
-    code: errorCode,
-    message: error.message,
-  });
+      console.error("Order creation failed:", {
+        code: errorCode,
+        message: error.message,
+      });
 
-  // Duplicate payment transaction ID.
-  if (
-    errorCode === "23505" &&
-    (
-      errorMessage.includes("payment_transaction_id") ||
-      errorMessage.includes("orders_payment_transaction_id_normalized_uidx")
-    )
-  ) {
-    return errorResponse(
-      "এই Transaction ID আগে ব্যবহার করা হয়েছে। পেমেন্টের তথ্য যাচাই করে সঠিক Transaction ID দিন।",
-      409
-    );
-  }
+      if (
+        errorCode === "23505" &&
+        (
+          errorMessage.includes("payment_transaction_id") ||
+          errorMessage.includes(
+            "orders_payment_transaction_id_normalized_uidx"
+          )
+        )
+      ) {
+        return errorResponse(
+          "এই Transaction ID আগে ব্যবহার করা হয়েছে। পেমেন্টের তথ্য যাচাই করে সঠিক Transaction ID দিন।",
+          409
+        );
+      }
 
-  // Invalid or duplicate payment details.
-  if (
-    errorMessage.includes("transaction") ||
-    errorMessage.includes("payment")
-  ) {
-    return errorResponse(
-      "পেমেন্টের তথ্য গ্রহণ করা যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।",
-      400
-    );
-  }
+      if (
+        errorMessage.includes("transaction") ||
+        errorMessage.includes("payment")
+      ) {
+        return errorResponse(
+          "পেমেন্টের তথ্য গ্রহণ করা যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।",
+          400
+        );
+      }
 
-  // Product unavailable or insufficient stock.
-  if (
-    errorMessage.includes("stock") ||
-    errorMessage.includes("product unavailable") ||
-    errorMessage.includes("insufficient")
-  ) {
-    return errorResponse(
-      "পণ্যটি এখন পর্যাপ্ত মজুতে নেই অথবা অর্ডার করা যাচ্ছে না। কার্ট আপডেট করে আবার চেষ্টা করুন।",
-      409
-    );
-  }
-
-  return errorResponse(
-    "অর্ডার তৈরি করা যায়নি। তথ্য ও পণ্যের মজুত যাচাই করে আবার চেষ্টা করুন।",
-    400
-  );
-}
+      if (
+        errorMessage.includes("stock") ||
+        errorMessage.includes("product unavailable") ||
+        errorMessage.includes("insufficient")
+      ) {
+        return errorResponse(
+          "পণ্যটি এখন পর্যাপ্ত মজুতে নেই অথবা অর্ডার করা যাচ্ছে না। কার্ট আপডেট করে আবার চেষ্টা করুন।",
+          409
+        );
+      }
 
       return errorResponse(
-        "অর্ডার তৈরি করা যায়নি। পণ্যের স্টক ও তথ্য যাচাই করুন।",
+        "অর্ডার তৈরি করা যায়নি। তথ্য ও পণ্যের মজুত যাচাই করে আবার চেষ্টা করুন।",
         400
       );
     }
 
     if (!data || typeof data !== "object") {
       console.error("Order API returned empty or invalid data.");
-      return errorResponse("অর্ডারের ফলাফল নিশ্চিত করা যায়নি।", 500);
+
+      return errorResponse(
+        "অর্ডারের ফলাফল নিশ্চিত করা যায়নি।",
+        500
+      );
     }
 
     return NextResponse.json(
@@ -308,6 +342,10 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error("Unexpected order API error:", error);
-    return errorResponse("সার্ভারে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।", 500);
+
+    return errorResponse(
+      "সার্ভারে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।",
+      500
+    );
   }
 }
