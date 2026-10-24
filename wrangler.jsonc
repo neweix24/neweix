@@ -7,6 +7,11 @@
     "nodejs_compat"
   ],
   "keep_vars": true,
+  "vars": {
+    "PAYMENT_BKASH_NUMBER": "01606368005",
+    "PAYMENT_NAGAD_NUMBER": "01606368005",
+    "PAYMENT_ROCKET_NUMBER": "01606368005"
+  },
   "secrets": {
     "required": [
       "SUPABASE_SERVICE_ROLE_KEY"
