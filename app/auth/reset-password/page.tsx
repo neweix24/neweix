@@ -1,18 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+
 export default function ResetPasswordPage() {
   const router = useRouter();
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [success, setSuccess] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setMessage("");
+    setSuccess(false);
 
     if (password.length < 8) {
       setMessage("পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।");
@@ -24,17 +29,17 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    setLoading(true);
+    setBusy(true);
 
     try {
       const supabase = createBrowserSupabaseClient();
 
-      const { data: sessionData, error: sessionError } =
+      const { data, error: sessionError } =
         await supabase.auth.getSession();
 
-      if (sessionError || !sessionData.session) {
+      if (sessionError || !data.session) {
         setMessage(
-          "রিসেট লিংকটি অবৈধ বা মেয়াদ শেষ হয়েছে। নতুন রিসেট লিংক নাও।"
+          "রিসেট লিংকটি মেয়াদোত্তীর্ণ বা অবৈধ। নতুন রিসেট লিংক নাও।"
         );
         return;
       }
@@ -42,58 +47,70 @@ export default function ResetPasswordPage() {
       const { error } = await supabase.auth.updateUser({ password });
 
       if (error) {
-        setMessage(error.message);
+        setMessage(
+          "পাসওয়ার্ড পরিবর্তন হয়নি। রিসেট লিংকটি আবার যাচাই করো।"
+        );
         return;
       }
 
-      setMessage("পাসওয়ার্ড পরিবর্তন হয়েছে। এখন লগইন করো।");
-
-      setTimeout(() => {
-        router.replace("/auth/login");
-      }, 1500);
+      setSuccess(true);
+      setMessage("পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে। এখন লগইন করো।");
     } catch {
-      setMessage("সমস্যা হয়েছে। আবার চেষ্টা করো।");
+      setMessage("সমস্যা হয়েছে। নতুন রিসেট লিংক নিয়ে আবার চেষ্টা করো।");
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   }
 
   return (
-    <main className="auth-container">
-      <section className="auth-card">
-        <h1>নতুন পাসওয়ার্ড সেট করো</h1>
-        <p>নতুন পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।</p>
+    <main className="hero">
+      <p className="eyebrow">NEWEIX · ACCOUNT RECOVERY</p>
+      <h1>নতুন পাসওয়ার্ড সেট করো</h1>
+      <p className="hero-copy">
+        নতুন পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।
+      </p>
 
-        <form onSubmit={handleSubmit}>
-          <label htmlFor="password">নতুন পাসওয়ার্ড</label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={8}
-            required
-          />
+      <form className="track-form" onSubmit={handleSubmit}>
+        <label htmlFor="password">নতুন পাসওয়ার্ড</label>
+        <input
+          id="password"
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          required
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
 
-          <label htmlFor="confirmPassword">পাসওয়ার্ড আবার লেখো</label>
-          <input
-            id="confirmPassword"
-            type="password"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            minLength={8}
-            required
-          />
+        <label htmlFor="confirmPassword">আবার পাসওয়ার্ড লেখো</label>
+        <input
+          id="confirmPassword"
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          required
+          value={confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
+        />
 
-          {message && <p role="status">{message}</p>}
+        {message && (
+          <p role={success ? "status" : "alert"}>{message}</p>
+        )}
 
-          <button type="submit" disabled={loading}>
-            {loading ? "অপেক্ষা করো..." : "পাসওয়ার্ড পরিবর্তন করো"}
+        {success ? (
+          <Link className="primary-button" href="/auth/login">
+            লগইন পেজে যাও
+          </Link>
+        ) : (
+          <button className="primary-button" type="submit" disabled={busy}>
+            {busy ? "পরিবর্তন হচ্ছে..." : "পাসওয়ার্ড পরিবর্তন করো"}
           </button>
-        </form>
-      </section>
+        )}
+      </form>
+
+      <p className="hero-copy">
+        <Link href="/auth/login">লগইন পেজে ফিরে যাও</Link>
+      </p>
     </main>
   );
 }
