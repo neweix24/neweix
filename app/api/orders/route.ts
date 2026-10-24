@@ -234,17 +234,56 @@ export async function POST(request: Request) {
     );
 
     if (error) {
-      console.error("Order creation failed:", error.message);
+  const errorMessage = String(error.message ?? "").toLowerCase();
+  const errorCode = String(error.code ?? "");
 
-      if (
-        error.message?.toLowerCase().includes("transaction") ||
-        error.message?.toLowerCase().includes("payment")
-      ) {
-        return errorResponse(
-          "পেমেন্টের তথ্য গ্রহণ করা যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।",
-          400
-        );
-      }
+  console.error("Order creation failed:", {
+    code: errorCode,
+    message: error.message,
+  });
+
+  // Duplicate payment transaction ID.
+  if (
+    errorCode === "23505" &&
+    (
+      errorMessage.includes("payment_transaction_id") ||
+      errorMessage.includes("orders_payment_transaction_id_normalized_uidx")
+    )
+  ) {
+    return errorResponse(
+      "এই Transaction ID আগে ব্যবহার করা হয়েছে। পেমেন্টের তথ্য যাচাই করে সঠিক Transaction ID দিন।",
+      409
+    );
+  }
+
+  // Invalid or duplicate payment details.
+  if (
+    errorMessage.includes("transaction") ||
+    errorMessage.includes("payment")
+  ) {
+    return errorResponse(
+      "পেমেন্টের তথ্য গ্রহণ করা যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।",
+      400
+    );
+  }
+
+  // Product unavailable or insufficient stock.
+  if (
+    errorMessage.includes("stock") ||
+    errorMessage.includes("product unavailable") ||
+    errorMessage.includes("insufficient")
+  ) {
+    return errorResponse(
+      "পণ্যটি এখন পর্যাপ্ত মজুতে নেই অথবা অর্ডার করা যাচ্ছে না। কার্ট আপডেট করে আবার চেষ্টা করুন।",
+      409
+    );
+  }
+
+  return errorResponse(
+    "অর্ডার তৈরি করা যায়নি। তথ্য ও পণ্যের মজুত যাচাই করে আবার চেষ্টা করুন।",
+    400
+  );
+}
 
       return errorResponse(
         "অর্ডার তৈরি করা যায়নি। পণ্যের স্টক ও তথ্য যাচাই করুন।",
