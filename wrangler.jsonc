@@ -8,6 +8,7 @@
   ],
   "keep_vars": true,
   "vars": {
+"NEXT_PUBLIC_SUPABASE_URL": "https://grhybvlhdnzlopwbaqun.supabase.co",
     "PAYMENT_BKASH_NUMBER": "01606368005",
     "PAYMENT_NAGAD_NUMBER": "01606368005",
     "PAYMENT_ROCKET_NUMBER": "01606368005"
