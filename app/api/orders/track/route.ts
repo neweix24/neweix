@@ -11,6 +11,16 @@ const PHONE_PATTERN = /^[0-9+()\-\s]{7,30}$/;
 
 type RuntimeEnv = Record<string, unknown>;
 
+type TrackedOrder = {
+  order_number: string;
+  status: string;
+  payment_method: string;
+  payment_status: string;
+  created_at: string;
+  delivery_status: string;
+  delivery_tracking_code: string | null;
+};
+
 function readServerEnv(name: string): string | undefined {
   try {
     const { env } = getCloudflareContext();
@@ -20,7 +30,7 @@ function readServerEnv(name: string): string | undefined {
       return value.trim();
     }
   } catch {
-    // Local development uses process.env.
+    // Local development fallback.
   }
 
   const value = process.env[name];
@@ -40,6 +50,10 @@ function respond(message: string, status: number) {
       },
     }
   );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export async function POST(request: Request) {
@@ -62,10 +76,7 @@ export async function POST(request: Request) {
   try {
     const raw = await request.text();
 
-    if (
-      new TextEncoder().encode(raw).byteLength >
-      MAX_BODY_BYTES
-    ) {
+    if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) {
       return respond("অনুরোধের তথ্য অনেক বড়।", 413);
     }
 
@@ -74,24 +85,18 @@ export async function POST(request: Request) {
     return respond("সঠিক তথ্য পাঠান।", 400);
   }
 
-  if (
-    !body ||
-    typeof body !== "object" ||
-    Array.isArray(body)
-  ) {
+  if (!isRecord(body)) {
     return respond("অর্ডারের তথ্য সঠিক নয়।", 400);
   }
 
-  const data = body as Record<string, unknown>;
-
   const orderNumber =
-    typeof data.order_number === "string"
-      ? data.order_number.trim()
+    typeof body.order_number === "string"
+      ? body.order_number.trim()
       : "";
 
   const phone =
-    typeof data.phone === "string"
-      ? data.phone.trim()
+    typeof body.phone === "string"
+      ? body.phone.trim()
       : "";
 
   if (
@@ -99,26 +104,15 @@ export async function POST(request: Request) {
     !PHONE_PATTERN.test(phone) ||
     !/[0-9]/.test(phone)
   ) {
-    return respond(
-      "সঠিক অর্ডার নম্বর ও ফোন নম্বর দিন।",
-      400
-    );
+    return respond("সঠিক অর্ডার নম্বর ও ফোন নম্বর দিন।", 400);
   }
 
   const url = readServerEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const serviceRoleKey = readServerEnv(
-    "SUPABASE_SERVICE_ROLE_KEY"
-  );
+  const serviceRoleKey = readServerEnv("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!url || !serviceRoleKey) {
-    console.error(
-      "Order tracking: Supabase server environment is missing."
-    );
-
-    return respond(
-      "অর্ডার ট্র্যাকিং সাময়িকভাবে চালু নেই।",
-      503
-    );
+    console.error("Order tracking: Supabase server environment is missing.");
+    return respond("অর্ডার ট্র্যাকিং সাময়িকভাবে চালু নেই।", 503);
   }
 
   try {
@@ -129,7 +123,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const { data: order, error } = await supabase
+    const { data, error } = await supabase
       .from("orders")
       .select(
         [
@@ -147,23 +141,16 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (error) {
-      console.error(
-        "Order tracking lookup failed:",
-        error.message
-      );
-
-      return respond(
-        "অর্ডার খুঁজে পাওয়া যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।",
-        404
-      );
+      console.error("Order tracking lookup failed:", error.message);
+      return respond("অর্ডার খুঁজে পাওয়া যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।", 404);
     }
 
-    if (!order) {
-      return respond(
-        "অর্ডার খুঁজে পাওয়া যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।",
-        404
-      );
+    if (!data) {
+      return respond("অর্ডার খুঁজে পাওয়া যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।", 404);
     }
+
+    // Supabase query result-এর ধরন স্পষ্টভাবে নির্ধারণ করা হলো।
+    const order = data as unknown as TrackedOrder;
 
     return NextResponse.json(
       {
@@ -175,8 +162,7 @@ export async function POST(request: Request) {
           payment_status: order.payment_status,
           created_at: order.created_at,
           delivery_status: order.delivery_status,
-          delivery_tracking_code:
-            order.delivery_tracking_code,
+          delivery_tracking_code: order.delivery_tracking_code,
         },
       },
       {
@@ -186,14 +172,7 @@ export async function POST(request: Request) {
       }
     );
   } catch (error) {
-    console.error(
-      "Unexpected order tracking error:",
-      error
-    );
-
-    return respond(
-      "সার্ভারে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।",
-      500
-    );
+    console.error("Unexpected order tracking error:", error);
+    return respond("সার্ভারে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।", 500);
   }
 }
