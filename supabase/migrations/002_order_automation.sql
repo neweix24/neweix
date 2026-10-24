@@ -1,11 +1,9 @@
 -- Neweix order automation foundation
--- Review against the existing production schema before applying.
+-- Adds fields only. Does not create orders, change stock, or book couriers.
 
 begin;
 
 alter table public.orders
-  add column if not exists payment_method text not null default 'cod',
-  add column if not exists payment_status text not null default 'pending',
   add column if not exists payment_transaction_id text,
   add column if not exists payment_verified_at timestamptz,
   add column if not exists payment_verified_by uuid references auth.users(id),
@@ -22,10 +20,7 @@ alter table public.products
   add column if not exists weight_grams integer not null default 500;
 
 alter table public.orders
-  add constraint orders_payment_method_check
-  check (
-    payment_method in ('cod', 'bkash', 'nagad', 'rocket', 'card')
-  ) not valid;
+  drop constraint if exists orders_payment_status_check;
 
 alter table public.orders
   add constraint orders_payment_status_check
@@ -33,11 +28,23 @@ alter table public.orders
     payment_status in (
       'pending',
       'verification_pending',
-      'verified',
+      'paid',
       'failed',
       'refunded'
     )
   ) not valid;
+
+alter table public.orders
+  drop constraint if exists orders_payment_method_check;
+
+alter table public.orders
+  add constraint orders_payment_method_check
+  check (
+    payment_method in ('cod', 'bkash', 'nagad', 'rocket', 'card')
+  ) not valid;
+
+alter table public.orders
+  drop constraint if exists orders_delivery_status_check;
 
 alter table public.orders
   add constraint orders_delivery_status_check
@@ -55,6 +62,9 @@ alter table public.orders
       'failed'
     )
   ) not valid;
+
+alter table public.products
+  drop constraint if exists products_weight_grams_check;
 
 alter table public.products
   add constraint products_weight_grams_check
