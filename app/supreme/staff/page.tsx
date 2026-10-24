@@ -1,4 +1,5 @@
 import { requireStaff } from "@/lib/auth";
+import StaffCreateForm from "./StaffCreateForm";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -13,22 +14,18 @@ export default async function SupremeStaffPage() {
       <h1>Admin & Staff Management</h1>
 
       <p className="hero-copy">
-        এখানে Supreme অ্যাকাউন্ট থেকে Admin ও Staff
-        অ্যাকাউন্ট পরিচালনা করা যাবে।
+        এখানে নতুন Admin অথবা Staff অ্যাকাউন্ট তৈরি করুন।
       </p>
 
       <section>
         <h2>নতুন অ্যাকাউন্ট তৈরি</h2>
 
-        <p className="hero-copy">
-          নিরাপদভাবে অ্যাকাউন্ট তৈরির API যুক্ত করার পর
-          এই সুবিধাটি চালু হবে।
-        </p>
+        <StaffCreateForm />
       </section>
 
       <p>
         <Link href="/supreme">
-          ← Supreme Dashboard-এ ফিরে যাও
+          ← Supreme Dashboard-এ ফিরে যান
         </Link>
       </p>
     </main>
