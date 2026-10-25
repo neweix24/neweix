@@ -7,9 +7,34 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_BODY_BYTES = 32 * 1024;
+const MAX_PRICE = 1_000_000_000;
+const MAX_ITEMS = 50;
+const MAX_IMAGES = 10;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isUuid(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+  );
+}
+
+function isHttpsUrl(value: unknown): value is string {
+  if (typeof value !== "string" || value.length > 2048) return false;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && Boolean(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function errorResponse(message: string, status: number) {
+  return NextResponse.json({ error: message }, { status });
 }
 
 async function getStaffContext() {
@@ -91,10 +116,7 @@ export async function GET() {
     const staff = await getStaffContext();
 
     if ("error" in staff) {
-      return NextResponse.json(
-        { error: staff.error },
-        { status: staff.status }
-      );
+      return errorResponse(staff.error, staff.status);
     }
 
     const supabase = await getAdminClient();
@@ -106,11 +128,7 @@ export async function GET() {
 
     if (error) {
       console.error("Admin products GET failed:", error.message);
-
-      return NextResponse.json(
-        { error: "পণ্যের তালিকা লোড করা যায়নি।" },
-        { status: 500 }
-      );
+      return errorResponse("পণ্যের তালিকা লোড করা যায়নি।", 500);
     }
 
     return NextResponse.json(
@@ -119,11 +137,7 @@ export async function GET() {
     );
   } catch (error) {
     console.error("Admin products GET error:", error);
-
-    return NextResponse.json(
-      { error: "সার্ভারে সমস্যা হয়েছে।" },
-      { status: 500 }
-    );
+    return errorResponse("সার্ভারে সমস্যা হয়েছে।", 500);
   }
 }
 
@@ -132,17 +146,11 @@ export async function POST(request: Request) {
     const staff = await getStaffContext();
 
     if ("error" in staff) {
-      return NextResponse.json(
-        { error: staff.error },
-        { status: staff.status }
-      );
+      return errorResponse(staff.error, staff.status);
     }
 
     if (!["supreme", "admin"].includes(staff.role)) {
-      return NextResponse.json(
-        { error: "পণ্য যোগ করার অনুমতি নেই।" },
-        { status: 403 }
-      );
+      return errorResponse("পণ্য যোগ করার অনুমতি নেই।", 403);
     }
 
     const contentLength = request.headers.get("content-length");
@@ -151,27 +159,18 @@ export async function POST(request: Request) {
       const size = Number(contentLength);
 
       if (!Number.isSafeInteger(size) || size < 0) {
-        return NextResponse.json(
-          { error: "অনুরোধের আকার সঠিক নয়।" },
-          { status: 400 }
-        );
+        return errorResponse("অনুরোধের আকার সঠিক নয়।", 400);
       }
 
       if (size > MAX_BODY_BYTES) {
-        return NextResponse.json(
-          { error: "অনুরোধটি অনেক বড়।" },
-          { status: 413 }
-        );
+        return errorResponse("অনুরোধটি অনেক বড়।", 413);
       }
     }
 
     const raw = await request.text();
 
     if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) {
-      return NextResponse.json(
-        { error: "অনুরোধটি অনেক বড়।" },
-        { status: 413 }
-      );
+      return errorResponse("অনুরোধটি অনেক বড়।", 413);
     }
 
     let body: unknown;
@@ -179,17 +178,11 @@ export async function POST(request: Request) {
     try {
       body = JSON.parse(raw);
     } catch {
-      return NextResponse.json(
-        { error: "সঠিক JSON তথ্য পাঠান।" },
-        { status: 400 }
-      );
+      return errorResponse("সঠিক JSON তথ্য পাঠান।", 400);
     }
 
     if (!isRecord(body)) {
-      return NextResponse.json(
-        { error: "পণ্যের তথ্য সঠিক নয়।" },
-        { status: 400 }
-      );
+      return errorResponse("পণ্যের তথ্য সঠিক নয়।", 400);
     }
 
     const name = typeof body.name === "string" ? body.name.trim() : "";
@@ -204,41 +197,37 @@ export async function POST(request: Request) {
     const lowStockThreshold = body.low_stock_threshold ?? 5;
 
     if (!name || name.length > 200) {
-      return NextResponse.json(
-        { error: "পণ্যের নাম দিন (সর্বোচ্চ ২০০ অক্ষর)।" },
-        { status: 400 }
-      );
+      return errorResponse("পণ্যের নাম দিন (সর্বোচ্চ ২০০ অক্ষর)।", 400);
     }
 
     if (
       !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ||
       slug.length > 200
     ) {
-      return NextResponse.json(
-        { error: "Slug ইংরেজি ছোট অক্ষর, সংখ্যা ও হাইফেন দিয়ে লিখুন।" },
-        { status: 400 }
+      return errorResponse(
+        "Slug ইংরেজি ছোট অক্ষর, সংখ্যা ও হাইফেন দিয়ে লিখুন।",
+        400
       );
     }
 
     if (
       typeof price !== "number" ||
       !Number.isFinite(price) ||
-      price < 0
+      price < 0 ||
+      price > MAX_PRICE
     ) {
-      return NextResponse.json(
-        { error: "সঠিক পণ্যমূল্য দিন।" },
-        { status: 400 }
-      );
+      return errorResponse("পণ্যমূল্য ০ থেকে ১০০০০০০০০০-এর মধ্যে দিন।", 400);
     }
 
     if (
+      typeof stock !== "number" ||
       !Number.isSafeInteger(stock) ||
-      (stock as number) < 0 ||
-      (stock as number) > 1000000
+      stock < 0 ||
+      stock > 1_000_000
     ) {
-      return NextResponse.json(
-        { error: "স্টকের পরিমাণ ০ থেকে ১০০০০০০-এর মধ্যে হতে হবে।" },
-        { status: 400 }
+      return errorResponse(
+        "স্টকের পরিমাণ ০ থেকে ১০০০০০০-এর মধ্যে হতে হবে।",
+        400
       );
     }
 
@@ -247,45 +236,41 @@ export async function POST(request: Request) {
       (compareAtPrice !== null &&
         (typeof compareAtPrice !== "number" ||
           !Number.isFinite(compareAtPrice) ||
-          compareAtPrice < 0)) ||
+          compareAtPrice < 0 ||
+          compareAtPrice > MAX_PRICE)) ||
+      typeof weightGrams !== "number" ||
       !Number.isSafeInteger(weightGrams) ||
-      (weightGrams as number) < 1 ||
-      (weightGrams as number) > 1000000 ||
+      weightGrams < 1 ||
+      weightGrams > 1_000_000 ||
+      typeof lowStockThreshold !== "number" ||
       !Number.isSafeInteger(lowStockThreshold) ||
-      (lowStockThreshold as number) < 0 ||
-      (lowStockThreshold as number) > 1000000
+      lowStockThreshold < 0 ||
+      lowStockThreshold > 1_000_000
     ) {
-      return NextResponse.json(
-        { error: "পণ্যের অতিরিক্ত তথ্য সঠিক নয়।" },
-        { status: 400 }
-      );
+      return errorResponse("পণ্যের অতিরিক্ত তথ্য সঠিক নয়।", 400);
     }
 
     const imageUrls = body.image_urls ?? [];
 
     if (
       !Array.isArray(imageUrls) ||
-      imageUrls.length > 10 ||
-      !imageUrls.every(
-        (item) =>
-          typeof item === "string" &&
-          item.length <= 2048 &&
-          /^https:\/\/\S+$/i.test(item)
-      )
+      imageUrls.length > MAX_IMAGES ||
+      !imageUrls.every(isHttpsUrl)
     ) {
-      return NextResponse.json(
-        { error: "সর্বোচ্চ ১০টি বৈধ HTTPS ছবির লিংক দিন।" },
-        { status: 400 }
+      return errorResponse(
+        "সর্বোচ্চ ১০টি বৈধ HTTPS ছবির লিংক দিন।",
+        400
       );
     }
 
     const variants = body.variants ?? [];
 
-    if (!Array.isArray(variants) || variants.length > 50) {
-      return NextResponse.json(
-        { error: "পণ্যের ভ্যারিয়েন্টের তথ্য সঠিক নয়।" },
-        { status: 400 }
-      );
+    if (
+      !Array.isArray(variants) ||
+      variants.length > MAX_ITEMS ||
+      !variants.every(isRecord)
+    ) {
+      return errorResponse("ভ্যারিয়েন্টের তথ্য সঠিক নয়।", 400);
     }
 
     const isActive = body.is_active ?? false;
@@ -295,25 +280,13 @@ export async function POST(request: Request) {
       typeof isActive !== "boolean" ||
       typeof isFeatured !== "boolean"
     ) {
-      return NextResponse.json(
-        { error: "পণ্যের সক্রিয় অবস্থা সঠিক নয়।" },
-        { status: 400 }
-      );
+      return errorResponse("পণ্যের সক্রিয় অবস্থা সঠিক নয়।", 400);
     }
 
     const categoryId = body.category_id ?? null;
 
-    if (
-      categoryId !== null &&
-      (typeof categoryId !== "string" ||
-        !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-          categoryId
-        ))
-    ) {
-      return NextResponse.json(
-        { error: "ক্যাটাগরির ID সঠিক নয়।" },
-        { status: 400 }
-      );
+    if (categoryId !== null && !isUuid(categoryId)) {
+      return errorResponse("ক্যাটাগরির ID সঠিক নয়।", 400);
     }
 
     const sku =
@@ -323,24 +296,21 @@ export async function POST(request: Request) {
           ? body.sku.trim() || null
           : undefined;
 
+    const rawVideoUrl = body.video_url ?? null;
     const videoUrl =
-      body.video_url == null
+      rawVideoUrl === null
         ? null
-        : typeof body.video_url === "string"
-          ? body.video_url.trim() || null
+        : typeof rawVideoUrl === "string"
+          ? rawVideoUrl.trim() || null
           : undefined;
 
     if (
       sku === undefined ||
       (sku !== null && sku.length > 100) ||
       videoUrl === undefined ||
-      (videoUrl !== null &&
-        (videoUrl.length > 2048 || !/^https:\/\/\S+$/i.test(videoUrl)))
+      (videoUrl !== null && !isHttpsUrl(videoUrl))
     ) {
-      return NextResponse.json(
-        { error: "SKU অথবা ভিডিও লিংক সঠিক নয়।" },
-        { status: 400 }
-      );
+      return errorResponse("SKU অথবা ভিডিও লিংক সঠিক নয়।", 400);
     }
 
     const supabase = await getAdminClient();
@@ -371,23 +341,20 @@ export async function POST(request: Request) {
       console.error("Admin product create failed:", error.message);
 
       if (error.code === "23505") {
-        return NextResponse.json(
-          { error: "এই Slug বা SKU আগে থেকেই ব্যবহার করা হয়েছে।" },
-          { status: 409 }
+        return errorResponse(
+          "এই Slug বা SKU আগে থেকেই ব্যবহার করা হয়েছে।",
+          409
         );
       }
 
       if (error.code === "23503") {
-        return NextResponse.json(
-          { error: "নির্বাচিত ক্যাটাগরি ডেটাবেসে পাওয়া যায়নি।" },
-          { status: 400 }
+        return errorResponse(
+          "নির্বাচিত ক্যাটাগরি ডেটাবেসে পাওয়া যায়নি।",
+          400
         );
       }
 
-      return NextResponse.json(
-        { error: "পণ্য তৈরি করা যায়নি।" },
-        { status: 500 }
-      );
+      return errorResponse("পণ্য তৈরি করা যায়নি।", 500);
     }
 
     return NextResponse.json(
@@ -399,10 +366,6 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error("Admin product POST error:", error);
-
-    return NextResponse.json(
-      { error: "সার্ভারে সমস্যা হয়েছে।" },
-      { status: 500 }
-    );
+    return errorResponse("সার্ভারে সমস্যা হয়েছে।", 500);
   }
 }
