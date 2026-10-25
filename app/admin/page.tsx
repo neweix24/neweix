@@ -1,5 +1,5 @@
 import { requireStaff } from "@/lib/auth";
-import ProductsManager from "./ProductsManager";
+
 
 export const dynamic = "force-dynamic";
 
