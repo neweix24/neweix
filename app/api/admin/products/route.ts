@@ -11,6 +11,17 @@ const MAX_PRICE = 1_000_000_000;
 const MAX_ITEMS = 50;
 const MAX_IMAGES = 10;
 
+type StaffContext =
+  | {
+      error: string;
+      status: 401 | 403;
+    }
+  | {
+      session: Awaited<ReturnType<typeof createServerSupabaseClient>>;
+      user: { id: string };
+      role: string;
+    };
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -18,12 +29,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isUuid(value: unknown): value is string {
   return (
     typeof value === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value
+    )
   );
 }
 
 function isHttpsUrl(value: unknown): value is string {
-  if (typeof value !== "string" || value.length > 2048) return false;
+  if (typeof value !== "string" || value.length > 2048) {
+    return false;
+  }
 
   try {
     const url = new URL(value);
@@ -37,7 +52,7 @@ function errorResponse(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
-async function getStaffContext() {
+async function getStaffContext(): Promise<StaffContext> {
   const session = await createServerSupabaseClient();
 
   const {
@@ -46,7 +61,7 @@ async function getStaffContext() {
   } = await session.auth.getUser();
 
   if (userError || !user) {
-    return { error: "লগইন আবশ্যক।", status: 401 as const };
+    return { error: "লগইন আবশ্যক।", status: 401 };
   }
 
   const { data: profile, error } = await session
@@ -61,22 +76,26 @@ async function getStaffContext() {
     profile.is_active !== true ||
     !["supreme", "admin", "staff"].includes(profile.role)
   ) {
-    return { error: "এই কাজের অনুমতি নেই।", status: 403 as const };
+    return { error: "এই কাজের অনুমতি নেই।", status: 403 };
   }
 
   if (profile.role === "supreme") {
     const { data: assurance, error: mfaError } =
       await session.auth.mfa.getAuthenticatorAssuranceLevel();
 
-    if (mfaError || assurance.currentLevel !== "aal2") {
+    if (mfaError || assurance?.currentLevel !== "aal2") {
       return {
         error: "Supreme অ্যাকাউন্টের MFA যাচাই সম্পন্ন করুন।",
-        status: 403 as const,
+        status: 403,
       };
     }
   }
 
-  return { session, user, role: profile.role };
+  return {
+    session,
+    user,
+    role: profile.role,
+  };
 }
 
 async function getAdminClient() {
@@ -197,7 +216,10 @@ export async function POST(request: Request) {
     const lowStockThreshold = body.low_stock_threshold ?? 5;
 
     if (!name || name.length > 200) {
-      return errorResponse("পণ্যের নাম দিন (সর্বোচ্চ ২০০ অক্ষর)।", 400);
+      return errorResponse(
+        "পণ্যের নাম দিন (সর্বোচ্চ ২০০ অক্ষর)।",
+        400
+      );
     }
 
     if (
@@ -216,7 +238,10 @@ export async function POST(request: Request) {
       price < 0 ||
       price > MAX_PRICE
     ) {
-      return errorResponse("পণ্যমূল্য ০ থেকে ১০০০০০০০০০-এর মধ্যে দিন।", 400);
+      return errorResponse(
+        "পণ্যমূল্য ০ থেকে ১০০০০০০০০০-এর মধ্যে দিন।",
+        400
+      );
     }
 
     if (
