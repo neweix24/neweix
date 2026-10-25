@@ -1,0 +1,408 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const MAX_BODY_BYTES = 32 * 1024;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+async function getStaffContext() {
+  const session = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await session.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "লগইন আবশ্যক।", status: 401 as const };
+  }
+
+  const { data: profile, error } = await session
+    .from("staff_profiles")
+    .select("role, is_active")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (
+    error ||
+    !profile ||
+    profile.is_active !== true ||
+    !["supreme", "admin", "staff"].includes(profile.role)
+  ) {
+    return { error: "এই কাজের অনুমতি নেই।", status: 403 as const };
+  }
+
+  if (profile.role === "supreme") {
+    const { data: assurance, error: mfaError } =
+      await session.auth.mfa.getAuthenticatorAssuranceLevel();
+
+    if (mfaError || assurance.currentLevel !== "aal2") {
+      return {
+        error: "Supreme অ্যাকাউন্টের MFA যাচাই সম্পন্ন করুন।",
+        status: 403 as const,
+      };
+    }
+  }
+
+  return { session, user, role: profile.role };
+}
+
+async function getAdminClient() {
+  const { env } = await getCloudflareContext();
+  const runtimeEnv = env as Record<string, unknown>;
+
+  const url =
+    runtimeEnv.NEXT_PUBLIC_SUPABASE_URL ??
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  const key =
+    runtimeEnv.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (
+    typeof url !== "string" ||
+    !url ||
+    typeof key !== "string" ||
+    !key
+  ) {
+    throw new Error("Supabase server configuration is missing.");
+  }
+
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
+const PRODUCT_COLUMNS =
+  "id, name, slug, description, price, compare_at_price, image_urls, stock, category_id, video_url, variants, sku, is_active, is_featured, weight_grams, low_stock_threshold, created_at, updated_at";
+
+export async function GET() {
+  try {
+    const staff = await getStaffContext();
+
+    if ("error" in staff) {
+      return NextResponse.json(
+        { error: staff.error },
+        { status: staff.status }
+      );
+    }
+
+    const supabase = await getAdminClient();
+
+    const { data, error } = await supabase
+      .from("products")
+      .select(PRODUCT_COLUMNS)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Admin products GET failed:", error.message);
+
+      return NextResponse.json(
+        { error: "পণ্যের তালিকা লোড করা যায়নি।" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      { success: true, products: data ?? [] },
+      { headers: { "Cache-Control": "no-store" } }
+    );
+  } catch (error) {
+    console.error("Admin products GET error:", error);
+
+    return NextResponse.json(
+      { error: "সার্ভারে সমস্যা হয়েছে।" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const staff = await getStaffContext();
+
+    if ("error" in staff) {
+      return NextResponse.json(
+        { error: staff.error },
+        { status: staff.status }
+      );
+    }
+
+    if (!["supreme", "admin"].includes(staff.role)) {
+      return NextResponse.json(
+        { error: "পণ্য যোগ করার অনুমতি নেই।" },
+        { status: 403 }
+      );
+    }
+
+    const contentLength = request.headers.get("content-length");
+
+    if (contentLength !== null) {
+      const size = Number(contentLength);
+
+      if (!Number.isSafeInteger(size) || size < 0) {
+        return NextResponse.json(
+          { error: "অনুরোধের আকার সঠিক নয়।" },
+          { status: 400 }
+        );
+      }
+
+      if (size > MAX_BODY_BYTES) {
+        return NextResponse.json(
+          { error: "অনুরোধটি অনেক বড়।" },
+          { status: 413 }
+        );
+      }
+    }
+
+    const raw = await request.text();
+
+    if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) {
+      return NextResponse.json(
+        { error: "অনুরোধটি অনেক বড়।" },
+        { status: 413 }
+      );
+    }
+
+    let body: unknown;
+
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      return NextResponse.json(
+        { error: "সঠিক JSON তথ্য পাঠান।" },
+        { status: 400 }
+      );
+    }
+
+    if (!isRecord(body)) {
+      return NextResponse.json(
+        { error: "পণ্যের তথ্য সঠিক নয়।" },
+        { status: 400 }
+      );
+    }
+
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const slug = typeof body.slug === "string" ? body.slug.trim() : "";
+    const description =
+      typeof body.description === "string" ? body.description.trim() : "";
+
+    const price = body.price;
+    const stock = body.stock;
+    const compareAtPrice = body.compare_at_price ?? null;
+    const weightGrams = body.weight_grams ?? 500;
+    const lowStockThreshold = body.low_stock_threshold ?? 5;
+
+    if (!name || name.length > 200) {
+      return NextResponse.json(
+        { error: "পণ্যের নাম দিন (সর্বোচ্চ ২০০ অক্ষর)।" },
+        { status: 400 }
+      );
+    }
+
+    if (
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ||
+      slug.length > 200
+    ) {
+      return NextResponse.json(
+        { error: "Slug ইংরেজি ছোট অক্ষর, সংখ্যা ও হাইফেন দিয়ে লিখুন।" },
+        { status: 400 }
+      );
+    }
+
+    if (
+      typeof price !== "number" ||
+      !Number.isFinite(price) ||
+      price < 0
+    ) {
+      return NextResponse.json(
+        { error: "সঠিক পণ্যমূল্য দিন।" },
+        { status: 400 }
+      );
+    }
+
+    if (
+      !Number.isSafeInteger(stock) ||
+      (stock as number) < 0 ||
+      (stock as number) > 1000000
+    ) {
+      return NextResponse.json(
+        { error: "স্টকের পরিমাণ ০ থেকে ১০০০০০০-এর মধ্যে হতে হবে।" },
+        { status: 400 }
+      );
+    }
+
+    if (
+      description.length > 10000 ||
+      (compareAtPrice !== null &&
+        (typeof compareAtPrice !== "number" ||
+          !Number.isFinite(compareAtPrice) ||
+          compareAtPrice < 0)) ||
+      !Number.isSafeInteger(weightGrams) ||
+      (weightGrams as number) < 1 ||
+      (weightGrams as number) > 1000000 ||
+      !Number.isSafeInteger(lowStockThreshold) ||
+      (lowStockThreshold as number) < 0 ||
+      (lowStockThreshold as number) > 1000000
+    ) {
+      return NextResponse.json(
+        { error: "পণ্যের অতিরিক্ত তথ্য সঠিক নয়।" },
+        { status: 400 }
+      );
+    }
+
+    const imageUrls = body.image_urls ?? [];
+
+    if (
+      !Array.isArray(imageUrls) ||
+      imageUrls.length > 10 ||
+      !imageUrls.every(
+        (item) =>
+          typeof item === "string" &&
+          item.length <= 2048 &&
+          /^https:\/\/\S+$/i.test(item)
+      )
+    ) {
+      return NextResponse.json(
+        { error: "সর্বোচ্চ ১০টি বৈধ HTTPS ছবির লিংক দিন।" },
+        { status: 400 }
+      );
+    }
+
+    const variants = body.variants ?? [];
+
+    if (!Array.isArray(variants) || variants.length > 50) {
+      return NextResponse.json(
+        { error: "পণ্যের ভ্যারিয়েন্টের তথ্য সঠিক নয়।" },
+        { status: 400 }
+      );
+    }
+
+    const isActive = body.is_active ?? false;
+    const isFeatured = body.is_featured ?? false;
+
+    if (
+      typeof isActive !== "boolean" ||
+      typeof isFeatured !== "boolean"
+    ) {
+      return NextResponse.json(
+        { error: "পণ্যের সক্রিয় অবস্থা সঠিক নয়।" },
+        { status: 400 }
+      );
+    }
+
+    const categoryId = body.category_id ?? null;
+
+    if (
+      categoryId !== null &&
+      (typeof categoryId !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          categoryId
+        ))
+    ) {
+      return NextResponse.json(
+        { error: "ক্যাটাগরির ID সঠিক নয়।" },
+        { status: 400 }
+      );
+    }
+
+    const sku =
+      body.sku == null
+        ? null
+        : typeof body.sku === "string"
+          ? body.sku.trim() || null
+          : undefined;
+
+    const videoUrl =
+      body.video_url == null
+        ? null
+        : typeof body.video_url === "string"
+          ? body.video_url.trim() || null
+          : undefined;
+
+    if (
+      sku === undefined ||
+      (sku !== null && sku.length > 100) ||
+      videoUrl === undefined ||
+      (videoUrl !== null &&
+        (videoUrl.length > 2048 || !/^https:\/\/\S+$/i.test(videoUrl)))
+    ) {
+      return NextResponse.json(
+        { error: "SKU অথবা ভিডিও লিংক সঠিক নয়।" },
+        { status: 400 }
+      );
+    }
+
+    const supabase = await getAdminClient();
+
+    const { data, error } = await supabase
+      .from("products")
+      .insert({
+        name,
+        slug,
+        description,
+        price,
+        compare_at_price: compareAtPrice,
+        image_urls: imageUrls,
+        stock,
+        category_id: categoryId,
+        video_url: videoUrl,
+        variants,
+        sku,
+        is_active: isActive,
+        is_featured: isFeatured,
+        weight_grams: weightGrams,
+        low_stock_threshold: lowStockThreshold,
+      })
+      .select(PRODUCT_COLUMNS)
+      .single();
+
+    if (error) {
+      console.error("Admin product create failed:", error.message);
+
+      if (error.code === "23505") {
+        return NextResponse.json(
+          { error: "এই Slug বা SKU আগে থেকেই ব্যবহার করা হয়েছে।" },
+          { status: 409 }
+        );
+      }
+
+      if (error.code === "23503") {
+        return NextResponse.json(
+          { error: "নির্বাচিত ক্যাটাগরি ডেটাবেসে পাওয়া যায়নি।" },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json(
+        { error: "পণ্য তৈরি করা যায়নি।" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      { success: true, product: data },
+      {
+        status: 201,
+        headers: { "Cache-Control": "no-store" },
+      }
+    );
+  } catch (error) {
+    console.error("Admin product POST error:", error);
+
+    return NextResponse.json(
+      { error: "সার্ভারে সমস্যা হয়েছে।" },
+      { status: 500 }
+    );
+  }
+}
