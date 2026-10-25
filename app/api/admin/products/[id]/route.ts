@@ -6,6 +6,10 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const MAX_BODY_BYTES = 16 * 1024;
+const MAX_TEXT_LENGTH = 10000;
+const MAX_ITEMS = 50;
+
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -13,15 +17,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function jsonError(message: string, status: number) {
+  return NextResponse.json(
+    { error: message },
+    {
+      status,
+      headers: { "Cache-Control": "no-store" },
+    }
+  );
+}
+
 async function authorizeAdmin() {
   const session = await createServerSupabaseClient();
-  const { data: { user }, error: authError } =
-    await session.auth.getUser();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await session.auth.getUser();
 
   if (authError || !user) {
-    return { response: NextResponse.json(
-      { error: "লগইন আবশ্যক।" }, { status: 401 }
-    ) };
+    return { response: jsonError("লগইন আবশ্যক।", 401) };
   }
 
   const { data: profile, error } = await session
@@ -36,25 +51,28 @@ async function authorizeAdmin() {
     profile.is_active !== true ||
     !["supreme", "admin"].includes(profile.role)
   ) {
-    return { response: NextResponse.json(
-      { error: "পণ্য বা স্টক পরিবর্তনের অনুমতি নেই।" },
-      { status: 403 }
-    ) };
+    return {
+      response: jsonError("পণ্য বা স্টক পরিবর্তনের অনুমতি নেই।", 403),
+    };
   }
 
   if (profile.role === "supreme") {
-    const { data: assurance, error: mfaError } =
-      await session.auth.mfa.getAuthenticatorAssuranceLevel();
+    const {
+      data: assurance,
+      error: mfaError,
+    } = await session.auth.mfa.getAuthenticatorAssuranceLevel();
 
     if (mfaError || assurance.currentLevel !== "aal2") {
-      return { response: NextResponse.json(
-        { error: "Supreme অ্যাকাউন্টের MFA যাচাই করুন।" },
-        { status: 403 }
-      ) };
+      return {
+        response: jsonError(
+          "Supreme অ্যাকাউন্টের MFA যাচাই করুন।",
+          403
+        ),
+      };
     }
   }
 
-  return { session, role: profile.role };
+  return { role: profile.role };
 }
 
 async function getAdminClient() {
@@ -70,8 +88,10 @@ async function getAdminClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (
-    typeof url !== "string" || !url ||
-    typeof key !== "string" || !key
+    typeof url !== "string" ||
+    !url ||
+    typeof key !== "string" ||
+    !key
   ) {
     throw new Error("Supabase server configuration is missing.");
   }
@@ -102,28 +122,23 @@ export async function PATCH(
     const { id } = await context.params;
 
     if (!UUID_REGEX.test(id)) {
-      return NextResponse.json(
-        { error: "পণ্যের ID সঠিক নয়।" },
-        { status: 400 }
-      );
+      return jsonError("পণ্যের ID সঠিক নয়।", 400);
     }
 
     const contentLength = request.headers.get("content-length");
 
-    if (contentLength && Number(contentLength) > 16 * 1024) {
-      return NextResponse.json(
-        { error: "অনুরোধটি অনেক বড়।" },
-        { status: 413 }
-      );
+    if (
+      contentLength &&
+      (!/^\d+$/.test(contentLength) ||
+        Number(contentLength) > MAX_BODY_BYTES)
+    ) {
+      return jsonError("অনুরোধটি অনেক বড় বা সঠিক নয়।", 413);
     }
 
     const raw = await request.text();
 
-    if (new TextEncoder().encode(raw).byteLength > 16 * 1024) {
-      return NextResponse.json(
-        { error: "অনুরোধটি অনেক বড়।" },
-        { status: 413 }
-      );
+    if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) {
+      return jsonError("অনুরোধটি অনেক বড়।", 413);
     }
 
     let body: unknown;
@@ -131,20 +146,14 @@ export async function PATCH(
     try {
       body = JSON.parse(raw);
     } catch {
-      return NextResponse.json(
-        { error: "সঠিক JSON পাঠান।" },
-        { status: 400 }
-      );
+      return jsonError("সঠিক JSON পাঠান।", 400);
     }
 
     if (!isRecord(body)) {
-      return NextResponse.json(
-        { error: "পণ্যের তথ্য সঠিক নয়।" },
-        { status: 400 }
-      );
+      return jsonError("পণ্যের তথ্য সঠিক নয়।", 400);
     }
 
-    const allowed = [
+    const allowed = new Set([
       "name",
       "slug",
       "description",
@@ -156,14 +165,21 @@ export async function PATCH(
       "is_featured",
       "low_stock_threshold",
       "weight_grams",
-    ];
+      "category_id",
+      "image_urls",
+      "video_url",
+      "variants",
+    ]);
 
     const keys = Object.keys(body);
 
-    if (keys.length === 0 || keys.some((key) => !allowed.includes(key))) {
-      return NextResponse.json(
-        { error: "ফাঁকা বা অনুমোদনহীন ফিল্ড পাঠানো হয়েছে।" },
-        { status: 400 }
+    if (
+      keys.length === 0 ||
+      keys.some((key) => !allowed.has(key))
+    ) {
+      return jsonError(
+        "ফাঁকা বা অনুমোদনহীন ফিল্ড পাঠানো হয়েছে।",
+        400
       );
     }
 
@@ -173,9 +189,14 @@ export async function PATCH(
       const value = body[key];
 
       if (key === "name") {
-        if (typeof value !== "string" || !value.trim() || value.trim().length > 200) {
-          return NextResponse.json({ error: "পণ্যের নাম সঠিক নয়।" }, { status: 400 });
+        if (
+          typeof value !== "string" ||
+          !value.trim() ||
+          value.trim().length > 180
+        ) {
+          return jsonError("পণ্যের নাম সঠিক নয়।", 400);
         }
+
         update.name = value.trim();
       } else if (key === "slug") {
         if (
@@ -183,21 +204,41 @@ export async function PATCH(
           !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) ||
           value.length > 200
         ) {
-          return NextResponse.json({ error: "Slug সঠিক নয়।" }, { status: 400 });
+          return jsonError(
+            "Slug ইংরেজি ছোট হাতের অক্ষর, সংখ্যা ও হাইফেন দিয়ে লিখুন।",
+            400
+          );
         }
+
         update.slug = value;
       } else if (key === "description") {
-        if (value !== null && (typeof value !== "string" || value.length > 10000)) {
-          return NextResponse.json({ error: "বিবরণ সঠিক নয়।" }, { status: 400 });
-        }
-        update.description = value;
-      } else if (key === "price" || key === "compare_at_price") {
         if (
           value !== null &&
-          (typeof value !== "number" || !Number.isFinite(value) || value < 0)
+          (typeof value !== "string" ||
+            value.length > MAX_TEXT_LENGTH)
         ) {
-          return NextResponse.json({ error: "মূল্য সঠিক নয়।" }, { status: 400 });
+          return jsonError("বিবরণ সঠিক নয়।", 400);
         }
+
+        update.description = value;
+      } else if (
+        key === "price" ||
+        key === "compare_at_price"
+      ) {
+        if (
+          value !== null &&
+          (typeof value !== "number" ||
+            !Number.isFinite(value) ||
+            value < 0 ||
+            value > 1000000000)
+        ) {
+          return jsonError("মূল্য সঠিক নয়।", 400);
+        }
+
+        if (key === "price" && value === null) {
+          return jsonError("মূল্য দেওয়া আবশ্যক।", 400);
+        }
+
         update[key] = value;
       } else if (
         key === "stock" ||
@@ -205,25 +246,88 @@ export async function PATCH(
         key === "weight_grams"
       ) {
         const min = key === "weight_grams" ? 1 : 0;
+
         if (
           typeof value !== "number" ||
           !Number.isSafeInteger(value) ||
           value < min ||
           value > 1000000
         ) {
-          return NextResponse.json({ error: `${key} সঠিক নয়।` }, { status: 400 });
+          return jsonError(`${key} সঠিক নয়।`, 400);
         }
+
         update[key] = value;
       } else if (key === "sku") {
-        if (value !== null && (typeof value !== "string" || value.trim().length > 100)) {
-          return NextResponse.json({ error: "SKU সঠিক নয়।" }, { status: 400 });
+        if (
+          value !== null &&
+          (typeof value !== "string" ||
+            value.trim().length > 100)
+        ) {
+          return jsonError("SKU সঠিক নয়।", 400);
         }
-        update.sku = typeof value === "string" ? value.trim() || null : null;
-      } else if (key === "is_active" || key === "is_featured") {
+
+        update.sku =
+          typeof value === "string"
+            ? value.trim() || null
+            : null;
+      } else if (
+        key === "is_active" ||
+        key === "is_featured"
+      ) {
         if (typeof value !== "boolean") {
-          return NextResponse.json({ error: `${key} সঠিক নয়।` }, { status: 400 });
+          return jsonError(`${key} সঠিক নয়।`, 400);
         }
+
         update[key] = value;
+      } else if (key === "category_id") {
+        if (
+          value !== null &&
+          (typeof value !== "string" ||
+            !UUID_REGEX.test(value))
+        ) {
+          return jsonError("Category ID সঠিক নয়।", 400);
+        }
+
+        update.category_id = value;
+      } else if (key === "image_urls") {
+        if (
+          !Array.isArray(value) ||
+          value.length > MAX_ITEMS ||
+          !value.every(
+            (item) =>
+              typeof item === "string" &&
+              item.length <= 2048 &&
+              isHttpsUrl(item)
+          )
+        ) {
+          return jsonError("ছবির URL তালিকা সঠিক নয়।", 400);
+        }
+
+        update.image_urls = value;
+      } else if (key === "video_url") {
+        if (
+          value !== null &&
+          (typeof value !== "string" ||
+            value.length > 2048 ||
+            !isHttpsUrl(value))
+        ) {
+          return jsonError("ভিডিও URL সঠিক নয়।", 400);
+        }
+
+        update.video_url = value;
+      } else if (key === "variants") {
+        if (
+          !Array.isArray(value) ||
+          value.length > MAX_ITEMS ||
+          value.some((item) => !isRecord(item))
+        ) {
+          return jsonError(
+            "Variants অবশ্যই বৈধ JSON object-এর array হতে হবে।",
+            400
+          );
+        }
+
+        update.variants = value;
       }
     }
 
@@ -233,30 +337,33 @@ export async function PATCH(
       .from("products")
       .update(update)
       .eq("id", id)
-      .select("id, name, slug, price, compare_at_price, stock, sku, is_active, is_featured, low_stock_threshold, weight_grams, updated_at")
+      .select(
+        "id, name, slug, description, price, compare_at_price, stock, sku, category_id, image_urls, video_url, variants, is_active, is_featured, low_stock_threshold, weight_grams, updated_at"
+      )
       .maybeSingle();
 
     if (error) {
       console.error("Product update failed:", error.message);
 
       if (error.code === "23505") {
-        return NextResponse.json(
-          { error: "এই Slug বা SKU আগে থেকেই আছে।" },
-          { status: 409 }
+        return jsonError(
+          "এই Slug বা SKU আগে থেকেই আছে।",
+          409
         );
       }
 
-      return NextResponse.json(
-        { error: "পণ্য আপডেট করা যায়নি।" },
-        { status: 500 }
-      );
+      if (error.code === "23503") {
+        return jsonError(
+          "নির্বাচিত Category ID পাওয়া যায়নি।",
+          400
+        );
+      }
+
+      return jsonError("পণ্য আপডেট করা যায়নি।", 500);
     }
 
     if (!data) {
-      return NextResponse.json(
-        { error: "পণ্যটি পাওয়া যায়নি।" },
-        { status: 404 }
-      );
+      return jsonError("পণ্যটি পাওয়া যায়নি।", 404);
     }
 
     return NextResponse.json(
@@ -266,9 +373,21 @@ export async function PATCH(
   } catch (error) {
     console.error("Product PATCH error:", error);
 
-    return NextResponse.json(
-      { error: "সার্ভারে সমস্যা হয়েছে।" },
-      { status: 500 }
+    return jsonError("সার্ভারে সমস্যা হয়েছে।", 500);
+  }
+}
+
+function isHttpsUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+
+    return (
+      url.protocol === "https:" &&
+      Boolean(url.hostname) &&
+      !url.username &&
+      !url.password
     );
+  } catch {
+    return false;
   }
 }
