@@ -5,11 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
-type CustomerProfile = {
-  display_name: string | null;
-  phone: string | null;
-};
-
 export default function AccountPage() {
   const router = useRouter();
 
@@ -28,24 +23,27 @@ export default function AccountPage() {
     async function loadAccount() {
       try {
         const supabase = createBrowserSupabaseClient();
+
         const {
           data: { user },
-          error,
+          error: authError,
         } = await supabase.auth.getUser();
 
-        if (error || !user) {
+        if (authError || !user) {
           router.replace("/auth/customer-login?next=/account");
           return;
         }
 
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile, error } = await supabase
           .from("customer_profiles")
-          .select("display_name, phone")
+          .select("full_name, phone")
           .eq("user_id", user.id)
           .maybeSingle();
 
-        if (profileError) {
-          throw new Error("প্রোফাইলের তথ্য লোড করা যায়নি।");
+        if (error) {
+          throw new Error(
+            "প্রোফাইল লোড হয়নি। ডাটাবেসের অনুমতি যাচাই করতে হবে।"
+          );
         }
 
         if (!active) return;
@@ -58,7 +56,7 @@ export default function AccountPage() {
               : "";
 
         setEmail(user.email ?? "");
-        setName(profile?.display_name ?? metadataName);
+        setName(profile?.full_name ?? metadataName);
         setPhone(profile?.phone ?? "");
       } catch (error) {
         if (active) {
@@ -102,6 +100,7 @@ export default function AccountPage() {
 
     try {
       const supabase = createBrowserSupabaseClient();
+
       const {
         data: { user },
         error: authError,
@@ -117,7 +116,7 @@ export default function AccountPage() {
         .upsert(
           {
             user_id: user.id,
-            display_name: cleanName,
+            full_name: cleanName,
             phone: cleanPhone || null,
           },
           { onConflict: "user_id" }
@@ -125,7 +124,7 @@ export default function AccountPage() {
 
       if (error) {
         throw new Error(
-          "তথ্য সংরক্ষণ হয়নি। ডাটাবেসের অনুমতি যাচাই করুন।"
+          "তথ্য সংরক্ষণ হয়নি। ডাটাবেসের অনুমতি যাচাই করতে হবে।"
         );
       }
 
@@ -136,7 +135,7 @@ export default function AccountPage() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "তথ্য সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।"
+          : "তথ্য সংরক্ষণ করা যায়নি।"
       );
     } finally {
       setSaving(false);
@@ -168,12 +167,8 @@ export default function AccountPage() {
   return (
     <main className="account-page">
       <header className="account-header">
-        <Link href="/" className="account-brand">
-          NEWEIX
-        </Link>
-        <Link href="/" className="account-home">
-          ← শপিং চালিয়ে যান
-        </Link>
+        <Link href="/" className="account-brand">NEWEIX</Link>
+        <Link href="/" className="account-home">← শপিং চালিয়ে যান</Link>
       </header>
 
       <section className="account-content">
@@ -184,15 +179,13 @@ export default function AccountPage() {
         </p>
 
         {loading ? (
-          <p className="account-notice">অ্যাকাউন্ট লোড হচ্ছে…</p>
+          <p role="status">অ্যাকাউন্ট লোড হচ্ছে…</p>
         ) : (
           <>
-            {email && (
-              <div className="account-email">
-                <span>লগইন ইমেইল</span>
-                <strong>{email}</strong>
-              </div>
-            )}
+            <div className="account-email">
+              <span>লগইন ইমেইল</span>
+              <strong>{email || "ইমেইল দেওয়া নেই"}</strong>
+            </div>
 
             <form className="account-form" onSubmit={handleSave}>
               <label htmlFor="customer-name">আপনার নাম</label>
@@ -218,34 +211,21 @@ export default function AccountPage() {
                 onChange={(event) => setPhone(event.target.value)}
               />
 
-              {message && (
-                <p className="account-success" role="status">
-                  {message}
-                </p>
-              )}
+              {message && <p className="success" role="status">{message}</p>}
+              {errorMessage && <p className="error" role="alert">{errorMessage}</p>}
 
-              {errorMessage && (
-                <p className="account-error" role="alert">
-                  {errorMessage}
-                </p>
-              )}
-
-              <button
-                className="account-button"
-                type="submit"
-                disabled={saving}
-              >
+              <button type="submit" disabled={saving}>
                 {saving ? "সংরক্ষণ হচ্ছে…" : "তথ্য সংরক্ষণ করুন"}
               </button>
             </form>
 
-            <div className="account-links">
+            <nav className="account-links">
               <Link href="/orders">আমার অর্ডার</Link>
               <Link href="/cart">শপিং কার্ট</Link>
-            </div>
+            </nav>
 
             <button
-              className="account-logout"
+              className="logout"
               type="button"
               onClick={handleLogout}
               disabled={loggingOut}
@@ -259,97 +239,54 @@ export default function AccountPage() {
       <style jsx>{`
         .account-page {
           min-height: 100vh;
+          padding: 0 20px 60px;
           background: #f7f8fa;
           color: #172338;
-          padding: 0 20px 60px;
         }
-
         .account-header {
           max-width: 1000px;
-          margin: 0 auto;
-          min-height: 76px;
+          min-height: 72px;
+          margin: auto;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 16px;
           border-bottom: 1px solid #e2e6ed;
         }
-
         .account-brand {
           color: #10233f;
           font-weight: 800;
           letter-spacing: 2px;
           text-decoration: none;
         }
-
-        .account-home {
-          color: #526078;
-          text-decoration: none;
-          font-size: 14px;
-        }
-
+        .account-home { color: #526078; text-decoration: none; font-size: 14px; }
         .account-content {
-          width: 100%;
+          box-sizing: border-box;
           max-width: 520px;
-          margin: 54px auto 0;
-          padding: 32px;
+          margin: 44px auto 0;
+          padding: 30px;
           border: 1px solid #e5e8ef;
-          border-radius: 18px;
+          border-radius: 16px;
           background: white;
           box-shadow: 0 12px 35px #10233f0a;
         }
-
-        .account-eyebrow {
-          color: #9a7a42;
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 2px;
-        }
-
-        h1 {
-          margin: 10px 0;
-          font-size: clamp(28px, 5vw, 36px);
-          letter-spacing: -1px;
-        }
-
-        .account-description {
-          color: #778195;
-          line-height: 1.7;
-          margin-bottom: 26px;
-        }
-
+        .account-eyebrow { color: #9a7a42; font-size: 12px; font-weight: 700; letter-spacing: 2px; }
+        h1 { margin: 10px 0; font-size: 32px; }
+        .account-description { color: #778195; line-height: 1.7; }
         .account-email {
           display: grid;
           gap: 7px;
-          padding: 15px;
-          margin-bottom: 24px;
-          border-radius: 10px;
+          margin: 22px 0;
+          padding: 14px;
+          border-radius: 9px;
           background: #f7f8fa;
           overflow-wrap: anywhere;
         }
-
-        .account-email span {
-          color: #778195;
-          font-size: 13px;
-        }
-
-        .account-email strong {
-          font-size: 14px;
-          font-weight: 600;
-        }
-
-        .account-form {
-          display: grid;
-          gap: 10px;
-        }
-
-        .account-form label {
-          margin-top: 7px;
-          font-size: 14px;
-          font-weight: 600;
-        }
-
+        .account-email span { color: #778195; font-size: 13px; }
+        .account-form { display: grid; gap: 10px; }
+        .account-form label { margin-top: 8px; font-size: 14px; font-weight: 600; }
         .account-form input {
+          box-sizing: border-box;
           width: 100%;
           min-height: 48px;
           padding: 12px;
@@ -358,16 +295,10 @@ export default function AccountPage() {
           background: white;
           color: #172338;
           font: inherit;
-          box-sizing: border-box;
         }
-
-        .account-form input:focus {
-          outline: 2px solid #c6a66b;
-          outline-offset: 1px;
-        }
-
-        .account-button {
-          min-height: 49px;
+        .account-form input:focus { outline: 2px solid #c6a66b; outline-offset: 1px; }
+        .account-form button {
+          min-height: 48px;
           margin-top: 14px;
           padding: 12px;
           border: 0;
@@ -378,46 +309,20 @@ export default function AccountPage() {
           font-weight: 700;
           cursor: pointer;
         }
-
-        .account-button:disabled,
-        .account-logout:disabled {
-          opacity: 0.6;
-          cursor: wait;
-        }
-
-        .account-success {
-          color: #167345;
-          font-size: 14px;
-        }
-
-        .account-error {
-          color: #b42318;
-          font-size: 14px;
-        }
-
-        .account-notice {
-          color: #526078;
-          line-height: 1.7;
-        }
-
+        button:disabled { opacity: .6; cursor: wait; }
+        .success { color: #167345; font-size: 14px; }
+        .error { color: #b42318; font-size: 14px; }
         .account-links {
           display: flex;
           flex-wrap: wrap;
           gap: 20px;
-          margin-top: 28px;
+          margin-top: 26px;
           padding-top: 20px;
           border-top: 1px solid #e5e8ef;
         }
-
-        .account-links a {
-          color: #10233f;
-          font-size: 14px;
-          font-weight: 600;
-          text-decoration: none;
-        }
-
-        .account-logout {
-          margin-top: 28px;
+        .account-links a { color: #10233f; font-size: 14px; font-weight: 600; text-decoration: none; }
+        .logout {
+          margin-top: 26px;
           padding: 0;
           border: 0;
           background: transparent;
@@ -425,16 +330,9 @@ export default function AccountPage() {
           font: inherit;
           cursor: pointer;
         }
-
         @media (max-width: 480px) {
-          .account-content {
-            margin-top: 28px;
-            padding: 22px;
-          }
-
-          .account-header {
-            min-height: 64px;
-          }
+          .account-content { margin-top: 26px; padding: 22px; }
+          .account-header { min-height: 64px; }
         }
       `}</style>
     </main>
