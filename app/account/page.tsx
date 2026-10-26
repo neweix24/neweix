@@ -167,8 +167,12 @@ export default function AccountPage() {
   return (
     <main className="account-page">
       <header className="account-header">
-        <Link href="/" className="account-brand">NEWEIX</Link>
-        <Link href="/" className="account-home">← শপিং চালিয়ে যান</Link>
+        <Link href="/" className="account-brand">
+          NEWEIX
+        </Link>
+        <Link href="/" className="account-home">
+          ← শপিং চালিয়ে যান
+        </Link>
       </header>
 
       <section className="account-content">
@@ -211,17 +215,27 @@ export default function AccountPage() {
                 onChange={(event) => setPhone(event.target.value)}
               />
 
-              {message && <p className="success" role="status">{message}</p>}
-              {errorMessage && <p className="error" role="alert">{errorMessage}</p>}
+              {message && (
+                <p className="success" role="status">
+                  {message}
+                </p>
+              )}
+
+              {errorMessage && (
+                <p className="error" role="alert">
+                  {errorMessage}
+                </p>
+              )}
 
               <button type="submit" disabled={saving}>
                 {saving ? "সংরক্ষণ হচ্ছে…" : "তথ্য সংরক্ষণ করুন"}
               </button>
             </form>
 
-            <nav className="account-links">
+            <nav className="account-links" aria-label="অ্যাকাউন্টের লিংক">
               <Link href="/orders">আমার অর্ডার</Link>
               <Link href="/cart">শপিং কার্ট</Link>
+              <Link href="/account/theme">🎨 নিজের থিম সাজাও</Link>
             </nav>
 
             <button
@@ -243,6 +257,7 @@ export default function AccountPage() {
           background: #f7f8fa;
           color: #172338;
         }
+
         .account-header {
           max-width: 1000px;
           min-height: 72px;
@@ -253,13 +268,20 @@ export default function AccountPage() {
           gap: 16px;
           border-bottom: 1px solid #e2e6ed;
         }
+
         .account-brand {
           color: #10233f;
           font-weight: 800;
           letter-spacing: 2px;
           text-decoration: none;
         }
-        .account-home { color: #526078; text-decoration: none; font-size: 14px; }
+
+        .account-home {
+          color: #526078;
+          text-decoration: none;
+          font-size: 14px;
+        }
+
         .account-content {
           box-sizing: border-box;
           max-width: 520px;
@@ -270,9 +292,24 @@ export default function AccountPage() {
           background: white;
           box-shadow: 0 12px 35px #10233f0a;
         }
-        .account-eyebrow { color: #9a7a42; font-size: 12px; font-weight: 700; letter-spacing: 2px; }
-        h1 { margin: 10px 0; font-size: 32px; }
-        .account-description { color: #778195; line-height: 1.7; }
+
+        .account-eyebrow {
+          color: #9a7a42;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 2px;
+        }
+
+        h1 {
+          margin: 10px 0;
+          font-size: 32px;
+        }
+
+        .account-description {
+          color: #778195;
+          line-height: 1.7;
+        }
+
         .account-email {
           display: grid;
           gap: 7px;
@@ -282,9 +319,23 @@ export default function AccountPage() {
           background: #f7f8fa;
           overflow-wrap: anywhere;
         }
-        .account-email span { color: #778195; font-size: 13px; }
-        .account-form { display: grid; gap: 10px; }
-        .account-form label { margin-top: 8px; font-size: 14px; font-weight: 600; }
+
+        .account-email span {
+          color: #778195;
+          font-size: 13px;
+        }
+
+        .account-form {
+          display: grid;
+          gap: 10px;
+        }
+
+        .account-form label {
+          margin-top: 8px;
+          font-size: 14px;
+          font-weight: 600;
+        }
+
         .account-form input {
           box-sizing: border-box;
           width: 100%;
@@ -296,7 +347,12 @@ export default function AccountPage() {
           color: #172338;
           font: inherit;
         }
-        .account-form input:focus { outline: 2px solid #c6a66b; outline-offset: 1px; }
+
+        .account-form input:focus {
+          outline: 2px solid #c6a66b;
+          outline-offset: 1px;
+        }
+
         .account-form button {
           min-height: 48px;
           margin-top: 14px;
@@ -309,9 +365,22 @@ export default function AccountPage() {
           font-weight: 700;
           cursor: pointer;
         }
-        button:disabled { opacity: .6; cursor: wait; }
-        .success { color: #167345; font-size: 14px; }
-        .error { color: #b42318; font-size: 14px; }
+
+        button:disabled {
+          opacity: 0.6;
+          cursor: wait;
+        }
+
+        .success {
+          color: #167345;
+          font-size: 14px;
+        }
+
+        .error {
+          color: #b42318;
+          font-size: 14px;
+        }
+
         .account-links {
           display: flex;
           flex-wrap: wrap;
@@ -320,7 +389,19 @@ export default function AccountPage() {
           padding-top: 20px;
           border-top: 1px solid #e5e8ef;
         }
-        .account-links a { color: #10233f; font-size: 14px; font-weight: 600; text-decoration: none; }
+
+        .account-links a {
+          color: #10233f;
+          font-size: 14px;
+          font-weight: 600;
+          text-decoration: none;
+        }
+
+        .account-links a:hover,
+        .account-home:hover {
+          text-decoration: underline;
+        }
+
         .logout {
           margin-top: 26px;
           padding: 0;
@@ -330,9 +411,16 @@ export default function AccountPage() {
           font: inherit;
           cursor: pointer;
         }
+
         @media (max-width: 480px) {
-          .account-content { margin-top: 26px; padding: 22px; }
-          .account-header { min-height: 64px; }
+          .account-content {
+            margin-top: 26px;
+            padding: 22px;
+          }
+
+          .account-header {
+            min-height: 64px;
+          }
         }
       `}</style>
     </main>
