@@ -623,3 +623,56 @@ th {
     padding: 26px 20px;
   }
 }
+/* Customer-selected colors — storefront only */
+body:has(.topbar) {
+  background: var(--customer-theme-background, var(--bg));
+  color: var(--customer-theme-text, var(--ink));
+}
+
+body:has(.topbar) .topbar {
+  background: var(--customer-theme-surface, var(--surface));
+  border-color: var(--customer-theme-border, var(--border));
+  color: var(--customer-theme-text, var(--ink));
+}
+
+body:has(.topbar) .hero,
+body:has(.topbar) .products-section,
+body:has(.topbar) .product-card,
+body:has(.topbar) footer {
+  background: var(--customer-theme-background, var(--bg));
+  color: var(--customer-theme-text, var(--ink));
+}
+
+body:has(.topbar) .product-card {
+  background: var(--customer-theme-surface, var(--surface));
+  border-color: var(--customer-theme-border, var(--border));
+}
+
+body:has(.topbar) h1,
+body:has(.topbar) h2,
+body:has(.topbar) h3,
+body:has(.topbar) .brand,
+body:has(.topbar) .product-bottom strong {
+  color: var(--customer-theme-text, var(--ink));
+}
+
+body:has(.topbar) p,
+body:has(.topbar) footer p {
+  color: var(--customer-theme-muted, var(--muted));
+}
+
+body:has(.topbar) .primary-button,
+body:has(.topbar) .nav-button,
+body:has(.topbar) .product-bottom button {
+  background: var(--customer-theme-button, var(--primary));
+  color: var(--customer-theme-button-text, #ffffff);
+  border-color: var(--customer-theme-border, var(--border));
+}
+
+body:has(.topbar) input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+body:has(.topbar) select,
+body:has(.topbar) textarea {
+  background: var(--customer-theme-surface, var(--surface));
+  color: var(--customer-theme-text, var(--ink));
+  border-color: var(--customer-theme-border, var(--border));
+}
