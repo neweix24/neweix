@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Language = "bn" | "en";
 
@@ -20,10 +20,16 @@ const TEXT = {
     shop: "পণ্য",
     track: "অর্ডার ট্র্যাক",
     cart: "কার্ট",
+    account: "আমার অ্যাকাউন্ট",
+    search: "পণ্য খুঁজুন",
+    searchPlaceholder: "পণ্যের নাম লিখুন...",
+    clearSearch: "মুছুন",
+    noSearchResults: "এই নামে কোনো পণ্য পাওয়া যায়নি।",
     eyebrow: "NEWEIX STORE · BANGLADESH",
     heroFirst: "আপনার কেনাকাটা,",
     heroSecond: "আরও স্মার্ট।",
-    heroCopy: "আপনার পছন্দের পণ্য খুঁজুন, সহজে অর্ডার করুন এবং উপভোগ করুন নতুন কেনাকাটার অভিজ্ঞতা।",
+    heroCopy:
+      "আপনার পছন্দের পণ্য খুঁজুন, সহজে অর্ডার করুন এবং উপভোগ করুন নতুন কেনাকাটার অভিজ্ঞতা।",
     shopNow: "পণ্য দেখুন",
     collection: "NEWEIX COLLECTION",
     featured: "FEATURED PRODUCTS",
@@ -47,10 +53,16 @@ const TEXT = {
     shop: "Shop",
     track: "Track Order",
     cart: "Cart",
+    account: "My Account",
+    search: "Search products",
+    searchPlaceholder: "Enter a product name...",
+    clearSearch: "Clear",
+    noSearchResults: "No products matched your search.",
     eyebrow: "NEWEIX STORE · BANGLADESH",
     heroFirst: "Shopping made",
     heroSecond: "smarter.",
-    heroCopy: "Discover products you love, order with ease, and enjoy a better shopping experience.",
+    heroCopy:
+      "Discover products you love, order with ease, and enjoy a better shopping experience.",
     shopNow: "Explore Products",
     collection: "NEWEIX COLLECTION",
     featured: "FEATURED PRODUCTS",
@@ -133,6 +145,7 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [language, setLanguage] = useState<Language>("bn");
   const [notice, setNotice] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const t = TEXT[language];
 
@@ -187,12 +200,38 @@ export default function HomePage() {
       }
     }
 
-    initialLoad();
+    void initialLoad();
 
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const filteredProducts = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase();
+
+    if (!query) return products;
+
+    return products.filter((product) => {
+      const searchableText = [
+        product.name,
+        product.slug,
+        product.description ?? "",
+      ]
+        .join(" ")
+        .toLocaleLowerCase();
+
+      return searchableText.includes(query);
+    });
+  }, [products, searchQuery]);
+
+  function handleSearchSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    document.getElementById("products")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
 
   return (
     <main lang={language}>
@@ -201,28 +240,28 @@ export default function HomePage() {
           NEWEIX<span>.</span>
         </a>
 
-        <nav aria-label={language === "bn" ? "প্রধান নেভিগেশন" : "Main navigation"}>
+        <nav
+          aria-label={
+            language === "bn" ? "প্রধান নেভিগেশন" : "Main navigation"
+          }
+        >
           <a href="#products">{t.shop}</a>
           <a href="/track-order">{t.track}</a>
+          <a href="/account">{t.account}</a>
           <a className="nav-button" href="/cart">
             {t.cart} ↗
           </a>
+
           <button
             type="button"
+            className="language-button"
             onClick={() => {
               setLanguage(language === "bn" ? "en" : "bn");
               setNotice("");
             }}
-            aria-label={language === "bn" ? "Switch to English" : "বাংলায় পরিবর্তন করুন"}
-            style={{
-              minHeight: 38,
-              padding: "7px 12px",
-              color: "var(--primary)",
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: 999,
-              fontWeight: 800,
-            }}
+            aria-label={
+              language === "bn" ? "Switch to English" : "বাংলায় পরিবর্তন করুন"
+            }
           >
             {language === "bn" ? "EN" : "বাংলা"}
           </button>
@@ -244,32 +283,13 @@ export default function HomePage() {
           {t.shopNow} ↗
         </a>
 
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 12,
-            marginTop: 38,
-          }}
-        >
+        <div className="hero-points">
           {[
             language === "bn" ? "✦ সহজ কেনাকাটা" : "✦ Easy Shopping",
             language === "bn" ? "✓ স্বচ্ছ মূল্য" : "✓ Clear Pricing",
             language === "bn" ? "↗ দ্রুত অর্ডার" : "↗ Simple Ordering",
           ].map((item) => (
-            <span
-              key={item}
-              style={{
-                padding: "8px 13px",
-                color: "var(--muted)",
-                background: "rgba(255,255,255,0.035)",
-                border: "1px solid var(--border)",
-                borderRadius: 999,
-                fontSize: 12,
-              }}
-            >
-              {item}
-            </span>
+            <span key={item}>{item}</span>
           ))}
         </div>
       </section>
@@ -279,32 +299,46 @@ export default function HomePage() {
         <h2>{t.heading}</h2>
         <p>{t.subtitle}</p>
 
+        <form className="product-search" onSubmit={handleSearchSubmit}>
+          <label className="sr-only" htmlFor="product-search-input">
+            {t.search}
+          </label>
+
+          <span aria-hidden="true">⌕</span>
+
+          <input
+            id="product-search-input"
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={t.searchPlaceholder}
+            autoComplete="off"
+          />
+
+          {searchQuery && (
+            <button
+              type="button"
+              className="clear-search"
+              onClick={() => setSearchQuery("")}
+            >
+              {t.clearSearch}
+            </button>
+          )}
+
+          <button className="search-button" type="submit">
+            {t.search}
+          </button>
+        </form>
+
         {notice && (
-          <p
-            role="status"
-            aria-live="polite"
-            style={{
-              padding: "12px 16px",
-              color: "var(--primary)",
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: 12,
-            }}
-          >
-            {notice}
-            {" "}
+          <p className="notice" role="status" aria-live="polite">
+            {notice}{" "}
             <button
               type="button"
               onClick={() => setNotice("")}
-              aria-label={language === "bn" ? "বার্তা বন্ধ করুন" : "Dismiss message"}
-              style={{
-                marginLeft: 8,
-                padding: "2px 8px",
-                color: "var(--ink)",
-                background: "transparent",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-              }}
+              aria-label={
+                language === "bn" ? "বার্তা বন্ধ করুন" : "Dismiss message"
+              }
             >
               ×
             </button>
@@ -330,9 +364,16 @@ export default function HomePage() {
           <p>{t.empty}</p>
         )}
 
-        {!loading && !error && products.length > 0 && (
+        {!loading &&
+          !error &&
+          products.length > 0 &&
+          filteredProducts.length === 0 && (
+            <p role="status">{t.noSearchResults}</p>
+          )}
+
+        {!loading && !error && filteredProducts.length > 0 && (
           <div className="product-grid">
-            {products.map((product, index) => (
+            {filteredProducts.map((product, index) => (
               <article className="product-card" key={product.id}>
                 <a
                   href={`/products/${encodeURIComponent(product.slug)}`}
@@ -341,7 +382,7 @@ export default function HomePage() {
                       ? `${product.name} বিস্তারিত দেখুন`
                       : `View ${product.name} details`
                   }
-                  style={{ display: "block" }}
+                  className="product-link"
                 >
                   <div className={`product-art art-${(index % 3) + 1}`}>
                     {product.image_urls?.[0] ? (
@@ -361,9 +402,7 @@ export default function HomePage() {
                   <h3>{product.name}</h3>
                 </a>
 
-                {product.description && (
-                  <p>{product.description}</p>
-                )}
+                {product.description && <p>{product.description}</p>}
 
                 <div className="product-bottom">
                   <strong>
@@ -382,11 +421,9 @@ export default function HomePage() {
                 </div>
 
                 <p
-                  style={{
-                    marginBottom: 0,
-                    color: product.stock > 0 ? "var(--primary)" : "var(--danger)",
-                    fontSize: 12,
-                  }}
+                  className={
+                    product.stock > 0 ? "stock-status" : "stock-status out"
+                  }
                 >
                   {product.stock > 0 ? t.inStock : t.outOfStock}
                 </p>
@@ -404,16 +441,215 @@ export default function HomePage() {
           <p>{t.footer}</p>
         </div>
 
-        <div>
+        <nav aria-label={language === "bn" ? "ফুটার লিংক" : "Footer links"}>
+          <a href="/account">{t.account}</a>
           <a href="/track-order">{t.track}</a>
-          {" · "}
           <a href="/cart">{t.cart}</a>
-        </div>
+          <a href="/account/theme">
+            {language === "bn" ? "নিজের থিম সাজাও" : "Customize theme"}
+          </a>
+        </nav>
 
         <small>
           © {new Date().getFullYear()} NEWEIX. {t.rights}
         </small>
       </footer>
+
+      <style jsx>{`
+        .language-button {
+          min-height: 38px;
+          padding: 7px 12px;
+          color: var(--primary);
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .hero-points {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-top: 38px;
+        }
+
+        .hero-points span {
+          padding: 8px 13px;
+          color: var(--muted);
+          background: rgba(255, 255, 255, 0.035);
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          font-size: 12px;
+        }
+
+        .product-search {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          max-width: 680px;
+          margin: 24px 0;
+          padding: 8px 10px 8px 16px;
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          background: var(--surface);
+          color: var(--ink);
+        }
+
+        .product-search > span {
+          font-size: 24px;
+          line-height: 1;
+        }
+
+        .product-search input {
+          flex: 1;
+          min-width: 0;
+          min-height: 42px;
+          border: 0;
+          outline: none;
+          background: transparent;
+          color: inherit;
+          font: inherit;
+        }
+
+        .product-search input:focus-visible {
+          outline: 2px solid var(--primary);
+          outline-offset: 2px;
+        }
+
+        .search-button,
+        .clear-search {
+          min-height: 40px;
+          padding: 8px 13px;
+          border: 1px solid var(--border);
+          border-radius: 9px;
+          background: var(--primary);
+          color: var(--bg);
+          font: inherit;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .clear-search {
+          background: transparent;
+          color: inherit;
+        }
+
+        .notice {
+          padding: 12px 16px;
+          color: var(--primary);
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+        }
+
+        .notice button {
+          margin-left: 8px;
+          padding: 2px 8px;
+          color: inherit;
+          background: transparent;
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          cursor: pointer;
+        }
+
+        .product-link {
+          display: block;
+          color: inherit;
+          text-decoration: none;
+        }
+
+        .product-bottom button {
+          min-width: 42px;
+          min-height: 42px;
+          cursor: pointer;
+        }
+
+        .product-bottom button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .stock-status {
+          margin-bottom: 0;
+          color: var(--primary);
+          font-size: 12px;
+        }
+
+        .stock-status.out {
+          color: var(--danger);
+        }
+
+        .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
+        }
+
+        footer nav {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 14px;
+        }
+
+        footer nav a {
+          color: inherit;
+          text-decoration: none;
+        }
+
+        footer nav a:hover {
+          text-decoration: underline;
+        }
+
+        @media (max-width: 760px) {
+          .topbar {
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 14px;
+          }
+
+          .topbar nav {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+          }
+
+          .product-search {
+            flex-wrap: wrap;
+          }
+
+          .product-search input {
+            flex-basis: 70%;
+          }
+
+          .search-button {
+            flex: 1;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .product-search {
+            padding: 8px;
+          }
+
+          .product-search > span {
+            display: none;
+          }
+
+          .product-search input {
+            flex-basis: 100%;
+          }
+        }
+      `}</style>
     </main>
   );
 }
