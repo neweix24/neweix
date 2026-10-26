@@ -8,6 +8,7 @@
   ],
   "keep_vars": true,
   "vars": {
+"NEWEIX_SITE_URL": "https://neweix.com",
     "NEXT_PUBLIC_SUPABASE_URL": "https://grhybvlhdnzlopwbaqun.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyaHlidmxoZG56bG9wd2JhcXVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NDYyMjEsImV4cCI6MjEwODIyMjIyMX0.27nR0VFbxwVYQKb5A06BRwizp02CHAmoD9IRMwiJ0Ss",
     "PAYMENT_BKASH_NUMBER": "01606368005",
