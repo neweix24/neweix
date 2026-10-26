@@ -2,7 +2,6 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -15,26 +14,32 @@ export default function ForgotPasswordPage() {
     setBusy(true);
 
     try {
-      const supabase = createBrowserSupabaseClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(
-        email.trim(),
-        {
-          redirectTo: `${window.location.origin}/auth/reset-password`,
-        }
-      );
+      const response = await fetch("/api/auth/password-reset", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+        }),
+      });
 
-      if (error) {
+      const data: { message?: string; error?: string } =
+        await response.json();
+
+      if (!response.ok) {
         setMessage(
-          "রিকভারি ইমেইল পাঠানো যায়নি। ইমেইল ও Supabase সেটিংস যাচাই করুন।"
+          data.error ?? "সমস্যা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।"
         );
         return;
       }
 
       setMessage(
-        "রিকভারি ইমেইল পাঠানোর অনুরোধ করা হয়েছে। ইনবক্স ও Spam ফোল্ডার দেখুন।"
+        data.message ??
+          "যদি এই ইমেইলে পাসওয়ার্ড লগইন চালু থাকে, তাহলে রিসেটের নির্দেশনা পাঠানো হবে।"
       );
     } catch {
-      setMessage("সমস্যা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।");
+      setMessage("সংযোগে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
     } finally {
       setBusy(false);
     }
@@ -45,24 +50,31 @@ export default function ForgotPasswordPage() {
       <p className="eyebrow">NEWEIX · ACCOUNT RECOVERY</p>
       <h1>পাসওয়ার্ড রিসেট</h1>
       <p className="hero-copy">
-        আপনার অ্যাকাউন্টের ইমেইল দিন। রিসেট লিংক পাঠানোর চেষ্টা করা হবে।
+        আপনার অ্যাকাউন্টের ইমেইল দিন। পাসওয়ার্ড রিসেটের নির্দেশনা
+        পাঠানোর অনুরোধ করা হবে।
       </p>
 
       <form className="track-form" onSubmit={handleSubmit}>
         <label htmlFor="email">ইমেইল</label>
         <input
           id="email"
+          name="email"
           type="email"
           autoComplete="email"
           required
+          maxLength={254}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
         />
 
-        {message && <p role="status" className="hero-copy">{message}</p>}
+        {message && (
+          <p role="status" aria-live="polite" className="hero-copy">
+            {message}
+          </p>
+        )}
 
         <button className="primary-button" type="submit" disabled={busy}>
-          {busy ? "পাঠানো হচ্ছে…" : "রিসেট লিংক পাঠান"}
+          {busy ? "যাচাই করা হচ্ছে…" : "রিসেট লিংক পাঠান"}
         </button>
       </form>
 
