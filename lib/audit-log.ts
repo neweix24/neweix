@@ -8,10 +8,6 @@ type AuditLogInput = {
   details?: Record<string, unknown>;
 };
 
-/**
- * Writes an administrative audit event using a trusted server-side client.
- * Never pass a client-side Supabase client with untrusted permissions here.
- */
 export async function writeAuditLog(
   supabase: SupabaseClient,
   input: AuditLogInput
@@ -25,7 +21,6 @@ export async function writeAuditLog(
   });
 
   if (error) {
-    // Do not log secrets, credentials, or customer personal data.
     console.error("Audit log write failed:", {
       action: input.action,
       targetType: input.targetType,
