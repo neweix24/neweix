@@ -12,14 +12,30 @@ const MAX_QUANTITY = 100;
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const PAYMENT_METHODS = ["cod", "bkash", "nagad", "rocket"] as const;
+const PAYMENT_METHODS = [
+  "cod",
+  "bkash",
+  "nagad",
+  "rocket",
+] as const;
+
 type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
+type OrderItem = {
+  product_id: string;
+  quantity: number;
+};
+
 function errorResponse(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
+  return NextResponse.json(
+    { error: message },
+    { status }
+  );
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(
+  value: unknown
+): value is Record<string, unknown> {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -28,47 +44,79 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function cleanString(value: unknown): string | null {
-  if (typeof value !== "string") return null;
+  if (typeof value !== "string") {
+    return null;
+  }
+
   const result = value.trim();
-  return result.length ? result : null;
+  return result.length > 0 ? result : null;
 }
 
 export async function POST(request: Request) {
+  // Reject an oversized request before parsing JSON.
   const contentLength = request.headers.get("content-length");
 
   if (contentLength !== null) {
     const size = Number(contentLength);
 
     if (!Number.isSafeInteger(size) || size < 0) {
-      return errorResponse("অনুরোধের আকার সঠিক নয়।", 400);
+      return errorResponse(
+        "অনুরোধের আকার সঠিক নয়।",
+        400
+      );
     }
 
     if (size > MAX_BODY_BYTES) {
-      return errorResponse("অনুরোধের আকার অনেক বড়।", 413);
+      return errorResponse(
+        "অনুরোধের আকার অনেক বড়।",
+        413
+      );
     }
   }
 
+  // Parse and independently check the actual body size.
   let rawBody: unknown;
 
   try {
     const text = await request.text();
 
-    if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) {
-      return errorResponse("অনুরোধের আকার অনেক বড়।", 413);
+    if (
+      new TextEncoder().encode(text).byteLength >
+      MAX_BODY_BYTES
+    ) {
+      return errorResponse(
+        "অনুরোধের আকার অনেক বড়।",
+        413
+      );
     }
 
     rawBody = JSON.parse(text);
   } catch {
-    return errorResponse("সঠিক JSON তথ্য পাঠান।", 400);
+    return errorResponse(
+      "সঠিক JSON তথ্য পাঠান।",
+      400
+    );
   }
 
   if (!isRecord(rawBody)) {
-    return errorResponse("অর্ডারের তথ্য সঠিক নয়।", 400);
+    return errorResponse(
+      "অর্ডারের তথ্য সঠিক নয়।",
+      400
+    );
   }
 
-  const customerName = cleanString(rawBody.customer_name);
-  const customerPhone = cleanString(rawBody.customer_phone);
-  const shippingAddress = cleanString(rawBody.shipping_address);
+  // Validate customer information.
+  const customerName = cleanString(
+    rawBody.customer_name
+  );
+
+  const customerPhone = cleanString(
+    rawBody.customer_phone
+  );
+
+  const shippingAddress = cleanString(
+    rawBody.shipping_address
+  );
 
   const customerEmail =
     rawBody.customer_email == null
@@ -80,25 +128,45 @@ export async function POST(request: Request) {
       ? null
       : cleanString(rawBody.shipping_city);
 
-  if (!customerName || !customerPhone || !shippingAddress) {
-    return errorResponse("নাম, ফোন নম্বর ও ঠিকানা দিন।", 400);
+  if (
+    !customerName ||
+    !customerPhone ||
+    !shippingAddress
+  ) {
+    return errorResponse(
+      "নাম, ফোন নম্বর ও ঠিকানা দিন।",
+      400
+    );
   }
 
-  if (customerName.length > 120) {
-    return errorResponse("নাম সর্বোচ্চ ১২০ অক্ষরের হতে পারবে।", 400);
+  if (
+    customerName.length < 2 ||
+    customerName.length > 120
+  ) {
+    return errorResponse(
+      "নাম ২ থেকে ১২০ অক্ষরের মধ্যে হতে হবে।",
+      400
+    );
   }
 
   if (
     customerPhone.length > 30 ||
     !/^[0-9+\-()\s]+$/.test(customerPhone) ||
-    !/[0-9]/.test(customerPhone)
+    !/[0-9]/.test(customerPhone) ||
+    customerPhone.replace(/\D/g, "").length < 7
   ) {
-    return errorResponse("সঠিক ফোন নম্বর দিন।", 400);
+    return errorResponse(
+      "সঠিক ফোন নম্বর দিন।",
+      400
+    );
   }
 
-  if (shippingAddress.length > 1000) {
+  if (
+    shippingAddress.length < 5 ||
+    shippingAddress.length > 1000
+  ) {
     return errorResponse(
-      "ঠিকানা সর্বোচ্চ ১০০০ অক্ষরের হতে পারবে।",
+      "ঠিকানা ৫ থেকে ১০০০ অক্ষরের মধ্যে হতে হবে।",
       400
     );
   }
@@ -106,16 +174,28 @@ export async function POST(request: Request) {
   if (customerEmail !== null) {
     if (
       customerEmail.length > 254 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        customerEmail
+      )
     ) {
-      return errorResponse("সঠিক ইমেইল ঠিকানা দিন।", 400);
+      return errorResponse(
+        "সঠিক ইমেইল ঠিকানা দিন।",
+        400
+      );
     }
   }
 
-  if (shippingCity !== null && shippingCity.length > 120) {
-    return errorResponse("শহর বা জেলার নাম অনেক বড়।", 400);
+  if (
+    shippingCity !== null &&
+    shippingCity.length > 120
+  ) {
+    return errorResponse(
+      "শহর বা জেলার নাম অনেক বড়।",
+      400
+    );
   }
 
+  // Validate the payment method.
   const paymentMethodValue =
     rawBody.payment_method == null
       ? "cod"
@@ -123,13 +203,22 @@ export async function POST(request: Request) {
 
   if (
     typeof paymentMethodValue !== "string" ||
-    !PAYMENT_METHODS.includes(paymentMethodValue as PaymentMethod)
+    !PAYMENT_METHODS.includes(
+      paymentMethodValue as PaymentMethod
+    )
   ) {
-    return errorResponse("সঠিক পেমেন্ট পদ্ধতি নির্বাচন করুন।", 400);
+    return errorResponse(
+      "সঠিক পেমেন্ট পদ্ধতি নির্বাচন করুন।",
+      400
+    );
   }
 
-  const paymentMethod = paymentMethodValue as PaymentMethod;
-  const transactionId = cleanString(rawBody.payment_transaction_id);
+  const paymentMethod =
+    paymentMethodValue as PaymentMethod;
+
+  const transactionId = cleanString(
+    rawBody.payment_transaction_id
+  );
 
   if (paymentMethod === "cod" && transactionId) {
     return errorResponse(
@@ -151,20 +240,27 @@ export async function POST(request: Request) {
     }
   }
 
+  // Validate and normalize cart items.
   if (
     !Array.isArray(rawBody.items) ||
     rawBody.items.length === 0 ||
     rawBody.items.length > MAX_ITEMS
   ) {
-    return errorResponse("কার্টের পণ্যের তথ্য সঠিক নয়।", 400);
+    return errorResponse(
+      "কার্টের পণ্যের তথ্য সঠিক নয়।",
+      400
+    );
   }
 
-  const items: { product_id: string; quantity: number }[] = [];
+  const items: OrderItem[] = [];
   const seen = new Set<string>();
 
   for (const item of rawBody.items) {
     if (!isRecord(item)) {
-      return errorResponse("পণ্যের তথ্য সঠিক নয়।", 400);
+      return errorResponse(
+        "পণ্যের তথ্য সঠিক নয়।",
+        400
+      );
     }
 
     const id = item.product_id;
@@ -173,9 +269,10 @@ export async function POST(request: Request) {
     if (
       typeof id !== "string" ||
       !UUID_REGEX.test(id) ||
+      typeof quantity !== "number" ||
       !Number.isSafeInteger(quantity) ||
-      (quantity as number) < 1 ||
-      (quantity as number) > MAX_QUANTITY
+      quantity < 1 ||
+      quantity > MAX_QUANTITY
     ) {
       return errorResponse(
         "পণ্যের ID অথবা পরিমাণ সঠিক নয়।",
@@ -196,21 +293,34 @@ export async function POST(request: Request) {
 
     items.push({
       product_id: normalizedId,
-      quantity: quantity as number,
+      quantity,
     });
   }
 
-  let url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  let serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Read Cloudflare Worker bindings.
+  let url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  let serviceKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  let mobilePaymentEnabled = false;
 
   try {
     const { env } = getCloudflareContext();
-    const runtimeEnv = env as Record<string, unknown>;
+    const runtimeEnv =
+      env as Record<string, unknown>;
 
-    const runtimeUrl = runtimeEnv.NEXT_PUBLIC_SUPABASE_URL;
-    const runtimeServiceKey = runtimeEnv.SUPABASE_SERVICE_ROLE_KEY;
+    const runtimeUrl =
+      runtimeEnv.NEXT_PUBLIC_SUPABASE_URL;
 
-    if (typeof runtimeUrl === "string" && runtimeUrl.length > 0) {
+    const runtimeServiceKey =
+      runtimeEnv.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (
+      typeof runtimeUrl === "string" &&
+      runtimeUrl.trim().length > 0
+    ) {
       url = runtimeUrl;
     }
 
@@ -220,28 +330,73 @@ export async function POST(request: Request) {
     ) {
       serviceKey = runtimeServiceKey;
     }
+
+    // The server must enforce mobile payment configuration.
+    if (paymentMethod !== "cod") {
+      const paymentEnvKeys = {
+        bkash: "PAYMENT_BKASH_NUMBER",
+        nagad: "PAYMENT_NAGAD_NUMBER",
+        rocket: "PAYMENT_ROCKET_NUMBER",
+      } as const;
+
+      const configuredNumber =
+        runtimeEnv[paymentEnvKeys[paymentMethod]];
+
+      mobilePaymentEnabled =
+        typeof configuredNumber === "string" &&
+        configuredNumber.trim().length > 0;
+    }
   } catch (error) {
-    console.error("Unable to read Cloudflare environment:", error);
-  }
-
-  if (!url || !serviceKey) {
-    console.error("Order API: Supabase environment variables are missing.");
-    return errorResponse("অর্ডার সার্ভার কনফিগার করা নেই।", 503);
-  }
-
-  try {
-    const supabase = createClient(url, serviceKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
-
-    // Expire eligible unpaid mobile-payment orders and restore stock.
-    // The SQL function must be created in Supabase before this is enabled.
-    const { error: expiryError } = await supabase.rpc(
-      "expire_unpaid_mobile_orders"
+    console.error(
+      "Unable to read Cloudflare environment:",
+      error
     );
+  }
+
+  if (
+    paymentMethod !== "cod" &&
+    !mobilePaymentEnabled
+  ) {
+    return errorResponse(
+      "এই পেমেন্ট পদ্ধতি বর্তমানে চালু নেই। অন্য পদ্ধতি নির্বাচন করুন।",
+      400
+    );
+  }
+
+  if (
+    typeof url !== "string" ||
+    url.trim().length === 0 ||
+    typeof serviceKey !== "string" ||
+    serviceKey.length === 0
+  ) {
+    console.error(
+      "Order API: required Supabase configuration is missing."
+    );
+
+    return errorResponse(
+      "অর্ডার সার্ভার কনফিগার করা নেই।",
+      503
+    );
+  }
+
+  // Create the order using trusted server-side database logic.
+  try {
+    const supabase = createClient(
+      url,
+      serviceKey,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      }
+    );
+
+    // Expire eligible unpaid mobile orders first.
+    const { error: expiryError } =
+      await supabase.rpc(
+        "expire_unpaid_mobile_orders"
+      );
 
     if (expiryError) {
       console.error(
@@ -255,34 +410,48 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data, error } = await supabase.rpc(
-      "create_order_with_payment",
-      {
-        p_customer_name: customerName,
-        p_customer_phone: customerPhone,
-        p_customer_email: customerEmail,
-        p_shipping_address: shippingAddress,
-        p_shipping_city: shippingCity,
-        p_payment_method: paymentMethod,
-        p_payment_transaction_id:
-          paymentMethod === "cod" ? null : transactionId,
-        p_items: items,
-      }
-    );
+    const { data, error } =
+      await supabase.rpc(
+        "create_order_with_payment",
+        {
+          p_customer_name: customerName,
+          p_customer_phone: customerPhone,
+          p_customer_email: customerEmail,
+          p_shipping_address: shippingAddress,
+          p_shipping_city: shippingCity,
+          p_payment_method: paymentMethod,
+          p_payment_transaction_id:
+            paymentMethod === "cod"
+              ? null
+              : transactionId,
+          p_items: items,
+        }
+      );
 
     if (error) {
-      const errorMessage = String(error.message ?? "").toLowerCase();
-      const errorCode = String(error.code ?? "");
+      const errorMessage = String(
+        error.message ?? ""
+      ).toLowerCase();
 
-      console.error("Order creation failed:", {
-        code: errorCode,
-        message: error.message,
-      });
+      const errorCode = String(
+        error.code ?? ""
+      );
 
+      console.error(
+        "Order creation failed:",
+        {
+          code: errorCode,
+          message: error.message,
+        }
+      );
+
+      // Reject duplicate mobile payment transaction IDs.
       if (
         errorCode === "23505" &&
         (
-          errorMessage.includes("payment_transaction_id") ||
+          errorMessage.includes(
+            "payment_transaction_id"
+          ) ||
           errorMessage.includes(
             "orders_payment_transaction_id_normalized_uidx"
           )
@@ -306,7 +475,9 @@ export async function POST(request: Request) {
 
       if (
         errorMessage.includes("stock") ||
-        errorMessage.includes("product unavailable") ||
+        errorMessage.includes(
+          "product unavailable"
+        ) ||
         errorMessage.includes("insufficient")
       ) {
         return errorResponse(
@@ -321,8 +492,13 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!data || typeof data !== "object") {
-      console.error("Order API returned empty or invalid data.");
+    if (
+      !data ||
+      typeof data !== "object"
+    ) {
+      console.error(
+        "Order API returned empty or invalid data."
+      );
 
       return errorResponse(
         "অর্ডারের ফলাফল নিশ্চিত করা যায়নি।",
@@ -338,10 +514,18 @@ export async function POST(request: Request) {
             : "অর্ডার গ্রহণ করা হয়েছে। পেমেন্ট যাচাই বাকি আছে।",
         order: data,
       },
-      { status: 201 }
+      {
+        status: 201,
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      }
     );
   } catch (error) {
-    console.error("Unexpected order API error:", error);
+    console.error(
+      "Unexpected order API error:",
+      error
+    );
 
     return errorResponse(
       "সার্ভারে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।",
