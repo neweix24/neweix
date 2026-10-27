@@ -27,7 +27,7 @@ try {
 const { env } = getCloudflareContext();
 const value = (env as RuntimeEnv)[name];
 
-if (typeof value === "string" &amp;&amp; value.trim()) {
+if (typeof value === "string" && value.trim()) {
   return value.trim();
 }
 
