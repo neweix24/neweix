@@ -77,7 +77,7 @@ const length = request.headers.get("content-length");
 if (length !== null) {
 const size = Number(length);
 
-if (!Number.isSafeInteger(size) || size &lt; 0) {
+if (!Number.isSafeInteger(size) || size < 0) {
   return respond("অনুরোধের তথ্য সঠিক নয়।", 400);
 }
 
