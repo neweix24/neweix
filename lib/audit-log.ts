@@ -25,6 +25,9 @@ export async function writeAuditLog(
       action: input.action,
       targetType: input.targetType,
       code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
     });
 
     throw new Error("Audit log could not be recorded.");
