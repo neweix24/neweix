@@ -18,6 +18,44 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * Compare primitive values, arrays and nested JSON objects.
+ * Object key order does not affect equality.
+ */
+function areValuesEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+
+  if (
+    a === null ||
+    b === null ||
+    typeof a !== "object" ||
+    typeof b !== "object"
+  ) {
+    return false;
+  }
+
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
+      return false;
+    }
+
+    return a.every((value, index) => areValuesEqual(value, b[index]));
+  }
+
+  const aRecord = a as Record<string, unknown>;
+  const bRecord = b as Record<string, unknown>;
+  const aKeys = Object.keys(aRecord).sort();
+  const bKeys = Object.keys(bRecord).sort();
+
+  if (aKeys.length !== bKeys.length) return false;
+
+  return aKeys.every(
+    (key, index) =>
+      key === bKeys[index] &&
+      areValuesEqual(aRecord[key], bRecord[key])
+  );
+}
+
 function jsonError(message: string, status: number) {
   return NextResponse.json(
     { error: message },
@@ -337,13 +375,52 @@ export async function PATCH(
 
     const supabase = await getAdminClient();
 
+    const productSelect =
+      "id, name, slug, description, price, compare_at_price, stock, sku, category_id, image_urls, video_url, variants, is_active, is_featured, low_stock_threshold, weight_grams, updated_at";
+
+    // Read the existing values before deciding what actually changed.
+    const { data: existing, error: existingError } = await supabase
+      .from("products")
+      .select(productSelect)
+      .eq("id", id)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error(
+        "Product lookup before update failed:",
+        existingError.message
+      );
+      return jsonError("পণ্যের বর্তমান তথ্য যাচাই করা যায়নি।", 500);
+    }
+
+    if (!existing) {
+      return jsonError("পণ্যটি পাওয়া যায়নি।", 404);
+    }
+
+    const existingRecord =
+      existing as unknown as Record<string, unknown>;
+
+    const changedFields = Object.keys(update).filter(
+      (key) => !areValuesEqual(existingRecord[key], update[key])
+    );
+
+    // No values changed: don't update the row or write a redundant audit entry.
+    if (changedFields.length === 0) {
+      return NextResponse.json(
+        { success: true, product: existing },
+        { headers: { "Cache-Control": "no-store" } }
+      );
+    }
+
+    const changedUpdate = Object.fromEntries(
+      changedFields.map((key) => [key, update[key]])
+    );
+
     const { data, error } = await supabase
       .from("products")
-      .update(update)
+      .update(changedUpdate)
       .eq("id", id)
-      .select(
-        "id, name, slug, description, price, compare_at_price, stock, sku, category_id, image_urls, video_url, variants, is_active, is_featured, low_stock_threshold, weight_grams, updated_at"
-      )
+      .select(productSelect)
       .maybeSingle();
 
     if (error) {
@@ -358,7 +435,7 @@ export async function PATCH(
 
       if (error.code === "23503") {
         return jsonError(
-          "নির্বাচিত Category ID পাওয়া যায়নি।",
+          "নির্বাচিত Category ID পাওয়া যায়নি।",
           400
         );
       }
@@ -377,7 +454,7 @@ export async function PATCH(
         targetType: "product",
         targetId: String(data.id),
         details: {
-          changedFields: Object.keys(update),
+          changedFields,
           stock: data.stock,
           name: data.name,
         },
@@ -386,7 +463,7 @@ export async function PATCH(
       console.error("Audit log missing for product update:", {
         actorId: auth.userId,
         productId: data.id,
-        changedFields: Object.keys(update),
+        changedFields,
       });
     }
 
