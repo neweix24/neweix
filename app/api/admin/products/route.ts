@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { writeAuditLog } from "@/lib/audit-log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,7 +50,13 @@ function isHttpsUrl(value: unknown): value is string {
 }
 
 function errorResponse(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
+  return NextResponse.json(
+    { error: message },
+    {
+      status,
+      headers: { "Cache-Control": "no-store" },
+    }
+  );
 }
 
 async function getStaffContext(): Promise<StaffContext> {
@@ -216,10 +223,7 @@ export async function POST(request: Request) {
     const lowStockThreshold = body.low_stock_threshold ?? 5;
 
     if (!name || name.length > 200) {
-      return errorResponse(
-        "পণ্যের নাম দিন (সর্বোচ্চ ২০০ অক্ষর)।",
-        400
-      );
+      return errorResponse("পণ্যের নাম দিন (সর্বোচ্চ ২০০ অক্ষর)।", 400);
     }
 
     if (
@@ -380,6 +384,25 @@ export async function POST(request: Request) {
       }
 
       return errorResponse("পণ্য তৈরি করা যায়নি।", 500);
+    }
+
+    try {
+      await writeAuditLog(supabase, {
+        actorId: staff.user.id,
+        action: "product.created",
+        targetType: "product",
+        targetId: String(data.id),
+        details: {
+          name: data.name,
+          slug: data.slug,
+          stock: data.stock,
+        },
+      });
+    } catch {
+      console.error("Audit log missing for product creation:", {
+        actorId: staff.user.id,
+        productId: data.id,
+      });
     }
 
     return NextResponse.json(
