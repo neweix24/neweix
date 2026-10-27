@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { writeAuditLog } from "@/lib/audit-log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,7 +63,7 @@ async function authorizeAdmin() {
       error: mfaError,
     } = await session.auth.mfa.getAuthenticatorAssuranceLevel();
 
-    if (mfaError || assurance.currentLevel !== "aal2") {
+    if (mfaError || assurance?.currentLevel !== "aal2") {
       return {
         response: jsonError(
           "Supreme অ্যাকাউন্টের MFA যাচাই করুন।",
@@ -72,7 +73,10 @@ async function authorizeAdmin() {
     }
   }
 
-  return { role: profile.role };
+  return {
+    role: profile.role,
+    userId: user.id,
+  };
 }
 
 async function getAdminClient() {
@@ -128,7 +132,7 @@ export async function PATCH(
     const contentLength = request.headers.get("content-length");
 
     if (
-      contentLength &&
+      contentLength !== null &&
       (!/^\d+$/.test(contentLength) ||
         Number(contentLength) > MAX_BODY_BYTES)
     ) {
@@ -364,6 +368,26 @@ export async function PATCH(
 
     if (!data) {
       return jsonError("পণ্যটি পাওয়া যায়নি।", 404);
+    }
+
+    try {
+      await writeAuditLog(supabase, {
+        actorId: auth.userId,
+        action: "product.updated",
+        targetType: "product",
+        targetId: String(data.id),
+        details: {
+          changedFields: Object.keys(update),
+          stock: data.stock,
+          name: data.name,
+        },
+      });
+    } catch {
+      console.error("Audit log missing for product update:", {
+        actorId: auth.userId,
+        productId: data.id,
+        changedFields: Object.keys(update),
+      });
     }
 
     return NextResponse.json(
