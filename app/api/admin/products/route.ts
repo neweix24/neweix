@@ -43,7 +43,12 @@ function isHttpsUrl(value: unknown): value is string {
 
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && Boolean(url.hostname);
+    return (
+      url.protocol === "https:" &&
+      Boolean(url.hostname) &&
+      !url.username &&
+      !url.password
+    );
   } catch {
     return false;
   }
@@ -137,6 +142,9 @@ async function getAdminClient() {
 const PRODUCT_COLUMNS =
   "id, name, slug, description, price, compare_at_price, image_urls, stock, category_id, video_url, variants, sku, is_active, is_featured, weight_grams, low_stock_threshold, created_at, updated_at";
 
+const STAFF_PRODUCT_COLUMNS =
+  "id, name, slug, stock, low_stock_threshold";
+
 export async function GET() {
   try {
     const staff = await getStaffContext();
@@ -147,9 +155,15 @@ export async function GET() {
 
     const supabase = await getAdminClient();
 
+    // Staff receives only product identity and stock-related fields.
+    const columns =
+      staff.role === "staff"
+        ? STAFF_PRODUCT_COLUMNS
+        : PRODUCT_COLUMNS;
+
     const { data, error } = await supabase
       .from("products")
-      .select(PRODUCT_COLUMNS)
+      .select(columns)
       .order("created_at", { ascending: false });
 
     if (error) {
