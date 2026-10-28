@@ -4,6 +4,8 @@
 begin;
 
 alter table public.orders
+  add column if not exists payment_method text not null default 'cod',
+  add column if not exists payment_status text not null default 'pending',
   add column if not exists payment_transaction_id text,
   add column if not exists payment_verified_at timestamptz,
   add column if not exists payment_verified_by uuid references auth.users(id),

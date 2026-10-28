@@ -1,32 +1,26 @@
-# Neweix — starter project
+# Neweix — Bangla-first e-commerce (Next.js + Supabase + Cloudflare)
 
-Bangla-first Next.js storefront scaffold for the Neweix Bangladesh ecommerce project. It includes product browsing, product detail pages, a browser-only demo cart, a checkout form marked as demo-only, email OTP sign-in UI, Admin/Supreme placeholder pages, and a Supabase SQL schema with RLS defaults.
+## What works
+- Storefront (`/`), product page (`/products/[slug]`), cart (localStorage), checkout (`/checkout`)
+- Order creation through `POST /api/orders` → database function `create_order_with_payment`
+  (prices and stock are checked in the database; COD and bKash/Nagad/Rocket with transaction ID)
+- Guest order tracking (`/track-order`, rate-limited)
+- Customer login, account page, theme page
+- Staff/Admin/Supreme areas with role checks; Supreme requires MFA; audit log
+- Admin product API and staff product-submission approval flow
 
-## Important status
-This is **not yet production-ready**. Checkout does not create database orders, payment providers are not connected, courier APIs are not connected, and Admin/Supreme pages intentionally do not perform privileged actions. Do not accept real payments or customer orders until server-side checkout, role checks, webhook verification, rate limits, and tests are implemented.
+## Not built yet
+Courier API booking, SMS OTP, online card payment, analytics/promo codes/landing-page editor.
+The `delivery_*` columns already exist for the courier step.
 
-## Local setup
-1. Install Node.js 20+ on a computer or use a supported online development environment.
-2. Run `npm install`, then `npm run dev`.
-3. Copy `.env.example` to `.env.local` and fill in the Supabase project URL and publishable/anon key.
-4. In Supabase SQL Editor, review `supabase/migrations/202610230001_neweix_schema.sql` and apply it only after confirming it matches your project.
-5. Configure email authentication and redirect URLs in Supabase Auth.
+## Setup
+1. `npm install`
+2. Copy `.env.example` to `.env.local` and fill it in.
+3. In Supabase → SQL Editor run, in order: `001`, `002`, `003`, `004` from `supabase/migrations/`.
+4. Create your first Supreme user in Supabase Auth, then in SQL Editor:
+   `insert into public.staff_profiles (user_id, display_name, role, is_active) values ('<USER-UUID>', 'Owner', 'supreme', true);`
+5. `npm run dev`
 
-## Deployment
-Import this repository into a Next.js-compatible host such as Vercel, configure the environment variables, deploy, then connect `neweix.com` in the host dashboard and update DNS as instructed by that provider.
-
-## Security
-- Never put Supabase `service_role`/secret keys in client code or any `NEXT_PUBLIC_` variable.
-- The initial Supreme role must be assigned only through a reviewed trusted administrative process; never trust client metadata for permissions.
-- Add MFA, server-side authorization, audit logging, order-creation API, inventory locking, payment signature verification, courier credentials, backups and monitoring before launch.
-- The migration deliberately has no public write policies for staff roles, orders or catalogue management.
-
-## Current pages
-- `/` storefront
-- `/products/[id]` product detail
-- `/cart` demo cart (localStorage)
-- `/checkout` demo form only
-- `/login` email OTP UI
-- `/account/orders` tracking placeholder
-- `/admin` admin placeholder
-- `/supreme` restricted placeholder
+## Deploy (Cloudflare)
+`npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY`, then `npm run deploy`.
+Never put the service-role key in code, `wrangler.jsonc` or any `NEXT_PUBLIC_` variable.

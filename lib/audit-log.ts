@@ -13,7 +13,7 @@ export async function writeAuditLog(
   input: AuditLogInput
 ): Promise<void> {
   const { error } = await supabase.from("audit_logs").insert({
-    actor_id: input.actorId,
+    actor_user_id: input.actorId,
     action: input.action,
     target_type: input.targetType,
     target_id: input.targetId ?? null,

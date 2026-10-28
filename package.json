@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "latest",
@@ -27,6 +28,7 @@
     "eslint-config-next": "^15.5.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.0.0",
-    "wrangler": "latest"
+    "wrangler": "latest",
+    "@eslint/eslintrc": "^3.0.0"
   }
 }

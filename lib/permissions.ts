@@ -1,4 +1,4 @@
-export type StaffRole = "admin" | "supreme";
+export type StaffRole = "staff" | "admin" | "supreme";
 
 export type StaffPermission =
   | "products.read"
