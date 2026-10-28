@@ -1,4 +1,5 @@
 import { requireStaff } from "@/lib/auth";
+import SupremeDashboardClient from "./SupremeDashboardClient";
 
 export const dynamic = "force-dynamic";
 
@@ -6,29 +7,31 @@ export default async function SupremePage() {
   const staff = await requireStaff(["supreme"]);
 
   return (
-    <main className="hero">
-      <p className="eyebrow">NEWEIX · SUPREME PANEL</p>
+    <div className="min-h-screen bg-gray-50">
+      <header className="border-b bg-white px-4 py-4">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wider text-blue-700">
+              NEWEIX · SUPREME PANEL
+            </p>
 
-      <h1>Supreme Dashboard</h1>
+            <p className="mt-1 text-sm text-gray-600">
+              লগইন করা Role: {staff.role}
+            </p>
+          </div>
 
-      <p className="hero-copy">
-        আপনার পরিচয় ও দুই ধাপের যাচাইকরণ সার্ভার থেকে যাচাই করা হয়েছে।
-      </p>
+          <form action="/auth/logout" method="post">
+            <button
+              type="submit"
+              className="rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-800"
+            >
+              লগআউট
+            </button>
+          </form>
+        </div>
+      </header>
 
-      <p className="hero-copy">
-        Role: <strong>{staff.role}</strong>
-      </p>
-
-      <p className="hero-copy">
-        নিরাপত্তার কারণে এই পেজে প্রবেশের জন্য Supreme অনুমতি এবং
-        প্রয়োজনীয় MFA যাচাইকরণ বাধ্যতামূলক।
-      </p>
-
-      <form action="/auth/logout" method="post">
-        <button className="primary-button" type="submit">
-          লগআউট করুন
-        </button>
-      </form>
-    </main>
+      <SupremeDashboardClient />
+    </div>
   );
 }
