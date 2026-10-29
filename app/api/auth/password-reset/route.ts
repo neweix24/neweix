@@ -120,7 +120,7 @@ export async function POST(request: Request) {
 
     const { error: resetError } =
       await publicClient.auth.resetPasswordForEmail(email, {
-        redirectTo: `${siteUrl}/auth/reset-password`,
+        redirectTo: `${siteUrl}/auth/callback?next=%2Fauth%2Freset-password`,
       });
 
     if (resetError) {
