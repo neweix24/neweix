@@ -4,3 +4,13 @@ node_modules
 .next
 .open-next
 .wrangler
+
+# Local backups and generated TypeScript build information
+package-lock.backup.json
+package-lock.audit-backup.json
+package.json.audit-backup
+tsconfig.tsbuildinfo
+
+# Local-only privileged Supabase SQL utility
+scripts/supabase-sql.sh
+scripts/sql/check-database.sql

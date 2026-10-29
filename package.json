@@ -14,12 +14,13 @@
   "dependencies": {
     "@opennextjs/cloudflare": "latest",
     "@supabase/ssr": "^0.7.0",
-    "@supabase/supabase-js": "^2.57.0",
+    "@supabase/supabase-js": "^2.118.0",
     "next": "^15.5.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.0.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^20.0.0",
     "@types/react": "^19.0.0",
@@ -28,7 +29,15 @@
     "eslint-config-next": "^15.5.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.0.0",
-    "wrangler": "latest",
-    "@eslint/eslintrc": "^3.0.0"
+    "wrangler": "latest"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "8.5.32"
+    },
+    "@node-minify/core": {
+      "glob": "^10.4.6"
+    },
+    "postcss": "8.5.32"
   }
 }
