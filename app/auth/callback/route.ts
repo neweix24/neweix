@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -45,19 +44,21 @@ export async function GET(request: NextRequest) {
   const errorParam = requestUrl.searchParams.get("error");
 
   if (errorParam) {
-    const destination = isCustomerFlow
-      ? "/auth/customer-login?error=oauth_failed"
-      : "/auth/forgot-password?error=invalid_or_expired";
-
-    return redirectTo(request, destination);
+    return redirectTo(
+      request,
+      isCustomerFlow
+        ? "/auth/customer-login?error=oauth_failed"
+        : "/auth/forgot-password?error=invalid_or_expired"
+    );
   }
 
   if (!code) {
-    const destination = isCustomerFlow
-      ? "/auth/customer-login?error=missing_code"
-      : "/auth/forgot-password?error=missing_code";
-
-    return redirectTo(request, destination);
+    return redirectTo(
+      request,
+      isCustomerFlow
+        ? "/auth/customer-login?error=missing_code"
+        : "/auth/forgot-password?error=missing_code"
+    );
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -72,16 +73,17 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const cookieStore = await cookies();
+  // Session cookies must be attached to the response returned to the browser.
+  const response = NextResponse.redirect(new URL(next, request.url));
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll() {
-        return cookieStore.getAll();
+        return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
+          response.cookies.set(name, value, options);
         });
       },
     },
@@ -90,6 +92,8 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
+    console.error("Supabase callback exchange failed:", error.message);
+
     return redirectTo(
       request,
       isCustomerFlow
@@ -98,5 +102,5 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return redirectTo(request, next);
+  return response;
 }
