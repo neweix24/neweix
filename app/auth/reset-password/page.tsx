@@ -47,9 +47,8 @@ export default function ResetPasswordPage() {
       const { error } = await supabase.auth.updateUser({ password });
 
       if (error) {
-        setMessage(
-          "পাসওয়ার্ড পরিবর্তন হয়নি। রিসেট লিংকটি আবার যাচাই করো।"
-        );
+        console.error("Password update failed:", error.message);
+        setMessage("পাসওয়ার্ড পরিবর্তন হয়নি: " + error.message);
         return;
       }
 
