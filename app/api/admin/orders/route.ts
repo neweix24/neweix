@@ -189,3 +189,101 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "সার্ভারে সমস্যা হয়েছে।" }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    const staff = await getStaffContext();
+
+    if ("error" in staff) {
+      return NextResponse.json(
+        { error: staff.error },
+        { status: staff.status }
+      );
+    }
+
+    const raw = await request.text();
+
+    if (new TextEncoder().encode(raw).byteLength > 8192) {
+      return NextResponse.json(
+        { error: "অনুরোধটি অতিরিক্ত বড়।" },
+        { status: 413 }
+      );
+    }
+
+    let body: unknown;
+
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      return NextResponse.json(
+        { error: "অবৈধ JSON।" },
+        { status: 400 }
+      );
+    }
+
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json(
+        { error: "সঠিক অনুরোধ পাঠান।" },
+        { status: 400 }
+      );
+    }
+
+    const input = body as Record<string, unknown>;
+    const orderId = input.orderId;
+    const status = input.status;
+
+    const allowedStatuses = [
+      "pending", "confirmed", "processing", "packed",
+      "shipped", "delivered", "cancelled", "returned"
+    ];
+
+    if (typeof orderId !== "string" || !UUID_REGEX.test(orderId)) {
+      return NextResponse.json(
+        { error: "সঠিক Order ID দিন।" },
+        { status: 400 }
+      );
+    }
+
+    if (typeof status !== "string" || !allowedStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: "অবৈধ অর্ডার স্ট্যাটাস।" },
+        { status: 400 }
+      );
+    }
+
+    const admin = await getAdminClient();
+
+    const { data, error } = await admin.rpc("admin_update_order_status", {
+      p_order_id: orderId,
+      p_new_status: status,
+      p_actor_id: staff.user.id,
+    });
+
+    if (error) {
+      if (error.message.includes("ORDER_NOT_FOUND")) {
+        return NextResponse.json(
+          { error: "অর্ডারটি পাওয়া যায়নি।" },
+          { status: 404 }
+        );
+      }
+
+      console.error("Order status update RPC failed:", error.message);
+      return NextResponse.json(
+        { error: "অর্ডারের স্ট্যাটাস পরিবর্তন করা যায়নি।" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      order: data,
+      message: "অর্ডারের স্ট্যাটাস আপডেট হয়েছে।",
+    });
+  } catch (error) {
+    console.error("Admin orders PATCH failed:", error);
+    return NextResponse.json(
+      { error: "সার্ভারে সমস্যা হয়েছে।" },
+      { status: 500 }
+    );
+  }
+}
