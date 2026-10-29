@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 type OrderItem = {
   id: string;
-  product_name_snapshot: string;
+  product_name: string;
   unit_price: number;
   quantity: number;
 };
@@ -220,7 +220,7 @@ export default function OrdersManager() {
                 <p className="mb-2 text-sm font-semibold">পণ্যসমূহ</p>
                 {(order.order_items || []).map((item) => (
                   <p key={item.id} className="text-sm text-gray-600">
-                    {item.product_name_snapshot} × {item.quantity} — ৳
+                    {item.product_name} × {item.quantity} — ৳
                     {(Number(item.unit_price) * Number(item.quantity)).toLocaleString("bn-BD")}
                   </p>
                 ))}
