@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 
 type CartItem = {
   product_id: string;
@@ -311,7 +312,7 @@ export default function CheckoutPage() {
         )}
 
         <p>ডেলিভারি চার্জ আলাদাভাবে নিশ্চিত করা হবে।</p>
-        <a className="primary-button" href="/">হোমপেজে ফিরুন</a>
+        <Link className="primary-button" href="/">হোমপেজে ফিরুন</Link>
       </main>
     );
   }
@@ -321,7 +322,7 @@ export default function CheckoutPage() {
       <main className="hero">
         <h1>আপনার কার্ট খালি</h1>
         {error && <p role="alert">{error}</p>}
-        <a className="primary-button" href="/">পণ্য দেখুন</a>
+        <Link className="primary-button" href="/">পণ্য দেখুন</Link>
       </main>
     );
   }

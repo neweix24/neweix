@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 type Product = {
   id: string;
@@ -68,9 +69,12 @@ export default function ProductList() {
             className="overflow-hidden rounded-xl border p-3"
           >
             {product.image_urls?.[0] && (
-              <img
+              <Image
                 src={product.image_urls[0]}
                 alt={product.name}
+                width={600}
+                height={600}
+                unoptimized
                 className="mb-2 aspect-square w-full rounded-lg object-cover"
                 loading="lazy"
               />

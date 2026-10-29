@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import AddToCartButton from "./AddToCartButton";
 
@@ -51,14 +53,13 @@ export default async function ProductPage({ params }: Props) {
 
   return (
     <main style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px" }}>
-      <a href="/">← সব পণ্য</a>
+      <Link href="/">← সব পণ্য</Link>
 
       <div style={{ display: "grid", gap: 24, marginTop: 16 }}>
         {images.length > 0 && (
           <div style={{ display: "grid", gap: 8 }}>
             {images.map((src) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={src} src={src} alt={product.name} style={{ width: "100%", borderRadius: 12 }} />
+              <Image key={src} src={src} alt={product.name} width={960} height={700} unoptimized style={{ width: "100%", height: "auto", borderRadius: 12 }} />
             ))}
           </div>
         )}

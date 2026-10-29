@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 type Product = {
   id: string;
@@ -139,9 +141,9 @@ export default function CartPage() {
             আপনার কার্ট এখন খালি।
           </p>
 
-          <a className="primary-button" href="/">
+          <Link className="primary-button" href="/">
             পণ্য দেখুন ↗
-          </a>
+          </Link>
         </>
       )}
 
@@ -159,9 +161,12 @@ export default function CartPage() {
               }}
             >
               {product.image_urls?.[0] && (
-                <img
+                <Image
                   src={product.image_urls[0]}
                   alt={product.name}
+                  width={72}
+                  height={72}
+                  unoptimized
                   style={{
                     width: 72,
                     height: 72,
@@ -237,15 +242,15 @@ export default function CartPage() {
             ডেলিভারি চার্জ চেকআউটের সময় নিশ্চিত করা হবে।
           </p>
 
-          <a
+          <Link
             className="primary-button"
             href="/checkout"
           >
             অর্ডার করতে এগিয়ে যান →
-          </a>
+          </Link>
 
           <p>
-            <a href="/">আরও পণ্য দেখুন</a>
+            <Link href="/">আরও পণ্য দেখুন</Link>
           </p>
         </section>
       )}

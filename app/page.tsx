@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 type Language = "bn" | "en";
 
@@ -251,14 +253,14 @@ return products.filter((product) =>
 return (
 <main className="premium-home" lang={language}>
 <header className="premium-header">
-<a
+<Link
 href="/account"
 className="icon-button profile-button"
 aria-label={t.account}
 title={t.account}
 >
 <Icon name="user" />
-</a>
+</Link>
 
     <a href="#products" className="wordmark" aria-label="NEWEIX collection">
       <span className="wordmark-mark">N</span>
@@ -266,12 +268,12 @@ title={t.account}
     </a>
 
     <nav className="header-actions" aria-label="Main navigation">
-      <a className="icon-button desktop-action" href="/track-order" aria-label={t.track} title={t.track}>
+      <Link className="icon-button desktop-action" href="/track-order" aria-label={t.track} title={t.track}>
         <Icon name="package" />
-      </a>
-      <a className="icon-button cart-button" href="/cart" aria-label={t.cart} title={t.cart}>
+      </Link>
+      <Link className="icon-button cart-button" href="/cart" aria-label={t.cart} title={t.cart}>
         <Icon name="cart" />
-      </a>
+      </Link>
       <button
         className="icon-button"
         type="button"
@@ -309,7 +311,7 @@ title={t.account}
         <h2>{t.heading}</h2>
         <p className="section-subtitle">{t.subtitle}</p>
       </div>
-      <a href="/products" className="round-arrow" aria-label={t.shop} title={t.shop}>
+      <a href="#products" className="round-arrow" aria-label={t.shop} title={t.shop}>
         <Icon name="arrow" />
       </a>
     </div>
@@ -364,27 +366,27 @@ title={t.account}
       <div id="products-grid" className="premium-grid">
         {filteredProducts.map((product, index) => (
           <article className="premium-card" key={product.id}>
-            <a
+            <Link
               href={`/products/${encodeURIComponent(product.slug)}`}
               className="product-image-link"
               aria-label={language === "bn" ? `${product.name} বিস্তারিত` : `View ${product.name}`}
             >
               <div className={`premium-image image-tone-${index % 4}`}>
                 {product.image_urls?.[0] ? (
-                  <img src={product.image_urls[0]} alt={product.name} loading="lazy" />
+                  <Image src={product.image_urls[0]} alt={product.name} width={800} height={800} loading="lazy" unoptimized />
                 ) : (
                   <div className="image-placeholder"><Icon name="sparkle" size={32} /><span>NEWEIX</span></div>
                 )}
                 {product.is_featured && <span className="featured-badge"><Icon name="sparkle" size={12} /> {language === "bn" ? "বিশেষ" : "Featured"}</span>}
               </div>
-            </a>
+            </Link>
 
             <div className="premium-card-info">
               <div className="product-meta">
                 <span>{t.collection}</span>
                 <span className={product.stock > 0 ? "stock-dot" : "stock-dot sold-out"}>{product.stock > 0 ? t.inStock : t.outOfStock}</span>
               </div>
-              <a href={`/products/${encodeURIComponent(product.slug)}`} className="premium-product-name">{product.name}</a>
+              <Link href={`/products/${encodeURIComponent(product.slug)}`} className="premium-product-name">{product.name}</Link>
               {product.description && <p className="premium-product-description">{product.description}</p>}
               <div className="premium-card-bottom">
                 <div className="price-stack">
@@ -415,9 +417,9 @@ title={t.account}
     <a href="#top" className="footer-mark" aria-label="Back to top">N.</a>
     <p>{t.footer}</p>
     <div className="footer-icons">
-      <a href="/account" className="icon-button" aria-label={t.account} title={t.account}><Icon name="user" /></a>
-      <a href="/track-order" className="icon-button" aria-label={t.track} title={t.track}><Icon name="package" /></a>
-      <a href="/cart" className="icon-button" aria-label={t.cart} title={t.cart}><Icon name="cart" /></a>
+      <Link href="/account" className="icon-button" aria-label={t.account} title={t.account}><Icon name="user" /></Link>
+      <Link href="/track-order" className="icon-button" aria-label={t.track} title={t.track}><Icon name="package" /></Link>
+      <Link href="/cart" className="icon-button" aria-label={t.cart} title={t.cart}><Icon name="cart" /></Link>
     </div>
     <small>© {new Date().getFullYear()} NEWEIX. {t.rights}</small>
   </footer>
