@@ -234,6 +234,7 @@ export default function AccountView() {
 
             <nav className="account-links" aria-label="অ্যাকাউন্টের লিংক">
               <Link href="/orders">আমার অর্ডার</Link>
+              <Link href="/wishlist">পছন্দের তালিকা</Link>
               <Link href="/cart">শপিং কার্ট</Link>
               <Link href="/account/theme">🎨 নিজের থিম সাজাও</Link>
             </nav>
