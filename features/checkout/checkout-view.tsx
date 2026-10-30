@@ -238,6 +238,7 @@ export default function CheckoutView() {
       customer_email: String(formData.get("customer_email") ?? "").trim(),
       shipping_address: String(formData.get("shipping_address") ?? "").trim(),
       shipping_city: String(formData.get("shipping_city") ?? "").trim(),
+      coupon_code: String(formData.get("coupon_code") ?? "").trim().toUpperCase() || null,
       payment_method: paymentMethod,
       payment_transaction_id: paymentMethod === "cod" ? null : transactionId,
       items: cart.map(({ product_id, quantity }) => ({ product_id, quantity })),
@@ -394,6 +395,11 @@ export default function CheckoutView() {
         <input id="shipping_city" name="shipping_city" required minLength={2}
           maxLength={120} autoComplete="address-level2" disabled={submitting}
           placeholder="যেমন: ঢাকা" style={fieldStyle} />
+
+        <label htmlFor="coupon_code">কুপন কোড (ঐচ্ছিক)</label>
+        <input id="coupon_code" name="coupon_code" type="text" maxLength={40}
+          pattern="[A-Za-z0-9_-]{3,40}" title="৩–৪০ অক্ষরের ইংরেজি অক্ষর, সংখ্যা, হাইফেন বা আন্ডারস্কোর"
+          autoComplete="off" disabled={submitting} placeholder="যেমন: SAVE10" style={fieldStyle} />
 
         <fieldset className={styles.paymentOptions}>
           <legend>পেমেন্ট পদ্ধতি নির্বাচন করুন *</legend>
