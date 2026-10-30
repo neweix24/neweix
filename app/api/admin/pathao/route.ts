@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getPathaoCities, getPathaoConfig, getPathaoStores } from "@/lib/pathao";
 
