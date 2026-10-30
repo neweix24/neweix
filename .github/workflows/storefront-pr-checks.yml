@@ -1,6 +1,8 @@
 name: Storefront PR checks
 
 on:
+  push:
+    branches: [feat/customer-storefront-navigation]
   pull_request:
     branches: [main]
   workflow_dispatch:
