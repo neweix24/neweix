@@ -111,7 +111,11 @@ export default function TrackOrderView() {
 
   return (
     <main className="min-h-screen px-4 py-12" style={{ background: "var(--bg)", color: "var(--ink)" }}>
-      <section className="mx-auto w-full max-w-2xl">\n        <nav className="mb-8 flex flex-wrap justify-between gap-4 text-sm font-semibold">\n          <Link href="/" style={{ color: "var(--primary)" }}>← NEWEIX হোম</Link>\n          <Link href="/products" style={{ color: "var(--muted)" }}>পণ্য দেখুন</Link>\n        </nav>
+      <section className="mx-auto w-full max-w-2xl">
+        <nav className="mb-8 flex flex-wrap justify-between gap-4 text-sm font-semibold">
+          <Link href="/" style={{ color: "var(--primary)" }}>← NEWEIX হোম</Link>
+          <Link href="/products" style={{ color: "var(--muted)" }}>পণ্য দেখুন</Link>
+        </nav>
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold tracking-tight">
             অর্ডার ট্র্যাক করুন
