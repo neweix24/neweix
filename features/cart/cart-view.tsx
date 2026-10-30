@@ -117,7 +117,7 @@ export default function CartView() {
         {!loading && !error && unavailable.length > 0 && (
           <div className="mb-5 rounded-xl border p-4" style={{ borderColor: "var(--danger)", background: "var(--surface)" }}>
             <p>কার্টের {unavailable.length}টি পণ্য আর সক্রিয় নেই বা পাওয়া যাচ্ছে না। এগুলো সরিয়ে নিন।</p>
-            <button type="button" className="mt-2 rounded-lg px-4 py-2 text-sm font-bold" style={{ background: "var(--primary)", color: "#10170d" }} onClick={() => saveCart(cart.filter((entry) => productMap.has(entry.product_id))}>অপ্রাপ্য পণ্য সরান</button>
+            <button type="button" className="mt-2 rounded-lg px-4 py-2 text-sm font-bold" style={{ background: "var(--primary)", color: "#10170d" }} onClick={() => saveCart(cart.filter((entry) => productMap.has(entry.product_id)))}>অপ্রাপ্য পণ্য সরান</button>
           </div>
         )}
 
