@@ -164,7 +164,7 @@ export async function POST(request: Request) {
   form.set("senderid", senderId);
   form.set(
     "message",
-    `NEWEIX verification code: ${otp}. Valid for 5 minutes. Do not share this code.`
+    `নিউইক্স যাচাই কোড: ${otp}। ৫ মিনিটে ব্যবহার করুন। কাউকে বলবেন না।`
   );
 
   try {
