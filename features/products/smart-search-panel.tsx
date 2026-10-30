@@ -47,8 +47,6 @@ export default function SmartSearchPanel() {
   const [submitted, setSubmitted] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const abortRef = useRef<AbortController | null>(null);
-  const executeSearchRef = useRef(executeSearch);
-
   const executeSearch = useCallback(async (term: string, targetPage = 1) => {
     const normalized = term.trim().slice(0, 160);
     if (!normalized) {
@@ -99,6 +97,7 @@ export default function SmartSearchPanel() {
       if (!controller.signal.aborted) setLoading(false);
     }
   }, [categoryId, inStock, maxPrice, minPrice, sort]);
+  const executeSearchRef = useRef(executeSearch);
 
   function runSearch(event?: FormEvent) {
     event?.preventDefault();
