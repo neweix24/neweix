@@ -196,7 +196,7 @@ export default function AccountView() {
   async function handleVerifyOtp() {
     setPhoneMessage("");
     setPhoneError("");
-    if (!challengeId || !/^\\d{6}$/.test(otp)) {
+    if (!challengeId || !/^\d{6}$/.test(otp)) {
       setPhoneError("৬ সংখ্যার সঠিক OTP লিখুন।");
       return;
     }
@@ -320,7 +320,7 @@ export default function AccountView() {
                       autoComplete="one-time-code"
                       maxLength={6}
                       value={otp}
-                      onChange={(event) => setOtp(event.target.value.replace(/\\D/g, "").slice(0, 6))}
+                      onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
                       disabled={verifyingOtp}
                     />
                     <button type="button" onClick={() => void handleVerifyOtp()}
