@@ -273,7 +273,8 @@ export default function StorefrontHome() {
           <div className={styles.drawerGroup}><span>আমার কেনাকাটা</span><Link href="/orders" onClick={() => setDrawerOpen(false)}>▤ <span>আমার অর্ডার</span></Link><Link href="/track-order" onClick={() => setDrawerOpen(false)}>⌁ <span>অর্ডার ট্র্যাক করুন</span></Link><Link href="/wishlist" onClick={() => setDrawerOpen(false)}>♡ <span>পছন্দের তালিকা</span><b>{wishlistCount}</b></Link><Link href="/cart" onClick={() => setDrawerOpen(false)}>▱ <span>শপিং কার্ট</span><b>{cartCount}</b></Link></div>
           <div className={styles.drawerGroup}><span>আমার অ্যাকাউন্ট</span><Link href="/account" onClick={() => setDrawerOpen(false)}>◎ <span>প্রোফাইল ও তথ্য</span></Link><Link href="/account/theme" onClick={() => setDrawerOpen(false)}>◐ <span>থিম ও পছন্দ</span></Link>
              <Link href="/account/addresses" onClick={() => setDrawerOpen(false)}>⌖ <span>ডেলিভারি ঠিকানা</span></Link>
-             <Link href="/account/privacy" onClick={() => setDrawerOpen(false)}>♧ <span>গোপনীয়তা ও সম্মতি</span></Link></div>
+             <Link href="/account/privacy" onClick={() => setDrawerOpen(false)}>♧ <span>গোপনীয়তা ও সম্মতি</span></Link>
+             <Link href="/account/data-requests" onClick={() => setDrawerOpen(false)}>♧ <span>আমার তথ্য নিয়ন্ত্রণ</span></Link></div>
           <div className={styles.drawerGroup}><span>সাহায্য ও সহায়তা</span><Link href="/faq" onClick={() => setDrawerOpen(false)}>? <span>সাধারণ জিজ্ঞাসা</span></Link><Link href="/contact" onClick={() => setDrawerOpen(false)}>✉ <span>যোগাযোগ</span></Link></div>
           {customer && <button className={styles.logoutButton} type="button" onClick={() => void logout()}>লগআউট</button>}
           <p className={styles.drawerFoot}>আপনার কেনাকাটা, আপনার নিয়ন্ত্রণে।</p>
