@@ -3,7 +3,7 @@ export type PortalService = {
   description: string;
   href: string;
   eyebrow: string;
-  icon: "shop" | "package" | "user" | "cart" | "shield" | "grid" | "staff";
+  icon: "shop" | "package" | "user" | "cart" | "shield" | "grid" | "staff" | "heart";
   accent: "lime" | "blue" | "violet" | "amber";
 };
 
@@ -39,6 +39,14 @@ export const portalServices: PortalService[] = [
     eyebrow: "YOUR CART",
     icon: "cart",
     accent: "amber",
+  },
+  {
+    title: "পছন্দের তালিকা",
+    description: "আপনার পছন্দের পণ্য সংরক্ষণ করুন এবং পরে সহজে খুঁজে নিন।",
+    href: "/wishlist",
+    eyebrow: "WISHLIST",
+    icon: "heart",
+    accent: "violet",
   },
   {
     title: "স্টাফ ওয়ার্কস্পেস",
