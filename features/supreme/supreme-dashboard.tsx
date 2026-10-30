@@ -103,8 +103,8 @@ export default function SupremeDashboard() {
             </p>
           </article>
 
-          <article className="rounded-xl border bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-600">
+          <article className="neweix-panel rounded-xl p-5">
+            <p className="text-sm" style={{ color: "var(--muted)" }}>
               কম স্টকের পণ্য
             </p>
 
@@ -114,7 +114,7 @@ export default function SupremeDashboard() {
           </article>
         </section>
 
-        <section className="rounded-xl border bg-white p-5 shadow-sm">
+        <section className="neweix-panel rounded-xl p-5">
           <h2 className="text-xl font-bold">
             কম স্টকের পণ্য
           </h2>
@@ -124,11 +124,11 @@ export default function SupremeDashboard() {
               ডেটাবেস থেকে তথ্য আনা হচ্ছে...
             </p>
           ) : error ? (
-            <p className="mt-4 text-gray-600">
+            <p className="mt-4" style={{ color: "var(--muted)" }}>
               তথ্য পাওয়া যায়নি। উপরের বার্তাটি দেখুন।
             </p>
           ) : lowStockProducts.length === 0 ? (
-            <p className="mt-4 text-gray-600">
+            <p className="mt-4" style={{ color: "var(--muted)" }}>
               বর্তমানে কম স্টকের কোনো পণ্য নেই।
             </p>
           ) : (
