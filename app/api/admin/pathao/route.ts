@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { getPathaoCities, getPathaoConfig, getPathaoStores } from "@/lib/pathao";
+import { getPathaoCities, getPathaoConfig, getPathaoStores, testPathaoConnection } from "@/lib/pathao";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,15 +44,16 @@ export async function GET(request: Request) {
   const action = new URL(request.url).searchParams.get("action") || "status";
 
   try {
-    const config = await getPathaoConfig();
-
     if (action === "status") {
+      const connection = await testPathaoConnection();
       return NextResponse.json({
-        configured: true,
-        environment: config.baseUrl.includes("sandbox") ? "sandbox" : "production",
-        message: "Pathao credentials পাওয়া গেছে।",
+        connected: true,
+        environment: connection.environment,
+        message: "Pathao authentication সফল হয়েছে।",
       }, { headers: { "Cache-Control": "no-store" } });
     }
+
+    await getPathaoConfig();
 
     if (action === "stores") {
       const stores = await getPathaoStores();
