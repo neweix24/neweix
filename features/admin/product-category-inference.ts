@@ -21,7 +21,7 @@ const CATEGORY_RULES: CategoryRule[] = [
   },
   {
     slug: "t-shirts",
-    terms: ["t-shirt", "t shirt", "tshirt", "t-shirts", "t shirts", "tee shirt", "tee shirts", "tee", "tees", "টি শার্ট", "টিশার্ট"],
+    terms: ["t-shirt", "t shirt", "tshirt", "t-shirts", "t shirts", "tee shirt", "tee shirts", "tee", "tees", "tank top", "tank tops", "sleeveless tee", "টি শার্ট", "টিশার্ট"],
   },
   {
     slug: "panjabi",
@@ -53,7 +53,7 @@ const CATEGORY_RULES: CategoryRule[] = [
   },
   {
     slug: "sportswear",
-    terms: ["sportswear", "activewear", "tracksuit", "track suit", "sports jersey", "football jersey", "cricket jersey", "gym wear", "জার্সি", "ট্র্যাকস্যুট", "স্পোর্টসওয়্যার", "স্পোর্টসওয়্যার"],
+    terms: ["sportswear", "activewear", "tracksuit", "yoga set", "track suit", "sports jersey", "football jersey", "cricket jersey", "gym wear", "জার্সি", "ট্র্যাকস্যুট", "স্পোর্টসওয়্যার", "স্পোর্টসওয়্যার"],
   },
   {
     slug: "underwear",
@@ -65,7 +65,7 @@ const CATEGORY_RULES: CategoryRule[] = [
   },
   {
     slug: "fashion-accessories",
-    terms: ["accessory", "accessories", "cap", "caps", "hat", "hats", "belt", "wallet", "wallets", "bag", "bags", "tie", "ties", "socks", "scarf", "scarves", "sunglasses", "watch", "টুপি", "ক্যাপ", "বেল্ট", "ওয়ালেট", "ওয়ালেট", "ব্যাগ", "টাই", "মোজা", "স্কার্ফ", "ঘড়ি", "ঘড়ি"],
+    terms: ["accessory", "accessories", "cap", "caps", "hat", "hats", "belt", "wallet", "wallets", "bag", "bags", "tie", "ties", "socks", "scarf", "scarves", "sunglasses", "watch", "hijab", "dupatta", "shawl", "টুপি", "ক্যাপ", "বেল্ট", "ওয়ালেট", "ওয়ালেট", "ব্যাগ", "টাই", "মোজা", "স্কার্ফ", "ঘড়ি", "ঘড়ি"],
   },
   {
     slug: "pants",
@@ -77,7 +77,7 @@ const CATEGORY_RULES: CategoryRule[] = [
   },
   {
     slug: "traditional-wear",
-    terms: ["saree", "sari", "three piece", "3 piece", "three-piece", "salwar kameez", "kameez", "kurti", "abaya", "jilbab", "kaftan", "lehenga", "ghagra", "frock", "gown", "dress", "skirt", "tunic", "co ord set", "co-ord set", "শাড়ি", "শাড়ি", "থ্রি পিস", "কামিজ", "কুর্তি", "আবায়া", "কাফতান", "লেহেঙ্গা", "ফ্রক", "গাউন", "স্কার্ট"],
+    terms: ["saree", "sari", "sherwani", "dhoti", "three piece", "3 piece", "three-piece", "salwar kameez", "kameez", "kurti", "abaya", "jilbab", "kaftan", "lehenga", "ghagra", "frock", "gown", "dress", "skirt", "tunic", "co ord set", "co-ord set", "শাড়ি", "শাড়ি", "থ্রি পিস", "কামিজ", "কুর্তি", "আবায়া", "কাফতান", "লেহেঙ্গা", "ফ্রক", "গাউন", "স্কার্ট"],
   },
 ];
 
