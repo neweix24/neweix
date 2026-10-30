@@ -13,12 +13,16 @@ function fail(message: string, status: number) {
   );
 }
 
-async function getSupremeContext() {
+type SupremeContext =
+  | { ok: true; userId: string }
+  | { ok: false; error: string; status: 401 | 403 };
+
+async function getSupremeContext(): Promise<SupremeContext> {
   const session = await createServerSupabaseClient();
   const { data: { user }, error: authError } = await session.auth.getUser();
 
   if (authError || !user) {
-    return { error: "লগইন আবশ্যক।", status: 401 as const };
+    return { ok: false, error: "লগইন আবশ্যক।", status: 401 };
   }
 
   const { data: profile, error: profileError } = await session
@@ -28,17 +32,17 @@ async function getSupremeContext() {
     .maybeSingle();
 
   if (profileError || !profile || profile.is_active !== true || profile.role !== "supreme") {
-    return { error: "শুধু সক্রিয় Supreme অ্যাকাউন্ট এই তথ্য দেখতে পারবে।", status: 403 as const };
+    return { ok: false, error: "শুধু সক্রিয় Supreme অ্যাকাউন্ট এই তথ্য দেখতে পারবে।", status: 403 };
   }
 
   const { data: assurance, error: mfaError } =
     await session.auth.mfa.getAuthenticatorAssuranceLevel();
 
   if (mfaError || assurance?.currentLevel !== "aal2") {
-    return { error: "Supreme অ্যাকাউন্টের MFA যাচাই সম্পন্ন করুন।", status: 403 as const };
+    return { ok: false, error: "Supreme অ্যাকাউন্টের MFA যাচাই সম্পন্ন করুন।", status: 403 };
   }
 
-  return { user };
+  return { ok: true, userId: user.id };
 }
 
 async function getAdminClient() {
@@ -59,7 +63,7 @@ async function getAdminClient() {
 export async function GET(request: Request) {
   try {
     const access = await getSupremeContext();
-    if ("error" in access) return fail(access.error, access.status);
+    if (!access.ok) return fail(access.error, access.status);
 
     const url = new URL(request.url);
     const rawLimit = url.searchParams.get("limit") ?? "50";
