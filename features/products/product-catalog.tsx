@@ -34,6 +34,9 @@ export default function ProductCatalog() {
   const [sort, setSort] = useState<"featured" | "price-asc" | "price-desc">("featured");
   const [categories, setCategories] = useState<Category[]>([]);
   const [categorySlug, setCategorySlug] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [inStockOnly, setInStockOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [notice, setNotice] = useState("");
@@ -62,6 +65,9 @@ export default function ProductCatalog() {
     const requestedSort = params.get("sort");
     if (requestedSort === "featured" || requestedSort === "price-asc" || requestedSort === "price-desc") setSort(requestedSort);
     setCategorySlug(params.get("category") ?? "");
+    setMinPrice(params.get("minPrice") ?? "");
+    setMaxPrice(params.get("maxPrice") ?? "");
+    setInStockOnly(params.get("inStock") === "1");
     void loadProducts();
     fetch("/api/categories", { cache: "no-store" })
       .then(async (response) => {
@@ -91,16 +97,23 @@ export default function ProductCatalog() {
     const categoryMatches = selectedCategory
       ? products.filter((product) => product.category_id === selectedCategory.id)
       : products;
-    const matches = !term ? [...categoryMatches] : categoryMatches.filter((product) =>
-      [product.name, product.description ?? ""].some((value) =>
+    const minimum = minPrice.trim() ? Number(minPrice) : null;
+    const maximum = maxPrice.trim() ? Number(maxPrice) : null;
+    const matches = categoryMatches.filter((product) => {
+      const textMatches = !term || [product.name, product.description ?? ""].some((value) =>
         value.toLocaleLowerCase().includes(term)
-      )
-    );
+      );
+      const price = Number(product.price);
+      const minimumMatches = minimum === null || !Number.isFinite(minimum) || price >= minimum;
+      const maximumMatches = maximum === null || !Number.isFinite(maximum) || price <= maximum;
+      const stockMatches = !inStockOnly || Number(product.stock) > 0;
+      return textMatches && minimumMatches && maximumMatches && stockMatches;
+    });
     if (sort === "price-asc") matches.sort((a, b) => Number(a.price) - Number(b.price));
     if (sort === "price-desc") matches.sort((a, b) => Number(b.price) - Number(a.price));
     if (sort === "featured") matches.sort((a, b) => Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)));
     return matches;
-  }, [products, query, sort, categories, categorySlug]);
+  }, [products, query, sort, categories, categorySlug, minPrice, maxPrice, inStockOnly]);
 
   function toggleWishlist(product: Product) {
     const next = wishlist.includes(product.id) ? wishlist.filter((id) => id !== product.id) : [...wishlist, product.id].slice(-200);
@@ -186,6 +199,20 @@ export default function ProductCatalog() {
             {categories.map((category) => <option key={category.id} value={category.slug}>{category.name}</option>)}
           </select>
         </label>}
+        {categories.length > 0 && <div className={styles.categoryChips} aria-label="দ্রুত ক্যাটাগরি">
+          <button type="button" aria-pressed={!categorySlug} className={!categorySlug ? styles.activeChip : ""} onClick={() => setCategorySlug("")}>সব পণ্য</button>
+          {categories.map((category) => <button key={category.id} type="button" aria-pressed={categorySlug === category.slug} className={categorySlug === category.slug ? styles.activeChip : ""} onClick={() => setCategorySlug(category.slug)}>{category.name}</button>)}
+        </div>}
+        <div className={styles.filterRow}>
+          <label className={styles.priceField}>সর্বনিম্ন দাম
+            <input aria-label="সর্বনিম্ন দাম" type="number" min="0" inputMode="numeric" placeholder="৳ ০" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} />
+          </label>
+          <label className={styles.priceField}>সর্বোচ্চ দাম
+            <input aria-label="সর্বোচ্চ দাম" type="number" min="0" inputMode="numeric" placeholder="৳ ১০,০০০" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} />
+          </label>
+          <label className={styles.stockFilter}><input type="checkbox" checked={inStockOnly} onChange={(event) => setInStockOnly(event.target.checked)} /> শুধু স্টকে থাকা পণ্য</label>
+          <button type="button" className={styles.clearFilters} onClick={() => { setQuery(""); setCategorySlug(""); setMinPrice(""); setMaxPrice(""); setInStockOnly(false); setSort("featured"); }}>ফিল্টার মুছুন</button>
+        </div>
         <label className={styles.search} style={{ marginTop: 12 }}>
           <span className={styles.srOnly}>পণ্যের সাজানোর ধরন</span>
           <select aria-label="পণ্য সাজান" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
@@ -194,7 +221,7 @@ export default function ProductCatalog() {
             <option value="price-desc">দাম: বেশি থেকে কম</option>
           </select>
         </label>
-        <p aria-live="polite" style={{ marginTop: 12 }}>{filtered.length}টি পণ্য পাওয়া গেছে</p>
+        <p aria-live="polite" style={{ marginTop: 12 }}>{categories.find((category) => category.slug === categorySlug)?.name ? `${categories.find((category) => category.slug === categorySlug)?.name} · ` : ""}{filtered.length}টি পণ্য পাওয়া গেছে</p>
       </section>
 
       <section className={styles.catalog} aria-label="পণ্যের তালিকা">
