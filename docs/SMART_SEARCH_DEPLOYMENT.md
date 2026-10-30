@@ -16,3 +16,12 @@ Test exact SKU, Bengali, English, Banglish and typo queries before production ro
 - Migration `008_search_embedding_queue_service_policy.sql` restricts queue-table access to the service role.
 - An admin or supreme user can POST to `/api/admin/search/process-queue` with `{ "limit": 10 }`. Repeat until the response reports `processed: 0`. The endpoint claims jobs atomically, generates BGE-M3 embeddings, stores vectors, and retries transient failures with exponential backoff. It is not yet scheduled; it must be invoked by an operator or a later Cloudflare Cron integration.
 - Queue processing requires a deployed Worker with the `AI` binding and server-side `SUPABASE_SERVICE_ROLE_KEY` secret. Never expose that secret to the browser.
+
+
+## Scheduled embedding queue processing
+
+- `worker.ts` is the custom OpenNext Worker entrypoint. It forwards HTTP traffic to the generated OpenNext fetch handler and implements a Cloudflare `scheduled()` handler.
+- `wrangler.jsonc` now points `main` to `worker.ts` and configures `*/15 * * * *` (every 15 minutes, UTC). Each invocation claims up to 10 jobs, generates BGE-M3 embeddings with the `AI` binding, persists vectors, and completes or retries jobs through the service-role-only RPCs.
+- This schedule requires a new Cloudflare deployment to become active. Cron Trigger changes can take up to 15 minutes to propagate. Confirm execution in Cloudflare Workers > NEWEIX > Triggers / Observability.
+- The admin endpoint `/api/admin/search/process-queue` remains available for manual processing and diagnostics; routine queue processing no longer depends on an admin being logged in.
+- The Worker requires the existing server-side `SUPABASE_SERVICE_ROLE_KEY` secret plus `NEXT_PUBLIC_SUPABASE_URL` and the Workers AI binding. The service-role key is never sent to the browser.
