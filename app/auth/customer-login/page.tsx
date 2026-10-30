@@ -415,7 +415,7 @@ function CustomerLoginForm() {
           border: 0;
           border-radius: 9px;
           background: var(--primary);
-          color: var(--ink);
+          color: #080b09;
           font: inherit;
           font-weight: 750;
           cursor: pointer;
