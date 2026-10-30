@@ -13,6 +13,7 @@ type Product = {
   compare_at_price?: number | null;
   image_urls: string[] | null;
   stock: number;
+  category_id?: string | null;
   is_featured?: boolean;
 };
 
