@@ -25,7 +25,7 @@ const CATEGORY_RULES: CategoryRule[] = [
   },
   {
     slug: "panjabi",
-    terms: ["panjabi", "punjabi", "panjabi set", "kurta", "kurtas", "kabli", "kabli set", "fatua", "fotua", "fatuya", "katuya", "jubba", "jubbah", "পাঞ্জাবি", "পাঞ্জাবী", "কুর্তা", "কাবলি", "ফতুয়া", "ফতুয়া", "ফতুয়া", "কাটুয়া", "জুব্বা"],
+    terms: ["panjabi", "punjabi", "panjabi set", "kurta", "kurtas", "kabli", "kabli set", "fatua", "fotua", "fatuya", "katuya", "jubba", "jubbah", "পাঞ্জাবি", "পাঞ্জাবী", "কুর্তা", "কাবলি", "ফতুয়া", "ফতুয়া", "কাটুয়া", "জুব্বা"],
   },
   {
     slug: "blazers-suits",
@@ -33,7 +33,7 @@ const CATEGORY_RULES: CategoryRule[] = [
   },
   {
     slug: "hoodies-sweatshirts",
-    terms: ["hoodie", "hoodies", "hooded", "sweatshirt", "sweatshirts", "sweat shirt", "crewneck", "হুডি", "হুডিস", "সোয়েটশার্ট", "সোয়েটশার্ট"],
+    terms: ["hoodie", "hoodies", "sweatshirt", "sweatshirts", "sweat shirt", "crewneck", "হুডি", "হুডিস", "সোয়েটশার্ট", "সোয়েটশার্ট"],
   },
   {
     slug: "sweaters",
@@ -45,7 +45,7 @@ const CATEGORY_RULES: CategoryRule[] = [
   },
   {
     slug: "shorts",
-    terms: ["shorts", "short pant", "short pants", "bermuda", "bermudas", "gym short", "gym shorts", "cargo shorts", "denim shorts", "শর্টস", "হাফ প্যান্ট", "বারমুডা"],
+    terms: ["shorts", "short pant", "short pants", "bermuda", "bermudas", "gym shorts", "cargo shorts", "denim shorts", "শর্টস", "হাফ প্যান্ট", "বারমুডা"],
   },
   {
     slug: "pajamas",
