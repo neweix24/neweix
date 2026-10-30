@@ -68,7 +68,7 @@ async function getStaffContext(): Promise<StaffContext> {
     error ||
     !profile ||
     profile.is_active !== true ||
-    !["supreme", "admin", "staff"].includes(profile.role)
+    !["supreme", "admin"].includes(profile.role)
   ) {
     return { error: "এই কাজের অনুমতি নেই।", status: 403 };
   }
