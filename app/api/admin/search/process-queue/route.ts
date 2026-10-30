@@ -47,7 +47,6 @@ export async function POST(request: Request) {
     }
    }
   }
-  const { count } = await admin.from("product_search_embedding_jobs").select("id", { count: "exact", head: true });
-  return reply({ processed: jobs.length, indexed, failed, remaining: count ?? null, model: "@cf/baai/bge-m3" });
+  return reply({ processed: jobs.length, indexed, failed, remaining: "Run again until processed is 0", model: "@cf/baai/bge-m3" });
  } catch (error) { console.error("Search queue processor failed:", error); return reply({ error: "Embedding queue প্রক্রিয়া করা যায়নি।" }, 500); }
 }
