@@ -271,26 +271,26 @@ export default function CustomerDataControls() {
       </section>
 
       <style jsx>{`
-        .data-page { min-height: 100vh; padding: 0 18px 56px; background: #f7f8fa; color: #172338; }
-        .data-header { max-width: 900px; min-height: 68px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #e2e6ed; }
-        .brand { color: #10233f; font-weight: 800; letter-spacing: 2px; text-decoration: none; }
-        .back { color: #526078; font-size: 14px; text-decoration: none; }
-        .panel { box-sizing: border-box; max-width: 680px; margin: 36px auto; padding: 30px; border: 1px solid #e5e8ef; border-radius: 16px; background: white; box-shadow: 0 12px 35px #10233f0a; }
-        .eyebrow { color: #9a7a42; font-size: 12px; font-weight: 700; letter-spacing: 2px; }
+        .data-page { min-height: 100vh; padding: 0 18px 56px; background: var(--bg); color: var(--ink); }
+        .data-header { max-width: 900px; min-height: 68px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--border); }
+        .brand { color: var(--primary); font-weight: 800; letter-spacing: 2px; text-decoration: none; }
+        .back { color: var(--muted); font-size: 14px; text-decoration: none; }
+        .panel { box-sizing: border-box; max-width: 680px; margin: 36px auto; padding: 30px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: 0 12px 35px rgba(182,255,74,.08); }
+        .eyebrow { color: var(--primary); font-size: 12px; font-weight: 700; letter-spacing: 2px; }
         h1 { margin: 8px 0; font-size: 30px; }
-        .intro, .note { color: #68758a; line-height: 1.7; }
-        .group { display: grid; gap: 10px; margin-top: 28px; padding-top: 22px; border-top: 1px solid #e8ebf0; }
+        .intro, .note { color: var(--muted); line-height: 1.7; }
+        .group { display: grid; gap: 10px; margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--border); }
         h2 { margin: 0 0 4px; font-size: 19px; }
         label { font-size: 14px; font-weight: 600; }
-        input:not([type="checkbox"]) { box-sizing: border-box; width: 100%; min-height: 46px; padding: 11px 12px; border: 1px solid #dce1e9; border-radius: 9px; color: #172338; background: white; font: inherit; }
-        small { color: #778195; }
+        input:not([type="checkbox"]) { box-sizing: border-box; width: 100%; min-height: 46px; padding: 11px 12px; border: 1px solid var(--border); border-radius: 9px; color: var(--ink); background: var(--surface); font: inherit; }
+        small { color: var(--muted); }
         .check-row { display: flex; align-items: flex-start; gap: 10px; font-weight: 500; line-height: 1.6; }
-        .check-row input { width: 18px; height: 18px; margin-top: 2px; accent-color: #10233f; }
+        .check-row input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--primary); }
         .note { margin: 0; font-size: 13px; }
-        button { width: 100%; min-height: 48px; margin-top: 24px; padding: 12px; border: 0; border-radius: 9px; background: #10233f; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+        button { width: 100%; min-height: 48px; margin-top: 24px; padding: 12px; border: 0; border-radius: 9px; background: var(--primary); color: white; font: inherit; font-weight: 700; cursor: pointer; }
         button:disabled { opacity: .6; cursor: wait; }
-        .success { color: #167345; font-size: 14px; }
-        .error { color: #b42318; font-size: 14px; }
+        .success { color: var(--success); font-size: 14px; }
+        .error { color: var(--danger); font-size: 14px; }
         @media (max-width: 520px) { .panel { margin-top: 22px; padding: 22px; } h1 { font-size: 26px; } }
       `}</style>
     </main>

@@ -179,19 +179,14 @@ export default function SmartSearchPanel() {
   return (
     <section
       aria-labelledby="smart-search-title"
-      style={{
-        width: "min(1160px, calc(100% - 32px))",
-        margin: "32px auto",
-        padding: 20,
-        border: "1px solid var(--border, #d8dfd8)",
-        borderRadius: 16,
-      }}
+      className="neweix-shell neweix-panel"
+      style={{ margin: "32px auto", padding: 20 }}
     >
       <div style={{ marginBottom: 14 }}>
-        <p style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: 1.2 }}>
+        <p className="neweix-kicker" style={{ margin: 0 }}>
           NEWEIX SMART SEARCH
         </p>
-        <h2 id="smart-search-title" style={{ margin: "6px 0", fontSize: 24 }}>
+        <h2 id="smart-search-title" className="neweix-page-title">
           AI দিয়ে পণ্য খুঁজুন
         </h2>
         <p style={{ margin: 0, opacity: 0.75 }}>
@@ -230,7 +225,7 @@ export default function SmartSearchPanel() {
               borderRadius: 10,
               fontWeight: 800,
               background: "var(--primary, #c4f36b)",
-              color: "#14200e",
+              color: "#080b09",
             }}
           >
             {loading ? "খুঁজছে…" : "খুঁজুন"}

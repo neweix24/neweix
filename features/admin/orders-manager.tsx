@@ -234,7 +234,7 @@ export default function OrdersManager() {
   });
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+    <section className="neweix-panel rounded-xl p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-semibold">অর্ডার তালিকা</h2>
 
@@ -242,13 +242,13 @@ export default function OrdersManager() {
           type="button"
           onClick={() => void loadOrders()}
           disabled={loading}
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium disabled:opacity-50"
+          className="neweix-button-secondary text-sm disabled:opacity-50"
         >
           {loading ? "লোড হচ্ছে..." : "রিফ্রেশ"}
         </button>
       </div>
 
-      <p className="mt-2 text-sm text-gray-600">
+      <p className="mt-2 text-sm">
         সর্বশেষ ১০০টি অর্ডার দেখানো হবে। মোবাইল পেমেন্ট Paid করার আগে
         সংশ্লিষ্ট পেমেন্ট প্রদানকারীর রেকর্ডে Transaction ID, পরিমাণ ও
         প্রাপকের তথ্য মিলিয়ে নিন।
@@ -262,7 +262,7 @@ export default function OrdersManager() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="অর্ডার নম্বর, গ্রাহকের নাম বা ফোন নম্বর"
-            className="mt-1 block w-full rounded-lg border border-gray-300 bg-white p-2"
+            className="mt-1 block w-full rounded-lg border p-2"
           />
         </label>
 
@@ -271,7 +271,7 @@ export default function OrdersManager() {
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
-            className="mt-1 block w-full rounded-lg border border-gray-300 bg-white p-2"
+            className="mt-1 block w-full rounded-lg border p-2"
           >
             <option value="all">সব Status</option>
             {orderStatuses.map((status) => (
@@ -287,7 +287,7 @@ export default function OrdersManager() {
           <select
             value={paymentFilter}
             onChange={(event) => setPaymentFilter(event.target.value)}
-            className="mt-1 block w-full rounded-lg border border-gray-300 bg-white p-2"
+            className="mt-1 block w-full rounded-lg border p-2"
           >
             <option value="all">সব পেমেন্ট</option>
             <option value="mobile">মোবাইল পেমেন্ট</option>
@@ -300,14 +300,14 @@ export default function OrdersManager() {
         </label>
       </div>
 
-      <p className="mt-3 text-sm text-gray-600">
+      <p className="mt-3 text-sm">
         {visibleOrders.length}টি অর্ডার পাওয়া গেছে।
       </p>
 
       {error && (
         <p
           role="alert"
-          className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800"
+          className="mt-4 rounded-lg border p-3 text-sm"
         >
           {error}
         </p>
@@ -316,16 +316,16 @@ export default function OrdersManager() {
       {notice && (
         <p
           role="status"
-          className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-800"
+          className="mt-4 rounded-lg border p-3 text-sm"
         >
           {notice}
         </p>
       )}
 
       {loading ? (
-        <p className="py-8 text-gray-600">অর্ডার লোড হচ্ছে...</p>
+        <p className="py-8">অর্ডার লোড হচ্ছে...</p>
       ) : visibleOrders.length === 0 ? (
-        <p className="py-8 text-gray-600">
+        <p className="py-8">
           এই সার্চ বা ফিল্টারে কোনো অর্ডার পাওয়া যায়নি।
         </p>
       ) : (
@@ -333,16 +333,16 @@ export default function OrdersManager() {
           {visibleOrders.map((order) => (
             <article
               key={order.id}
-              className="rounded-xl border border-gray-200 p-4"
+              className="rounded-xl border p-4"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="font-bold">{order.order_number}</h3>
-                  <p className="mt-1 text-sm text-gray-600">
+                  <p className="mt-1 text-sm">
                     {order.customer_name} ·{" "}
                     {order.customer_phone || order.phone || "ফোন নেই"}
                   </p>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs">
                     {new Date(order.created_at).toLocaleString("bn-BD")}
                   </p>
                 </div>
@@ -366,7 +366,7 @@ export default function OrdersManager() {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-lg bg-gray-50 p-3">
+              <div className="mt-4 rounded-lg border p-3">
                 <label className="block text-sm font-medium">
                   অর্ডারের Status পরিবর্তন
                   <select
@@ -379,7 +379,7 @@ export default function OrdersManager() {
                       busyId !== "" ||
                       loading
                     }
-                    className="mt-1 block w-full rounded-lg border border-gray-300 bg-white p-2 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-1 block w-full rounded-lg border p-2 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {orderStatuses.map((status) => (
                       <option key={status} value={status}>
@@ -390,13 +390,13 @@ export default function OrdersManager() {
                 </label>
 
                 {statusBusyId === order.id && (
-                  <p className="mt-2 text-sm text-gray-600">
+                  <p className="mt-2 text-sm">
                     Status সংরক্ষণ হচ্ছে...
                   </p>
                 )}
               </div>
 
-              <p className="mt-3 break-words text-sm text-gray-700">
+              <p className="mt-3 break-words text-sm">
                 ঠিকানা:{" "}
                 {order.shipping_address || order.address || "ঠিকানা নেই"}
                 {order.shipping_city ? `, ${order.shipping_city}` : ""}
@@ -409,10 +409,10 @@ export default function OrdersManager() {
                 </p>
               )}
 
-              <div className="mt-3 border-t border-gray-100 pt-3">
+              <div className="mt-3 border-t pt-3">
                 <p className="mb-2 text-sm font-semibold">পণ্যসমূহ</p>
                 {(order.order_items || []).map((item) => (
-                  <p key={item.id} className="text-sm text-gray-600">
+                  <p key={item.id} className="text-sm">
                     {item.product_name} × {item.quantity} — ৳
                     {(
                       Number(item.unit_price) * Number(item.quantity)
@@ -422,7 +422,7 @@ export default function OrdersManager() {
               </div>
 
               {order.payment_verified_at && (
-                <p className="mt-3 text-xs text-green-700">
+                <p className="mt-3 text-xs">
                   যাচাই হয়েছে:{" "}
                   {new Date(order.payment_verified_at).toLocaleString("bn-BD")}
                 </p>
@@ -436,7 +436,7 @@ export default function OrdersManager() {
                     type="button"
                     onClick={() => void verifyPayment(order)}
                     disabled={busyId !== "" || statusBusyId !== ""}
-                    className="mt-4 rounded-lg bg-blue-700 px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    className="neweix-button-primary mt-4 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {busyId === order.id
                       ? "সংরক্ষণ হচ্ছে..."

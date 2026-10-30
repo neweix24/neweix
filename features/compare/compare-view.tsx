@@ -93,18 +93,18 @@ export default function CompareView() {
           {selected.length > 0 && <button type="button" onClick={clear} className="rounded-xl border px-4 py-3 text-sm font-semibold" style={{ borderColor: "var(--border)" }}>তালিকা খালি করুন</button>}
         </header>
         {loading && <p role="status">পণ্যের তথ্য লোড হচ্ছে…</p>}
-        {error && <p role="alert" className="mb-4 rounded-xl border border-red-400/40 p-4 text-red-300">{error}</p>}
+        {error && <p role="alert" className="mb-4 rounded-xl border p-4" style={{ borderColor: "var(--danger)", color: "var(--danger)", background: "var(--surface-raised)" }}>{error}</p>}
         {!loading && selected.length === 0 && <section className="rounded-2xl border p-8 text-center" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
           <h2 className="text-xl font-bold">তুলনার তালিকায় কোনো পণ্য নেই</h2>
           <p className="mt-2" style={{ color: "var(--muted)" }}>পণ্যের তালিকা থেকে “তুলনা করুন” নির্বাচন করে পণ্য যোগ করুন।</p>
-          <Link href="/products" className="mt-5 inline-flex rounded-xl px-5 py-3 font-bold" style={{ background: "var(--primary)", color: "#101510" }}>পণ্য দেখুন</Link>
+          <Link href="/products" className="mt-5 inline-flex rounded-xl px-5 py-3 font-bold" style={{ background: "var(--primary)", color: "#080b09" }}>পণ্য দেখুন</Link>
         </section>}
         {!loading && selected.length > 0 && <div className="overflow-x-auto rounded-2xl border" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
           <table className="w-full min-w-[680px] border-collapse text-left text-sm">
             <thead><tr><th className="w-36 border-b p-4" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>বৈশিষ্ট্য</th>
               {selected.map((product) => <th key={product.id} className="min-w-48 border-b p-4 align-top" style={{ borderColor: "var(--border)" }}>
                 <Link href={`/products/${encodeURIComponent(product.slug)}`} className="font-bold hover:underline">{product.name}</Link>
-                <button type="button" onClick={() => remove(product.id)} className="mt-2 block text-xs font-medium text-red-300">তুলনা থেকে সরান</button>
+                <button type="button" onClick={() => remove(product.id)} className="mt-2 block text-xs font-medium" style={{ color: "var(--danger)" }}>তুলনা থেকে সরান</button>
               </th>)}
             </tr></thead>
             <tbody>

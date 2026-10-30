@@ -171,7 +171,7 @@ export default function TrackOrderView() {
                 placeholder="আপনার ফোন নম্বর"
                 maxLength={30}
                 required
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                className="w-full rounded-lg border px-4 py-3 outline-none transition focus-visible:ring-2" style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--ink)" }}
               />
             </div>
 
@@ -187,7 +187,7 @@ export default function TrackOrderView() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg px-5 py-3 font-semibold transition disabled:cursor-not-allowed disabled:opacity-60" style={{ background: "var(--primary)", color: "#10170d" }}
+              className="w-full rounded-lg px-5 py-3 font-semibold transition disabled:cursor-not-allowed disabled:opacity-60" style={{ background: "var(--primary)", color: "#080b09" }}
             >
               {loading ? "অর্ডার খোঁজা হচ্ছে..." : "অর্ডার খুঁজুন"}
             </button>
