@@ -5,6 +5,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 type AiBinding = { run(model: string, input: { text: string[] }): Promise<{ data?: number[][] }> };
+type SearchProduct = { id: string; name: string; sku: string | null; description: string | null; is_active: boolean };
 function reply(body: unknown, status = 200) { return NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } }); }
 export async function POST(request: Request) {
  try {
@@ -31,12 +32,12 @@ export async function POST(request: Request) {
   const ids = jobs.map((job: { product_id: string }) => job.product_id);
   const { data: products, error: productError } = await admin.from("products").select("id,name,description,sku,is_active").in("id", ids);
   if (productError) { console.error("Search queue product lookup failed:", productError.message); for (const job of jobs) await admin.rpc("neweix_fail_search_embedding_job", { p_job_id: job.job_id, p_error: productError.message }); return reply({ error: "পণ্যের তথ্য লোড করা যায়নি; কিউ পুনরায় চেষ্টা করবে।" }, 503); }
-  const byId = new Map((products ?? []).map((p: { id: string }) => [p.id, p]));
-  const activeJobs = jobs.filter((job: { product_id: string }) => { const p = byId.get(job.product_id) as { is_active?: boolean } | undefined; return p?.is_active === true; });
+  const byId = new Map<string, SearchProduct>((products ?? []).map((product) => [product.id, product as unknown as SearchProduct]));
+  const activeJobs = jobs.filter((job: { product_id: string }) => { const p = byId.get(job.product_id); return p?.is_active === true; });
   let indexed = 0; let failed = 0;
   for (const job of jobs) { if (!activeJobs.some((item: { job_id: string }) => item.job_id === job.job_id)) await admin.rpc("neweix_complete_search_embedding_job", { p_job_id: job.job_id }); }
   if (activeJobs.length) {
-   const texts = activeJobs.map((job: { product_id: string }) => { const p = byId.get(job.product_id) as { name: string; sku: string | null; description: string | null }; return [p.name, p.sku ? "SKU " + p.sku : "", p.description ?? ""].filter(Boolean).join(". ").slice(0, 2000); });
+   const texts = activeJobs.map((job: { product_id: string }) => { const p = byId.get(job.product_id)!; return [p.name, p.sku ? "SKU " + p.sku : "", p.description ?? ""].filter(Boolean).join(". ").slice(0, 2000); });
    let vectors: number[][] | undefined;
    try { const result = await ai.run("@cf/baai/bge-m3", { text: texts }); vectors = result.data; } catch (error) { console.error("Search embedding model failed:", error); }
    if (!Array.isArray(vectors) || vectors.length !== activeJobs.length || vectors.some(v => !Array.isArray(v) || v.length !== 1024 || !v.every(Number.isFinite))) {
