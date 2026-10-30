@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 export default function GlobalError({
@@ -21,7 +22,7 @@ export default function GlobalError({
         <p className="mt-3">পেজটি লোড করা যায়নি। আবার চেষ্টা করুন অথবা হোমপেজে ফিরে যান।</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <button type="button" onClick={() => reset()} className="rounded-full px-5 py-3 font-bold" style={{ background: "var(--primary)", color: "#080b09" }}>আবার চেষ্টা করুন</button>
-          <a href="/" className="rounded-full border px-5 py-3 font-bold" style={{ borderColor: "var(--border)" }}>হোমপেজ</a>
+          <Link href="/" className="rounded-full border px-5 py-3 font-bold" style={{ borderColor: "var(--border)" }}>হোমপেজ</Link>
         </div>
       </section>
     </main>
