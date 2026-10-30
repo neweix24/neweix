@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { FormEvent, useState } from "react";
 
 type Order = {
@@ -109,7 +111,7 @@ export default function TrackOrderView() {
 
   return (
     <main className="min-h-screen px-4 py-12" style={{ background: "var(--bg)", color: "var(--ink)" }}>
-      <section className="mx-auto w-full max-w-2xl">
+      <section className="mx-auto w-full max-w-2xl">\n        <nav className="mb-8 flex flex-wrap justify-between gap-4 text-sm font-semibold">\n          <Link href="/" style={{ color: "var(--primary)" }}>← NEWEIX হোম</Link>\n          <Link href="/products" style={{ color: "var(--muted)" }}>পণ্য দেখুন</Link>\n        </nav>
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold tracking-tight">
             অর্ডার ট্র্যাক করুন
@@ -142,7 +144,7 @@ export default function TrackOrderView() {
                 placeholder="যেমন: NWX-10001"
                 maxLength={60}
                 required
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                className="w-full rounded-lg border px-4 py-3 outline-none transition" style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--ink)" }}
               />
             </div>
 
