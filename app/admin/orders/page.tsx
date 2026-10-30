@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/auth";
 import OrdersManager from "@/features/admin/orders-manager";
+import PathaoPanel from "@/features/admin/pathao-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default async function AdminOrdersPage() {
             ← অ্যাডমিন ড্যাশবোর্ড
           </Link>
         </header>
+        <PathaoPanel />
         <OrdersManager />
       </div>
     </main>
