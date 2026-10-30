@@ -20,6 +20,7 @@ type SearchResponse = { data?: Product[]; ai?: { used?: boolean; mode?: string }
 type Suggestion = { id: string; name: string; slug: string; price: number; image: string | null };
 
 const PAGE_SIZE = 24;
+const FETCH_SIZE = PAGE_SIZE + 1;
 
 function money(value: number) {
   return new Intl.NumberFormat("bn-BD", {
@@ -32,6 +33,7 @@ function money(value: number) {
 export default function SmartSearchPanel() {
   const [query, setQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
+  const [hasMore, setHasMore] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState("");
   const [minPrice, setMinPrice] = useState("");
@@ -45,6 +47,7 @@ export default function SmartSearchPanel() {
   const [submitted, setSubmitted] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const abortRef = useRef<AbortController | null>(null);
+  const executeSearchRef = useRef(executeSearch);
 
   const executeSearch = useCallback(async (term: string, targetPage = 1) => {
     const normalized = term.trim().slice(0, 160);
@@ -68,7 +71,7 @@ export default function SmartSearchPanel() {
     try {
       const params = new URLSearchParams({
         q: normalized,
-        limit: String(PAGE_SIZE),
+        limit: String(FETCH_SIZE),
         page: String(targetPage),
         sort,
       });
@@ -83,12 +86,15 @@ export default function SmartSearchPanel() {
       });
       const result = (await response.json()) as SearchResponse;
       if (!response.ok) throw new Error(result.error || "সার্চ করা যায়নি।");
-      setProducts(Array.isArray(result.data) ? result.data : []);
+      const rows = Array.isArray(result.data) ? result.data : [];
+      setHasMore(rows.length > PAGE_SIZE);
+      setProducts(rows.slice(0, PAGE_SIZE));
       setAiUsed(Boolean(result.ai?.used));
     } catch (reason) {
       if (reason instanceof Error && reason.name === "AbortError") return;
       setError(reason instanceof Error ? reason.message : "সার্চ করা যায়নি।");
       setProducts([]);
+      setHasMore(false);
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
@@ -98,6 +104,10 @@ export default function SmartSearchPanel() {
     event?.preventDefault();
     void executeSearch(query, 1);
   }
+
+  useEffect(() => {
+    executeSearchRef.current = executeSearch;
+  }, [executeSearch]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -124,10 +134,10 @@ export default function SmartSearchPanel() {
       .slice(0, 160);
     if (initialQuery) {
       setQuery(initialQuery);
-      void executeSearch(initialQuery, 1);
+      void executeSearchRef.current(initialQuery, 1);
     }
     return () => controller.abort();
-  }, [executeSearch]);
+  }, []);
 
   useEffect(() => {
     const term = query.trim();
@@ -353,7 +363,7 @@ export default function SmartSearchPanel() {
             <span aria-live="polite">পৃষ্ঠা {page}</span>
             <button
               type="button"
-              disabled={loading || products.length < PAGE_SIZE}
+              disabled={loading || !hasMore}
               onClick={() => void executeSearch(query, page + 1)}
             >
               পরের পৃষ্ঠা
