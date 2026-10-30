@@ -43,6 +43,11 @@ export default function ProductCatalog() {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [compareIds, setCompareIds] = useState<string[]>([]);
 
+  const visibleCategories = useMemo(
+    () => categories.filter((category) => products.some((product) => product.category_id === category.id)),
+    [categories, products]
+  );
+
   const loadProducts = useCallback(async () => {
     setLoading(true);
     setError(false);
@@ -194,16 +199,16 @@ export default function ProductCatalog() {
             placeholder="পণ্যের নাম লিখুন..."
           />
         </label>
-        {categories.length > 0 && <label className={styles.search} style={{ marginTop: 12 }}>
+        {visibleCategories.length > 0 && <label className={styles.search} style={{ marginTop: 12 }}>
           <span className={styles.srOnly}>ক্যাটাগরি নির্বাচন করুন</span>
           <select aria-label="ক্যাটাগরি নির্বাচন করুন" value={categorySlug} onChange={(event) => setCategorySlug(event.target.value)}>
             <option value="">সব ক্যাটাগরি</option>
-            {categories.map((category) => <option key={category.id} value={category.slug}>{category.name}</option>)}
+            {visibleCategories.map((category) => <option key={category.id} value={category.slug}>{category.name}</option>)}
           </select>
         </label>}
-        {categories.length > 0 && <div className={styles.categoryChips} aria-label="দ্রুত ক্যাটাগরি">
+        {visibleCategories.length > 0 && <div className={styles.categoryChips} aria-label="দ্রুত ক্যাটাগরি">
           <button type="button" aria-pressed={!categorySlug} className={!categorySlug ? styles.activeChip : ""} onClick={() => setCategorySlug("")}>সব পণ্য</button>
-          {categories.map((category) => <button key={category.id} type="button" aria-pressed={categorySlug === category.slug} className={categorySlug === category.slug ? styles.activeChip : ""} onClick={() => setCategorySlug(category.slug)}>{category.name}</button>)}
+          {visibleCategories.map((category) => <button key={category.id} type="button" aria-pressed={categorySlug === category.slug} className={categorySlug === category.slug ? styles.activeChip : ""} onClick={() => setCategorySlug(category.slug)}>{category.name}</button>)}
         </div>}
         <div className={styles.filterRow}>
           <label className={styles.priceField}>সর্বনিম্ন দাম
