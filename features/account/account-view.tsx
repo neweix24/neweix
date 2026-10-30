@@ -377,8 +377,8 @@ export default function AccountView() {
         .account-page {
           min-height: 100vh;
           padding: 0 20px 60px;
-          background: #f7f8fa;
-          color: #172338;
+          background: var(--bg);
+          color: var(--ink);
         }
 
         .account-header {
@@ -389,18 +389,18 @@ export default function AccountView() {
           align-items: center;
           justify-content: space-between;
           gap: 16px;
-          border-bottom: 1px solid #e2e6ed;
+          border-bottom: 1px solid var(--border);
         }
 
         .account-brand {
-          color: #10233f;
+          color: var(--primary);
           font-weight: 800;
           letter-spacing: 2px;
           text-decoration: none;
         }
 
         .account-home {
-          color: #526078;
+          color: var(--muted);
           text-decoration: none;
           font-size: 14px;
         }
@@ -410,14 +410,14 @@ export default function AccountView() {
           max-width: 520px;
           margin: 44px auto 0;
           padding: 30px;
-          border: 1px solid #e5e8ef;
+          border: 1px solid var(--border);
           border-radius: 16px;
-          background: white;
-          box-shadow: 0 12px 35px #10233f0a;
+          background: var(--surface);
+          box-shadow: 0 12px 35px var(--primary)0a;
         }
 
         .account-eyebrow {
-          color: #9a7a42;
+          color: var(--primary);
           font-size: 12px;
           font-weight: 700;
           letter-spacing: 2px;
@@ -429,7 +429,7 @@ export default function AccountView() {
         }
 
         .account-description {
-          color: #778195;
+          color: var(--muted);
           line-height: 1.7;
         }
 
@@ -439,12 +439,12 @@ export default function AccountView() {
           margin: 22px 0;
           padding: 14px;
           border-radius: 9px;
-          background: #f7f8fa;
+          background: var(--bg);
           overflow-wrap: anywhere;
         }
 
         .account-email span {
-          color: #778195;
+          color: var(--muted);
           font-size: 13px;
         }
 
@@ -464,15 +464,15 @@ export default function AccountView() {
           width: 100%;
           min-height: 48px;
           padding: 12px;
-          border: 1px solid #dce1e9;
+          border: 1px solid var(--border);
           border-radius: 9px;
-          background: white;
-          color: #172338;
+          background: var(--surface);
+          color: var(--ink);
           font: inherit;
         }
 
         .account-form input:focus {
-          outline: 2px solid #c6a66b;
+          outline: 2px solid var(--primary);
           outline-offset: 1px;
         }
 
@@ -482,8 +482,8 @@ export default function AccountView() {
           padding: 12px;
           border: 0;
           border-radius: 9px;
-          background: #10233f;
-          color: white;
+          background: var(--primary);
+          color: #080b09;
           font: inherit;
           font-weight: 700;
           cursor: pointer;
@@ -499,9 +499,9 @@ export default function AccountView() {
           gap: 9px;
           margin: 18px 0;
           padding: 16px;
-          border: 1px solid #e5e8ef;
+          border: 1px solid var(--border);
           border-radius: 12px;
-          background: #fbfcfe;
+          background: var(--surface-raised);
         }
 
         .phone-verification button {
@@ -509,8 +509,8 @@ export default function AccountView() {
           margin-top: 2px;
           border: 0;
           border-radius: 9px;
-          background: #263e5f;
-          color: white;
+          background: var(--primary-hover);
+          color: #080b09;
           font: inherit;
           font-weight: 700;
           cursor: pointer;
@@ -523,12 +523,12 @@ export default function AccountView() {
         }
 
         .success {
-          color: #167345;
+          color: var(--success);
           font-size: 14px;
         }
 
         .error {
-          color: #b42318;
+          color: var(--danger);
           font-size: 14px;
         }
 
@@ -538,11 +538,11 @@ export default function AccountView() {
           gap: 20px;
           margin-top: 26px;
           padding-top: 20px;
-          border-top: 1px solid #e5e8ef;
+          border-top: 1px solid var(--border);
         }
 
         .account-links a {
-          color: #10233f;
+          color: var(--primary);
           font-size: 14px;
           font-weight: 600;
           text-decoration: none;
@@ -558,7 +558,7 @@ export default function AccountView() {
           padding: 0;
           border: 0;
           background: transparent;
-          color: #b42318;
+          color: var(--danger);
           font: inherit;
           cursor: pointer;
         }
