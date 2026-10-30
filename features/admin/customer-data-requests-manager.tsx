@@ -93,7 +93,7 @@ export default function CustomerDataRequestsManager() {
               <textarea id={`note-${item.id}`} rows={2} maxLength={1000} value={notes[item.id] ?? ""} onChange={(event) => setNotes((current) => ({ ...current, [item.id]: event.target.value }))} className="w-full rounded-lg border p-3" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--ink)" }} />
               <div className="flex flex-wrap gap-2">
                 <button type="button" disabled={busyId === item.id} onClick={() => void update(item, "processing")} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--border)" }}>প্রক্রিয়াধীন করুন</button>
-                <button type="button" disabled={busyId === item.id} onClick={() => void update(item, "completed")} className="rounded-lg px-3 py-2 text-sm font-semibold" style={{ background: "var(--primary)", color: "#10170d" }}>সম্পন্ন</button>
+                <button type="button" disabled={busyId === item.id} onClick={() => void update(item, "completed")} className="rounded-lg px-3 py-2 text-sm font-semibold" style={{ background: "var(--primary)", color: "#080b09" }}>সম্পন্ন</button>
                 <button type="button" disabled={busyId === item.id} onClick={() => void update(item, "rejected")} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "#b42318", color: "#b42318" }}>প্রত্যাখ্যান</button>
               </div>
             </div>
