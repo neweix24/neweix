@@ -58,18 +58,18 @@ export default function SupremeDashboard() {
   );
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900">
+    <main className="min-h-screen px-4 py-10" style={{ background: "var(--bg)", color: "var(--ink)" }}>
       <div className="mx-auto max-w-6xl space-y-6">
-        <header className="rounded-2xl bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-wider text-blue-700">
+        <header className="neweix-panel rounded-2xl p-6 sm:p-8">
+          <p className="neweix-kicker">
             NEWEIX · SUPREME PANEL
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold">
+          <h1 className="neweix-page-title">
             Supreme Dashboard
           </h1>
 
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2" style={{ color: "var(--muted)" }}>
             পণ্য ও স্টকের বর্তমান তথ্য
           </p>
 
@@ -77,7 +77,7 @@ export default function SupremeDashboard() {
             type="button"
             onClick={() => void loadDashboard()}
             disabled={loading}
-            className="mt-5 rounded-lg bg-blue-700 px-5 py-3 font-medium text-white disabled:opacity-50"
+            className="neweix-button-primary mt-5 disabled:opacity-50"
           >
             {loading ? "লোড হচ্ছে..." : "তথ্য রিফ্রেশ করুন"}
           </button>
