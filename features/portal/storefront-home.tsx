@@ -9,7 +9,7 @@ import styles from "./storefront-home.module.css";
 type Product = {
   id: string; name: string; slug: string; price: number;
   compare_at_price?: number | null; image_urls: string[] | null;
-  stock: number; is_featured?: boolean;
+  stock: number; is_featured?: boolean; category_id?: string | null;
 };
 type Customer = { name: string; email: string };
 type Category = { id: string; name: string; slug: string };
@@ -102,12 +102,16 @@ export default function StorefrontHome() {
         if (!productResponse.ok || !Array.isArray(productResult.data)) throw new Error("Products unavailable");
         if (active) setProducts(productResult.data.slice(0, 8));
         if (categoryResponse.ok && Array.isArray(categoryResult.categories) && active) {
-          setCategories(categoryResult.categories.filter((item: unknown): item is Category =>
+          const validCategories = categoryResult.categories.filter((item: unknown): item is Category =>
             Boolean(item) && typeof item === "object" &&
             typeof (item as Category).id === "string" &&
             typeof (item as Category).name === "string" &&
             typeof (item as Category).slug === "string"
-          ).slice(0, 12));
+          );
+          const populatedCategories = validCategories.filter((category) =>
+            productResult.data.some((product: { category_id?: string | null }) => product.category_id === category.id)
+          );
+          setCategories(populatedCategories);
         }
       } catch { if (active) setProducts([]); }
       finally { if (active) setProductsLoading(false); }
