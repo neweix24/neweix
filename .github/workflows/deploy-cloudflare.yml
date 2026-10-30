@@ -1,0 +1,74 @@
+name: Deploy NEWEIX to Cloudflare Workers
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: neweix-cloudflare-production
+  cancel-in-progress: false
+
+jobs:
+  validate-cloudflare-build:
+    if: github.event_name == 'pull_request'
+    name: Validate OpenNext Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://grhybvlhdnzlopwbaqun.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyaHlidmxoZG56bG9wd2JhcXVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NDYyMjEsImV4cCI6MjEwODIyMjIyMX0.27nR0VFbxwVYQKb5A06BRwizp02CHAmoD9IRMwiJ0Ss
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build OpenNext Cloudflare Worker
+        run: npx opennextjs-cloudflare build
+
+  deploy:
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    name: Build and deploy production Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLOUDFLARE_ACCOUNT_ID: 8ac926e7573e6b45edab34c3346b366c
+      NEXT_PUBLIC_SUPABASE_URL: https://grhybvlhdnzlopwbaqun.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyaHlidmxoZG56bG9wd2JhcXVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NDYyMjEsImV4cCI6MjEwODIyMjIyMX0.27nR0VFbxwVYQKb5A06BRwizp02CHAmoD9IRMwiJ0Ss
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Verify Cloudflare deployment credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        shell: bash
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Add CLOUDFLARE_API_TOKEN in GitHub Actions secrets."; exit 1; }
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and deploy OpenNext Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npm run deploy
