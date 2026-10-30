@@ -34,6 +34,7 @@ export default function ProductCatalog() {
   const [error, setError] = useState(false);
   const [notice, setNotice] = useState("");
   const [wishlist, setWishlist] = useState<string[]>([]);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -56,6 +57,8 @@ export default function ProductCatalog() {
     try {
       const saved: unknown = JSON.parse(localStorage.getItem("neweix_wishlist") ?? "[]");
       if (Array.isArray(saved)) setWishlist(Array.from(new Set(saved.filter((id): id is string => typeof id === "string"))).slice(0, 200));
+      const compared: unknown = JSON.parse(localStorage.getItem("neweix_compare") ?? "[]");
+      if (Array.isArray(compared)) setCompareIds(Array.from(new Set(compared.filter((id): id is string => typeof id === "string"))).slice(0, 4));
     } catch {
       localStorage.removeItem("neweix_wishlist");
     }
@@ -83,6 +86,13 @@ export default function ProductCatalog() {
     } catch {
       setNotice("পছন্দের তালিকা সংরক্ষণ করা যায়নি।");
     }
+  }
+
+  function toggleCompare(product: Product) {
+    const next = compareIds.includes(product.id) ? compareIds.filter((id) => id !== product.id) : compareIds.length < 4 ? [...compareIds, product.id] : null;
+    if (!next) { setNotice("একসঙ্গে সর্বোচ্চ ৪টি পণ্য তুলনা করা যাবে।"); return; }
+    try { localStorage.setItem("neweix_compare", JSON.stringify(next)); setCompareIds(next); setNotice(next.includes(product.id) ? "পণ্যটি তুলনার তালিকায় যোগ হয়েছে।" : "পণ্যটি তুলনা থেকে সরানো হয়েছে।"); window.dispatchEvent(new Event("neweix-compare-change")); }
+    catch { setNotice("তুলনার তালিকা সংরক্ষণ করা যায়নি।"); }
   }
 
   function addToCart(product: Product) {
@@ -124,6 +134,7 @@ export default function ProductCatalog() {
           <Link href="/track-order">অর্ডার ট্র্যাক</Link>
           <Link href="/account">অ্যাকাউন্ট</Link>
           <Link href="/wishlist">পছন্দের তালিকা ({wishlist.length})</Link>
+          <Link href="/compare">তুলনা ({compareIds.length})</Link>
           <Link href="/cart">কার্ট</Link>
         </nav>
       </header>
@@ -184,7 +195,10 @@ export default function ProductCatalog() {
                 {product.is_featured && <small>বিশেষ পণ্য</small>}
               </Link>
               <div className={styles.details}>
-                <button type="button" aria-pressed={wishlist.includes(product.id)} onClick={() => toggleWishlist(product)} className="mb-2 rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}>{wishlist.includes(product.id) ? "♥ পছন্দে আছে" : "♡ পছন্দে রাখুন"}</button>
+                <div className="mb-2 flex flex-wrap gap-2">
+                  <button type="button" aria-pressed={wishlist.includes(product.id)} onClick={() => toggleWishlist(product)} className="rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}>{wishlist.includes(product.id) ? "♥ পছন্দে আছে" : "♡ পছন্দে রাখুন"}</button>
+                  <button type="button" aria-pressed={compareIds.includes(product.id)} onClick={() => toggleCompare(product)} className="rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}>{compareIds.includes(product.id) ? "✓ তুলনায় আছে" : "⇄ তুলনা করুন"}</button>
+                </div>
                 <span className={product.stock > 0 ? styles.inStock : styles.outOfStock}>
                   {product.stock > 0 ? "স্টকে আছে" : "স্টক শেষ"}
                 </span>
