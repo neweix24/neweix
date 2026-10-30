@@ -126,8 +126,14 @@ export async function POST(request: Request) {
     .lt("created_at", new Date(now - 48 * 60 * 60 * 1000).toISOString());
 
   const challengeId = crypto.randomUUID();
-  const otp = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000)
-    .padStart(6, "0");
+  const randomLimit = Math.floor(0x1_0000_0000 / 1_000_000) * 1_000_000;
+  const randomBuffer = new Uint32Array(1);
+  let randomValue = 0;
+  do {
+    crypto.getRandomValues(randomBuffer);
+    randomValue = randomBuffer[0];
+  } while (randomValue >= randomLimit);
+  const otp = String(randomValue % 1_000_000).padStart(6, "0");
   const expiresAt = new Date(now + 5 * 60 * 1000).toISOString();
 
   let otpHash: string;
@@ -171,18 +177,31 @@ export async function POST(request: Request) {
     let responseCode: number | null = null;
 
     try {
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
-      const candidate =
-        parsed.response_code ?? parsed.code ?? parsed.status;
-      if (typeof candidate === "number" || typeof candidate === "string") {
-        responseCode = Number(candidate);
+      const parsed: unknown = JSON.parse(raw);
+      if (typeof parsed === "number" || typeof parsed === "string") {
+        const candidate = Number(parsed);
+        if (Number.isFinite(candidate)) responseCode = candidate;
+      } else if (parsed && typeof parsed === "object") {
+        const value = parsed as Record<string, unknown>;
+        const candidate = value.response_code ?? value.code ?? value.status;
+        if (typeof candidate === "number" || typeof candidate === "string") {
+          const numericCode = Number(candidate);
+          if (Number.isFinite(numericCode)) responseCode = numericCode;
+        }
       }
     } catch {
+      // The provider commonly returns a plain numeric response code.
+    }
+
+    if (responseCode === null) {
       const match = raw.match(/^\s*(\d{3,4})\b/);
       if (match) responseCode = Number(match[1]);
     }
 
-    if (!response.ok || (response.status !== 202 && responseCode !== 202)) {
+    if (
+      !response.ok ||
+      (responseCode !== 202 && !(response.status === 202 && responseCode === null))
+    ) {
       await supabase
         .from("phone_verification_challenges")
         .delete()
