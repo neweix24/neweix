@@ -12,7 +12,7 @@ export default function ProductReviewPanel() {
         <span className="rounded-full border px-3 py-2 text-xs font-bold" style={{ borderColor: "var(--border-strong)", color: "var(--primary)" }}>শিগগিরই আসছে</span>
       </div>
       <div role="status" className="mt-6 flex gap-4 rounded-xl border p-4 sm:p-5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-        <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg" style={{ background: "var(--primary)18", color: "var(--primary)" }}>✦</span>
+        <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg" style={{ background: "var(--brand-lime-soft)", color: "var(--primary)" }}>✦</span>
         <div>
           <strong className="text-sm">যাচাইকৃত ক্রেতার রিভিউ</strong>
           <p className="mt-2 text-sm leading-7" style={{ color: "var(--muted)" }}>ভুয়া রেটিং বা বানানো মতামত দেখানো হবে না। কেনাকাটা যাচাই, রিভিউ জমা এবং প্রকাশের নিরাপদ ব্যবস্থা তৈরি হলে এখানে প্রকৃত ক্রেতাদের মতামত দেখা যাবে।</p>
