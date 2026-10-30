@@ -10,6 +10,7 @@ const iconGlyph: Record<(typeof portalServices)[number]["icon"], string> = {
   shield: "◇",
   grid: "▦",
   staff: "▤",
+  heart: "♡",
 };
 
 const accentClass = {
