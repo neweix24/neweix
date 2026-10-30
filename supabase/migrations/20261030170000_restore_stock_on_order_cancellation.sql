@@ -1,5 +1,5 @@
 -- NEWEIX backend hardening: restore inventory exactly once on admin cancellation.
--- This migration is committed for review; it is not applied to the live database.
+-- Apply through Supabase migrations; live project has this migration applied.
 
 create or replace function public.admin_update_order_status(
   p_order_id uuid,
