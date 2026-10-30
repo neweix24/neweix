@@ -676,3 +676,125 @@ body:has(.topbar) textarea {
   color: var(--customer-theme-text, var(--ink));
   border-color: var(--customer-theme-border, var(--border));
 }
+
+/* NEWEIX Premium UI foundation — shared tokens and reusable primitives */
+:root {
+  --brand-forest: #142319;
+  --brand-forest-deep: #0b120d;
+  --brand-lime: #c4f36b;
+  --brand-lime-soft: rgba(196, 243, 107, 0.12);
+  --surface-glass: rgba(16, 22, 18, 0.82);
+  --surface-elevated: #18221b;
+  --border-strong: #3a4b3c;
+  --text-primary: #f4f7f2;
+  --text-secondary: #a5b3a7;
+  --content-width: 1200px;
+  --control-height: 48px;
+  --motion-standard: 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+body {
+  text-rendering: optimizeLegibility;
+}
+
+:where(button, input, select, textarea) {
+  accent-color: var(--primary);
+}
+
+:where(button, a, input, select, textarea) {
+  touch-action: manipulation;
+}
+
+:where(button, [role="button"], a.button-like) {
+  min-height: 40px;
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea) {
+  transition: border-color var(--motion-standard), box-shadow var(--motion-standard), background var(--motion-standard);
+}
+
+:where(input, select, textarea):disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.neweix-shell {
+  width: min(var(--content-width), calc(100% - 40px));
+  margin-inline: auto;
+}
+
+.neweix-panel {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(24, 34, 27, 0.96), rgba(16, 22, 18, 0.98));
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.2);
+}
+
+.neweix-kicker {
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+}
+
+.neweix-button-primary {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  background: var(--primary);
+  color: #10170d;
+  font-weight: 800;
+  transition: transform var(--motion-standard), background var(--motion-standard), box-shadow var(--motion-standard);
+}
+
+.neweix-button-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: var(--primary-hover);
+  box-shadow: 0 10px 28px rgba(196, 243, 107, 0.15);
+}
+
+.neweix-button-secondary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--ink);
+  font-weight: 700;
+  transition: border-color var(--motion-standard), background var(--motion-standard);
+}
+
+.neweix-button-secondary:hover {
+  border-color: var(--primary);
+  background: var(--brand-lime-soft);
+}
+
+.neweix-page-title {
+  margin: 8px 0 10px;
+  color: var(--ink);
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 900;
+  letter-spacing: -1.1px;
+  line-height: 1.2;
+}
+
+@media (max-width: 640px) {
+  .neweix-shell {
+    width: min(100% - 28px, var(--content-width));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
