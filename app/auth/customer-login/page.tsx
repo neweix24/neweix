@@ -192,8 +192,7 @@ function CustomerLoginForm() {
           )}
 
           <p className="auth-guest-note">
-            এখনই অ্যাকাউন্ট নেই? আপাতত{" "}
-            <Link href="/">পণ্য দেখুন ও অর্ডার করুন</Link>।
+            অর্ডার করতে অ্যাকাউন্টে লগইন করে ফোন নম্বর OTP দিয়ে যাচাই করুন।
           </p>
 
           <p className="auth-staff-note">
