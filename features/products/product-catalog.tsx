@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import styles from "./product-catalog.module.css";
 
@@ -33,7 +33,7 @@ export default function ProductCatalog() {
   const [error, setError] = useState(false);
   const [notice, setNotice] = useState("");
 
-  async function loadProducts() {
+  const loadProducts = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
@@ -47,11 +47,11 @@ export default function ProductCatalog() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     void loadProducts();
-  }, []);
+  }, [loadProducts]);
 
   const filtered = useMemo(() => {
     const term = query.trim().toLocaleLowerCase();
