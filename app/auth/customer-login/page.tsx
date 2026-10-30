@@ -281,13 +281,13 @@ function CustomerLoginForm() {
 
         .auth-mobile-brand {
           display: none;
-          color: var(--surface-raised);
+          color: var(--ink);
           margin-bottom: 40px;
         }
 
         .auth-form-wrap h2 {
           margin: 12px 0;
-          color: var(--surface-raised);
+          color: var(--ink);
           font-size: clamp(25px, 3vw, 34px);
           line-height: 1.35;
         }
@@ -386,8 +386,8 @@ function CustomerLoginForm() {
         }
 
         .auth-email-form input:focus {
-          border-color: var(--surface-raised);
-          box-shadow: 0 0 0 3px var(--surface-raised)12;
+          border-color: var(--primary);
+          box-shadow: 0 0 0 3px rgba(182, 255, 74, 0.12);
         }
 
         .auth-password-label {
@@ -415,8 +415,8 @@ function CustomerLoginForm() {
           margin-top: 12px;
           border: 0;
           border-radius: 9px;
-          background: var(--surface-raised);
-          color: var(--ink);
+          background: var(--primary);
+          color: #080b09;
           font: inherit;
           font-weight: 750;
           cursor: pointer;
