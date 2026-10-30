@@ -3,18 +3,31 @@
   "name": "neweix",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-23",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "keep_vars": true,
   "vars": {
-    "NEWEIX_SITE_URL": "https://neweix.com",
+"NEWEIX_SITE_URL": "https://neweix.com",
     "NEXT_PUBLIC_SUPABASE_URL": "https://grhybvlhdnzlopwbaqun.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXAiLCJyZWYiOiJncmh5YnZsaGRuemxvcHdiYXF1biIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzkyNjQ2MjIxLCJleHAiOjIxMDgyMjIyMjJ9.27nR0VFbxwVYQKb5A06BRwizp02CHAmoD9IRMwiJ0Ss",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyaHlidmxoZG56bG9wd2JhcXVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NDYyMjEsImV4cCI6MjEwODIyMjIyMX0.27nR0VFbxwVYQKb5A06BRwizp02CHAmoD9IRMwiJ0Ss",
     "PAYMENT_BKASH_NUMBER": "01606368005",
     "PAYMENT_NAGAD_NUMBER": "01606368005",
     "PAYMENT_ROCKET_NUMBER": "01606368005"
   },
-  "secrets": { "required": ["SUPABASE_SERVICE_ROLE_KEY"] },
-  "ai": { "binding": "AI" },
-  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
-  "observability": { "enabled": true }
+  "secrets": {
+    "required": [
+      "SUPABASE_SERVICE_ROLE_KEY"
+    ]
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
 }
