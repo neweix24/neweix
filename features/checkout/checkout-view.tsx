@@ -318,7 +318,8 @@ export default function CheckoutView() {
         )}
 
         <p>ডেলিভারি চার্জ আলাদাভাবে নিশ্চিত করা হবে।</p>
-        <Link className="primary-button" href="/">হোমপেজে ফিরুন</Link>\n        <Link className={styles.secondaryLink} href="/track-order">অর্ডার ট্র্যাক করুন</Link>
+        <Link className="primary-button" href="/">হোমপেজে ফিরুন</Link>
+        <Link className={styles.secondaryLink} href="/track-order">অর্ডার ট্র্যাক করুন</Link>
       </main>
     );
   }
