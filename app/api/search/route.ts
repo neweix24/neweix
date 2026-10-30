@@ -19,6 +19,7 @@ export async function GET(request: Request) {
     const sort = ["relevance", "price_asc", "price_desc", "newest"].includes(rawSort) ? rawSort : "relevance";
     const limit = int(url.searchParams.get("limit"), 24, 1, 50);
     const page = int(url.searchParams.get("page"), 1, 1, 100000);
+    const offset = int(url.searchParams.get("offset"), (page - 1) * limit, 0, 1000000);
     if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) return json({ error: "সর্বনিম্ন দাম সর্বোচ্চ দামের চেয়ে বেশি হতে পারবে না।" }, 400);
     if (categoryId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(categoryId)) return json({ error: "ক্যাটাগরি সঠিক নয়।" }, 400);
     const context = await getCloudflareContext();
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
       p_query: query,
       p_query_embedding: embedding ? "[" + embedding.join(",") + "]" : null,
       p_category_id: categoryId, p_min_price: minPrice, p_max_price: maxPrice,
-      p_in_stock: inStock, p_sort: sort, p_limit: limit, p_offset: (page - 1) * limit
+      p_in_stock: inStock, p_sort: sort, p_limit: limit, p_offset: offset
     });
     if (error) { console.error("Smart search RPC failed:", error.message); return json({ error: "সার্চ করা যায়নি। ডাটাবেস Migration প্রয়োগ হয়েছে কি না যাচাই করুন।" }, 503); }
     return json({ data: data ?? [], page, limit, ai: { used: aiUsed, mode: aiUsed ? "hybrid" : "keyword" } });
