@@ -94,9 +94,11 @@ export default function ProductCatalog() {
   const filtered = useMemo(() => {
     const term = query.trim().toLocaleLowerCase();
     const selectedCategory = categories.find((category) => category.slug === categorySlug);
-    const categoryMatches = selectedCategory
-      ? products.filter((product) => product.category_id === selectedCategory.id)
-      : products;
+    const categoryMatches = !categorySlug
+      ? products
+      : selectedCategory
+        ? products.filter((product) => product.category_id === selectedCategory.id)
+        : [];
     const minimum = minPrice.trim() ? Number(minPrice) : null;
     const maximum = maxPrice.trim() ? Number(maxPrice) : null;
     const matches = categoryMatches.filter((product) => {
