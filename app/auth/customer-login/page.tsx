@@ -206,8 +206,8 @@ function CustomerLoginForm() {
           min-height: 100vh;
           display: grid;
           grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-          background: #fff;
-          color: #172338;
+          background: var(--bg);
+          color: var(--ink);
         }
 
         .auth-brand-panel {
@@ -215,10 +215,10 @@ function CustomerLoginForm() {
           flex-direction: column;
           justify-content: space-between;
           padding: clamp(28px, 5vw, 72px);
-          color: white;
+          color: var(--ink);
           background:
-            radial-gradient(ellipse at 10% 90%, #314d70 0, transparent 45%),
-            linear-gradient(145deg, #10233f, #172f50);
+            radial-gradient(ellipse at 10% 90%, var(--brand-forest) 0, transparent 45%),
+            linear-gradient(145deg, var(--brand-forest), var(--brand-forest-deep));
         }
 
         .auth-brand,
@@ -234,7 +234,7 @@ function CustomerLoginForm() {
 
         .auth-brand span,
         .auth-mobile-brand span {
-          color: #d9b778;
+          color: var(--primary);
         }
 
         .auth-brand-copy {
@@ -243,7 +243,7 @@ function CustomerLoginForm() {
         }
 
         .auth-eyebrow {
-          color: #a98750;
+          color: var(--primary);
           font-size: 11px;
           font-weight: 800;
           letter-spacing: 1.8px;
@@ -258,12 +258,12 @@ function CustomerLoginForm() {
 
         .auth-brand-copy > p:last-child {
           max-width: 410px;
-          color: #d1dbea;
+          color: var(--muted);
           line-height: 1.9;
         }
 
         .auth-brand-footer {
-          color: #c3cfdf;
+          color: var(--muted);
           font-size: 12px;
         }
 
@@ -280,20 +280,20 @@ function CustomerLoginForm() {
 
         .auth-mobile-brand {
           display: none;
-          color: #10233f;
+          color: var(--ink);
           margin-bottom: 40px;
         }
 
         .auth-form-wrap h2 {
           margin: 12px 0;
-          color: #10233f;
+          color: var(--ink);
           font-size: clamp(25px, 3vw, 34px);
           line-height: 1.35;
         }
 
         .auth-subtitle {
           margin: 0 0 28px;
-          color: #778195;
+          color: var(--muted);
           font-size: 14px;
           line-height: 1.8;
         }
@@ -307,10 +307,10 @@ function CustomerLoginForm() {
           gap: 12px;
           margin: 10px 0;
           padding: 12px;
-          border: 1px solid #dce2ea;
+          border: 1px solid var(--border);
           border-radius: 10px;
-          background: white;
-          color: #243248;
+          background: var(--surface);
+          color: var(--ink);
           font: inherit;
           font-size: 14px;
           font-weight: 650;
@@ -319,8 +319,8 @@ function CustomerLoginForm() {
         }
 
         .auth-social-button:hover:not(:disabled) {
-          background: #f7f9fc;
-          border-color: #aebbd0;
+          background: var(--surface-raised);
+          border-color: var(--primary);
         }
 
         .auth-social-button:disabled,
@@ -357,7 +357,7 @@ function CustomerLoginForm() {
           content: "";
           height: 1px;
           flex: 1;
-          background: #e8ecf2;
+          background: var(--border);
         }
 
         .auth-email-form {
@@ -366,7 +366,7 @@ function CustomerLoginForm() {
         }
 
         .auth-email-form label {
-          color: #344258;
+          color: var(--ink);
           font-size: 13px;
           font-weight: 700;
         }
@@ -375,18 +375,18 @@ function CustomerLoginForm() {
           width: 100%;
           min-height: 48px;
           padding: 12px 14px;
-          border: 1px solid #dce2ea;
+          border: 1px solid var(--border);
           border-radius: 9px;
           outline: none;
-          background: white;
-          color: #172338;
+          background: var(--surface);
+          color: var(--ink);
           font: inherit;
           font-size: 14px;
         }
 
         .auth-email-form input:focus {
-          border-color: #10233f;
-          box-shadow: 0 0 0 3px #10233f12;
+          border-color: var(--ink);
+          box-shadow: 0 0 0 3px rgba(182,255,74,.12);
         }
 
         .auth-password-label {
@@ -400,7 +400,7 @@ function CustomerLoginForm() {
         .auth-password-label a,
         .auth-guest-note a,
         .auth-staff-note a {
-          color: #8b6c39;
+          color: var(--primary);
           font-weight: 700;
           text-decoration: none;
         }
@@ -414,20 +414,20 @@ function CustomerLoginForm() {
           margin-top: 12px;
           border: 0;
           border-radius: 9px;
-          background: #10233f;
-          color: white;
+          background: var(--primary);
+          color: var(--ink);
           font: inherit;
           font-weight: 750;
           cursor: pointer;
         }
 
         .auth-submit-button:hover:not(:disabled) {
-          background: #1c385e;
+          background: var(--primary-hover);
         }
 
         .auth-message {
           margin: 8px 0 0;
-          color: #b42318;
+          color: var(--danger);
           font-size: 13px;
           line-height: 1.7;
         }
@@ -435,7 +435,7 @@ function CustomerLoginForm() {
         .auth-privacy-note,
         .auth-guest-note,
         .auth-staff-note {
-          color: #778195;
+          color: var(--muted);
           font-size: 12px;
           line-height: 1.8;
           text-align: center;
