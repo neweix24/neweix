@@ -79,7 +79,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  if current_setting('request.jwt.claim.role', true) <> 'service_role' then
+  if current_setting('request.jwt.claim.role', true) is distinct from 'service_role' then
     raise exception 'service role required' using errcode = '42501';
   end if;
   return query
@@ -115,7 +115,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  if current_setting('request.jwt.claim.role', true) <> 'service_role' then
+  if current_setting('request.jwt.claim.role', true) is distinct from 'service_role' then
     raise exception 'service role required' using errcode = '42501';
   end if;
   delete from private.product_search_embedding_jobs where id = p_job_id;
@@ -133,7 +133,7 @@ set search_path = ''
 as $$
 declare updated_count integer;
 begin
-  if current_setting('request.jwt.claim.role', true) <> 'service_role' then
+  if current_setting('request.jwt.claim.role', true) is distinct from 'service_role' then
     raise exception 'service role required' using errcode = '42501';
   end if;
   update private.product_search_embedding_jobs
@@ -149,4 +149,8 @@ end;
 $$;
 revoke all on function public.neweix_fail_search_embedding_job(uuid, text) from public, anon, authenticated;
 grant execute on function public.neweix_fail_search_embedding_job(uuid, text) to service_role;
+
+insert into private.product_search_embedding_jobs(product_id)
+select p.id from public.products p where p.is_active = true
+on conflict (product_id) do nothing;
 commit;
