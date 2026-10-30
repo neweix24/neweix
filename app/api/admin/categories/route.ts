@@ -25,7 +25,7 @@ async function getAccess(): Promise<Access> {
     .from("staff_profiles").select("role, is_active").eq("user_id", user.id).maybeSingle();
 
   if (profileError || !profile || profile.is_active !== true ||
-      !["supreme", "admin", "staff"].includes(profile.role)) {
+      !["supreme", "admin"].includes(profile.role)) {
     return { ok: false, error: "এই কাজের অনুমতি নেই।", status: 403 };
   }
 
