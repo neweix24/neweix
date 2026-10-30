@@ -171,7 +171,7 @@ export default function TrackOrderView() {
                 placeholder="আপনার ফোন নম্বর"
                 maxLength={30}
                 required
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                className="w-full rounded-lg border px-4 py-3 outline-none transition" style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--ink)" }}
               />
             </div>
 
