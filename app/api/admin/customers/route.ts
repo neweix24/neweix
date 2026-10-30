@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { getAdminApiActor } from "@/lib/admin-api-auth";
+import { getSupremeApiActor } from "@/lib/admin-api-auth";
 import { createRuntimeServiceClient } from "@/lib/supabase/runtime-service-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const actor = await getAdminApiActor();
+  const actor = await getSupremeApiActor();
   if (!actor.ok) return NextResponse.json({ error: actor.error }, { status: actor.status });
 
   try {
