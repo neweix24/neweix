@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import styles from "./checkout-view.module.css";
 
 import { useEffect, useState, type FormEvent } from "react";
 
@@ -283,12 +284,16 @@ export default function CheckoutView() {
     width: "100%",
     boxSizing: "border-box" as const,
     margin: "8px 0 16px",
-    padding: 12,
+    padding: "13px 14px",
+    color: "var(--ink)",
+    background: "var(--surface-raised)",
+    border: "1px solid var(--border)",
+    borderRadius: 10,
   };
 
   if (loading) {
     return (
-      <main className="hero" aria-live="polite">
+      <main className={styles.page} aria-live="polite">
         <p>চেকআউট লোড হচ্ছে...</p>
       </main>
     );
@@ -296,11 +301,11 @@ export default function CheckoutView() {
 
   if (orderNumber) {
     return (
-      <main className="hero" style={{ maxWidth: 720, margin: "0 auto", padding: 24 }}>
+      <main className={styles.page}>
         <p className="eyebrow">ORDER RECEIVED</p>
         <h1>অর্ডার গ্রহণ করা হয়েছে!</h1>
         <p>আপনার অর্ডার নম্বর:</p>
-        <h2 style={{ overflowWrap: "anywhere" }}>{orderNumber}</h2>
+        <h2 className={styles.orderNumber}>{orderNumber}</h2>
 
         {submittedPaymentMethod === "cod" ? (
           <p>পেমেন্ট পদ্ধতি: ক্যাশ অন ডেলিভারি (COD)।</p>
@@ -312,14 +317,14 @@ export default function CheckoutView() {
         )}
 
         <p>ডেলিভারি চার্জ আলাদাভাবে নিশ্চিত করা হবে।</p>
-        <Link className="primary-button" href="/">হোমপেজে ফিরুন</Link>
+        <Link className="primary-button" href="/">হোমপেজে ফিরুন</Link>\n        <Link className={styles.secondaryLink} href="/track-order">অর্ডার ট্র্যাক করুন</Link>
       </main>
     );
   }
 
   if (cart.length === 0) {
     return (
-      <main className="hero">
+      <main className={styles.page}>
         <h1>আপনার কার্ট খালি</h1>
         {error && <p role="alert">{error}</p>}
         <Link className="primary-button" href="/">পণ্য দেখুন</Link>
@@ -328,22 +333,12 @@ export default function CheckoutView() {
   }
 
   return (
-    <main className="hero" style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
+    <main className={styles.page}>
       <p className="eyebrow">CHECKOUT</p>
       <h1>অর্ডার সম্পন্ন করুন</h1>
       <p>আপনার ডেলিভারি তথ্য ও পেমেন্ট পদ্ধতি নির্বাচন করুন।</p>
 
-      <section
-        aria-labelledby="summary-heading"
-        style={{
-          maxWidth: 620,
-          margin: "24px auto",
-          padding: 20,
-          border: "1px solid #ddd",
-          borderRadius: 12,
-          textAlign: "left",
-        }}
-      >
+      <section aria-labelledby="summary-heading" className={styles.panel}>
         <h2 id="summary-heading">অর্ডারের বিবরণ</h2>
 
         {cartDetails.map((item) => (
@@ -354,7 +349,7 @@ export default function CheckoutView() {
               justifyContent: "space-between",
               gap: 16,
               padding: "12px 0",
-              borderBottom: "1px solid #eee",
+              borderBottom: "1px solid var(--border)",
             }}
           >
             <div>
@@ -376,10 +371,7 @@ export default function CheckoutView() {
         {stockIssues.length > 0 && <p role="alert">কিছু পণ্যের মজুত পর্যাপ্ত নয়।</p>}
       </section>
 
-      <form
-        onSubmit={submitOrder}
-        style={{ maxWidth: 620, margin: "24px auto", textAlign: "left" }}
-      >
+      <form onSubmit={submitOrder} className={styles.form}>
         <label htmlFor="customer_name">আপনার নাম *</label>
         <input id="customer_name" name="customer_name" required minLength={2}
           maxLength={120} autoComplete="name" disabled={submitting} style={fieldStyle} />
@@ -403,7 +395,7 @@ export default function CheckoutView() {
           maxLength={120} autoComplete="address-level2" disabled={submitting}
           placeholder="যেমন: ঢাকা" style={fieldStyle} />
 
-        <fieldset style={{ border: "1px solid #ddd", borderRadius: 10, padding: 16, margin: "20px 0" }}>
+        <fieldset className={styles.paymentOptions}>
           <legend>পেমেন্ট পদ্ধতি নির্বাচন করুন *</legend>
 
           {([
@@ -438,7 +430,7 @@ export default function CheckoutView() {
           )}
 
           {paymentMethod !== "cod" && selectedMobilePayment?.enabled && (
-            <div style={{ padding: 14, background: "#f7f7f7", borderRadius: 8, marginTop: 12 }}>
+            <div className={styles.paymentDetails}>
               <h3>{selectedMobilePayment.label} পেমেন্ট</h3>
               <p>নিচের নম্বরে Send Money করুন:</p>
               <p style={{ fontSize: 20, fontWeight: 700, overflowWrap: "anywhere" }}>
@@ -470,7 +462,7 @@ export default function CheckoutView() {
         <p>চূড়ান্ত ডেলিভারি চার্জ পরে নিশ্চিত করা হবে।</p>
 
         {error && (
-          <p role="alert" style={{ color: "crimson", padding: 12, border: "1px solid currentColor", borderRadius: 8 }}>
+          <p role="alert" className={styles.error}>
             {error}
           </p>
         )}
@@ -478,7 +470,7 @@ export default function CheckoutView() {
         <button
           type="submit"
           disabled={submitting || missingProducts || stockIssues.length > 0}
-          style={{ width: "100%", padding: 14, cursor: submitting ? "wait" : "pointer" }}
+          className={styles.submit}
         >
           {submitting ? "অর্ডার জমা হচ্ছে..." : "অর্ডার নিশ্চিত করুন"}
         </button>
