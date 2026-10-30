@@ -76,31 +76,23 @@ export async function GET() {
     }
 
     const admin = await getAdminClient();
+    const orderColumns = staff.role === "supreme"
+      ? `
+        id, order_number, customer_name, customer_phone, phone, address,
+        shipping_address, shipping_city, status, subtotal, delivery_fee, total,
+        payment_method, payment_status, payment_transaction_id,
+        payment_verified_at, payment_verified_by, created_at,
+        order_items (id, product_name, unit_price, quantity)
+      `
+      : `
+        id, order_number, customer_name, customer_phone, phone, address,
+        shipping_address, shipping_city, status, subtotal, delivery_fee, total,
+        payment_method, payment_status, created_at,
+        order_items (id, product_name, unit_price, quantity)
+      `;
     const { data, error } = await admin
       .from("orders")
-      .select(`
-        id,
-        order_number,
-        customer_name,
-        customer_phone,
-        phone,
-        address,
-        shipping_address,
-        shipping_city,
-        status,
-        subtotal,
-        delivery_fee,
-        total,
-        payment_method,
-        payment_status,
-        created_at,
-        order_items (
-          id,
-          product_name,
-          unit_price,
-          quantity
-        )
-      `)
+      .select(orderColumns)
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -149,6 +141,10 @@ export async function POST(request: Request) {
       !UUID_REGEX.test(body.orderId)
     ) {
       return NextResponse.json({ error: "সঠিক Order ID দিন।" }, { status: 400 });
+    }
+
+    if (staff.role !== "supreme") {
+      return NextResponse.json({ error: "পেমেন্ট রেফারেন্স যাচাই শুধু Supreme করতে পারবেন।" }, { status: 403 });
     }
 
     const orderId = body.orderId;
