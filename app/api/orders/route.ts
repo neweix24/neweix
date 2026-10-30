@@ -444,6 +444,7 @@ export async function POST(request: Request) {
               : transactionId,
           p_items: items,
           p_coupon_code: couponCode,
+          p_customer_id: authenticatedCustomerId,
         }
       );
 
@@ -519,17 +520,6 @@ export async function POST(request: Request) {
         "অর্ডার তৈরি করা যায়নি। তথ্য ও পণ্যের মজুত যাচাই করে আবার চেষ্টা করুন।",
         400
       );
-    }
-
-    // Link signed-in checkouts to the authenticated customer. Guest checkout remains available.
-    if (authenticatedCustomerId && typeof (data as Record<string, unknown>).id === "string") {
-      const { error: linkError } = await supabase
-        .from("orders")
-        .update({ customer_id: authenticatedCustomerId })
-        .eq("id", (data as Record<string, unknown>).id);
-      if (linkError) {
-        console.error("Unable to link order to authenticated customer:", linkError.message);
-      }
     }
 
     if (
