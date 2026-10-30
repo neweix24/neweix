@@ -18,3 +18,34 @@ using (
 -- Keep customer-owned data private to its owner at the database layer.
 -- Staff and Admin cannot read another customer's profile, addresses, preferences,
 -- consent history, or data-request records through the authenticated Data API.
+
+-- Remove table-wide order reads from browser-authenticated users, then grant
+-- only operational columns. RLS still limits customers to their own orders;
+-- Admin can read operational orders but cannot query private contact/payment references.
+revoke select on table public.orders from anon, authenticated;
+grant select (
+  id,
+  order_number,
+  customer_id,
+  customer_name,
+  customer_phone,
+  phone,
+  address,
+  shipping_address,
+  shipping_city,
+  subtotal,
+  delivery_fee,
+  discount,
+  total,
+  payment_method,
+  payment_status,
+  status,
+  created_at,
+  updated_at,
+  delivery_provider,
+  delivery_status,
+  delivery_consignment_id,
+  delivery_tracking_code,
+  delivery_booked_at,
+  coupon_code
+) on table public.orders to authenticated;
