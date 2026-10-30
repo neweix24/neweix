@@ -47,7 +47,7 @@ export default function PortalHome() {
             সেবায় পৌঁছানোর জন্য একটি সহজ, নির্ভরযোগ্য ও আধুনিক অভিজ্ঞতা।
           </p>
           <div className={styles.heroMeta}>
-            <span className={styles.metaPill}>বাংলা ও English</span>
+            <span className={styles.metaPill}>বাংলা ইন্টারফেস</span>
             <span className={styles.metaPill}>মোবাইল-ফ্রেন্ডলি অভিজ্ঞতা</span>
             <span className={styles.metaPill}>নিরাপদ অ্যাকাউন্ট অ্যাক্সেস</span>
           </div>
