@@ -86,7 +86,7 @@ export default function ProductsManager({ role }: Props) {
     const compareAt = form.compare_at_price.trim() ? Number(form.compare_at_price) : null;
     const weight = Number(form.weight_grams);
     const threshold = Number(form.low_stock_threshold);
-    const imageUrls = form.image_urls.split("\\n").map((item) => item.trim()).filter(Boolean);
+    const imageUrls = form.image_urls.split("\n").map((item) => item.trim()).filter(Boolean);
 
     if (name.length < 2 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
       setError("পণ্যের নাম এবং সঠিক ইংরেজি slug দিন।");
