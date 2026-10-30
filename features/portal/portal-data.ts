@@ -3,7 +3,7 @@ export type PortalService = {
   description: string;
   href: string;
   eyebrow: string;
-  icon: "shop" | "package" | "user" | "cart" | "shield" | "grid";
+  icon: "shop" | "package" | "user" | "cart" | "shield" | "grid" | "staff";
   accent: "lime" | "blue" | "violet" | "amber";
 };
 
@@ -41,16 +41,24 @@ export const portalServices: PortalService[] = [
     accent: "amber",
   },
   {
+    title: "স্টাফ ওয়ার্কস্পেস",
+    description: "অনুমোদিত স্টাফ অ্যাকাউন্ট দিয়ে পণ্য ও স্টকের তথ্য দেখুন।",
+    href: "/staff",
+    eyebrow: "STAFF ACCESS",
+    icon: "staff",
+    accent: "amber",
+  },
+  {
     title: "অ্যাডমিন কনসোল",
-    description: "অনুমোদিত প্রশাসনিক কার্যক্রম ও স্টোর পরিচালনা করুন।",
+    description: "শুধুমাত্র অনুমোদিত Admin ও Supreme অ্যাকাউন্টের জন্য।",
     href: "/admin",
-    eyebrow: "MANAGEMENT",
+    eyebrow: "RESTRICTED MANAGEMENT",
     icon: "shield",
     accent: "blue",
   },
   {
     title: "সুপ্রিম কন্ট্রোল",
-    description: "সিস্টেম নিয়ন্ত্রণ ও সর্বোচ্চ পর্যায়ের প্রশাসনিক ব্যবস্থাপনা।",
+    description: "শুধুমাত্র Supreme অনুমতিপ্রাপ্ত অ্যাকাউন্টের জন্য সংরক্ষিত।",
     href: "/supreme",
     eyebrow: "SYSTEM CONTROL",
     icon: "grid",
