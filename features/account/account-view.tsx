@@ -294,7 +294,7 @@ export default function AccountView() {
           border: 1px solid var(--border);
           border-radius: 16px;
           background: var(--surface);
-          box-shadow: 0 12px 35px var(--ink)0a;
+          box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
         }
 
         .account-eyebrow {
