@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { inferProductCategory } from "@/features/admin/product-category-inference";
 
 type Role = "supreme" | "admin" | "staff" | string;
 
@@ -42,6 +43,7 @@ export default function ProductsManager({ role }: Props) {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryQuery, setCategoryQuery] = useState("");
+  const [categorySelectionMode, setCategorySelectionMode] = useState<"auto" | "manual">("auto");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -87,6 +89,13 @@ export default function ProductsManager({ role }: Props) {
   function updateField<K extends keyof typeof emptyForm>(key: K, value: (typeof emptyForm)[K]) {
     setForm((previous) => ({ ...previous, [key]: value }));
   }
+
+  useEffect(() => {
+    if (categorySelectionMode !== "auto" || !form.name.trim()) return;
+    const match = inferProductCategory(form.name, categories);
+    setCategoryQuery(match?.name ?? "");
+    setForm((previous) => ({ ...previous, category_id: match?.id ?? "" }));
+  }, [categories, form.name, categorySelectionMode]);
 
   async function createProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -143,6 +152,7 @@ export default function ProductsManager({ role }: Props) {
       if (!response.ok) throw new Error(result.error || "পণ্য তৈরি করা যায়নি।");
       setForm(emptyForm);
       setCategoryQuery("");
+      setCategorySelectionMode("auto");
       setShowForm(false);
       setNotice("নতুন পণ্য সফলভাবে তৈরি হয়েছে।");
       await loadProducts(true);
@@ -174,13 +184,13 @@ export default function ProductsManager({ role }: Props) {
         {canManageProducts && showForm && (
           <form onSubmit={createProduct} className="mb-7 grid gap-4 rounded-xl border p-4 sm:grid-cols-2" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
             <div className="sm:col-span-2"><h3 className="text-lg font-bold">নতুন পণ্য যোগ করুন</h3><p className="text-sm" style={{ color: "var(--muted)" }}>এই ফর্মটি বিদ্যমান POST /api/admin/products API ব্যবহার করে।</p></div>
-            <label className="grid gap-1 text-sm">পণ্যের নাম *<input required minLength={2} maxLength={200} value={form.name} onChange={(e) => updateField("name", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
+            <label className="grid gap-1 text-sm">পণ্যের নাম *<input required minLength={2} maxLength={200} value={form.name} onChange={(e) => updateField("name", e.target.value)} placeholder="যেমন: Premium Cotton Polo Shirt" className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm">Slug *<input required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={form.slug} onChange={(e) => updateField("slug", e.target.value.toLowerCase())} placeholder="sample-product" className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm">মূল্য (৳) *<input required type="number" min="0" step="1" value={form.price} onChange={(e) => updateField("price", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm">স্টক *<input required type="number" min="0" step="1" value={form.stock} onChange={(e) => updateField("stock", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm">আগের মূল্য (ঐচ্ছিক)<input type="number" min="0" step="1" value={form.compare_at_price} onChange={(e) => updateField("compare_at_price", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm">SKU<input maxLength={100} value={form.sku} onChange={(e) => updateField("sku", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
-            <div className="grid gap-1 text-sm"><label htmlFor="product-category">ক্যাটাগরি</label><input id="product-category" list="neweix-product-categories" autoComplete="off" value={categoryQuery} onChange={(e) => { const value = e.target.value; setCategoryQuery(value); const match = categories.find((item) => item.name.toLocaleLowerCase() === value.trim().toLocaleLowerCase()); updateField("category_id", match?.id ?? ""); }} placeholder="ক্যাটাগরির নাম লিখুন…" className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /><datalist id="neweix-product-categories">{categories.map((category) => <option key={category.id} value={category.name} />)}</datalist><span className="text-xs" style={{ color: "var(--muted)" }}>{form.category_id ? "ক্যাটাগরি নির্বাচন হয়েছে" : "লিখলে বিদ্যমান ক্যাটাগরির সাজেশন দেখাবে।"}</span></div>
+            <div className="grid gap-1 text-sm"><div className="flex items-center justify-between gap-2"><label htmlFor="product-category">ক্যাটাগরি</label><button type="button" onClick={() => setCategorySelectionMode("auto")} className="text-xs font-semibold underline">নাম থেকে অটো নির্বাচন</button></div><input id="product-category" list="neweix-product-categories" autoComplete="off" value={categoryQuery} onChange={(e) => { const value = e.target.value; setCategoryQuery(value); setCategorySelectionMode("manual"); const match = categories.find((item) => item.name.toLocaleLowerCase() === value.trim().toLocaleLowerCase() || item.slug === value.trim().toLowerCase()); updateField("category_id", match?.id ?? ""); }} placeholder="ক্যাটাগরির নাম লিখুন…" className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /><datalist id="neweix-product-categories">{categories.map((category) => <option key={category.id} value={category.name} />)}</datalist><span className="text-xs" style={{ color: "var(--muted)" }}>{form.category_id ? categorySelectionMode === "auto" ? "পণ্যের নাম বিশ্লেষণ করে ক্যাটাগরি স্বয়ংক্রিয়ভাবে নির্বাচিত হয়েছে।" : "ক্যাটাগরি ম্যানুয়ালি নির্বাচন করা হয়েছে।" : categorySelectionMode === "auto" ? "নাম থেকে নির্ভরযোগ্য ধরন পাওয়া গেলে ক্যাটাগরি অটো পূরণ হবে; না মিললে তালিকা থেকে বেছে নিন।" : "তালিকা থেকে একটি বিদ্যমান ক্যাটাগরি নির্বাচন করুন।"}</span></div>
             <label className="grid gap-1 text-sm sm:col-span-2">বিবরণ<textarea rows={3} maxLength={10000} value={form.description} onChange={(e) => updateField("description", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm sm:col-span-2">ছবির HTTPS URL (প্রতি লাইনে একটি, সর্বোচ্চ ১০টি)<textarea rows={3} value={form.image_urls} onChange={(e) => updateField("image_urls", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm sm:col-span-2">ভিডিও URL (ঐচ্ছিক)<input type="url" value={form.video_url} onChange={(e) => updateField("video_url", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
@@ -188,7 +198,7 @@ export default function ProductsManager({ role }: Props) {
             <label className="grid gap-1 text-sm">Low stock threshold<input required type="number" min="0" value={form.low_stock_threshold} onChange={(e) => updateField("low_stock_threshold", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_active} onChange={(e) => updateField("is_active", e.target.checked)} /> পণ্য সক্রিয় রাখুন</label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_featured} onChange={(e) => updateField("is_featured", e.target.checked)} /> Featured পণ্য</label>
-            <div className="flex flex-wrap gap-2 sm:col-span-2"><button type="submit" disabled={saving} className="rounded-xl px-5 py-3 font-bold disabled:opacity-50" style={{ background: "var(--primary)", color: "#101510" }}>{saving ? "সংরক্ষণ হচ্ছে…" : "পণ্য তৈরি করুন"}</button><button type="button" onClick={() => { setForm(emptyForm); setCategoryQuery(""); }} className="rounded-xl border px-5 py-3" style={{ borderColor: "var(--border)" }}>ফর্ম রিসেট</button></div>
+            <div className="flex flex-wrap gap-2 sm:col-span-2"><button type="submit" disabled={saving} className="rounded-xl px-5 py-3 font-bold disabled:opacity-50" style={{ background: "var(--primary)", color: "#101510" }}>{saving ? "সংরক্ষণ হচ্ছে…" : "পণ্য তৈরি করুন"}</button><button type="button" onClick={() => { setForm(emptyForm); setCategoryQuery(""); setCategorySelectionMode("auto"); }} className="rounded-xl border px-5 py-3" style={{ borderColor: "var(--border)" }}>ফর্ম রিসেট</button></div>
           </form>
         )}
 
