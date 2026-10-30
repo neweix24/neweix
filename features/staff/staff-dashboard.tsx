@@ -17,6 +17,7 @@ export default function StaffDashboard() {
             <h2 className="mt-2 text-xl font-bold">পণ্য ও স্টক দেখুন →</h2>
             <p>পণ্যের তালিকা, বর্তমান মজুত ও কম স্টকের অবস্থা দেখুন।</p>
           </Link>
+          <Link href="/admin/submissions" className="rounded-2xl border p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}><span className="eyebrow">PRODUCT SUBMISSIONS</span><h2 className="mt-2 text-xl font-bold">পণ্য অনুমোদনের জন্য জমা দিন →</h2><p>নতুন পণ্যের প্রস্তাব পাঠান এবং অনুমোদনের অবস্থা দেখুন।</p></Link>
           <Link href="/" className="rounded-2xl border p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
             <span className="eyebrow">STOREFRONT</span>
             <h2 className="mt-2 text-xl font-bold">ওয়েবসাইট দেখুন →</h2>
