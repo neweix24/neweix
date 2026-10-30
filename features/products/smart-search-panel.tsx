@@ -71,6 +71,7 @@ export default function SmartSearchPanel() {
         q: normalized,
         limit: String(FETCH_SIZE),
         page: String(targetPage),
+        offset: String((targetPage - 1) * PAGE_SIZE),
         sort,
       });
       if (categoryId) params.set("categoryId", categoryId);
