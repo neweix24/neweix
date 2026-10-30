@@ -118,7 +118,7 @@ export default function CartView() {
         {!loading && !error && unavailable.length > 0 && (
           <div className="mb-5 rounded-xl border p-4" style={{ borderColor: "var(--danger)", background: "var(--surface)" }}>
             <p>কার্টের {unavailable.length}টি পণ্য আর সক্রিয় নেই বা পাওয়া যাচ্ছে না। এগুলো সরিয়ে নিন।</p>
-            <button type="button" className="mt-2 rounded-lg px-4 py-2 text-sm font-bold" style={{ background: "var(--primary)", color: "#10170d" }} onClick={() => saveCart(cart.filter((entry) => productMap.has(entry.product_id)))}>অপ্রাপ্য পণ্য সরান</button>
+            <button type="button" className="mt-2 rounded-lg px-4 py-2 text-sm font-bold" style={{ background: "var(--primary)", color: "#080b09" }} onClick={() => saveCart(cart.filter((entry) => productMap.has(entry.product_id)))}>অপ্রাপ্য পণ্য সরান</button>
           </div>
         )}
 
@@ -126,7 +126,7 @@ export default function CartView() {
           <section className="rounded-2xl border p-8 text-center" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
             <h2 className="text-xl font-bold">আপনার কার্ট এখন খালি</h2>
             <p className="mt-2">পছন্দের পণ্য যোগ করে কেনাকাটা শুরু করুন।</p>
-            <Link href="/products" className="mt-5 inline-flex rounded-xl px-5 py-3 font-bold" style={{ background: "var(--primary)", color: "#10170d" }}>পণ্য দেখুন ↗</Link>
+            <Link href="/products" className="mt-5 inline-flex rounded-xl px-5 py-3 font-bold" style={{ background: "var(--primary)", color: "#080b09" }}>পণ্য দেখুন ↗</Link>
           </section>
         )}
 
@@ -164,7 +164,7 @@ export default function CartView() {
               {stockIssues.length > 0 && <p role="alert" className="mt-4 text-sm" style={{ color: "var(--danger)" }}>চেকআউটের আগে পণ্যের পরিমাণ ঠিক করুন।</p>}
               {unavailable.length > 0 && <p className="mt-2 text-sm" style={{ color: "var(--danger)" }}>অপ্রাপ্য পণ্য সরানোর পর এগিয়ে যান।</p>}
               {stockIssues.length === 0 && unavailable.length === 0 ? (
-                <Link href="/checkout" className="mt-5 flex min-h-12 items-center justify-center rounded-xl px-4 py-3 text-center font-bold" style={{ background: "var(--primary)", color: "#10170d" }}>চেকআউটে এগিয়ে যান →</Link>
+                <Link href="/checkout" className="mt-5 flex min-h-12 items-center justify-center rounded-xl px-4 py-3 text-center font-bold" style={{ background: "var(--primary)", color: "#080b09" }}>চেকআউটে এগিয়ে যান →</Link>
               ) : <button type="button" disabled className="mt-5 w-full rounded-xl px-4 py-3 font-bold" style={{ background: "var(--surface-raised)" }}>আগে কার্ট ঠিক করুন</button>}
             </aside>
           </div>
