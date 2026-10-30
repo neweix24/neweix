@@ -239,6 +239,7 @@ export default function AccountView() {
               <Link href="/account/theme">🎨 নিজের থিম সাজাও</Link>
               <Link href="/account/addresses">আমার ঠিকানা</Link>
               <Link href="/account/privacy">গোপনীয়তা ও পছন্দ</Link>
+              <Link href="/account/data-requests">আমার তথ্য ও গোপনীয়তা</Link>
             </nav>
 
             <button
