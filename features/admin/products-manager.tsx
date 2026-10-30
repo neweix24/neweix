@@ -52,6 +52,10 @@ export default function ProductsManager({ role }: Props) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
+  const inferredCategory = categorySelectionMode === "auto"
+    ? inferProductCategory(form.name, categories)
+    : null;
+
   const loadProducts = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
     else setLoading(true);
@@ -90,19 +94,15 @@ export default function ProductsManager({ role }: Props) {
     setForm((previous) => ({ ...previous, [key]: value }));
   }
 
-  useEffect(() => {
-    if (categorySelectionMode !== "auto" || !form.name.trim()) return;
-    const match = inferProductCategory(form.name, categories);
-    setCategoryQuery(match?.name ?? "");
-    setForm((previous) => ({ ...previous, category_id: match?.id ?? "" }));
-  }, [categories, form.name, categorySelectionMode]);
-
   async function createProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setNotice("");
 
     const name = form.name.trim();
+    const categoryForSubmit = categorySelectionMode === "auto"
+      ? inferProductCategory(name, categories)
+      : null;
     const slug = form.slug.trim().toLowerCase();
     const price = Number(form.price);
     const stock = Number(form.stock);
@@ -142,7 +142,9 @@ export default function ProductsManager({ role }: Props) {
         body: JSON.stringify({
           name, slug, description: form.description.trim(), price,
           compare_at_price: compareAt, stock, sku: form.sku.trim() || null,
-          category_id: form.category_id || null,
+          category_id: categorySelectionMode === "auto"
+            ? categoryForSubmit?.id ?? null
+            : form.category_id || null,
           image_urls: imageUrls, video_url: form.video_url.trim() || null,
           variants: [], weight_grams: weight, low_stock_threshold: threshold,
           is_active: form.is_active, is_featured: form.is_featured,
@@ -190,7 +192,7 @@ export default function ProductsManager({ role }: Props) {
             <label className="grid gap-1 text-sm">স্টক *<input required type="number" min="0" step="1" value={form.stock} onChange={(e) => updateField("stock", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm">আগের মূল্য (ঐচ্ছিক)<input type="number" min="0" step="1" value={form.compare_at_price} onChange={(e) => updateField("compare_at_price", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm">SKU<input maxLength={100} value={form.sku} onChange={(e) => updateField("sku", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
-            <div className="grid gap-1 text-sm"><div className="flex items-center justify-between gap-2"><label htmlFor="product-category">ক্যাটাগরি</label><button type="button" onClick={() => setCategorySelectionMode("auto")} className="text-xs font-semibold underline">নাম থেকে অটো নির্বাচন</button></div><input id="product-category" list="neweix-product-categories" autoComplete="off" value={categoryQuery} onChange={(e) => { const value = e.target.value; setCategoryQuery(value); setCategorySelectionMode("manual"); const match = categories.find((item) => item.name.toLocaleLowerCase() === value.trim().toLocaleLowerCase() || item.slug === value.trim().toLowerCase()); updateField("category_id", match?.id ?? ""); }} placeholder="ক্যাটাগরির নাম লিখুন…" className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /><datalist id="neweix-product-categories">{categories.map((category) => <option key={category.id} value={category.name} />)}</datalist><span className="text-xs" style={{ color: "var(--muted)" }}>{form.category_id ? categorySelectionMode === "auto" ? "পণ্যের নাম বিশ্লেষণ করে ক্যাটাগরি স্বয়ংক্রিয়ভাবে নির্বাচিত হয়েছে।" : "ক্যাটাগরি ম্যানুয়ালি নির্বাচন করা হয়েছে।" : categorySelectionMode === "auto" ? "নাম থেকে নির্ভরযোগ্য ধরন পাওয়া গেলে ক্যাটাগরি অটো পূরণ হবে; না মিললে তালিকা থেকে বেছে নিন।" : "তালিকা থেকে একটি বিদ্যমান ক্যাটাগরি নির্বাচন করুন।"}</span></div>
+            <div className="grid gap-1 text-sm"><div className="flex items-center justify-between gap-2"><label htmlFor="product-category">ক্যাটাগরি</label><button type="button" onClick={() => { setCategorySelectionMode("auto"); setCategoryQuery(""); updateField("category_id", ""); }} className="text-xs font-semibold underline">নাম থেকে অটো নির্বাচন</button></div><input id="product-category" list="neweix-product-categories" autoComplete="off" value={categorySelectionMode === "auto" ? inferredCategory?.name ?? "" : categoryQuery} onChange={(e) => { const value = e.target.value; setCategoryQuery(value); setCategorySelectionMode("manual"); const match = categories.find((item) => item.name.toLocaleLowerCase() === value.trim().toLocaleLowerCase() || item.slug === value.trim().toLowerCase()); updateField("category_id", match?.id ?? ""); }} placeholder="ক্যাটাগরির নাম লিখুন…" className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /><datalist id="neweix-product-categories">{categories.map((category) => <option key={category.id} value={category.name} />)}</datalist><span className="text-xs" style={{ color: "var(--muted)" }}>{categorySelectionMode === "auto" ? inferredCategory ? "পণ্যের নাম বিশ্লেষণ করে ক্যাটাগরি স্বয়ংক্রিয়ভাবে নির্বাচিত হয়েছে।" : "নাম থেকে নির্ভরযোগ্য ধরন পাওয়া গেলে ক্যাটাগরি অটো পূরণ হবে; না মিললে তালিকা থেকে বেছে নিন।" : form.category_id ? "ক্যাটাগরি ম্যানুয়ালি নির্বাচন করা হয়েছে।" : "তালিকা থেকে একটি বিদ্যমান ক্যাটাগরি নির্বাচন করুন।"}</span></div>
             <label className="grid gap-1 text-sm sm:col-span-2">বিবরণ<textarea rows={3} maxLength={10000} value={form.description} onChange={(e) => updateField("description", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm sm:col-span-2">ছবির HTTPS URL (প্রতি লাইনে একটি, সর্বোচ্চ ১০টি)<textarea rows={3} value={form.image_urls} onChange={(e) => updateField("image_urls", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm sm:col-span-2">ভিডিও URL (ঐচ্ছিক)<input type="url" value={form.video_url} onChange={(e) => updateField("video_url", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
