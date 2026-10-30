@@ -363,8 +363,8 @@ export default function AccountView() {
           padding: 12px;
           border: 0;
           border-radius: 9px;
-          background: var(--ink);
-          color: var(--surface);
+          background: var(--primary);
+          color: #080b09;
           font: inherit;
           font-weight: 700;
           cursor: pointer;
