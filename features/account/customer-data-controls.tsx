@@ -64,13 +64,14 @@ export default function CustomerDataControls() {
         const seen = new Set<string>();
 
         for (const row of consentsResult.data ?? []) {
+          const consentType = String(row.consent_type);
           if (
-            (row.consent_type === "marketing_email" ||
-              row.consent_type === "marketing_sms") &&
-            !seen.has(row.consent_type)
+            (consentType === "marketing_email" ||
+              consentType === "marketing_sms") &&
+            !seen.has(consentType)
           ) {
-            latest[row.consent_type] = row.consented;
-            seen.add(row.consent_type);
+            latest[consentType as ConsentType] = Boolean(row.consented);
+            seen.add(consentType);
           }
         }
 
