@@ -58,18 +58,18 @@ export default function SupremeDashboard() {
   );
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900">
+    <main className="min-h-screen px-4 py-10" style={{ background: "var(--bg)", color: "var(--ink)" }}>
       <div className="mx-auto max-w-6xl space-y-6">
-        <header className="rounded-2xl bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-wider text-blue-700">
+        <header className="neweix-panel rounded-2xl p-6 sm:p-8">
+          <p className="neweix-kicker">
             NEWEIX · SUPREME PANEL
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold">
+          <h1 className="neweix-page-title">
             Supreme Dashboard
           </h1>
 
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2" style={{ color: "var(--muted)" }}>
             পণ্য ও স্টকের বর্তমান তথ্য
           </p>
 
@@ -77,7 +77,7 @@ export default function SupremeDashboard() {
             type="button"
             onClick={() => void loadDashboard()}
             disabled={loading}
-            className="mt-5 rounded-lg bg-blue-700 px-5 py-3 font-medium text-white disabled:opacity-50"
+            className="neweix-button-primary mt-5 disabled:opacity-50"
           >
             {loading ? "লোড হচ্ছে..." : "তথ্য রিফ্রেশ করুন"}
           </button>
@@ -86,15 +86,15 @@ export default function SupremeDashboard() {
         {error && (
           <section
             role="alert"
-            className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800"
+            className="rounded-xl border p-4" style={{ borderColor: "var(--danger)", background: "var(--surface-raised)", color: "var(--danger)" }}
           >
             {error}
           </section>
         )}
 
         <section className="grid gap-4 sm:grid-cols-2">
-          <article className="rounded-xl border bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-600">
+          <article className="neweix-panel rounded-xl p-5">
+            <p className="text-sm" style={{ color: "var(--muted)" }}>
               মোট পণ্য
             </p>
 
@@ -103,32 +103,32 @@ export default function SupremeDashboard() {
             </p>
           </article>
 
-          <article className="rounded-xl border bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-600">
+          <article className="neweix-panel rounded-xl p-5">
+            <p className="text-sm" style={{ color: "var(--muted)" }}>
               কম স্টকের পণ্য
             </p>
 
-            <p className="mt-2 text-3xl font-bold text-red-700">
+            <p className="mt-2 text-3xl font-bold" style={{ color: "var(--danger)" }}>
               {loading ? "—" : lowStockProducts.length}
             </p>
           </article>
         </section>
 
-        <section className="rounded-xl border bg-white p-5 shadow-sm">
+        <section className="neweix-panel rounded-xl p-5">
           <h2 className="text-xl font-bold">
             কম স্টকের পণ্য
           </h2>
 
           {loading ? (
-            <p className="mt-4 text-gray-600">
+            <p className="mt-4" style={{ color: "var(--muted)" }}>
               ডেটাবেস থেকে তথ্য আনা হচ্ছে...
             </p>
           ) : error ? (
-            <p className="mt-4 text-gray-600">
+            <p className="mt-4" style={{ color: "var(--muted)" }}>
               তথ্য পাওয়া যায়নি। উপরের বার্তাটি দেখুন।
             </p>
           ) : lowStockProducts.length === 0 ? (
-            <p className="mt-4 text-gray-600">
+            <p className="mt-4" style={{ color: "var(--muted)" }}>
               বর্তমানে কম স্টকের কোনো পণ্য নেই।
             </p>
           ) : (
@@ -142,7 +142,7 @@ export default function SupremeDashboard() {
                     {product.name}
                   </span>
 
-                  <span className="shrink-0 font-semibold text-red-700">
+                  <span className="shrink-0 font-semibold" style={{ color: "var(--danger)" }}>
                     স্টক: {product.stock}
                   </span>
                 </div>
