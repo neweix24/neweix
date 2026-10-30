@@ -288,6 +288,7 @@ export default function AccountView() {
 
               <div className="phone-verification">
                 <strong>ফোন নম্বর যাচাই</strong>
+                <p>নতুন নম্বর OTP দিয়ে যাচাই না হওয়া পর্যন্ত আগের যাচাইকৃত নম্বরই অর্ডারের জন্য সক্রিয় থাকবে। OTP-এর মেয়াদ ৫ মিনিট।</p>
                 {phoneVerified ? (
                   <p className="success" role="status">যাচাইকৃত নম্বর: {verifiedPhone}</p>
                 ) : (
