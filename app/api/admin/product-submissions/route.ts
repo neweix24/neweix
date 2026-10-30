@@ -418,22 +418,11 @@ export async function PATCH(request: Request) {
 
     if (error) {
       const message = error.message.toLowerCase();
-      if (message.includes("not found")) return jsonError("পণ্য প্রস্তাব পাওয়া যায়নি।", 404);
-      if (message.includes("already been reviewed")) return jsonError("এই প্রস্তাব আগে পর্যালোচনা করা হয়েছে।", 409);
+      if (message.includes("not found") || message.includes("submission_not_found")) return jsonError("পণ্য প্রস্তাব পাওয়া যায়নি।", 404);
+      if (message.includes("already been reviewed") || message.includes("submission_already_reviewed")) return jsonError("এই প্রস্তাব আগে পর্যালোচনা করা হয়েছে।", 409);
+      if (message.includes("reviewer_not_authorized")) return jsonError("শুধু সক্রিয় Admin বা Supreme এই প্রস্তাব পর্যালোচনা করতে পারবেন।", 403);
       console.error("Product submission review RPC failed:", error.message);
       return jsonError("পণ্য প্রস্তাব পর্যালোচনা করা যায়নি।", 500);
-    }
-
-    try {
-      await writeAuditLog(supabase, {
-        actorId: staff.user.id,
-        action: decision === "approved" ? "product_submission.approved" : "product_submission.rejected",
-        targetType: "product_submission",
-        targetId: id,
-        details: { decision, reviewNote: note },
-      });
-    } catch (auditError) {
-      console.error("Product submission review audit failed:", auditError);
     }
 
     return NextResponse.json(
