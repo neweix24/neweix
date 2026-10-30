@@ -8,6 +8,7 @@ type Customer = {
   display_name: string | null;
   phone: string | null;
   created_at: string;
+  order_summary?: { count: number; total: number; lastOrder: string | null; lastStatus: string | null };
 };
 
 export default function CustomersManager() {
@@ -72,6 +73,20 @@ export default function CustomersManager() {
               <p className="text-xs" style={{ color: "var(--muted)" }}>
                 যোগ দিয়েছেন: {new Date(customer.created_at).toLocaleDateString("bn-BD")}
               </p>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="rounded-xl p-3" style={{ background: "var(--bg)" }}>
+                <p className="text-xs" style={{ color: "var(--muted)" }}>অর্ডার</p>
+                <strong>{customer.order_summary?.count ?? 0}</strong>
+              </div>
+              <div className="rounded-xl p-3" style={{ background: "var(--bg)" }}>
+                <p className="text-xs" style={{ color: "var(--muted)" }}>মোট অর্ডার মূল্য</p>
+                <strong>{new Intl.NumberFormat("bn-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(customer.order_summary?.total ?? 0)}</strong>
+              </div>
+              <div className="rounded-xl p-3 col-span-2 sm:col-span-1" style={{ background: "var(--bg)" }}>
+                <p className="text-xs" style={{ color: "var(--muted)" }}>সর্বশেষ অর্ডার</p>
+                <strong className="text-sm">{customer.order_summary?.lastOrder ? new Date(customer.order_summary.lastOrder).toLocaleDateString("bn-BD") : "নেই"}</strong>
+              </div>
             </div>
             <p className="mt-3 break-all text-xs" style={{ color: "var(--muted)" }}>Customer ID: {customer.user_id}</p>
           </article>
