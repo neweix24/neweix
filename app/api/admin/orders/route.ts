@@ -98,7 +98,7 @@ export async function GET() {
         created_at,
         order_items (
           id,
-          product_name,
+          product_name:product_name_snapshot,
           unit_price,
           quantity
         )
