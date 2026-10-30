@@ -4,6 +4,7 @@ import Link from "next/link";
 import styles from "./checkout-view.module.css";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type CartItem = {
   product_id: string;
@@ -15,6 +16,16 @@ type Product = {
   name: string;
   price: number;
   stock?: number;
+};
+
+type SavedAddress = {
+  recipient_name: string;
+  phone: string;
+  address_line: string;
+  area: string | null;
+  upazila: string | null;
+  district: string;
+  division: string;
 };
 
 type PaymentMethod = "cod" | "bkash" | "nagad" | "rocket";
@@ -53,6 +64,7 @@ function isValidCartItem(item: unknown): item is CartItem {
 export default function CheckoutView() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [defaultAddress, setDefaultAddress] = useState<SavedAddress | null>(null);
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
   const [paymentConfigError, setPaymentConfigError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
@@ -128,14 +140,36 @@ export default function CheckoutView() {
                 }
               );
 
-        const [config, loadedProducts] = await Promise.all([
+        const addressPromise = (async (): Promise<SavedAddress | null> => {
+          try {
+            const supabase = createBrowserSupabaseClient();
+            const { data: authData } = await supabase.auth.getUser();
+            if (!authData.user) return null;
+            const { data, error } = await supabase
+              .from("customer_addresses")
+              .select("recipient_name,phone,address_line,area,upazila,district,division")
+              .eq("user_id", authData.user.id)
+              .order("is_default", { ascending: false })
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (error) return null;
+            return data as SavedAddress | null;
+          } catch {
+            return null;
+          }
+        })();
+
+        const [config, loadedProducts, savedAddress] = await Promise.all([
           configPromise,
           productsPromise,
+          addressPromise,
         ]);
 
         if (!cancelled) {
           if (config) setPaymentConfig(config);
           if (loadedProducts) setProducts(loadedProducts);
+          if (savedAddress) setDefaultAddress(savedAddress);
         }
       } catch (err) {
         if (!cancelled) {
@@ -374,14 +408,17 @@ export default function CheckoutView() {
       </section>
 
       <form onSubmit={submitOrder} className={styles.form}>
+        {defaultAddress && (
+          <p role="status">আপনার সংরক্ষিত ডিফল্ট ঠিকানা থেকে তথ্য পূরণ করা হয়েছে। প্রয়োজন হলে পরিবর্তন করুন।</p>
+        )}
         <label htmlFor="customer_name">আপনার নাম *</label>
         <input id="customer_name" name="customer_name" required minLength={2}
-          maxLength={120} autoComplete="name" disabled={submitting} style={fieldStyle} />
+          maxLength={120} autoComplete="name" defaultValue={defaultAddress?.recipient_name ?? ""} disabled={submitting} style={fieldStyle} />
 
         <label htmlFor="customer_phone">মোবাইল নম্বর *</label>
         <input id="customer_phone" name="customer_phone" type="tel" required
           minLength={7} maxLength={30} autoComplete="tel" disabled={submitting}
-          placeholder="আপনার যোগাযোগের নম্বর" style={fieldStyle} />
+          placeholder="আপনার যোগাযোগের নম্বর" defaultValue={defaultAddress?.phone ?? ""} style={fieldStyle} />
 
         <label htmlFor="customer_email">ইমেইল (ঐচ্ছিক)</label>
         <input id="customer_email" name="customer_email" type="email"
@@ -390,12 +427,13 @@ export default function CheckoutView() {
         <label htmlFor="shipping_address">সম্পূর্ণ ডেলিভারি ঠিকানা *</label>
         <textarea id="shipping_address" name="shipping_address" required
           minLength={5} maxLength={1000} autoComplete="street-address" rows={4}
+          defaultValue={defaultAddress ? [defaultAddress.address_line, defaultAddress.area, defaultAddress.upazila, defaultAddress.district, defaultAddress.division].filter(Boolean).join(", ") : ""}
           disabled={submitting} style={{ ...fieldStyle, resize: "vertical" }} />
 
         <label htmlFor="shipping_city">শহর / জেলা *</label>
         <input id="shipping_city" name="shipping_city" required minLength={2}
           maxLength={120} autoComplete="address-level2" disabled={submitting}
-          placeholder="যেমন: ঢাকা" style={fieldStyle} />
+          placeholder="যেমন: ঢাকা" defaultValue={defaultAddress?.district ?? ""} style={fieldStyle} />
 
         <label htmlFor="coupon_code">কুপন কোড (ঐচ্ছিক)</label>
         <input id="coupon_code" name="coupon_code" type="text" maxLength={40}
