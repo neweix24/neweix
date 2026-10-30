@@ -9,10 +9,10 @@ with q as (select lower(btrim(coalesce(p_query,''))) term), candidates as (
  (case when lower(p.name) like '%'||q.term||'%' then 12.0 else 0 end)+(case when lower(coalesce(p.description,'')) like '%'||q.term||'%' then 2.0 else 0 end)+
  (case when lower(coalesce(p.sku,'')) like '%'||q.term||'%' then 18.0 else 0 end)+
  (greatest(extensions.similarity(lower(p.name),q.term),extensions.similarity(lower(coalesce(p.sku,'')),q.term))*8.0)+
- (case when p_query_embedding is not null and p.search_embedding is not null then greatest(0.0,1.0-(p.search_embedding <=> p_query_embedding))*20.0 else 0 end) end score
+ (case when p_query_embedding is not null and p.search_embedding is not null then greatest(0.0,1.0-(p.search_embedding OPERATOR(extensions.<=>) p_query_embedding))*20.0 else 0 end) end score
  from public.products p cross join q where p.is_active=true and (p_category_id is null or p.category_id=p_category_id)
  and (p_min_price is null or p.price>=p_min_price) and (p_max_price is null or p.price<=p_max_price) and (not p_in_stock or p.stock>0)
- and (q.term='' or lower(p.name) like '%'||q.term||'%' or lower(coalesce(p.description,'')) like '%'||q.term||'%' or lower(coalesce(p.sku,'')) like '%'||q.term||'%' or lower(p.name) OPERATOR(extensions.%) q.term or lower(coalesce(p.sku,'')) OPERATOR(extensions.%) q.term or (p_query_embedding is not null and p.search_embedding is not null and (p.search_embedding <=> p_query_embedding)<0.65))
+ and (q.term='' or lower(p.name) like '%'||q.term||'%' or lower(coalesce(p.description,'')) like '%'||q.term||'%' or lower(coalesce(p.sku,'')) like '%'||q.term||'%' or lower(p.name) OPERATOR(extensions.%) q.term or lower(coalesce(p.sku,'')) OPERATOR(extensions.%) q.term or (p_query_embedding is not null and p.search_embedding is not null and (p.search_embedding OPERATOR(extensions.<=>) p_query_embedding)<0.65))
 )
 select c.id,c.name,c.slug,c.description,c.price,c.compare_at_price,c.image_urls,c.stock,c.category_id,c.sku,c.is_featured,c.created_at,c.score from candidates c
 order by case when p_sort='price_asc' then c.price end asc nulls last,case when p_sort='price_desc' then c.price end desc nulls last,case when p_sort='newest' then c.created_at end desc nulls last,c.score desc,c.is_featured desc,c.created_at desc
