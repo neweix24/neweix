@@ -3,6 +3,7 @@
 import Link from "next/link";
 import AddToCartButton from "@/app/products/[slug]/AddToCartButton";
 import CompareButton from "@/features/compare/compare-button";
+import ProductReviewPanel from "@/features/reviews/product-review-panel";
 import styles from "./product-details.module.css";
 
 export type ProductDetailsData = {
@@ -46,6 +47,7 @@ export default function ProductDetails({ product }: { product: ProductDetailsDat
           <div className={styles.assurance}><span>নিরাপদ অর্ডার</span><span>বাংলাদেশজুড়ে সেবা</span><span>সহজ অর্ডার ট্র্যাকিং</span></div>
         </section>
       </div>
+      <ProductReviewPanel />
     </main>
   );
 }
