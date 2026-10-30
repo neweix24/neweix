@@ -409,7 +409,7 @@ export default function CheckoutView() {
 
       <form onSubmit={submitOrder} className={styles.form}>
         {defaultAddress && (
-          <p role="status">আপনার সংরক্ষিত ডিফল্ট ঠিকানা থেকে তথ্য পূরণ করা হয়েছে। প্রয়োজন হলে পরিবর্তন করুন।</p>
+          <p role="status">আপনার সংরক্ষিত ঠিকানা থেকে তথ্য পূরণ করা হয়েছে। প্রয়োজন হলে পরিবর্তন করুন।</p>
         )}
         <label htmlFor="customer_name">আপনার নাম *</label>
         <input id="customer_name" name="customer_name" required minLength={2}
