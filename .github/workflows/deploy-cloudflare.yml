@@ -19,9 +19,9 @@ jobs:
     timeout-minutes: 30
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ACCOUNT_ID: 8ac926e7573e6b45edab34c3346b366c
       NEXT_PUBLIC_SUPABASE_URL: https://grhybvlhdnzlopwbaqun.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyaHlidmxoZG56bG9wd2JhcXVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NDYyMjEsImV4cCI6MjEwODIyMjIyMX0.27nR0VFbxwVYQKb5A06BRwizp02CHAmoD9IRMwiJ0Ss
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,8 +36,6 @@ jobs:
         shell: bash
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Add CLOUDFLARE_API_TOKEN in GitHub Actions secrets."; exit 1; }
-          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Add CLOUDFLARE_ACCOUNT_ID in GitHub Actions secrets."; exit 1; }
-          test -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" || { echo "::error::Add NEXT_PUBLIC_SUPABASE_ANON_KEY in GitHub Actions variables."; exit 1; }
 
       - name: Install dependencies
         run: npm ci
