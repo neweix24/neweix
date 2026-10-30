@@ -108,7 +108,7 @@ export default function StorefrontHome() {
             typeof (item as Category).name === "string" &&
             typeof (item as Category).slug === "string"
           );
-          const populatedCategories = validCategories.filter((category) =>
+          const populatedCategories = validCategories.filter((category: Category) =>
             productResult.data.some((product: { category_id?: string | null }) => product.category_id === category.id)
           );
           setCategories(populatedCategories);
