@@ -1,0 +1,1 @@
+export default function ProductReviewPanel() { return <section aria-labelledby="review-heading"><h2 id="review-heading">ক্রেতাদের মতামত</h2><p>যাচাইকৃত ক্রেতার রিভিউ ব্যবস্থা প্রস্তুত করা হচ্ছে। এখনো কোনো রেটিং প্রকাশ করা হয়নি।</p></section>; }
