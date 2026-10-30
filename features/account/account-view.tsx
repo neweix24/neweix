@@ -11,6 +11,14 @@ export default function AccountView() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [verifiedPhone, setVerifiedPhone] = useState("");
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [challengeId, setChallengeId] = useState("");
+  const [otp, setOtp] = useState("");
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [phoneMessage, setPhoneMessage] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -36,7 +44,7 @@ export default function AccountView() {
 
         const { data: profile, error } = await supabase
           .from("customer_profiles")
-          .select("full_name, phone")
+          .select("full_name")
           .eq("user_id", user.id)
           .maybeSingle();
 
@@ -57,7 +65,17 @@ export default function AccountView() {
 
         setEmail(user.email ?? "");
         setName(profile?.full_name ?? metadataName);
-        setPhone(profile?.phone ?? "");
+
+        const phoneResponse = await fetch("/api/account/phone/status", {
+          cache: "no-store",
+        });
+        const phoneStatus = await phoneResponse.json().catch(() => null);
+        if (phoneResponse.ok && phoneStatus?.success) {
+          setPhoneVerified(Boolean(phoneStatus.verified));
+          setVerifiedPhone(
+            typeof phoneStatus.phone === "string" ? phoneStatus.phone : ""
+          );
+        }
       } catch (error) {
         if (active) {
           setErrorMessage(
@@ -84,17 +102,12 @@ export default function AccountView() {
     setErrorMessage("");
 
     const cleanName = name.trim();
-    const cleanPhone = phone.trim();
 
     if (cleanName.length < 2 || cleanName.length > 100) {
       setErrorMessage("নাম ২ থেকে ১০০ অক্ষরের মধ্যে লিখুন।");
       return;
     }
 
-    if (cleanPhone.length > 30) {
-      setErrorMessage("ফোন নম্বর সর্বোচ্চ ৩০ অক্ষরের হতে পারবে।");
-      return;
-    }
 
     setSaving(true);
 
@@ -117,7 +130,6 @@ export default function AccountView() {
           {
             user_id: user.id,
             full_name: cleanName,
-            phone: cleanPhone || null,
           },
           { onConflict: "user_id" }
         );
@@ -129,8 +141,7 @@ export default function AccountView() {
       }
 
       setName(cleanName);
-      setPhone(cleanPhone);
-      setMessage("আপনার তথ্য সফলভাবে সংরক্ষণ হয়েছে।");
+      setMessage("আপনার নাম সফলভাবে সংরক্ষণ হয়েছে।");
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -139,6 +150,77 @@ export default function AccountView() {
       );
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSendOtp() {
+    setPhoneMessage("");
+    setPhoneError("");
+    setChallengeId("");
+    setOtp("");
+
+    const cleanPhone = phone.trim();
+    if (!cleanPhone) {
+      setPhoneError("যাচাই করার জন্য মোবাইল নম্বর লিখুন।");
+      return;
+    }
+
+    setSendingOtp(true);
+    try {
+      const response = await fetch("/api/account/phone/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: cleanPhone }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "OTP পাঠানো যায়নি।");
+
+      if (result?.alreadyVerified) {
+        setPhoneVerified(true);
+        setVerifiedPhone(cleanPhone);
+        setPhone("");
+        setPhoneMessage("এই নম্বরটি ইতিমধ্যে যাচাই করা আছে।");
+      } else if (typeof result?.challengeId === "string") {
+        setChallengeId(result.challengeId);
+        setPhoneMessage("OTP পাঠানো হয়েছে। ৫ মিনিটের মধ্যে কোডটি লিখুন।");
+      } else {
+        throw new Error("OTP অনুরোধের ফলাফল সঠিক নয়।");
+      }
+    } catch (error) {
+      setPhoneError(error instanceof Error ? error.message : "OTP পাঠানো যায়নি।");
+    } finally {
+      setSendingOtp(false);
+    }
+  }
+
+  async function handleVerifyOtp() {
+    setPhoneMessage("");
+    setPhoneError("");
+    if (!challengeId || !/^\\d{6}$/.test(otp)) {
+      setPhoneError("৬ সংখ্যার সঠিক OTP লিখুন।");
+      return;
+    }
+
+    setVerifyingOtp(true);
+    try {
+      const response = await fetch("/api/account/phone/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeId, otp }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "OTP যাচাই করা যায়নি।");
+
+      setPhoneVerified(true);
+      setVerifiedPhone(typeof result?.phone === "string" ? result.phone : phone.trim());
+      setPhone("");
+      setOtp("");
+      setChallengeId("");
+      setPhoneMessage("আপনার ফোন নম্বর সফলভাবে যাচাই হয়েছে।");
+    } catch (error) {
+      setPhoneError(error instanceof Error ? error.message : "OTP যাচাই করা যায়নি।");
+    } finally {
+      setVerifyingOtp(false);
     }
   }
 
@@ -204,16 +286,52 @@ export default function AccountView() {
                 onChange={(event) => setName(event.target.value)}
               />
 
-              <label htmlFor="customer-phone">ফোন নম্বর</label>
-              <input
-                id="customer-phone"
-                type="tel"
-                autoComplete="tel"
-                maxLength={30}
-                placeholder="যেমন: 01XXXXXXXXX"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-              />
+              <div className="phone-verification">
+                <strong>ফোন নম্বর যাচাই</strong>
+                {phoneVerified ? (
+                  <p className="success" role="status">যাচাইকৃত নম্বর: {verifiedPhone}</p>
+                ) : (
+                  <p className="error">অর্ডার করতে ফোন নম্বর যাচাই করা বাধ্যতামূলক।</p>
+                )}
+                <label htmlFor="customer-phone">
+                  {phoneVerified ? "নতুন নম্বর দিয়ে পরিবর্তন করুন" : "মোবাইল নম্বর"}
+                </label>
+                <input
+                  id="customer-phone"
+                  type="tel"
+                  autoComplete="tel"
+                  maxLength={20}
+                  placeholder="যেমন: 01XXXXXXXXX"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  disabled={sendingOtp || verifyingOtp}
+                />
+                <button type="button" onClick={() => void handleSendOtp()}
+                  disabled={sendingOtp || verifyingOtp || !phone.trim()}>
+                  {sendingOtp ? "OTP পাঠানো হচ্ছে…" : "OTP পাঠান"}
+                </button>
+                {challengeId && (
+                  <>
+                    <label htmlFor="customer-phone-otp">৬ সংখ্যার OTP</label>
+                    <input
+                      id="customer-phone-otp"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={otp}
+                      onChange={(event) => setOtp(event.target.value.replace(/\\D/g, "").slice(0, 6))}
+                      disabled={verifyingOtp}
+                    />
+                    <button type="button" onClick={() => void handleVerifyOtp()}
+                      disabled={verifyingOtp || otp.length !== 6}>
+                      {verifyingOtp ? "যাচাই হচ্ছে…" : "OTP যাচাই করুন"}
+                    </button>
+                  </>
+                )}
+                {phoneMessage && <p className="success" role="status">{phoneMessage}</p>}
+                {phoneError && <p className="error" role="alert">{phoneError}</p>}
+              </div>
 
               {message && (
                 <p className="success" role="status">
@@ -373,6 +491,34 @@ export default function AccountView() {
         button:disabled {
           opacity: 0.6;
           cursor: wait;
+        }
+
+        .phone-verification {
+          display: grid;
+          gap: 9px;
+          margin: 18px 0;
+          padding: 16px;
+          border: 1px solid #e5e8ef;
+          border-radius: 12px;
+          background: #fbfcfe;
+        }
+
+        .phone-verification button {
+          min-height: 44px;
+          margin-top: 2px;
+          border: 0;
+          border-radius: 9px;
+          background: #263e5f;
+          color: white;
+          font: inherit;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .phone-verification p {
+          margin: 2px 0;
+          line-height: 1.6;
+          overflow-wrap: anywhere;
         }
 
         .success {
