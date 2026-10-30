@@ -171,8 +171,7 @@ begin
     'total', v_total
   );
 end;
-$function$
-
+$function$;
 
 revoke all on function public.create_order_with_coupon(text, text, text, text, text, text, text, jsonb, text, uuid)
   from public, anon, authenticated;
