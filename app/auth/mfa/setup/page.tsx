@@ -273,7 +273,7 @@ export default function SupremeMfaSetupPage() {
 
   if (loading) {
     return (
-      <main className="hero">
+      <main className="hero auth-page">
         <p>Supreme MFA সেটআপ পরীক্ষা হচ্ছে...</p>
       </main>
     );
