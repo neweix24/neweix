@@ -1,3 +1,4 @@
+import Link from "next/link";
 export default function UnauthorizedPage() {
   return (
     <main className="hero">
@@ -11,13 +12,13 @@ export default function UnauthorizedPage() {
       </p>
 
       <p>
-        <a className="primary-button" href="/auth/login">
+        <Link className="primary-button" href="/auth/login">
           লগইন পেজে ফিরে যান
-        </a>
+        </Link>
       </p>
 
       <p className="hero-copy">
-        <a href="/">হোম পেজে ফিরুন</a>
+        <Link href="/">হোম পেজে ফিরুন</Link>
       </p>
     </main>
   );
