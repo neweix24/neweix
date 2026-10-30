@@ -195,6 +195,18 @@ export async function POST(request: Request) {
     );
   }
 
+  // Validate optional coupon code. Pricing and usage are enforced atomically in SQL.
+  let couponCode: string | null = null;
+  if (rawBody.coupon_code != null && rawBody.coupon_code !== "") {
+    if (typeof rawBody.coupon_code !== "string") {
+      return errorResponse("কুপন কোড সঠিক নয়।", 400);
+    }
+    couponCode = rawBody.coupon_code.trim().toUpperCase();
+    if (!/^[A-Z0-9_-]{3,40}$/.test(couponCode)) {
+      return errorResponse("কুপন কোড ৩–৪০ অক্ষরের ইংরেজি অক্ষর, সংখ্যা, হাইফেন বা আন্ডারস্কোর হতে হবে।", 400);
+    }
+  }
+
   // Validate the payment method.
   const paymentMethodValue =
     rawBody.payment_method == null
@@ -412,7 +424,7 @@ export async function POST(request: Request) {
 
     const { data, error } =
       await supabase.rpc(
-        "create_order_with_payment",
+        "create_order_with_coupon",
         {
           p_customer_name: customerName,
           p_customer_phone: customerPhone,
@@ -425,6 +437,7 @@ export async function POST(request: Request) {
               ? null
               : transactionId,
           p_items: items,
+          p_coupon_code: couponCode,
         }
       );
 
@@ -460,6 +473,16 @@ export async function POST(request: Request) {
         return errorResponse(
           "এই Transaction ID আগে ব্যবহার করা হয়েছে। পেমেন্টের তথ্য যাচাই করে সঠিক Transaction ID দিন।",
           409
+        );
+      }
+
+      if (
+        errorMessage.includes("coupon") ||
+        errorMessage.includes("discount")
+      ) {
+        return errorResponse(
+          "কুপন কোডটি অকার্যকর, মেয়াদোত্তীর্ণ, ব্যবহারের সীমা শেষ অথবা ন্যূনতম অর্ডার মূল্য পূরণ হয়নি।",
+          400
         );
       }
 

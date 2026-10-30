@@ -1,0 +1,23 @@
+import Link from "next/link";
+import { requireStaff } from "@/lib/auth";
+import CategoriesManager from "@/features/admin/categories-manager";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminCategoriesPage() {
+  const staff = await requireStaff(["supreme", "admin", "staff"]);
+
+  return (
+    <main className="min-h-screen px-4 py-10 sm:px-6" style={{ background: "var(--bg)", color: "var(--ink)" }}>
+      <div className="mx-auto max-w-6xl">
+        <header className="mb-8">
+          <p className="eyebrow">NEWEIX · ADMIN</p>
+          <h1 className="mt-2 text-3xl font-bold">ক্যাটাগরি ব্যবস্থাপনা</h1>
+          <p className="mt-2">লগইন করা Role: <strong style={{ color: "var(--primary)" }}>{staff.role}</strong></p>
+          <Link href="/admin" className="mt-4 inline-flex text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}>← Admin Dashboard-এ ফিরে যান</Link>
+        </header>
+        <CategoriesManager role={staff.role} />
+      </div>
+    </main>
+  );
+}
