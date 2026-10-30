@@ -1,3 +1,4 @@
+import Link from "next/link";
 
 "use client";
 
@@ -311,7 +312,7 @@ export default function CheckoutView() {
         )}
 
         <p>ডেলিভারি চার্জ আলাদাভাবে নিশ্চিত করা হবে।</p>
-        <a className="primary-button" href="/">হোমপেজে ফিরুন</a>
+        <Link className="primary-button" href="/">হোমপেজে ফিরুন</Link>
       </main>
     );
   }
@@ -321,7 +322,7 @@ export default function CheckoutView() {
       <main className="hero">
         <h1>আপনার কার্ট খালি</h1>
         {error && <p role="alert">{error}</p>}
-        <a className="primary-button" href="/">পণ্য দেখুন</a>
+        <Link className="primary-button" href="/">পণ্য দেখুন</Link>
       </main>
     );
   }
@@ -483,7 +484,7 @@ export default function CheckoutView() {
         </button>
       </form>
 
-      <p><a href="/cart">← কার্টে ফিরে যান</a></p>
+      <p><Link href="/cart">← কার্টে ফিরে যান</Link></p>
     </main>
   );
 }
