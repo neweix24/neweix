@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="hero">
+    <main className="hero auth-page">
       <p className="eyebrow">NEWEIX · ACCOUNT RECOVERY</p>
       <h1>পাসওয়ার্ড রিসেট</h1>
       <p className="hero-copy">

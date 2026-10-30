@@ -62,7 +62,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="hero">
+    <main className="hero auth-page">
       <p className="eyebrow">NEWEIX · ACCOUNT RECOVERY</p>
       <h1>নতুন পাসওয়ার্ড সেট করো</h1>
       <p className="hero-copy">

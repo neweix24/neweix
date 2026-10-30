@@ -102,7 +102,7 @@ try {
 }
 
 return (
-<main className="hero">
+<main className="hero auth-page">
 <p className="eyebrow">NEWEIX · STAFF ACCESS</p>
 <h1>নিরাপদ লগইন</h1>
 <p className="hero-copy">
