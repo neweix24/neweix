@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type Product = {
@@ -139,9 +140,9 @@ export default function CartView() {
             আপনার কার্ট এখন খালি।
           </p>
 
-          <a className="primary-button" href="/">
+          <Link className="primary-button" href="/">
             পণ্য দেখুন ↗
-          </a>
+          </Link>
         </>
       )}
 
@@ -237,15 +238,15 @@ export default function CartView() {
             ডেলিভারি চার্জ চেকআউটের সময় নিশ্চিত করা হবে।
           </p>
 
-          <a
+          <Link
             className="primary-button"
             href="/checkout"
           >
             অর্ডার করতে এগিয়ে যান →
-          </a>
+          </Link>
 
           <p>
-            <a href="/">আরও পণ্য দেখুন</a>
+            <Link href="/">আরও পণ্য দেখুন</Link>
           </p>
         </section>
       )}
