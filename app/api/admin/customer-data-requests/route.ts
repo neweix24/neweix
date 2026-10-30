@@ -21,7 +21,21 @@ export async function GET() {
       console.error("Admin data request list failed:", error.message);
       return NextResponse.json({ error: "গ্রাহকের অনুরোধ লোড করা যায়নি।" }, { status: 500 });
     }
-    return NextResponse.json({ requests: data ?? [] }, {
+    const userIds = [...new Set((data ?? []).map((item) => item.user_id))];
+    const { data: profiles, error: profileError } = userIds.length
+      ? await admin.from("customer_profiles").select("user_id,full_name,display_name,phone").in("user_id", userIds)
+      : { data: [], error: null };
+    if (profileError) {
+      console.error("Admin request customer details failed:", profileError.message);
+      return NextResponse.json({ error: "কাস্টমারের পরিচিতি লোড করা যায়নি।" }, { status: 500 });
+    }
+    const profileMap = new Map((profiles ?? []).map((profile) => [profile.user_id, profile]));
+    const requests = (data ?? []).map((item) => ({
+      ...item,
+      customer: profileMap.get(item.user_id) ?? null,
+    }));
+
+    return NextResponse.json({ requests }, {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
