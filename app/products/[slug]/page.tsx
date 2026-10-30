@@ -11,7 +11,7 @@ async function getProduct(slug: string): Promise<ProductDetailsData | null> {
   if (!url || !key) return null;
   const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data, error } = await supabase.from("products")
-    .select("id, name, slug, description, price, compare_at_price, image_urls, stock")
+    .select("id, name, slug, description, price, compare_at_price, image_urls, stock, category_id")
     .eq("slug", slug).eq("is_active", true).maybeSingle();
   if (error) {
     console.error("Product page lookup failed:", error.message);
