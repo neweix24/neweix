@@ -275,14 +275,14 @@ export default function CustomerDataControls() {
         .data-header { max-width: 900px; min-height: 68px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--border); }
         .brand { color: var(--primary); font-weight: 800; letter-spacing: 2px; text-decoration: none; }
         .back { color: var(--muted); font-size: 14px; text-decoration: none; }
-        .panel { box-sizing: border-box; max-width: 680px; margin: 36px auto; padding: 30px; border: 1px solid var(--border); border-radius: 16px; background: white; box-shadow: 0 12px 35px var(--primary)0a; }
+        .panel { box-sizing: border-box; max-width: 680px; margin: 36px auto; padding: 30px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: 0 12px 35px rgba(182,255,74,.08); }
         .eyebrow { color: var(--primary); font-size: 12px; font-weight: 700; letter-spacing: 2px; }
         h1 { margin: 8px 0; font-size: 30px; }
         .intro, .note { color: var(--muted); line-height: 1.7; }
         .group { display: grid; gap: 10px; margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--border); }
         h2 { margin: 0 0 4px; font-size: 19px; }
         label { font-size: 14px; font-weight: 600; }
-        input:not([type="checkbox"]) { box-sizing: border-box; width: 100%; min-height: 46px; padding: 11px 12px; border: 1px solid var(--border); border-radius: 9px; color: var(--ink); background: white; font: inherit; }
+        input:not([type="checkbox"]) { box-sizing: border-box; width: 100%; min-height: 46px; padding: 11px 12px; border: 1px solid var(--border); border-radius: 9px; color: var(--ink); background: var(--surface); font: inherit; }
         small { color: var(--muted); }
         .check-row { display: flex; align-items: flex-start; gap: 10px; font-weight: 500; line-height: 1.6; }
         .check-row input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--primary); }
