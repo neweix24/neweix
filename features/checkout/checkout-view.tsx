@@ -4,6 +4,7 @@ import Link from "next/link";
 import styles from "./checkout-view.module.css";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type CartItem = {
@@ -62,7 +63,10 @@ function isValidCartItem(item: unknown): item is CartItem {
 }
 
 export default function CheckoutView() {
+  const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [verifiedPhone, setVerifiedPhone] = useState("");
+  const [verificationRequired, setVerificationRequired] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [defaultAddress, setDefaultAddress] = useState<SavedAddress | null>(null);
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
@@ -80,6 +84,26 @@ export default function CheckoutView() {
 
     async function loadCheckout() {
       try {
+        const supabase = createBrowserSupabaseClient();
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !authData.user) {
+          router.replace("/auth/customer-login?next=/checkout");
+          return;
+        }
+
+        const phoneResponse = await fetch("/api/account/phone/status", {
+          cache: "no-store",
+        });
+        const phoneStatus = await phoneResponse.json().catch(() => null);
+
+        if (!phoneResponse.ok || !phoneStatus?.verified || !phoneStatus?.phone) {
+          if (!cancelled) setVerificationRequired(true);
+          return;
+        }
+
+        if (!cancelled) setVerifiedPhone(phoneStatus.phone);
+
         const saved = localStorage.getItem("neweix_cart");
         const parsed: unknown = saved ? JSON.parse(saved) : [];
 
@@ -187,7 +211,18 @@ export default function CheckoutView() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [router]);
+
+  if (verificationRequired) {
+    return (
+      <main className={styles.page}>
+        <p className="eyebrow">PHONE VERIFICATION REQUIRED</p>
+        <h1>অর্ডারের আগে ফোন নম্বর যাচাই করুন</h1>
+        <p>NEWEIX-এ অর্ডার করতে আপনার অ্যাকাউন্টে লগইন করে মোবাইল নম্বর OTP দিয়ে যাচাই করতে হবে।</p>
+        <Link href="/account">অ্যাকাউন্টে গিয়ে ফোন নম্বর যাচাই করুন</Link>
+      </main>
+    );
+  }
 
   const cartDetails = cart.map((item) => {
     const product = products.find((p) => p.id === item.product_id);
@@ -417,8 +452,8 @@ export default function CheckoutView() {
 
         <label htmlFor="customer_phone">মোবাইল নম্বর *</label>
         <input id="customer_phone" name="customer_phone" type="tel" required
-          minLength={7} maxLength={30} autoComplete="tel" disabled={submitting}
-          placeholder="আপনার যোগাযোগের নম্বর" defaultValue={defaultAddress?.phone ?? ""} style={fieldStyle} />
+          autoComplete="tel" readOnly value={verifiedPhone} disabled={submitting}
+          style={fieldStyle} />
 
         <label htmlFor="customer_email">ইমেইল (ঐচ্ছিক)</label>
         <input id="customer_email" name="customer_email" type="email"
