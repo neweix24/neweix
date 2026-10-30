@@ -33,6 +33,7 @@ export default function ProductCatalog() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [notice, setNotice] = useState("");
+  const [wishlist, setWishlist] = useState<string[]>([]);
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -52,6 +53,12 @@ export default function ProductCatalog() {
 
   useEffect(() => {
     void loadProducts();
+    try {
+      const saved: unknown = JSON.parse(localStorage.getItem("neweix_wishlist") ?? "[]");
+      if (Array.isArray(saved)) setWishlist(Array.from(new Set(saved.filter((id): id is string => typeof id === "string"))).slice(0, 200));
+    } catch {
+      localStorage.removeItem("neweix_wishlist");
+    }
   }, [loadProducts]);
 
   const filtered = useMemo(() => {
@@ -66,6 +73,17 @@ export default function ProductCatalog() {
     if (sort === "featured") matches.sort((a, b) => Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)));
     return matches;
   }, [products, query, sort]);
+
+  function toggleWishlist(product: Product) {
+    const next = wishlist.includes(product.id) ? wishlist.filter((id) => id !== product.id) : [...wishlist, product.id].slice(-200);
+    try {
+      localStorage.setItem("neweix_wishlist", JSON.stringify(next));
+      setWishlist(next);
+      setNotice(next.includes(product.id) ? "পণ্যটি পছন্দের তালিকায় যোগ হয়েছে।" : "পণ্যটি পছন্দের তালিকা থেকে সরানো হয়েছে।");
+    } catch {
+      setNotice("পছন্দের তালিকা সংরক্ষণ করা যায়নি।");
+    }
+  }
 
   function addToCart(product: Product) {
     if (!Number.isSafeInteger(Number(product.stock)) || Number(product.stock) < 1) {
@@ -105,6 +123,7 @@ export default function ProductCatalog() {
         <nav aria-label="প্রধান নেভিগেশন">
           <Link href="/track-order">অর্ডার ট্র্যাক</Link>
           <Link href="/account">অ্যাকাউন্ট</Link>
+          <Link href="/wishlist">পছন্দের তালিকা ({wishlist.length})</Link>
           <Link href="/cart">কার্ট</Link>
         </nav>
       </header>
@@ -165,6 +184,7 @@ export default function ProductCatalog() {
                 {product.is_featured && <small>বিশেষ পণ্য</small>}
               </Link>
               <div className={styles.details}>
+                <button type="button" aria-pressed={wishlist.includes(product.id)} onClick={() => toggleWishlist(product)} className="mb-2 rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}>{wishlist.includes(product.id) ? "♥ পছন্দে আছে" : "♡ পছন্দে রাখুন"}</button>
                 <span className={product.stock > 0 ? styles.inStock : styles.outOfStock}>
                   {product.stock > 0 ? "স্টকে আছে" : "স্টক শেষ"}
                 </span>
