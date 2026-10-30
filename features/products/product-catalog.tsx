@@ -29,6 +29,7 @@ function money(value: number) {
 export default function ProductCatalog() {
   const [products, setProducts] = useState<Product[]>([]);
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<"featured" | "price-asc" | "price-desc">("featured");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [notice, setNotice] = useState("");
@@ -55,16 +56,19 @@ export default function ProductCatalog() {
 
   const filtered = useMemo(() => {
     const term = query.trim().toLocaleLowerCase();
-    if (!term) return products;
-    return products.filter((product) =>
+    const matches = !term ? [...products] : products.filter((product) =>
       [product.name, product.description ?? ""].some((value) =>
         value.toLocaleLowerCase().includes(term)
       )
     );
-  }, [products, query]);
+    if (sort === "price-asc") matches.sort((a, b) => Number(a.price) - Number(b.price));
+    if (sort === "price-desc") matches.sort((a, b) => Number(b.price) - Number(a.price));
+    if (sort === "featured") matches.sort((a, b) => Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)));
+    return matches;
+  }, [products, query, sort]);
 
   function addToCart(product: Product) {
-    if (product.stock < 1) {
+    if (!Number.isSafeInteger(Number(product.stock)) || Number(product.stock) < 1) {
       setNotice("পণ্যটি বর্তমানে স্টকে নেই।");
       return;
     }
@@ -72,20 +76,21 @@ export default function ProductCatalog() {
       const raw = localStorage.getItem("neweix_cart");
       const parsed: unknown = raw ? JSON.parse(raw) : [];
       if (!Array.isArray(parsed)) throw new Error("Invalid cart");
-      const cart = parsed as { product_id: string; quantity: number }[];
-      const existing = cart.find((item) => item.product_id === product.id);
-      if (existing) {
-        if (!Number.isSafeInteger(existing.quantity) || existing.quantity < 1) {
-          throw new Error("Invalid quantity");
-        }
-        if (existing.quantity >= product.stock) {
-          setNotice("স্টকে থাকা সর্বোচ্চ পরিমাণ কার্টে আছে।");
-          return;
-        }
-        existing.quantity += 1;
-      } else {
-        cart.push({ product_id: product.id, quantity: 1 });
+      const quantities = new Map<string, number>();
+      for (const value of parsed) {
+        if (!value || typeof value !== "object") continue;
+        const item = value as Record<string, unknown>;
+        if (typeof item.product_id !== "string" || !item.product_id ||
+            !Number.isSafeInteger(item.quantity) || Number(item.quantity) < 1) continue;
+        quantities.set(item.product_id, Math.min(100, (quantities.get(item.product_id) ?? 0) + Number(item.quantity)));
       }
+      const current = quantities.get(product.id) ?? 0;
+      if (current >= Math.min(100, Number(product.stock))) {
+        setNotice("স্টকে থাকা সর্বোচ্চ পরিমাণ ইতিমধ্যে কার্টে আছে।");
+        return;
+      }
+      quantities.set(product.id, current + 1);
+      const cart = Array.from(quantities, ([product_id, quantity]) => ({ product_id, quantity }));
       localStorage.setItem("neweix_cart", JSON.stringify(cart));
       setNotice("পণ্যটি কার্টে যোগ হয়েছে।");
     } catch {
@@ -117,6 +122,15 @@ export default function ProductCatalog() {
             placeholder="পণ্যের নাম লিখুন..."
           />
         </label>
+        <label className={styles.search} style={{ marginTop: 12 }}>
+          <span className={styles.srOnly}>পণ্যের সাজানোর ধরন</span>
+          <select aria-label="পণ্য সাজান" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
+            <option value="featured">বিশেষ পণ্য আগে</option>
+            <option value="price-asc">দাম: কম থেকে বেশি</option>
+            <option value="price-desc">দাম: বেশি থেকে কম</option>
+          </select>
+        </label>
+        <p aria-live="polite" style={{ marginTop: 12 }}>{filtered.length}টি পণ্য পাওয়া গেছে</p>
       </section>
 
       <section className={styles.catalog} aria-label="পণ্যের তালিকা">
