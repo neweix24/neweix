@@ -383,3 +383,65 @@ export async function POST(request: Request) {
     return jsonError("সার্ভারে সমস্যা হয়েছে।", 500);
   }
 }
+export async function PATCH(request: Request) {
+  try {
+    const staff = await getStaffContext();
+    if ("error" in staff) return jsonError(staff.error, staff.status);
+    if (staff.role === "staff") return jsonError("পণ্য প্রস্তাব অনুমোদন বা প্রত্যাখ্যান করার অনুমতি নেই।", 403);
+
+    const contentLength = request.headers.get("content-length");
+    if (contentLength && (!/^[0-9]+$/.test(contentLength) || Number(contentLength) > 4096)) {
+      return jsonError("অনুরোধটি অনেক বড়।", 413);
+    }
+    const raw = await request.text();
+    if (new TextEncoder().encode(raw).byteLength > 4096) return jsonError("অনুরোধটি অনেক বড়।", 413);
+
+    let body: unknown;
+    try { body = JSON.parse(raw); } catch { return jsonError("সঠিক JSON তথ্য পাঠান।", 400); }
+    if (!isRecord(body)) return jsonError("সঠিক তথ্য পাঠান।", 400);
+
+    const id = body.id;
+    const decision = body.decision;
+    const note = body.review_note == null ? null : typeof body.review_note === "string" ? body.review_note.trim() : undefined;
+
+    if (!isUuid(id)) return jsonError("সঠিক Submission ID দিন।", 400);
+    if (decision !== "approved" && decision !== "rejected") return jsonError("অনুমোদন অথবা প্রত্যাখ্যান নির্বাচন করুন।", 400);
+    if (note === undefined || (note !== null && note.length > 1000)) return jsonError("পর্যালোচনা নোট সর্বোচ্চ ১০০০ অক্ষরের হতে হবে।", 400);
+
+    const supabase = await getAdminClient();
+    const { data, error } = await supabase.rpc("review_product_submission", {
+      p_submission_id: id,
+      p_reviewer_id: staff.user.id,
+      p_decision: decision,
+      p_review_note: note,
+    });
+
+    if (error) {
+      const message = error.message.toLowerCase();
+      if (message.includes("not found")) return jsonError("পণ্য প্রস্তাব পাওয়া যায়নি।", 404);
+      if (message.includes("already been reviewed")) return jsonError("এই প্রস্তাব আগে পর্যালোচনা করা হয়েছে।", 409);
+      console.error("Product submission review RPC failed:", error.message);
+      return jsonError("পণ্য প্রস্তাব পর্যালোচনা করা যায়নি।", 500);
+    }
+
+    try {
+      await writeAuditLog(supabase, {
+        actorId: staff.user.id,
+        action: decision === "approved" ? "product_submission.approved" : "product_submission.rejected",
+        targetType: "product_submission",
+        targetId: id,
+        details: { decision, reviewNote: note },
+      });
+    } catch (auditError) {
+      console.error("Product submission review audit failed:", auditError);
+    }
+
+    return NextResponse.json(
+      { success: true, result: data, message: decision === "approved" ? "পণ্য অনুমোদিত হয়েছে।" : "পণ্য প্রস্তাব প্রত্যাখ্যান করা হয়েছে।" },
+      { headers: { "Cache-Control": "no-store" } }
+    );
+  } catch (error) {
+    console.error("Product submissions PATCH error:", error);
+    return jsonError("সার্ভারে সমস্যা হয়েছে।", 500);
+  }
+}
