@@ -72,6 +72,7 @@ export default function CartView() {
   function saveCart(next: CartItem[]) {
     setCart(next);
     localStorage.setItem("neweix_cart", JSON.stringify(next));
+    window.dispatchEvent(new Event("neweix-cart-change"));
   }
 
   const productMap = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
