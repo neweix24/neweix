@@ -1,5 +1,3 @@
-"use client";
-
 import CheckoutView from "@/features/checkout/checkout-view";
 
 export const dynamic = "force-dynamic";
