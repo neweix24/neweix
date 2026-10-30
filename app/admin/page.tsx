@@ -31,12 +31,22 @@ export default async function AdminPage() {
             আপনার অনুমতি অনুযায়ী ব্যবস্থাপনার অপশন নির্বাচন করুন।
           </p>
 
-          <a
-            href="/admin/products"
-            className="mt-5 inline-block rounded-lg bg-blue-700 px-5 py-3 font-medium text-white"
-          >
-            পণ্য ও স্টক ব্যবস্থাপনা →
-          </a>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <a
+              href="/admin/products"
+              className="inline-block rounded-lg bg-blue-700 px-5 py-3 font-medium text-white"
+            >
+              পণ্য ও স্টক ব্যবস্থাপনা →
+            </a>
+            {staff.role !== "staff" && (
+              <a
+                href="/admin/orders"
+                className="inline-block rounded-lg border border-gray-300 px-5 py-3 font-medium text-gray-800"
+              >
+                অর্ডার ও পেমেন্ট →
+              </a>
+            )}
+          </div>
         </section>
       </div>
     </main>
