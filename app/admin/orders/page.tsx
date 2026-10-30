@@ -1,5 +1,5 @@
 import { requireStaff } from "@/lib/auth";
-import OrdersManager from "./OrdersManager";
+import OrdersManager from "@/features/admin/orders-manager";
 
 export const dynamic = "force-dynamic";
 
