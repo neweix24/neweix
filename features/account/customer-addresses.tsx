@@ -187,35 +187,35 @@ export default function CustomerAddresses() {
         )}
       </section>
       <style jsx>{`
-        .addresses-page { min-height:100vh; padding:0 18px 56px; background:#f7f8fa; color:#172338; }
-        .header { max-width:900px; min-height:68px; margin:auto; display:flex; align-items:center; justify-content:space-between; gap:16px; border-bottom:1px solid #e2e6ed; }
-        .brand { color:#10233f; font-weight:800; letter-spacing:2px; text-decoration:none; }
-        .back { color:#526078; font-size:14px; text-decoration:none; }
+        .addresses-page { min-height:100vh; padding:0 18px 56px; background:var(--bg); color:var(--ink); }
+        .header { max-width:900px; min-height:68px; margin:auto; display:flex; align-items:center; justify-content:space-between; gap:16px; border-bottom:1px solid var(--border); }
+        .brand { color:var(--primary); font-weight:800; letter-spacing:2px; text-decoration:none; }
+        .back { color:var(--muted); font-size:14px; text-decoration:none; }
         .content { box-sizing:border-box; max-width:760px; margin:34px auto; }
-        .eyebrow { color:#9a7a42; font-size:12px; font-weight:700; letter-spacing:2px; }
+        .eyebrow { color:var(--primary); font-size:12px; font-weight:700; letter-spacing:2px; }
         h1 { margin:8px 0; font-size:30px; }
-        .intro { color:#68758a; line-height:1.7; }
+        .intro { color:var(--muted); line-height:1.7; }
         .address-list { display:grid; gap:12px; margin:24px 0; }
-        .address-card,.form { padding:20px; border:1px solid #e5e8ef; border-radius:14px; background:white; }
+        .address-card,.form { padding:20px; border:1px solid var(--border); border-radius:14px; background:white; }
         .card-title { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-        .card-title span { padding:4px 8px; border-radius:20px; background:#edf5ef; color:#24633e; font-size:12px; }
-        .address-card p { color:#566276; line-height:1.6; overflow-wrap:anywhere; }
+        .card-title span { padding:4px 8px; border-radius:20px; background:var(--brand-lime-soft); color:var(--success); font-size:12px; }
+        .address-card p { color:var(--muted); line-height:1.6; overflow-wrap:anywhere; }
         .actions { display:flex; gap:18px; }
-        .text-button,.delete { padding:0; border:0; background:none; color:#10233f; font:inherit; cursor:pointer; }
-        .delete { color:#b42318; }
-        .empty { padding:18px; border:1px dashed #cbd2dc; border-radius:12px; color:#68758a; }
+        .text-button,.delete { padding:0; border:0; background:none; color:var(--primary); font:inherit; cursor:pointer; }
+        .delete { color:var(--danger); }
+        .empty { padding:18px; border:1px dashed var(--border); border-radius:12px; color:var(--muted); }
         .form { display:grid; gap:10px; }
         h2 { margin:0 0 8px; font-size:20px; }
         label { margin-top:7px; font-size:14px; font-weight:600; }
-        input:not([type=checkbox]),select,textarea { box-sizing:border-box; width:100%; min-height:46px; padding:11px 12px; border:1px solid #dce1e9; border-radius:9px; background:white; color:#172338; font:inherit; }
+        input:not([type=checkbox]),select,textarea { box-sizing:border-box; width:100%; min-height:46px; padding:11px 12px; border:1px solid var(--border); border-radius:9px; background:white; color:var(--ink); font:inherit; }
         textarea { min-height:90px; resize:vertical; }
         .default-row { display:flex; align-items:center; gap:10px; font-weight:500; }
         .default-row input { width:18px; height:18px; }
         .form-actions { display:flex; gap:10px; margin-top:10px; }
-        .form-actions button { flex:1; min-height:46px; padding:10px; border:0; border-radius:9px; background:#10233f; color:white; font:inherit; font-weight:700; cursor:pointer; }
+        .form-actions button { flex:1; min-height:46px; padding:10px; border:0; border-radius:9px; background:var(--primary); color:white; font:inherit; font-weight:700; cursor:pointer; }
         .form-actions button:disabled { opacity:.6; cursor:wait; }
-        .form-actions .cancel { background:#e9edf3; color:#26344a; }
-        .success { color:#167345; } .error { color:#b42318; }
+        .form-actions .cancel { background:var(--surface-raised); color:var(--ink); }
+        .success { color:var(--success); } .error { color:var(--danger); }
         @media(max-width:520px) { .content { margin-top:22px; } .address-card,.form { padding:16px; } }
       `}</style>
     </main>
