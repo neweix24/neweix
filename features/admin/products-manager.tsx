@@ -15,6 +15,8 @@ type Product = {
   is_active?: boolean;
 };
 
+type Category = { id: string; name: string; slug: string };
+
 type Props = { role: Role };
 
 const emptyForm = {
@@ -25,6 +27,7 @@ const emptyForm = {
   compare_at_price: "",
   stock: "0",
   sku: "",
+  category_id: "",
   image_urls: "",
   video_url: "",
   weight_grams: "500",
@@ -37,6 +40,8 @@ export default function ProductsManager({ role }: Props) {
   const canManageProducts = role === "supreme" || role === "admin";
   const isStaff = role === "staff";
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryQuery, setCategoryQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -68,6 +73,15 @@ export default function ProductsManager({ role }: Props) {
 
   useEffect(() => {
     void loadProducts();
+    let active = true;
+    fetch("/api/categories", { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "ক্যাটাগরি লোড করা যায়নি।");
+        if (active) setCategories(Array.isArray(data.categories) ? data.categories : []);
+      })
+      .catch((err) => { if (active) setError(err instanceof Error ? err.message : "ক্যাটাগরি লোড করা যায়নি।"); });
+    return () => { active = false; };
   }, [loadProducts]);
 
   function updateField<K extends keyof typeof emptyForm>(key: K, value: (typeof emptyForm)[K]) {
@@ -119,6 +133,7 @@ export default function ProductsManager({ role }: Props) {
         body: JSON.stringify({
           name, slug, description: form.description.trim(), price,
           compare_at_price: compareAt, stock, sku: form.sku.trim() || null,
+          category_id: form.category_id || null,
           image_urls: imageUrls, video_url: form.video_url.trim() || null,
           variants: [], weight_grams: weight, low_stock_threshold: threshold,
           is_active: form.is_active, is_featured: form.is_featured,
@@ -127,6 +142,7 @@ export default function ProductsManager({ role }: Props) {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "পণ্য তৈরি করা যায়নি।");
       setForm(emptyForm);
+      setCategoryQuery("");
       setShowForm(false);
       setNotice("নতুন পণ্য সফলভাবে তৈরি হয়েছে।");
       await loadProducts(true);
@@ -164,6 +180,7 @@ export default function ProductsManager({ role }: Props) {
             <label className="grid gap-1 text-sm">স্টক *<input required type="number" min="0" step="1" value={form.stock} onChange={(e) => updateField("stock", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm">আগের মূল্য (ঐচ্ছিক)<input type="number" min="0" step="1" value={form.compare_at_price} onChange={(e) => updateField("compare_at_price", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm">SKU<input maxLength={100} value={form.sku} onChange={(e) => updateField("sku", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
+            <div className="grid gap-1 text-sm"><label htmlFor="product-category">ক্যাটাগরি</label><input id="product-category" list="neweix-product-categories" autoComplete="off" value={categoryQuery} onChange={(e) => { const value = e.target.value; setCategoryQuery(value); const match = categories.find((item) => item.name.toLocaleLowerCase() === value.trim().toLocaleLowerCase()); updateField("category_id", match?.id ?? ""); }} placeholder="ক্যাটাগরির নাম লিখুন…" className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /><datalist id="neweix-product-categories">{categories.map((category) => <option key={category.id} value={category.name} />)}</datalist><span className="text-xs" style={{ color: "var(--muted)" }}>{form.category_id ? "ক্যাটাগরি নির্বাচন হয়েছে" : "লিখলে বিদ্যমান ক্যাটাগরির সাজেশন দেখাবে।"}</span></div>
             <label className="grid gap-1 text-sm sm:col-span-2">বিবরণ<textarea rows={3} maxLength={10000} value={form.description} onChange={(e) => updateField("description", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm sm:col-span-2">ছবির HTTPS URL (প্রতি লাইনে একটি, সর্বোচ্চ ১০টি)<textarea rows={3} value={form.image_urls} onChange={(e) => updateField("image_urls", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="grid gap-1 text-sm sm:col-span-2">ভিডিও URL (ঐচ্ছিক)<input type="url" value={form.video_url} onChange={(e) => updateField("video_url", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
@@ -171,7 +188,7 @@ export default function ProductsManager({ role }: Props) {
             <label className="grid gap-1 text-sm">Low stock threshold<input required type="number" min="0" value={form.low_stock_threshold} onChange={(e) => updateField("low_stock_threshold", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_active} onChange={(e) => updateField("is_active", e.target.checked)} /> পণ্য সক্রিয় রাখুন</label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_featured} onChange={(e) => updateField("is_featured", e.target.checked)} /> Featured পণ্য</label>
-            <div className="flex flex-wrap gap-2 sm:col-span-2"><button type="submit" disabled={saving} className="rounded-xl px-5 py-3 font-bold disabled:opacity-50" style={{ background: "var(--primary)", color: "#101510" }}>{saving ? "সংরক্ষণ হচ্ছে…" : "পণ্য তৈরি করুন"}</button><button type="button" onClick={() => setForm(emptyForm)} className="rounded-xl border px-5 py-3" style={{ borderColor: "var(--border)" }}>ফর্ম রিসেট</button></div>
+            <div className="flex flex-wrap gap-2 sm:col-span-2"><button type="submit" disabled={saving} className="rounded-xl px-5 py-3 font-bold disabled:opacity-50" style={{ background: "var(--primary)", color: "#101510" }}>{saving ? "সংরক্ষণ হচ্ছে…" : "পণ্য তৈরি করুন"}</button><button type="button" onClick={() => { setForm(emptyForm); setCategoryQuery(""); }} className="rounded-xl border px-5 py-3" style={{ borderColor: "var(--border)" }}>ফর্ম রিসেট</button></div>
           </form>
         )}
 
