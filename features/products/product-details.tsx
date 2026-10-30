@@ -5,6 +5,7 @@ import AddToCartButton from "@/app/products/[slug]/AddToCartButton";
 import CompareButton from "@/features/compare/compare-button";
 import ProductReviewPanel from "@/features/reviews/product-review-panel";
 import RecentlyViewedProducts from "@/features/products/recently-viewed";
+import RelatedProducts from "@/features/products/related-products";
 import styles from "./product-details.module.css";
 
 export type ProductDetailsData = {
@@ -16,6 +17,7 @@ export type ProductDetailsData = {
   compare_at_price: number | null;
   image_urls: string[] | null;
   stock: number;
+  category_id?: string | null;
 };
 
 function money(value: number) {
@@ -49,6 +51,7 @@ export default function ProductDetails({ product }: { product: ProductDetailsDat
         </section>
       </div>
       <ProductReviewPanel />
+      <RelatedProducts currentProductId={product.id} categoryId={product.category_id ?? null} />
       <RecentlyViewedProducts currentProductId={product.id} />
     </main>
   );
