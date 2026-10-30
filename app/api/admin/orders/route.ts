@@ -93,8 +93,6 @@ export async function GET() {
         total,
         payment_method,
         payment_status,
-        payment_transaction_id,
-        payment_verified_at,
         created_at,
         order_items (
           id,
