@@ -13,6 +13,8 @@ export const metadata: Metadata = {
   description:
     "NEWEIX-এ পণ্য আবিষ্কার করুন, নিরাপদে অর্ডার করুন এবং আপনার অর্ডারের অগ্রগতি ট্র্যাক করুন।",
   applicationName: "NEWEIX",
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/supreme-icon.svg", apple: "/supreme-icon.svg" },
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
