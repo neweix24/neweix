@@ -12,6 +12,7 @@ type Product = {
   stock: number; is_featured?: boolean;
 };
 type Customer = { name: string; email: string };
+type Category = { id: string; name: string; slug: string };
 
 function money(value: number) {
   return new Intl.NumberFormat("bn-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(value);
@@ -43,7 +44,9 @@ export default function StorefrontHome() {
   const [wishlistCount, setWishlistCount] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
+  const [cartNotice, setCartNotice] = useState("");
   const panelRef = useRef<HTMLElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -88,10 +91,24 @@ export default function StorefrontHome() {
     let active = true;
     async function loadProducts() {
       try {
-        const response = await fetch("/api/products", { cache: "no-store" });
-        const result = await response.json();
-        if (!response.ok || !Array.isArray(result.data)) throw new Error("Products unavailable");
-        if (active) setProducts(result.data.slice(0, 8));
+        const [productResponse, categoryResponse] = await Promise.all([
+          fetch("/api/products", { cache: "no-store" }),
+          fetch("/api/categories", { cache: "no-store" }),
+        ]);
+        const [productResult, categoryResult] = await Promise.all([
+          productResponse.json(),
+          categoryResponse.json(),
+        ]);
+        if (!productResponse.ok || !Array.isArray(productResult.data)) throw new Error("Products unavailable");
+        if (active) setProducts(productResult.data.slice(0, 8));
+        if (categoryResponse.ok && Array.isArray(categoryResult.categories) && active) {
+          setCategories(categoryResult.categories.filter((item: unknown): item is Category =>
+            Boolean(item) && typeof item === "object" &&
+            typeof (item as Category).id === "string" &&
+            typeof (item as Category).name === "string" &&
+            typeof (item as Category).slug === "string"
+          ).slice(0, 12));
+        }
       } catch { if (active) setProducts([]); }
       finally { if (active) setProductsLoading(false); }
     }
@@ -127,6 +144,35 @@ export default function StorefrontHome() {
     event.preventDefault();
     const term = search.trim();
     router.push(term ? `/products?search=${encodeURIComponent(term)}` : "/products");
+  }
+
+  function addToCart(product: Product) {
+    if (!Number.isSafeInteger(Number(product.stock)) || Number(product.stock) < 1) {
+      setCartNotice("পণ্যটি বর্তমানে স্টকে নেই।");
+      return;
+    }
+    try {
+      const parsed: unknown = JSON.parse(localStorage.getItem("neweix_cart") ?? "[]");
+      if (!Array.isArray(parsed)) throw new Error("Invalid cart");
+      const quantities = new Map<string, number>();
+      for (const value of parsed) {
+        if (!value || typeof value !== "object") continue;
+        const item = value as Record<string, unknown>;
+        if (typeof item.product_id !== "string" || !Number.isSafeInteger(item.quantity) || Number(item.quantity) < 1) continue;
+        quantities.set(item.product_id, Math.min(100, (quantities.get(item.product_id) ?? 0) + Number(item.quantity)));
+      }
+      const current = quantities.get(product.id) ?? 0;
+      if (current >= Math.min(100, Number(product.stock))) {
+        setCartNotice("স্টকে থাকা সর্বোচ্চ পরিমাণ ইতিমধ্যে কার্টে আছে।");
+        return;
+      }
+      quantities.set(product.id, current + 1);
+      localStorage.setItem("neweix_cart", JSON.stringify(Array.from(quantities, ([product_id, quantity]) => ({ product_id, quantity }))));
+      window.dispatchEvent(new Event("neweix-cart-change"));
+      setCartNotice("পণ্যটি কার্টে যোগ হয়েছে।");
+    } catch {
+      setCartNotice("কার্ট আপডেট করা যায়নি। আবার চেষ্টা করুন।");
+    }
   }
 
   async function logout() {
@@ -177,6 +223,13 @@ export default function StorefrontHome() {
           <div className={styles.heroVisual} aria-hidden="true"><div className={styles.orbit}></div><div className={styles.heroMonogram}>N</div><span className={styles.floatTag}>NEWEIX<br/>SHOP SMART</span></div>
         </section>
 
+        {categories.length > 0 && <section className={styles.categorySection} aria-labelledby="category-title">
+          <div className={styles.categoryHeading}><div><span className={styles.eyebrow}>SHOP BY CATEGORY</span><h2 id="category-title">ক্যাটাগরি অনুযায়ী পণ্য</h2></div><Link href="/products">সব ক্যাটাগরি →</Link></div>
+          <div className={styles.categoryList}>
+            {categories.map((category) => <Link key={category.id} href={`/products?category=${encodeURIComponent(category.slug)}`}>{category.name}<span aria-hidden="true">→</span></Link>)}
+          </div>
+        </section>}
+
         <section className={styles.quickLinks} aria-label="দ্রুত সেবা">
           <Link href="/products"><span>▦</span><strong>সব পণ্য</strong><small>ক্যাটালগ দেখুন</small></Link>
           <Link href="/products?sort=featured"><span>✦</span><strong>বিশেষ পণ্য</strong><small>বাছাইকৃত পণ্য</small></Link>
@@ -186,6 +239,7 @@ export default function StorefrontHome() {
 
         <section className={styles.productSection} aria-labelledby="featured-title">
           <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>DISCOVER NEWEIX</span><h2 id="featured-title">আপনার জন্য পণ্য</h2><p>স্টোরে বর্তমানে থাকা পণ্য থেকে বেছে নিন।</p></div><Link href="/products">সব পণ্য দেখুন →</Link></div>
+          {cartNotice && <p className={styles.cartNotice} role="status">{cartNotice}<button type="button" onClick={() => setCartNotice("")} aria-label="বার্তা বন্ধ করুন">×</button></p>}
           {productsLoading ? <p className={styles.state} role="status">পণ্য লোড হচ্ছে…</p> : visibleProducts.length ? (
             <div className={styles.productGrid}>{visibleProducts.map((product) => (
               <article className={styles.productCard} key={product.id}>
@@ -193,7 +247,7 @@ export default function StorefrontHome() {
                   {product.image_urls?.[0] ? <img src={product.image_urls[0]} alt={product.name} loading="lazy"/> : <span>NEWEIX</span>}
                   {product.is_featured && <small>বিশেষ পণ্য</small>}
                 </Link>
-                <div className={styles.productInfo}><Link href={`/products/${encodeURIComponent(product.slug)}`}>{product.name}</Link><strong>{money(Number(product.price))}</strong><span className={product.stock > 0 ? styles.inStock : styles.outStock}>{product.stock > 0 ? "স্টকে আছে" : "স্টক শেষ"}</span></div>
+                <div className={styles.productInfo}><Link href={`/products/${encodeURIComponent(product.slug)}`}>{product.name}</Link><strong>{money(Number(product.price))}</strong>{product.compare_at_price != null && product.compare_at_price > product.price && <del>{money(Number(product.compare_at_price))}</del>}<span className={product.stock > 0 ? styles.inStock : styles.outStock}>{product.stock > 0 ? "স্টকে আছে" : "স্টক শেষ"}</span><button type="button" disabled={product.stock < 1} onClick={() => addToCart(product)} className={styles.addToCart}>কার্টে যোগ করুন</button></div>
               </article>
             ))}</div>
           ) : <div className={styles.emptyProducts}>এখনো প্রদর্শনের মতো পণ্য পাওয়া যায়নি। <Link href="/products">ক্যাটালগ দেখুন</Link></div>}
