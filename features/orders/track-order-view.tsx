@@ -108,19 +108,19 @@ export default function TrackOrderView() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-12 text-gray-900">
+    <main className="min-h-screen px-4 py-12" style={{ background: "var(--bg)", color: "var(--ink)" }}>
       <section className="mx-auto w-full max-w-2xl">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold tracking-tight">
             অর্ডার ট্র্যাক করুন
           </h1>
 
-          <p className="mt-3 text-gray-600">
+          <p className="mt-3" style={{ color: "var(--muted)" }}>
             আপনার অর্ডারের বর্তমান অবস্থা জানতে নিচের তথ্য দিন।
           </p>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+        <div className="rounded-2xl border p-6 shadow-sm sm:p-8" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label
@@ -172,7 +172,7 @@ export default function TrackOrderView() {
             {error && (
               <p
                 role="alert"
-                className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+                className="rounded-lg border p-3 text-sm" style={{ borderColor: "var(--danger)", color: "var(--danger)", background: "var(--surface)" }}
               >
                 {error}
               </p>
@@ -181,7 +181,7 @@ export default function TrackOrderView() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-lg px-5 py-3 font-semibold transition disabled:cursor-not-allowed disabled:opacity-60" style={{ background: "var(--primary)", color: "#10170d" }}
             >
               {loading ? "অর্ডার খোঁজা হচ্ছে..." : "অর্ডার খুঁজুন"}
             </button>
@@ -191,11 +191,11 @@ export default function TrackOrderView() {
         {order && (
           <section
             aria-live="polite"
-            className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8"
+            className="mt-6 rounded-2xl border p-6 shadow-sm sm:p-8" style={{ borderColor: "var(--border)", background: "var(--surface)" }}
           >
             <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm" style={{ color: "var(--muted)" }}>
                   অর্ডার নম্বর
                 </p>
 
@@ -204,12 +204,12 @@ export default function TrackOrderView() {
                 </h2>
               </div>
 
-              <span className="rounded-full bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-800">
+              <span className="rounded-full px-3 py-1.5 text-sm font-medium" style={{ background: "var(--surface-raised)", color: "var(--primary)" }}>
                 {getStatusLabel(order.status)}
               </span>
             </div>
 
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y" style={{ borderColor: "var(--border)" }}>
               <InfoRow
                 label="অর্ডারের তারিখ"
                 value={formatDate(order.created_at)}
@@ -239,7 +239,7 @@ export default function TrackOrderView() {
               />
             </div>
 
-            <p className="mt-5 rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
+            <p className="mt-5 rounded-lg p-3 text-sm" style={{ background: "var(--surface-raised)", color: "var(--muted)" }}>
               ডেলিভারি সংক্রান্ত আরও তথ্যের জন্য আমাদের
               কাস্টমার সাপোর্টের সঙ্গে যোগাযোগ করুন।
             </p>
@@ -259,8 +259,8 @@ function InfoRow({
 }) {
   return (
     <div className="flex flex-col gap-1 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-      <span className="text-sm text-gray-500">{label}</span>
-      <span className="break-words text-sm font-medium sm:text-right">
+      <span className="text-sm" style={{ color: "var(--muted)" }}>{label}</span>
+      <span className="break-words text-sm font-medium sm:text-right" style={{ color: "var(--ink)" }}>
         {value}
       </span>
     </div>
