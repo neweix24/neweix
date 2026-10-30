@@ -54,6 +54,10 @@ export default function ProductCatalog() {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setQuery(params.get("search") ?? "");
+    const requestedSort = params.get("sort");
+    if (requestedSort === "featured" || requestedSort === "price-asc" || requestedSort === "price-desc") setSort(requestedSort);
     void loadProducts();
     try {
       const saved: unknown = JSON.parse(localStorage.getItem("neweix_wishlist") ?? "[]");
@@ -82,6 +86,7 @@ export default function ProductCatalog() {
     const next = wishlist.includes(product.id) ? wishlist.filter((id) => id !== product.id) : [...wishlist, product.id].slice(-200);
     try {
       localStorage.setItem("neweix_wishlist", JSON.stringify(next));
+      window.dispatchEvent(new Event("neweix-wishlist-change"));
       setWishlist(next);
       setNotice(next.includes(product.id) ? "পণ্যটি পছন্দের তালিকায় যোগ হয়েছে।" : "পণ্যটি পছন্দের তালিকা থেকে সরানো হয়েছে।");
     } catch {
@@ -121,6 +126,7 @@ export default function ProductCatalog() {
       quantities.set(product.id, current + 1);
       const cart = Array.from(quantities, ([product_id, quantity]) => ({ product_id, quantity }));
       localStorage.setItem("neweix_cart", JSON.stringify(cart));
+      window.dispatchEvent(new Event("neweix-cart-change"));
       setNotice("পণ্যটি কার্টে যোগ হয়েছে।");
     } catch {
       setNotice("কার্ট আপডেট করা যায়নি। আবার চেষ্টা করুন।");
