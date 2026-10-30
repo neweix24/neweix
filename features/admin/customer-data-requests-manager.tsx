@@ -11,6 +11,7 @@ type RequestItem = {
   resolution_note: string | null;
   created_at: string;
   updated_at: string;
+  customer: { full_name: string | null; display_name: string | null; phone: string | null } | null;
 };
 
 const labels: Record<RequestItem["request_type"], string> = {
@@ -81,7 +82,8 @@ export default function CustomerDataRequestsManager() {
             <h2 className="font-semibold">{labels[item.request_type]}</h2>
             <span className="rounded-full px-3 py-1 text-xs" style={{ background: "var(--bg)" }}>{statuses[item.status]}</span>
           </div>
-          <p className="mt-2 break-all text-xs" style={{ color: "var(--muted)" }}>Customer ID: {item.user_id}</p>
+          <p className="mt-2 text-sm">{item.customer?.full_name || item.customer?.display_name || "নাম পাওয়া যায়নি"} · {item.customer?.phone || "ফোন নেই"}</p>
+          <p className="mt-1 break-all text-xs" style={{ color: "var(--muted)" }}>Customer ID: {item.user_id}</p>
           <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Request: {item.id} · {new Date(item.created_at).toLocaleString("bn-BD")}</p>
           {item.customer_message && <p className="mt-3 whitespace-pre-wrap">{item.customer_message}</p>}
           {item.resolution_note && <p className="mt-2 text-sm">সর্বশেষ নোট: {item.resolution_note}</p>}
