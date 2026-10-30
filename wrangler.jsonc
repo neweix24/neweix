@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "neweix",
-  "main": ".open-next/worker.js",
+  "main": "worker.ts",
   "compatibility_date": "2026-10-23",
   "compatibility_flags": [
     "nodejs_compat"
@@ -22,6 +22,9 @@
   },
   "ai": {
     "binding": "AI"
+  },
+  "triggers": {
+    "crons": ["*/15 * * * *"]
   },
   "assets": {
     "directory": ".open-next/assets",
