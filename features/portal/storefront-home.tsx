@@ -1,0 +1,282 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import styles from "./storefront-home.module.css";
+
+type Product = {
+  id: string; name: string; slug: string; price: number;
+  compare_at_price?: number | null; image_urls: string[] | null;
+  stock: number; is_featured?: boolean;
+};
+type Customer = { name: string; email: string };
+type Category = { id: string; name: string; slug: string };
+
+function money(value: number) {
+  return new Intl.NumberFormat("bn-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(value);
+}
+function readCount(key: string) {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(key) ?? "[]");
+    return Array.isArray(value) ? value.length : 0;
+  } catch { return 0; }
+}
+function readCartCount() {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem("neweix_cart") ?? "[]");
+    return Array.isArray(value) ? value.reduce((sum, item) => {
+      if (!item || typeof item !== "object") return sum;
+      const row = item as Record<string, unknown>;
+      return sum + (typeof row.product_id === "string" && Number.isSafeInteger(row.quantity) && Number(row.quantity) > 0 ? Number(row.quantity) : 0);
+    }, 0) : 0;
+  } catch { return 0; }
+}
+
+export default function StorefrontHome() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [search, setSearch] = useState("");
+  const [cartNotice, setCartNotice] = useState("");
+  const panelRef = useRef<HTMLElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const refreshCounts = useCallback(() => {
+    setCartCount(readCartCount());
+    setWishlistCount(readCount("neweix_wishlist"));
+  }, []);
+
+  useEffect(() => {
+    refreshCounts();
+    const refresh = () => refreshCounts();
+    window.addEventListener("storage", refresh);
+    window.addEventListener("neweix-cart-change", refresh);
+    window.addEventListener("neweix-wishlist-change", refresh);
+    return () => {
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("neweix-cart-change", refresh);
+      window.removeEventListener("neweix-wishlist-change", refresh);
+    };
+  }, [refreshCounts]);
+
+  useEffect(() => {
+    let active = true;
+    async function loadCustomer() {
+      try {
+        const supabase = createBrowserSupabaseClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!active) return;
+        if (!user) { setCustomer(null); return; }
+        const { data: profile } = await supabase.from("customer_profiles").select("full_name").eq("user_id", user.id).maybeSingle();
+        if (!active) return;
+        const metadataName = typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : typeof user.user_metadata?.name === "string" ? user.user_metadata.name : "";
+        setCustomer({ name: profile?.full_name || metadataName || "প্রিয় গ্রাহক", email: user.email ?? "" });
+      } catch { if (active) setCustomer(null); }
+      finally { if (active) setAuthLoading(false); }
+    }
+    void loadCustomer();
+    return () => { active = false; };
+  }, [pathname]);
+
+  useEffect(() => {
+    let active = true;
+    async function loadProducts() {
+      try {
+        const [productResponse, categoryResponse] = await Promise.all([
+          fetch("/api/products", { cache: "no-store" }),
+          fetch("/api/categories", { cache: "no-store" }),
+        ]);
+        const [productResult, categoryResult] = await Promise.all([
+          productResponse.json(),
+          categoryResponse.json(),
+        ]);
+        if (!productResponse.ok || !Array.isArray(productResult.data)) throw new Error("Products unavailable");
+        if (active) setProducts(productResult.data.slice(0, 8));
+        if (categoryResponse.ok && Array.isArray(categoryResult.categories) && active) {
+          setCategories(categoryResult.categories.filter((item: unknown): item is Category =>
+            Boolean(item) && typeof item === "object" &&
+            typeof (item as Category).id === "string" &&
+            typeof (item as Category).name === "string" &&
+            typeof (item as Category).slug === "string"
+          ).slice(0, 12));
+        }
+      } catch { if (active) setProducts([]); }
+      finally { if (active) setProductsLoading(false); }
+    }
+    void loadProducts();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const bodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    panelRef.current?.focus();
+    function onKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") { setDrawerOpen(false); return; }
+      if (event.key !== "Tab" || !panelRef.current) return;
+      const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex="0"]'));
+      if (!focusable.length) { event.preventDefault(); return; }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = bodyOverflow;
+      previous?.focus();
+    };
+  }, [drawerOpen]);
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const term = search.trim();
+    router.push(term ? `/products?search=${encodeURIComponent(term)}` : "/products");
+  }
+
+  function addToCart(product: Product) {
+    if (!Number.isSafeInteger(Number(product.stock)) || Number(product.stock) < 1) {
+      setCartNotice("পণ্যটি বর্তমানে স্টকে নেই।");
+      return;
+    }
+    try {
+      const parsed: unknown = JSON.parse(localStorage.getItem("neweix_cart") ?? "[]");
+      if (!Array.isArray(parsed)) throw new Error("Invalid cart");
+      const quantities = new Map<string, number>();
+      for (const value of parsed) {
+        if (!value || typeof value !== "object") continue;
+        const item = value as Record<string, unknown>;
+        if (typeof item.product_id !== "string" || !Number.isSafeInteger(item.quantity) || Number(item.quantity) < 1) continue;
+        quantities.set(item.product_id, Math.min(100, (quantities.get(item.product_id) ?? 0) + Number(item.quantity)));
+      }
+      const current = quantities.get(product.id) ?? 0;
+      if (current >= Math.min(100, Number(product.stock))) {
+        setCartNotice("স্টকে থাকা সর্বোচ্চ পরিমাণ ইতিমধ্যে কার্টে আছে।");
+        return;
+      }
+      quantities.set(product.id, current + 1);
+      localStorage.setItem("neweix_cart", JSON.stringify(Array.from(quantities, ([product_id, quantity]) => ({ product_id, quantity }))));
+      window.dispatchEvent(new Event("neweix-cart-change"));
+      setCartNotice("পণ্যটি কার্টে যোগ হয়েছে।");
+    } catch {
+      setCartNotice("কার্ট আপডেট করা যায়নি। আবার চেষ্টা করুন।");
+    }
+  }
+
+  async function logout() {
+    const supabase = createBrowserSupabaseClient();
+    const { error } = await supabase.auth.signOut();
+    if (!error) {
+      setCustomer(null);
+      setDrawerOpen(false);
+      router.refresh();
+    }
+  }
+
+  const featured = products.filter((product) => product.is_featured && product.stock > 0);
+  const visibleProducts = (featured.length ? featured : products).slice(0, 4);
+
+  return (
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <Link href="/" className={styles.brand} aria-label="NEWEIX হোম"><span>N</span> NEWEIX</Link>
+        <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
+          <label className={styles.srOnly} htmlFor="home-product-search">পণ্য খুঁজুন</label>
+          <input id="home-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="কোন পণ্য খুঁজছেন?" />
+          <button type="submit" aria-label="খুঁজুন">⌕</button>
+        </form>
+        <nav className={styles.desktopNav} aria-label="প্রধান নেভিগেশন">
+          <Link href="/products">সব পণ্য</Link>
+          <Link href="/track-order">অর্ডার ট্র্যাক</Link>
+          <Link href="/wishlist">পছন্দের তালিকা</Link>
+          <Link href="/cart" className={styles.cartLink}>কার্ট <span>{cartCount}</span></Link>
+        </nav>
+        <button ref={triggerRef} className={styles.accountButton} type="button" onClick={() => setDrawerOpen(true)} aria-haspopup="dialog" aria-expanded={drawerOpen}>
+          <span aria-hidden="true">☰</span><span>মাই অ্যাকাউন্ট</span>
+        </button>
+      </header>
+
+      <main className={styles.main}>
+        <section className={styles.hero}>
+          <div className={styles.heroText}>
+            <span className={styles.eyebrow}>WELCOME TO NEWEIX</span>
+            <h1>আপনার পছন্দের কেনাকাটা, <em>এখন আরও সহজ।</em></h1>
+            <p>পছন্দের পণ্য খুঁজুন, কার্টে যোগ করুন এবং সহজে অর্ডার করুন। আপনার অর্ডারের অগ্রগতিও রাখুন নিজের নিয়ন্ত্রণে।</p>
+            <div className={styles.heroActions}>
+              <Link href="/products" className={styles.primaryButton}>সব পণ্য দেখুন <span>→</span></Link>
+              <Link href="/track-order" className={styles.secondaryButton}>অর্ডার ট্র্যাক করুন</Link>
+            </div>
+            <div className={styles.trustLine}><span>✓</span> অর্ডার ট্র্যাকিং <span>✓</span> সহজ চেকআউট <span>✓</span> বাংলা অভিজ্ঞতা</div>
+          </div>
+          <div className={styles.heroVisual} aria-hidden="true"><div className={styles.orbit}></div><div className={styles.heroMonogram}>N</div><span className={styles.floatTag}>NEWEIX<br/>SHOP SMART</span></div>
+        </section>
+
+        {categories.length > 0 && <section className={styles.categorySection} aria-labelledby="category-title">
+          <div className={styles.categoryHeading}><div><span className={styles.eyebrow}>SHOP BY CATEGORY</span><h2 id="category-title">ক্যাটাগরি অনুযায়ী পণ্য</h2></div><Link href="/products">সব ক্যাটাগরি →</Link></div>
+          <div className={styles.categoryList}>
+            {categories.map((category) => <Link key={category.id} href={`/products?category=${encodeURIComponent(category.slug)}`}>{category.name}<span aria-hidden="true">→</span></Link>)}
+          </div>
+        </section>}
+
+        <section className={styles.quickLinks} aria-label="দ্রুত সেবা">
+          <Link href="/products"><span>▦</span><strong>সব পণ্য</strong><small>ক্যাটালগ দেখুন</small></Link>
+          <Link href="/products?sort=featured"><span>✦</span><strong>বিশেষ পণ্য</strong><small>বাছাইকৃত পণ্য</small></Link>
+          <Link href="/track-order"><span>⌁</span><strong>অর্ডার ট্র্যাক</strong><small>অবস্থা জানুন</small></Link>
+          <Link href="/wishlist"><span>♡</span><strong>পছন্দের তালিকা</strong><small>{wishlistCount}টি সংরক্ষিত</small></Link>
+        </section>
+
+        <section className={styles.productSection} aria-labelledby="featured-title">
+          <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>DISCOVER NEWEIX</span><h2 id="featured-title">আপনার জন্য পণ্য</h2><p>স্টোরে বর্তমানে থাকা পণ্য থেকে বেছে নিন।</p></div><Link href="/products">সব পণ্য দেখুন →</Link></div>
+          {cartNotice && <p className={styles.cartNotice} role="status">{cartNotice}<button type="button" onClick={() => setCartNotice("")} aria-label="বার্তা বন্ধ করুন">×</button></p>}
+          {productsLoading ? <p className={styles.state} role="status">পণ্য লোড হচ্ছে…</p> : visibleProducts.length ? (
+            <div className={styles.productGrid}>{visibleProducts.map((product) => (
+              <article className={styles.productCard} key={product.id}>
+                <Link href={`/products/${encodeURIComponent(product.slug)}`} className={styles.productImage}>
+                  {product.image_urls?.[0] ? <img src={product.image_urls[0]} alt={product.name} loading="lazy"/> : <span>NEWEIX</span>}
+                  {product.is_featured && <small>বিশেষ পণ্য</small>}
+                </Link>
+                <div className={styles.productInfo}><Link href={`/products/${encodeURIComponent(product.slug)}`}>{product.name}</Link><strong>{money(Number(product.price))}</strong>{product.compare_at_price != null && product.compare_at_price > product.price && <del>{money(Number(product.compare_at_price))}</del>}<span className={product.stock > 0 ? styles.inStock : styles.outStock}>{product.stock > 0 ? "স্টকে আছে" : "স্টক শেষ"}</span><button type="button" disabled={product.stock < 1} onClick={() => addToCart(product)} className={styles.addToCart}>কার্টে যোগ করুন</button></div>
+              </article>
+            ))}</div>
+          ) : <div className={styles.emptyProducts}>এখনো প্রদর্শনের মতো পণ্য পাওয়া যায়নি। <Link href="/products">ক্যাটালগ দেখুন</Link></div>}
+        </section>
+
+        <section className={styles.helpStrip}><div><span className={styles.eyebrow}>NEED A HAND?</span><h2>কেনাকাটায় সাহায্য লাগবে?</h2><p>সাধারণ প্রশ্নের উত্তর বা যোগাযোগের তথ্য সহজেই খুঁজে নিন।</p></div><div><Link href="/faq">সাধারণ জিজ্ঞাসা</Link><Link href="/contact">যোগাযোগ করুন</Link></div></section>
+      </main>
+
+      <footer className={styles.footer}><Link href="/" className={styles.brand}><span>N</span> NEWEIX</Link><p>স্মার্ট কেনাকাটা, আরও সুন্দর অভিজ্ঞতা।</p><nav aria-label="ফুটার"><Link href="/about">আমাদের সম্পর্কে</Link><Link href="/contact">যোগাযোগ</Link><Link href="/faq">সাধারণ জিজ্ঞাসা</Link><Link href="/privacy">গোপনীয়তা</Link><Link href="/terms">শর্তাবলি</Link></nav><small>© {new Date().getFullYear()} NEWEIX. সর্বস্বত্ব সংরক্ষিত।</small></footer>
+
+      <nav className={styles.bottomNav} aria-label="মোবাইল নেভিগেশন">
+        <Link href="/" aria-current="page"><span>⌂</span>হোম</Link>
+        <Link href="/products"><span>▦</span>ক্যাটাগরি</Link>
+        <button type="button" onClick={() => document.getElementById("home-product-search")?.focus()}><span>⌕</span>সার্চ</button>
+        <Link href="/cart"><span>▱<b>{cartCount > 99 ? "99+" : cartCount}</b></span>কার্ট</Link>
+        <button type="button" onClick={() => setDrawerOpen(true)}><span>☰</span>অ্যাকাউন্ট</button>
+      </nav>
+
+      {drawerOpen && <div className={styles.overlay} onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerOpen(false); }}>
+        <aside ref={panelRef} className={styles.drawer} role="dialog" aria-modal="true" aria-labelledby="drawer-title" tabIndex={-1}>
+          <div className={styles.drawerHead}><div><span className={styles.eyebrow}>NEWEIX CUSTOMER</span><h2 id="drawer-title">মাই অ্যাকাউন্ট</h2></div><button type="button" onClick={() => setDrawerOpen(false)} aria-label="মেনু বন্ধ করুন">×</button></div>
+          {authLoading ? <div className={styles.customerCard}>অ্যাকাউন্টের তথ্য লোড হচ্ছে…</div> : customer ? <div className={styles.customerCard}><span className={styles.avatar}>{customer.name.slice(0,1).toUpperCase()}</span><div><strong>{customer.name}</strong><small>{customer.email}</small></div></div> : <div className={styles.guestCard}><strong>স্বাগতম!</strong><p>অর্ডার ও প্রোফাইল পরিচালনা করতে লগইন করুন।</p><Link href="/auth/customer-login?next=/account" onClick={() => setDrawerOpen(false)}>লগইন / অ্যাকাউন্ট তৈরি</Link></div>}
+          <div className={styles.drawerGroup}><span>আমার কেনাকাটা</span><Link href="/orders" onClick={() => setDrawerOpen(false)}>▤ <span>আমার অর্ডার</span></Link><Link href="/track-order" onClick={() => setDrawerOpen(false)}>⌁ <span>অর্ডার ট্র্যাক করুন</span></Link><Link href="/wishlist" onClick={() => setDrawerOpen(false)}>♡ <span>পছন্দের তালিকা</span><b>{wishlistCount}</b></Link><Link href="/cart" onClick={() => setDrawerOpen(false)}>▱ <span>শপিং কার্ট</span><b>{cartCount}</b></Link></div>
+          <div className={styles.drawerGroup}><span>আমার অ্যাকাউন্ট</span><Link href="/account" onClick={() => setDrawerOpen(false)}>◎ <span>প্রোফাইল ও তথ্য</span></Link><Link href="/account/theme" onClick={() => setDrawerOpen(false)}>◐ <span>থিম ও পছন্দ</span></Link></div>
+          <div className={styles.drawerGroup}><span>সাহায্য ও সহায়তা</span><Link href="/faq" onClick={() => setDrawerOpen(false)}>? <span>সাধারণ জিজ্ঞাসা</span></Link><Link href="/contact" onClick={() => setDrawerOpen(false)}>✉ <span>যোগাযোগ</span></Link></div>
+          {customer && <button className={styles.logoutButton} type="button" onClick={() => void logout()}>লগআউট</button>}
+          <p className={styles.drawerFoot}>আপনার কেনাকাটা, আপনার নিয়ন্ত্রণে।</p>
+        </aside>
+      </div>}
+    </div>
+  );
+}

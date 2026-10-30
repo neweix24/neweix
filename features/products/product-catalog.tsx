@@ -17,6 +17,7 @@ type Product = {
   is_featured?: boolean;
 };
 
+type Category = { id: string; name: string; slug: string };
 type ApiResponse = { data?: Product[] };
 
 function money(value: number) {
@@ -31,6 +32,8 @@ export default function ProductCatalog() {
   const [products, setProducts] = useState<Product[]>([]);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"featured" | "price-asc" | "price-desc">("featured");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categorySlug, setCategorySlug] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [notice, setNotice] = useState("");
@@ -54,7 +57,24 @@ export default function ProductCatalog() {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setQuery(params.get("search") ?? "");
+    const requestedSort = params.get("sort");
+    if (requestedSort === "featured" || requestedSort === "price-asc" || requestedSort === "price-desc") setSort(requestedSort);
+    setCategorySlug(params.get("category") ?? "");
     void loadProducts();
+    fetch("/api/categories", { cache: "no-store" })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok || !Array.isArray(result.categories)) return;
+        setCategories(result.categories.filter((item: unknown): item is Category =>
+          Boolean(item) && typeof item === "object" &&
+          typeof (item as Category).id === "string" &&
+          typeof (item as Category).name === "string" &&
+          typeof (item as Category).slug === "string"
+        ));
+      })
+      .catch(() => setCategories([]));
     try {
       const saved: unknown = JSON.parse(localStorage.getItem("neweix_wishlist") ?? "[]");
       if (Array.isArray(saved)) setWishlist(Array.from(new Set(saved.filter((id): id is string => typeof id === "string"))).slice(0, 200));
@@ -67,7 +87,11 @@ export default function ProductCatalog() {
 
   const filtered = useMemo(() => {
     const term = query.trim().toLocaleLowerCase();
-    const matches = !term ? [...products] : products.filter((product) =>
+    const selectedCategory = categories.find((category) => category.slug === categorySlug);
+    const categoryMatches = selectedCategory
+      ? products.filter((product) => product.category_id === selectedCategory.id)
+      : products;
+    const matches = !term ? [...categoryMatches] : categoryMatches.filter((product) =>
       [product.name, product.description ?? ""].some((value) =>
         value.toLocaleLowerCase().includes(term)
       )
@@ -76,12 +100,13 @@ export default function ProductCatalog() {
     if (sort === "price-desc") matches.sort((a, b) => Number(b.price) - Number(a.price));
     if (sort === "featured") matches.sort((a, b) => Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)));
     return matches;
-  }, [products, query, sort]);
+  }, [products, query, sort, categories, categorySlug]);
 
   function toggleWishlist(product: Product) {
     const next = wishlist.includes(product.id) ? wishlist.filter((id) => id !== product.id) : [...wishlist, product.id].slice(-200);
     try {
       localStorage.setItem("neweix_wishlist", JSON.stringify(next));
+      window.dispatchEvent(new Event("neweix-wishlist-change"));
       setWishlist(next);
       setNotice(next.includes(product.id) ? "পণ্যটি পছন্দের তালিকায় যোগ হয়েছে।" : "পণ্যটি পছন্দের তালিকা থেকে সরানো হয়েছে।");
     } catch {
@@ -121,6 +146,7 @@ export default function ProductCatalog() {
       quantities.set(product.id, current + 1);
       const cart = Array.from(quantities, ([product_id, quantity]) => ({ product_id, quantity }));
       localStorage.setItem("neweix_cart", JSON.stringify(cart));
+      window.dispatchEvent(new Event("neweix-cart-change"));
       setNotice("পণ্যটি কার্টে যোগ হয়েছে।");
     } catch {
       setNotice("কার্ট আপডেট করা যায়নি। আবার চেষ্টা করুন।");
@@ -153,6 +179,13 @@ export default function ProductCatalog() {
             placeholder="পণ্যের নাম লিখুন..."
           />
         </label>
+        {categories.length > 0 && <label className={styles.search} style={{ marginTop: 12 }}>
+          <span className={styles.srOnly}>ক্যাটাগরি নির্বাচন করুন</span>
+          <select aria-label="ক্যাটাগরি নির্বাচন করুন" value={categorySlug} onChange={(event) => setCategorySlug(event.target.value)}>
+            <option value="">সব ক্যাটাগরি</option>
+            {categories.map((category) => <option key={category.id} value={category.slug}>{category.name}</option>)}
+          </select>
+        </label>}
         <label className={styles.search} style={{ marginTop: 12 }}>
           <span className={styles.srOnly}>পণ্যের সাজানোর ধরন</span>
           <select aria-label="পণ্য সাজান" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
