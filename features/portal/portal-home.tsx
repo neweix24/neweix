@@ -82,6 +82,13 @@ export default function PortalHome() {
         <footer className={styles.footer}>
           <strong>NEWEIX</strong>
           <span>স্মার্ট কেনাকাটা, আরও সুন্দর অভিজ্ঞতা।</span>
+          <nav aria-label="ফুটার নেভিগেশন">
+            <Link href="/about">আমাদের সম্পর্কে</Link>
+            <Link href="/contact">যোগাযোগ</Link>
+            <Link href="/faq">সাধারণ জিজ্ঞাসা</Link>
+            <Link href="/privacy">গোপনীয়তা</Link>
+            <Link href="/terms">শর্তাবলি</Link>
+          </nav>
           <span>© {new Date().getFullYear()} NEWEIX. সর্বস্বত্ব সংরক্ষিত।</span>
         </footer>
       </main>
