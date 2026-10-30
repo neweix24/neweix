@@ -267,6 +267,13 @@ export async function PATCH(request: Request) {
         );
       }
 
+      if (error.message.includes("ORDER_CANNOT_BE_CANCELLED")) {
+        return NextResponse.json(
+          { error: "পাঠানো বা ডেলিভারি সম্পন্ন অর্ডার সরাসরি বাতিল করা যাবে না। Return গ্রহণ ও পণ্য পরীক্ষা করে আলাদা প্রক্রিয়ায় স্টক আপডেট করুন।" },
+          { status: 409 }
+        );
+      }
+
       console.error("Order status update RPC failed:", error.message);
       return NextResponse.json(
         { error: "অর্ডারের স্ট্যাটাস পরিবর্তন করা যায়নি।" },
