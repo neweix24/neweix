@@ -45,6 +45,14 @@ begin
     raise exception 'ORDER_NOT_FOUND';
   end if;
 
+  -- Never restock an order that has already left the warehouse.
+  -- A returned shipment must be inspected and restocked through a separate
+  -- receiving workflow, not by changing its status to cancelled.
+  if p_new_status = 'cancelled'
+     and v_old_status in ('shipped', 'delivered', 'returned') then
+    raise exception 'ORDER_CANNOT_BE_CANCELLED';
+  end if;
+
   if v_old_status = p_new_status then
     return pg_catalog.jsonb_build_object(
       'order_id', p_order_id,
