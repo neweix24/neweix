@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { normalizeBangladeshPhone } from "@/lib/phone-verification";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -111,7 +112,7 @@ export async function POST(request: Request) {
     rawBody.customer_name
   );
 
-  const customerPhone = cleanString(
+  let customerPhone = cleanString(
     rawBody.customer_phone
   );
 
@@ -423,10 +424,43 @@ export async function POST(request: Request) {
       );
     }
 
-    // Resolve identity only from the verified server-side session.
+    // Orders are restricted to signed-in customers with a server-verified phone.
     const sessionClient = await createServerSupabaseClient();
-    const { data: authData } = await sessionClient.auth.getUser();
+    const { data: authData, error: sessionError } =
+      await sessionClient.auth.getUser();
     const authenticatedCustomerId = authData.user?.id ?? null;
+
+    if (sessionError || !authenticatedCustomerId) {
+      return errorResponse("অর্ডার করতে আগে আপনার অ্যাকাউন্টে লগইন করুন।", 401);
+    }
+
+    const { data: customerProfile, error: profileError } = await supabase
+      .from("customer_profiles")
+      .select("phone, phone_verified_at")
+      .eq("user_id", authenticatedCustomerId)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error("Customer phone verification lookup failed:", profileError.message);
+      return errorResponse("ফোন নম্বর যাচাই করা যাচ্ছে না। পরে আবার চেষ্টা করুন।", 503);
+    }
+
+    const verifiedPhone =
+      customerProfile?.phone_verified_at && typeof customerProfile.phone === "string"
+        ? normalizeBangladeshPhone(customerProfile.phone)
+        : null;
+    const submittedPhone =
+      customerPhone ? normalizeBangladeshPhone(customerPhone) : null;
+
+    if (!verifiedPhone) {
+      return errorResponse("অর্ডার করতে আগে অ্যাকাউন্টে ফোন নম্বর OTP দিয়ে যাচাই করুন।", 403);
+    }
+
+    if (!submittedPhone || submittedPhone !== verifiedPhone) {
+      return errorResponse("চেকআউটের ফোন নম্বর আপনার যাচাইকৃত অ্যাকাউন্ট নম্বরের সঙ্গে মিলছে না।", 400);
+    }
+
+    customerPhone = verifiedPhone;
 
     const { data, error } =
       await supabase.rpc(
