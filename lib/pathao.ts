@@ -143,3 +143,11 @@ export async function getPathaoCities() {
     token,
   );
 }
+
+export async function testPathaoConnection() {
+  const config = await getPathaoConfig();
+  await getPathaoAccessToken(config);
+  return {
+    environment: config.baseUrl.includes("sandbox") ? "sandbox" : "production",
+  };
+}
