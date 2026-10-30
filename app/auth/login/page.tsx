@@ -10,6 +10,7 @@ const router = useRouter();
 
 const [email, setEmail] = useState("");
 const [password, setPassword] = useState("");
+const [showPassword, setShowPassword] = useState(false);
 const [message, setMessage] = useState("");
 const [busy, setBusy] = useState(false);
 
@@ -123,12 +124,25 @@ return (
     <label htmlFor="password">পাসওয়ার্ড</label>
     <input
       id="password"
-      type="password"
+      type={showPassword ? "text" : "password"}
+      name="password"
       autoComplete="current-password"
+      autoCapitalize="none"
+      autoCorrect="off"
+      spellCheck={false}
       required
       value={password}
-      onChange={(event) => setPassword(event.target.value)}
+      onChange={(event) => setPassword(event.currentTarget.value)}
     />
+    <button
+      type="button"
+      className="password-visibility-button"
+      aria-label={showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"}
+      aria-pressed={showPassword}
+      onClick={() => setShowPassword((visible) => !visible)}
+    >
+      {showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"}
+    </button>
 
     <p>
       <Link href="/auth/forgot-password">
