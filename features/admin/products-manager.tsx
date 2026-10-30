@@ -179,7 +179,7 @@ export default function ProductsManager({ role }: Props) {
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => void loadProducts(true)} disabled={loading || refreshing} className="rounded-xl border px-4 py-2 text-sm font-semibold disabled:opacity-50" style={{ borderColor: "var(--border)" }}>{refreshing ? "রিফ্রেশ হচ্ছে…" : "রিফ্রেশ"}</button>
-            {canManageProducts && <button type="button" onClick={() => setShowForm((value) => !value)} className="rounded-xl px-4 py-2 text-sm font-bold" style={{ background: "var(--primary)", color: "#101510" }}>{showForm ? "ফর্ম বন্ধ করুন" : "+ নতুন পণ্য"}</button>}
+            {canManageProducts && <button type="button" onClick={() => setShowForm((value) => !value)} className="rounded-xl px-4 py-2 text-sm font-bold" style={{ background: "var(--primary)", color: "#080b09" }}>{showForm ? "ফর্ম বন্ধ করুন" : "+ নতুন পণ্য"}</button>}
           </div>
         </div>
 
@@ -200,7 +200,7 @@ export default function ProductsManager({ role }: Props) {
             <label className="grid gap-1 text-sm">Low stock threshold<input required type="number" min="0" value={form.low_stock_threshold} onChange={(e) => updateField("low_stock_threshold", e.target.value)} className="rounded-lg border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--ink)" }} /></label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_active} onChange={(e) => updateField("is_active", e.target.checked)} /> পণ্য সক্রিয় রাখুন</label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_featured} onChange={(e) => updateField("is_featured", e.target.checked)} /> Featured পণ্য</label>
-            <div className="flex flex-wrap gap-2 sm:col-span-2"><button type="submit" disabled={saving} className="rounded-xl px-5 py-3 font-bold disabled:opacity-50" style={{ background: "var(--primary)", color: "#101510" }}>{saving ? "সংরক্ষণ হচ্ছে…" : "পণ্য তৈরি করুন"}</button><button type="button" onClick={() => { setForm(emptyForm); setCategoryQuery(""); setCategorySelectionMode("auto"); }} className="rounded-xl border px-5 py-3" style={{ borderColor: "var(--border)" }}>ফর্ম রিসেট</button></div>
+            <div className="flex flex-wrap gap-2 sm:col-span-2"><button type="submit" disabled={saving} className="rounded-xl px-5 py-3 font-bold disabled:opacity-50" style={{ background: "var(--primary)", color: "#080b09" }}>{saving ? "সংরক্ষণ হচ্ছে…" : "পণ্য তৈরি করুন"}</button><button type="button" onClick={() => { setForm(emptyForm); setCategoryQuery(""); setCategorySelectionMode("auto"); }} className="rounded-xl border px-5 py-3" style={{ borderColor: "var(--border)" }}>ফর্ম রিসেট</button></div>
           </form>
         )}
 
