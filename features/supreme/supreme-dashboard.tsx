@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useEffect, useState } from "react";
 
 type Product = {
@@ -148,12 +150,13 @@ export default function SupremeDashboard() {
             </div>
           )}
 
-          <a
+          <Link
             href="/admin/products"
-            className="mt-5 inline-block rounded-lg border border-blue-700 px-4 py-3 font-medium text-blue-700"
+            className="mt-5 inline-block rounded-lg border px-4 py-3 font-medium"
+            style={{ borderColor: "var(--primary)", color: "var(--primary)" }}
           >
             সব পণ্য ও স্টক দেখুন →
-          </a>
+          </Link>
         </section>
       </div>
     </main>
