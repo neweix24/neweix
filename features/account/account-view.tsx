@@ -237,6 +237,7 @@ export default function AccountView() {
               <Link href="/wishlist">পছন্দের তালিকা</Link>
               <Link href="/cart">শপিং কার্ট</Link>
               <Link href="/account/theme">🎨 নিজের থিম সাজাও</Link>
+              <Link href="/account/addresses">আমার ঠিকানা</Link>
               <Link href="/account/privacy">গোপনীয়তা ও পছন্দ</Link>
             </nav>
 
