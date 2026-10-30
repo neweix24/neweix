@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import AddToCartButton from "@/app/products/[slug]/AddToCartButton";
+import CompareButton from "@/features/compare/compare-button";
 import styles from "./product-details.module.css";
 
 export type ProductDetailsData = {
@@ -41,6 +42,7 @@ export default function ProductDetails({ product }: { product: ProductDetailsDat
           <p className={product.stock > 0 ? styles.stock : styles.out}>{product.stock > 0 ? `স্টকে আছে · ${product.stock} টি` : "বর্তমানে স্টক শেষ"}</p>
           {product.description && <p className={styles.description}>{product.description}</p>}
           <AddToCartButton productId={product.id} disabled={product.stock <= 0} maxQuantity={product.stock} />
+          <CompareButton productId={product.id} />
           <div className={styles.assurance}><span>নিরাপদ অর্ডার</span><span>বাংলাদেশজুড়ে সেবা</span><span>সহজ অর্ডার ট্র্যাকিং</span></div>
         </section>
       </div>
