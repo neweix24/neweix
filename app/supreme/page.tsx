@@ -1,5 +1,5 @@
 import { requireStaff } from "@/lib/auth";
-import SupremeDashboardClient from "./SupremeDashboardClient";
+import SupremeDashboard from "@/features/supreme/supreme-dashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +31,7 @@ export default async function SupremePage() {
         </div>
       </header>
 
-      <SupremeDashboardClient />
+      <SupremeDashboard />
     </div>
   );
 }
