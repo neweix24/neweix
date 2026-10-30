@@ -31,7 +31,7 @@ export async function GET() {
         .eq("user_id", user.id).order("created_at", { ascending: false }),
       admin.from("orders")
         .select("id,order_number,customer_name,customer_phone,customer_email,shipping_address,shipping_city,subtotal,delivery_fee,total,status,payment_method,payment_status,created_at")
-        .eq("customer_user_id", user.id).order("created_at", { ascending: false }).limit(500),
+        .eq("customer_id", user.id).order("created_at", { ascending: false }).limit(500),
     ]);
 
     const failures = [profileResult.error, addressesResult.error, preferencesResult.error, consentsResult.error, ordersResult.error].filter(Boolean);
