@@ -5,7 +5,7 @@ import CustomerDataRequestsManager from "@/features/admin/customer-data-requests
 export const dynamic = "force-dynamic";
 
 export default async function AdminCustomerDataRequestsPage() {
-  const staff = await requireStaff(["supreme", "admin"]);
+  const staff = await requireStaff(["supreme"]);
   return (
     <main className="min-h-screen px-4 py-10 sm:px-6" style={{ background: "var(--bg)", color: "var(--ink)" }}>
       <div className="mx-auto max-w-7xl">
