@@ -40,7 +40,7 @@ jobs:
         run: npx opennextjs-cloudflare build
 
   deploy:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     name: Build and deploy production Worker
     runs-on: ubuntu-latest
     timeout-minutes: 30
