@@ -4,6 +4,7 @@ import Link from "next/link";
 import AddToCartButton from "@/app/products/[slug]/AddToCartButton";
 import CompareButton from "@/features/compare/compare-button";
 import ProductReviewPanel from "@/features/reviews/product-review-panel";
+import RecentlyViewedProducts from "@/features/products/recently-viewed";
 import styles from "./product-details.module.css";
 
 export type ProductDetailsData = {
@@ -48,6 +49,7 @@ export default function ProductDetails({ product }: { product: ProductDetailsDat
         </section>
       </div>
       <ProductReviewPanel />
+      <RecentlyViewedProducts currentProductId={product.id} />
     </main>
   );
 }
