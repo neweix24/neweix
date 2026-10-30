@@ -1,5 +1,5 @@
 create or replace function public.neweix_search_products(p_query text default '', p_query_embedding extensions.vector(1024) default null, p_category_id uuid default null, p_min_price integer default null, p_max_price integer default null, p_in_stock boolean default false, p_sort text default 'relevance', p_limit integer default 24, p_offset integer default 0)
-returns table(id uuid,name text,slug text,description text,price integer,compare_at_price integer,image_urls text[],stock integer,category_id uuid,sku text,is_featured boolean,created_at timestamptz,relevance_score double precision)
+returns table(id uuid,name text,slug text,description text,price numeric,compare_at_price numeric,image_urls text[],stock integer,category_id uuid,sku text,is_featured boolean,created_at timestamptz,relevance_score double precision)
 language sql stable security invoker set search_path = '' as $$
 with q as (select lower(btrim(coalesce(p_query,''))) term), candidates as (
  select p.id,p.name,p.slug,p.description,p.price,p.compare_at_price,p.image_urls,p.stock,p.category_id,p.sku,p.is_featured,p.created_at,
