@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 
 const persistentCookieOptions = {
   path: "/",
+  domain: process.env.NODE_ENV === "production" ? ".neweix.com" : undefined,
   sameSite: "lax" as const,
   secure: process.env.NODE_ENV === "production",
   maxAge: 60 * 60 * 24 * 365,
