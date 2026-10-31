@@ -424,43 +424,41 @@ export async function POST(request: Request) {
       );
     }
 
-    // Orders are restricted to signed-in customers with a server-verified phone.
+    // Guest orders are allowed. Link an order to a customer account only
+    // when that account has a phone number verified by our server-side OTP flow.
     const sessionClient = await createServerSupabaseClient();
-    const { data: authData, error: sessionError } =
-      await sessionClient.auth.getUser();
-    const authenticatedCustomerId = authData.user?.id ?? null;
+    const { data: authData } = await sessionClient.auth.getUser();
+    const signedInCustomerId = authData.user?.id ?? null;
+    let linkedCustomerId: string | null = null;
 
-    if (sessionError || !authenticatedCustomerId) {
-      return errorResponse("অর্ডার করতে আগে আপনার অ্যাকাউন্টে লগইন করুন।", 401);
+    if (signedInCustomerId) {
+      const { data: customerProfile, error: profileError } = await supabase
+        .from("customer_profiles")
+        .select("phone, phone_verified_at")
+        .eq("user_id", signedInCustomerId)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Customer phone verification lookup failed:", profileError.message);
+        return errorResponse("ফোন নম্বর যাচাই করা যাচ্ছে না। পরে আবার চেষ্টা করুন।", 503);
+      }
+
+      const verifiedPhone =
+        customerProfile?.phone_verified_at && typeof customerProfile.phone === "string"
+          ? normalizeBangladeshPhone(customerProfile.phone)
+          : null;
+
+      // Unverified accounts may still use guest checkout, but their order
+      // is not associated with the account until phone verification succeeds.
+      if (verifiedPhone) {
+        const submittedPhone = normalizeBangladeshPhone(customerPhone);
+        if (!submittedPhone || submittedPhone !== verifiedPhone) {
+          return errorResponse("চেকআউটের ফোন নম্বর আপনার যাচাইকৃত অ্যাকাউন্ট নম্বরের সঙ্গে মিলছে না।", 400);
+        }
+        customerPhone = verifiedPhone;
+        linkedCustomerId = signedInCustomerId;
+      }
     }
-
-    const { data: customerProfile, error: profileError } = await supabase
-      .from("customer_profiles")
-      .select("phone, phone_verified_at")
-      .eq("user_id", authenticatedCustomerId)
-      .maybeSingle();
-
-    if (profileError) {
-      console.error("Customer phone verification lookup failed:", profileError.message);
-      return errorResponse("ফোন নম্বর যাচাই করা যাচ্ছে না। পরে আবার চেষ্টা করুন।", 503);
-    }
-
-    const verifiedPhone =
-      customerProfile?.phone_verified_at && typeof customerProfile.phone === "string"
-        ? normalizeBangladeshPhone(customerProfile.phone)
-        : null;
-    const submittedPhone =
-      customerPhone ? normalizeBangladeshPhone(customerPhone) : null;
-
-    if (!verifiedPhone) {
-      return errorResponse("অর্ডার করতে আগে অ্যাকাউন্টে ফোন নম্বর OTP দিয়ে যাচাই করুন।", 403);
-    }
-
-    if (!submittedPhone || submittedPhone !== verifiedPhone) {
-      return errorResponse("চেকআউটের ফোন নম্বর আপনার যাচাইকৃত অ্যাকাউন্ট নম্বরের সঙ্গে মিলছে না।", 400);
-    }
-
-    customerPhone = verifiedPhone;
 
     const { data, error } =
       await supabase.rpc(
@@ -478,7 +476,7 @@ export async function POST(request: Request) {
               : transactionId,
           p_items: items,
           p_coupon_code: couponCode,
-          p_customer_id: authenticatedCustomerId,
+          p_customer_id: linkedCustomerId,
           p_delivery_fee_payment_method: paymentMethod === "cod" ? deliveryFeePaymentMethod : null,
           p_delivery_fee_payment_transaction_id: paymentMethod === "cod" ? deliveryFeeTransactionId : null,
         }
