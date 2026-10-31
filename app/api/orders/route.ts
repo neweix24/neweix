@@ -434,8 +434,13 @@ export async function POST(request: Request) {
     // Guest orders are allowed. Link an order to a customer account only
     // when that account has a phone number verified by our server-side OTP flow.
     const sessionClient = await createServerSupabaseClient();
-    const { data: authData } = await sessionClient.auth.getUser();
-    const signedInCustomerId = authData.user?.id ?? null;
+    const { data: authData, error: authError } = await sessionClient.auth.getClaims();
+    const claimSubject = authData?.claims?.sub;
+    if (authError) {
+      console.error("Customer session verification failed:", authError.message);
+      return errorResponse("লগইন সেশন যাচাই করা যাচ্ছে না। আবার লগইন করুন।", 401);
+    }
+    const signedInCustomerId = typeof claimSubject === "string" ? claimSubject : null;
     let linkedCustomerId: string | null = null;
 
     if (signedInCustomerId) {
