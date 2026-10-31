@@ -340,11 +340,11 @@ export default function AccountView() {
 
               <div className="phone-verification">
                 <strong>ফোন নম্বর যাচাই</strong>
-                <p>নতুন নম্বর OTP দিয়ে যাচাই না হওয়া পর্যন্ত আগের যাচাইকৃত নম্বরই অর্ডারের জন্য সক্রিয় থাকবে। OTP-এর মেয়াদ ৫ মিনিট।</p>
+                <p>অ্যাকাউন্টের অতিরিক্ত সুবিধা এবং অর্ডার অ্যাকাউন্টে সংরক্ষণের জন্য ফোন নম্বর OTP দিয়ে যাচাই করুন। OTP-এর মেয়াদ ৫ মিনিট।</p>
                 {phoneVerified ? (
                   <p className="success" role="status">যাচাইকৃত নম্বর: {verifiedPhone}</p>
                 ) : (
-                  <p className="error">অর্ডার করতে ফোন নম্বর যাচাই করা বাধ্যতামূলক।</p>
+                  <p className="error">ফোন যাচাই না করলে অতিথি হিসেবে অর্ডার করতে পারবেন; অর্ডার অ্যাকাউন্টে সংরক্ষিত হবে না।</p>
                 )}
                 <label htmlFor="customer-phone">
                   {phoneVerified ? "নতুন নম্বর দিয়ে পরিবর্তন করুন" : "মোবাইল নম্বর"}
