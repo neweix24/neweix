@@ -5,7 +5,7 @@ export type IconName =
   | "plus" | "minus" | "check" | "refresh" | "close" | "menu"
   | "home" | "grid" | "star" | "wallet" | "membership" | "globe"
   | "settings" | "map-pin" | "shield" | "help" | "mail" | "logout"
-  | "orders" | "truck" | "gift" | "tag" | "compare" | "chevron-right";
+  | "orders" | "truck" | "gift" | "tag" | "compare" | "chevron-right" | "sparkles";
 
 const paths: Record<IconName, ReactNode> = {
   search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></>,
@@ -38,6 +38,7 @@ const paths: Record<IconName, ReactNode> = {
   tag: <><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z" /><circle cx="7.5" cy="7.5" r="1" /></>,
   compare: <><path d="M8 4H4v16h4M16 4h4v16h-4M9 8h6M9 12h6M9 16h6" /></>,
   "chevron-right": <path d="m9 18 6-6-6-6" />,
+  sparkles: <><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z" /><path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16Z" /></>,
 };
 
 export default function Icon({
