@@ -5,7 +5,7 @@ export type IconName =
   | "plus" | "minus" | "trash" | "check" | "refresh" | "close" | "menu"
   | "home" | "grid" | "star" | "wallet" | "membership" | "globe"
   | "settings" | "map-pin" | "shield" | "help" | "mail" | "logout"
-  | "orders" | "truck" | "gift" | "tag" | "compare" | "chevron-right" | "sparkles" | "eye" | "copy" | "send" | "filter";
+  | "orders" | "truck" | "gift" | "tag" | "compare" | "chevron-right" | "chevron-left" | "sparkles" | "eye" | "copy" | "send" | "filter";
 
 const paths: Record<IconName, ReactNode> = {
   search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></>,
@@ -39,6 +39,7 @@ const paths: Record<IconName, ReactNode> = {
   tag: <><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z" /><circle cx="7.5" cy="7.5" r="1" /></>,
   compare: <><path d="M8 4H4v16h4M16 4h4v16h-4M9 8h6M9 12h6M9 16h6" /></>,
   "chevron-right": <path d="m9 18 6-6-6-6" />,
+  "chevron-left": <path d="m15 18-6-6 6-6" />,
   eye: <><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></>,
   copy: <><rect x="8" y="8" width="13" height="13" rx="2" /><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" /></>,
   send: <><path d="m22 2-7 20-4-9-9-4 20-7Z" /><path d="M22 2 11 13" /></>,
