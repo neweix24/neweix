@@ -189,7 +189,12 @@ begin
     from private.eixpay_referrals r
     join public.customer_profiles rp on rp.user_id = r.referrer_user_id and rp.phone_verified_at is not null
     join public.customer_profiles ip on ip.user_id = r.referred_user_id and ip.phone_verified_at is not null
+    join auth.users ru on ru.id = r.referrer_user_id
+    join auth.users iu on iu.id = r.referred_user_id
     where r.status = 'qualified'
+      and lower(coalesce(ru.email,'')) <> lower(coalesce(iu.email,''))
+      and regexp_replace(coalesce(rp.phone,''), '\D', '', 'g') <> ''
+      and regexp_replace(coalesce(rp.phone,''), '\D', '', 'g') <> regexp_replace(coalesce(ip.phone,''), '\D', '', 'g')
     order by r.qualified_at asc
     for update of r skip locked
     limit 100
