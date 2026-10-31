@@ -1,131 +1,114 @@
-# NEWEIX Security Hardening Review
+# NEWEIX Security and Integration Review
 
-**Review date:** 2026-10-31  
-**Scope:** EixPay, Eixon ledger/audit, Supabase Auth and database access controls, Cloudflare Worker application security.  
-**Environment:** Review-only against the connected Supabase project and PR branch. No production schema, Auth setting, Cloudflare rule, or Worker deployment was changed.
+**Updated:** 2026-10-31  
+**Repository:** neweix24/neweix, branch main  
+**Hosting:** Cloudflare Workers via OpenNext  
+**Database:** Connected Supabase project
 
-## Current verified controls
+This document replaces older review notes that referred to EixPay/social foundations as unapplied or treated the site as a Vercel deployment. It distinguishes deployed database state, repository code, CI checks and external-provider tests.
 
-- Supabase PostgreSQL version: 17.11.
-- `pgcrypto` 1.3 is installed in the `extensions` schema; `extensions.digest(bytea, text)` is available.
-- EixPay migration defines append-only mutation guards for the Eixon ledger and audit events.
-- Existing application design uses Supabase Auth, Supreme AAL2 checks, role checks, private-schema storage, explicit function grants, SECURITY DEFINER functions with an empty search_path, row locks and idempotency.
-- The PR branch has baseline response headers in `next.config.ts`: HSTS, nosniff, frame denial, strict referrer policy and restrictive Permissions-Policy.
-- Latest reviewed PR head `4f88bd190c7989b1b44a30525a015d86528150b1` had successful CI, Storefront PR checks, NEWEIX frontend checks and Cloudflare validation workflow runs. This is validation, not evidence of a production deployment.
+## Changes applied to the connected database and repository
 
-## Findings
+### 1. Customer phone verification bypass closed
 
-### 1. Supabase Auth leaked-password protection is disabled
+- Removed INSERT and UPDATE privileges for the authenticated role on public.customer_profiles.
+- Restored only the intended safe profile-field update permissions.
+- The customer Data API can no longer set phone or phone_verified_at directly.
+- Server-controlled OTP verification remains responsible for marking a phone as verified.
+- Added a regression test for the sensitive column grants.
 
-The Supabase Security Advisor reports `auth_leaked_password_protection` as WARN. Enable leaked-password protection in Supabase Auth settings if the project plan supports it (Supabase documentation says Pro plan and above). Also review minimum password length and character requirements. Existing passwords are not automatically changed by enabling the setting.
+### 2. OTP abuse controls made atomic
 
-Reference: https://supabase.com/docs/guides/auth/password-security
+- Added public.reserve_phone_verification_challenge.
+- It serializes requests by user and phone using transaction-scoped advisory locks.
+- Enforces 60-second resend cooldown, five reservations per user per 24 hours and ten per phone per 24 hours.
+- Only service_role can execute the reservation RPC.
+- Added a regression test for the function's grants.
 
-**Status:** Requires a Supabase Auth dashboard setting change; not changed by this PR.
+### 3. Authentication refresh contention reduced
 
-### 2. Five RLS-enabled tables have no policies
+- Server-side staff/customer authorization paths use verified JWT claims instead of repeatedly calling auth.getUser().
+- MFA setup uses the existing browser session instead of extra user lookups.
+- This reduces competing refresh-token rotations between middleware, Server Components and API handlers.
 
-The Security Advisor reports these tables as RLS-enabled with no policies:
+**Not yet confirmed:** a real user must complete password + MFA login after deployment. Build success alone is not proof that the reported redirect-to-login problem is fixed.
 
-- `private.order_tracking_rate_limits`
-- `public.coupons`
-- `public.phone_verification_challenges`
-- `public.product_submissions`
-- `public.shop_settings`
+### 4. Checkout and order lifecycle
 
-A read-only privilege check confirmed that neither `anon` nor `authenticated` has SELECT privilege on these tables. This is currently deny-by-default, not evidence of public exposure. Do not add broad policies merely to silence the advisor. Review each table's intended server-side access path and add only narrowly scoped policies/grants if direct client access is actually required.
+- COD orders with zero delivery fee no longer require an MFS transaction ID.
+- If a COD delivery fee is due, the delivery-fee payment still requires MFS details and verification.
+- Returned orders now have a manual, audited restock action. Stock is restored only after staff inspect the returned items; row locking and stock_restored_at prevent duplicate restoration.
 
-### 3. Cryptographic ledger integrity: stage 1 added to PR, not applied
+### 5. Pathao Courier
 
-The PR now contains a database-local SHA-256 hash chain migration for new ledger/audit inserts, but it has not been applied or tested. The current append-only triggers prevent ordinary UPDATE/DELETE operations; the new chain adds tamper evidence for ordinary application roles. There is still no independent digital signature. A database-level hash chain can detect accidental or ordinary-role tampering, but a privileged database owner could rewrite the rows and recompute the chain.
+- Added service-role-only atomic reservation for a Pathao shipment, with Admin/Supreme role checks in the API and Supreme AAL2 enforcement.
+- Added consignment creation using the Merchant Store ID, order number, recipient details, item quantity/weight and COD collection amount.
+- Added tracking lookup and synchronization of recognized delivery states to the order record.
+- Timeout outcomes remain in a booking/in-progress state and require a manual check in the Pathao Merchant Panel before retrying, to reduce duplicate consignments.
 
-Recommended staged design:
-1. Add deterministic canonical event serialization and SHA-256 chaining for new audit events, with a transaction-safe sequence/locking strategy.
-2. Build a read-only verifier that recomputes the chain and reports the first invalid event.
-3. Periodically export a checkpoint containing sequence, event hash and timestamp to an independent Cloudflare Worker/service.
-4. Sign checkpoints with Ed25519 using a private key held outside PostgreSQL (managed secret/KMS); never store the signing key in a database table or source code.
-5. Retain public verification keys and key-rotation metadata so historical signatures remain verifiable.
+**Live test still required:** valid production credentials, a valid Merchant Store ID, a confirmed test order and a real Pathao booking/tracking response. No real parcel has been booked as part of this code review.
 
-**Important:** Do not describe stage 1 alone as cryptographically tamper-proof. External signing and independent checkpoint retention are required for protection against privileged database rewrites.
+### 6. BulkSMSBD transactional notifications
 
+- Phone OTP continues to use BulkSMSBD.
+- Added a private, RLS-protected notification outbox for order-created, payment-confirmed and order-status messages.
+- A database trigger queues notifications; the Cloudflare Worker processes them every five minutes.
+- Failed sends are retried with backoff up to five attempts. The private outbox and claim/complete/fail RPCs are service-role-only.
 
-### 3A. Stage 1 implemented in PR: SHA-256 integrity chain
+**Live test still required:** confirm provider balance, sender ID approval, source-IP allowlisting and successful delivery to a controlled test number. Marketing/bulk promotional campaigns are not enabled; those require customer consent and compliance review.
 
-Migration added to this PR (not applied to any database):
-`supabase/migrations/20261031180000_eixpay_cryptographic_integrity_chain.sql`
+### 7. YouTube scheduled publishing
 
-- Adds a private integrity event stream for new EixPay ledger and audit inserts.
-- Uses `extensions.digest(..., 'sha256')` over PostgreSQL `jsonb::text` serialization, and binds the source table and source ID into each chained event hash.
-- Serializes concurrent writes through a locked singleton chain-state row; source insert, chain event and state update share one database transaction.
-- Stores only a SHA-256 hash of each source row (not a duplicate copy of financial/audit payloads); the verifier re-hashes the current source row.
-- Adds a Supreme AAL2-only `public.eixpay_verify_integrity()` RPC. It checks sequence continuity, previous hashes, event hashes, source-row equality and chain-state consistency.
-- The verifier takes a shared lock on chain state during its scan so concurrent inserts cannot create a false partial-snapshot failure.
-- Historical ledger/audit records are not backfilled; chain coverage begins with the first insert after the migration is applied.
-- The verification response explicitly reports `independent_signature: false`.
+- Added scheduled publishing queue processing in the Cloudflare Worker.
+- YouTube OAuth uses upload/read-only scopes; refresh tokens remain encrypted at rest.
+- Scheduled publishing accepts exactly one public HTTPS video URL, enforces video MIME type and a 50 MB upload ceiling, and publishes the video as Public.
+- Failed uploads are recorded against the delivery and post.
+- Facebook, Instagram and TikTok remain Draft-only because provider-specific app permissions and publishing integrations are not complete.
 
-**Validation boundary:** Migration is committed to the PR branch only. A read-only check of the connected Supabase production project shows the EixPay ledger and audit tables are not present yet, so this migration cannot be tested there without first applying the earlier EixPay foundation migrations. No SQL integration/concurrency test has been run. The only existing Supabase development branch is named `main` and reports `MIGRATIONS_FAILED`; it is not a valid test target. A separate preview branch is required before SQL testing.
+**Live test still required:** connect the YouTube channel through /admin/social-media, schedule a controlled video and verify upload/visibility. The user must complete Google's OAuth consent; the assistant cannot grant that consent.
 
-**Remaining stage 2:** External Ed25519 signing and independently retained checkpoints. The private signing key must be provisioned as a Cloudflare Worker secret (or managed KMS key) outside Postgres and source control. The current Worker config has no signing-key binding, and no signing endpoint has been deployed. Do not claim independent signature protection until that service and its verification workflow exist.
+### 8. Deployment and security headers
 
-### 4. CSP is not yet enabled
+- Cloudflare production deployment now runs after the GitHub CI workflow completes successfully and checks out the exact tested commit.
+- Added a Content-Security-Policy header, including the Cloudflare Turnstile, Google OAuth and YouTube frame hosts.
+- CSP currently permits broad HTTPS resources and inline/eval script compatibility. It is a baseline policy, not a final nonce-based strict CSP. Tightening requires a report/compatibility pass against the live storefront and auth flows.
+- wrangler.jsonc now lists the required server-only integration secrets; .env.example documents their names without values.
 
-The application has baseline security headers, but no Content-Security-Policy. Introduce CSP only after inventorying Next.js inline scripts, Supabase Auth flows, image/media hosts, analytics and any third-party assets. Prefer a nonce-based policy where compatible; begin in report-only mode, inspect violations, then enforce. Do not deploy a guessed restrictive policy that could break sign-in or storefront rendering.
+## Verified security foundations
 
-### 5. Rate limiting and Supreme account protection need a dedicated pass
+- The last schema audit found RLS enabled on all 44 public/private tables checked.
+- Sensitive service-role operations remain server-side.
+- Private EixPay and notification tables are not directly readable by anon or authenticated.
+- Supreme-only operations use server-side role checks and AAL2 checks.
+- Customer device/IP records are audit signals; they are not used to block users by country or VPN.
 
-- Inventory sensitive public and authenticated routes (login, OTP/phone verification, password reset, order lookup, review submission, wallet/reward claims, transfer requests and Supreme mutations).
-- Apply Cloudflare edge rate limits to abuse-prone routes, with separate thresholds by route and identity/IP; avoid blocking legitimate shared mobile/carrier NAT traffic.
-- Ensure Supreme mutations require fresh AAL2 and server-side role checks; add session revocation/re-authentication controls and alerting for privileged actions.
-- Review Cloudflare WAF and bot controls before changing production rules.
+## Remaining issues and external dependencies
 
-## Supabase Advisor snapshot
+1. **Supabase leaked-password protection:** Security Advisor reported this setting disabled. It must be enabled in Supabase Auth settings by an authorized project administrator if available on the current plan. It cannot safely be changed through repository code.
+2. **Legacy migration history:** older repository filenames and production migration versions diverge. The duplicate 20261031180000 prefix has been resolved by renaming the social migration to 20261031180100, but the older history still needs a deliberate baseline/version mapping. Do not run supabase db push blindly.
+3. **CI and deployment:** latest checks must finish successfully before claiming a deployment. Any cancelled intermediate workflow is not a validation result.
+4. **End-to-end tests:** automated browser coverage is still needed for login/MFA, phone OTP, checkout, payment verification, order cancellation/return, product permissions, Pathao and YouTube publishing.
+5. **NPM dependencies:** CI install reported 18 moderate audit findings. Review the lockfile/dependency advisories and apply compatible updates; do not use npm audit fix --force without checking breaking changes.
+6. **CSP hardening:** remove unsafe-eval/inline allowances only after replacing any required inline scripts with nonces or hashes and verifying Turnstile, Supabase Auth, Google OAuth and storefront rendering.
+7. **Social provider approvals:** Facebook, Instagram and TikTok automated publishing require their own provider apps, permissions and approval.
+8. **EixPay legal review:** wallet display is enabled, but earning, redemption and transfers remain disabled. Do not enable them until legal review and policy confirmations are complete.
 
-Security Advisor:
-- WARN: leaked password protection disabled.
-- INFO: five RLS-enabled tables have no policies; the privilege check above found no SELECT grant for `anon` or `authenticated` on those tables.
+## EixPay and cryptographic boundary
 
-Performance Advisor:
-- Reports 21 unused indexes. These are observations only; no index was removed. Usage counters can be low on a small/new deployment, so validate workload and query plans before any removal.
+- Eixon is an internal reward unit, not a blockchain token or real-money cryptocurrency.
+- The SHA-256 integrity chain provides database-local tamper evidence for covered events.
+- It is not end-to-end encryption and is not independently tamper-proof against a privileged database owner.
+- Independent Ed25519 signing/checkpoint storage outside PostgreSQL has not been implemented.
+- Earning, redemption and transfer flags remain disabled pending legal review.
 
-## Change and deployment boundary
+## Validation policy
 
-This document records a review and safe implementation plan. It does not apply SQL migrations, alter Supabase Auth settings, change Cloudflare WAF/rate-limit rules, or deploy a Worker. Any database migration must be reviewed and tested on a non-production database branch before production rollout.
+Record these independently:
+- GitHub commit SHA.
+- CI TypeScript/ESLint/build results.
+- Disposable PostgreSQL migration/regression test result.
+- Cloudflare deployment result and deployed SHA.
+- Supabase live schema/permission checks.
+- Real provider and browser end-to-end tests.
 
-
-## Latest integrity-chain commit validation status
-
-- Integrity-chain migration and documentation are committed to PR #20. Latest branch head: `f00274798de3a0777cabf8deef85764aa38f0ce3`.
-- GitHub Actions CI, NEWEIX frontend checks and Storefront PR checks completed successfully for this head.
-- Cloudflare Worker workflow is still in progress; it is not yet a successful deployment result.
-- A separate Vercel status reports build-rate-limit/plan restriction; this is not the Cloudflare Worker result.
-- No SQL migration execution, SQL integration/concurrency test, or local PostgreSQL test has been completed for the integrity-chain migration.
-- The connected production Supabase project does not contain the EixPay foundation tables. Its existing development branch is in `MIGRATIONS_FAILED` state.
-- No paid preview branch will be created. Free next steps are static review, GitHub checks, and local PostgreSQL testing only if a PostgreSQL runtime is available; no production changes are authorized by this review.
-
-
-## Preview database cost gate
-
-Creating a dedicated Supabase preview branch requires additional compute. It will not be created because the user requested a no-cost approach. The existing development branch is in `MIGRATIONS_FAILED` state and must not be used for validation. Continue with free static checks and repository CI; run database integration tests only against a genuinely isolated free/local PostgreSQL environment if one becomes available.
-
-## Static compatibility review — 31 Oct 2026
-
-The integrity-chain migration was statically compared with the EixPay foundation migration and the existing private staff-role helper migration on this PR branch:
-
-- Confirmed both `private.eixpay_ledger.id` and `private.eixpay_audit_events.id` are `bigint generated always as identity primary key`; the chain migration's `source_id bigint` and `(payload ->> 'id')::bigint` assumptions match.
-- Confirmed `private.prevent_eixpay_audit_mutation()` exists with the expected zero-argument trigger-function signature and raises on UPDATE/DELETE. The integrity-event append-only trigger references that exact function.
-- Confirmed `private.has_staff_role(required_roles text[])` exists, is SECURITY DEFINER with an empty search_path, and is executable by authenticated users; the verifier calls it with a `text[]` argument and separately enforces JWT AAL2.
-- Confirmed the integrity migration timestamp follows the EixPay foundation migration and the private role-helper migration in the PR migration sequence.
-- The append trigger is AFTER INSERT on both source tables; source insertion, integrity-event append and chain-state update are in the same transaction. The single state-row lock serializes the combined stream.
-- This is a source-level compatibility review only. It does not establish successful PostgreSQL parsing/execution, role behavior under the hosted Supabase runtime, concurrency correctness, or protection from table owners/superusers disabling triggers or rewriting the chain.
-
-**Result:** No source-level mismatch was found in the reviewed ID types, trigger guard, or Supreme role-helper signature. No SQL migration was executed, no production data/schema was changed, and no paid test environment was created. The remaining validation gap is a real isolated PostgreSQL execution test; it cannot be truthfully marked passed based on static inspection or GitHub application CI.
-
-
-## Migration validation and production history reconciliation — 31 Oct 2026
-
-- Added a no-cost GitHub Actions workflow that starts a disposable local Supabase/PostgreSQL environment, applies every SQL migration in order with `psql`, and runs rollback-only EixPay/integrity smoke tests. Automatic CLI migration replay is disabled for this CI database because the legacy repository contains duplicate numeric prefixes (`005`, `006`, `007`); applying SQL files directly avoids the Supabase migration-history primary-key collision while still executing the SQL bodies.
-- The first CLI-driven replay exposed duplicate version identifiers: `005`, `006`, and `007`. This is a real repository migration hygiene issue; the CI workaround is not a production migration-history repair.
-- Read-only comparison of production `supabase_migrations.schema_migrations` with repository filenames found significant historical version/name divergence. Production has 34 applied version entries, while the branch has 37 migration files; several old files use short numeric prefixes or timestamps that do not match the production version history. Do not run `supabase db push` or mark these versions applied until a deliberate baseline/version mapping is reviewed.
-- Read-only production preflight confirms required existing dependencies include PostgreSQL 17, `pgcrypto`, `pg_cron`, `public.orders`, `public.order_items`, `public.products`, `public.customer_profiles`, and `private.has_staff_role(text[])`. The EixPay foundation migration adds `orders.delivered_at` before later EixPay migrations use it.
-- Fixed verified-review moderation so Supreme can approve/reject a valid review even when Eixon earning is disabled. Reward issuance remains optional; unavailable-reward reason is recorded in the audit event and returned to the caller. No Eixon reward is issued while earning/rules are disabled.
-- No production DDL or data changes were made. No production migration has been applied and no Worker has been deployed.
+A green build or successful Worker deployment must never be presented as proof that OTP, login, SMS, Pathao, payments or social publishing work end-to-end.
