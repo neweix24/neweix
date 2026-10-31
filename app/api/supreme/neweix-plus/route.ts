@@ -95,16 +95,19 @@ export async function PATCH(request: Request) {
     }
 
     if (input.action === "assign") {
+      const expiresAtInput = input.expiresAt;
       if (typeof input.userId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.userId)
         || typeof input.tierCode !== "string" || !/^(free|silver|gold|platinum|diamond|vip)$/.test(input.tierCode)
-        || (input.expiresAt !== null && (typeof input.expiresAt !== "string" || !Number.isFinite(Date.parse(input.expiresAt))))
+        || (expiresAtInput !== null && (typeof expiresAtInput !== "string" || !Number.isFinite(Date.parse(expiresAtInput))))
+        || (expiresAtInput === undefined)
         || typeof input.note !== "string" || input.note.length > 500) {
         return fail("সদস্যপদ বরাদ্দের তথ্য সঠিক নয়।", 400);
       }
+      const normalizedExpiry = typeof expiresAtInput === "string" ? new Date(expiresAtInput).toISOString() : null;
       const { data, error } = await access.supabase.rpc("neweix_plus_assign_member", {
         p_user_id: input.userId,
         p_tier_code: input.tierCode,
-        p_expires_at: input.expiresAt ? new Date(input.expiresAt).toISOString() : null,
+        p_expires_at: normalizedExpiry,
         p_note: input.note,
       });
       if (error) return fail(error.code === "42501" ? "Supreme MFA অনুমোদন প্রয়োজন।" : "সদস্যপদ বরাদ্দ করা যায়নি।", error.code === "42501" ? 403 : 400);
