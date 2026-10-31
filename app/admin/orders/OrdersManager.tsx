@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Icon from "@/components/ui/icon";
 
 type OrderItem = {
   id: string;
@@ -244,7 +245,7 @@ export default function OrdersManager() {
           disabled={loading}
           className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium disabled:opacity-50"
         >
-          {loading ? "লোড হচ্ছে..." : "রিফ্রেশ"}
+          <><Icon name="refresh" size={16} /> {loading ? "লোড হচ্ছে..." : "রিফ্রেশ"}</>
         </button>
       </div>
 
@@ -438,9 +439,9 @@ export default function OrdersManager() {
                     disabled={busyId !== "" || statusBusyId !== ""}
                     className="mt-4 rounded-lg bg-blue-700 px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {busyId === order.id
+                    <><Icon name={busyId === order.id ? "refresh" : "check"} size={16} /> {busyId === order.id
                       ? "সংরক্ষণ হচ্ছে..."
-                      : "যাচাই করে Paid করুন"}
+                      : "যাচাই করে Paid করুন"}</>
                   </button>
                 )}
             </article>
