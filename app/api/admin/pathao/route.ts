@@ -101,9 +101,15 @@ export async function GET(request: Request) {
       }
       const tracking = await getPathaoOrderInfo(consignmentId);
       const trackingRecord = tracking && typeof tracking === "object"
-        ? tracking as { data?: { order_status?: unknown }; order_status?: unknown }
+        ? tracking as { data?: { order_status?: unknown; order_status_slug?: unknown }; order_status?: unknown; order_status_slug?: unknown }
         : {};
-      const providerStatus = String(trackingRecord.data?.order_status ?? trackingRecord.order_status ?? "").toLowerCase();
+      const providerStatus = String(
+        trackingRecord.data?.order_status_slug ??
+        trackingRecord.data?.order_status ??
+        trackingRecord.order_status_slug ??
+        trackingRecord.order_status ??
+        ""
+      ).toLowerCase();
       const deliveryStatus = providerStatus.includes("deliver")
         ? "delivered"
         : providerStatus.includes("pick")
