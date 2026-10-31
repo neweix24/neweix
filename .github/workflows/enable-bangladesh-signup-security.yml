@@ -90,6 +90,25 @@ jobs:
           echo "Verified: Before User Created hook is enabled and points to the deployed Edge Function."
           echo "Strict signup policy is now wired to the active Bangladesh/VPN verification function."
 
+      - name: Audit Supabase session and CAPTCHA settings
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          response_file="$(mktemp)"
+          trap 'rm -f "$response_file"' EXIT
+          status="$(curl --silent --show-error \
+            --output "$response_file" \
+            --write-out '%{http_code}' \
+            --url 'https://api.supabase.com/v1/projects/grhybvlhdnzlopwbaqun/config/auth' \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")"
+          if [[ "$status" != "200" ]]; then
+            echo "::error::Unable to read Supabase Auth settings (HTTP $status)."
+            exit 1
+          fi
+          jq '{site_url, sessions_timebox, sessions_inactivity_timeout, sessions_single_per_user, refresh_token_rotation_enabled, security_refresh_token_reuse_interval, security_captcha_enabled, password_hibp_enabled}' "$response_file"
+
       - name: Enable leaked-password protection when supported by the Supabase plan
         continue-on-error: true
         env:
