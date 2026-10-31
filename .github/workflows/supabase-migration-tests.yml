@@ -28,8 +28,8 @@ jobs:
         with:
           version: 2.81.3
 
-      - name: Start PostgreSQL with non-database services excluded
-        run: supabase start -x gotrue,realtime,storage-api,imgproxy,kong,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - name: Start disposable PostgreSQL database only
+        run: supabase db start
 
       - name: Apply every repository migration from an empty local database
         run: supabase db reset --local
