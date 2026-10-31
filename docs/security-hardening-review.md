@@ -90,3 +90,12 @@ Performance Advisor:
 ## Change and deployment boundary
 
 This document records a review and safe implementation plan. It does not apply SQL migrations, alter Supabase Auth settings, change Cloudflare WAF/rate-limit rules, or deploy a Worker. Any database migration must be reviewed and tested on a non-production database branch before production rollout.
+
+
+## Latest integrity-chain commit validation status
+
+- Integrity-chain migration and documentation were committed to PR #20 at `f3caaec23454dbcfd4993b9b842d6484d8ef2936`.
+- GitHub Actions PR workflow query returned no workflow runs for this latest documentation/migration commit.
+- GitHub combined status currently reports a failing `Vercel` status with target URL indicating a build-rate-limit/plan restriction. This is not a successful Cloudflare build and must not be reported as one.
+- No migration execution, SQL integration test, concurrency test, TypeScript build, or Worker preview has been completed for the new integrity-chain change.
+- Required next validation: run the migration on an isolated Supabase preview branch, exercise concurrent inserts and tampering/rollback cases, then run the repository's typecheck/lint/build and Cloudflare OpenNext preview. Production rollout remains blocked pending review and explicit authorization.
