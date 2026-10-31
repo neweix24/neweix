@@ -20,8 +20,7 @@ export async function middleware(request: NextRequest) {
       pathname !== "/api/account/phone/status" &&
       pathname !== "/api/account/phone/verify-otp" &&
       pathname !== "/api/account/security/register-device") ||
-    pathname === "/api/eixpay" || pathname.startsWith("/api/eixpay/") ||
-    pathname === "/api/orders";
+    pathname === "/api/eixpay" || pathname.startsWith("/api/eixpay/");
   const isCustomerPage =
     pathname === "/account" || pathname.startsWith("/account/") ||
     pathname === "/orders" || pathname.startsWith("/orders/") ||
