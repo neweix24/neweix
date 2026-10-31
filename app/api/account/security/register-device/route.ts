@@ -27,7 +27,7 @@ function parseDevice(userAgent: string) {
 }
 
 export async function POST(request: NextRequest) {
-  const response = NextResponse.json(
+  let response = NextResponse.json(
     { success: false },
     { headers: { "Cache-Control": "private, no-store, max-age=0" } }
   );
