@@ -4,15 +4,15 @@
 :root {
   color-scheme: light;
   --bg: #ffffff;
-  --surface: #f8faf8;
-  --surface-raised: #ffffff;
-  --surface-soft: #f3f6f3;
+  --surface: var(--customer-theme-surface, #f8faf8);
+  --surface-raised: var(--customer-theme-surface, #ffffff);
+  --surface-soft: color-mix(in srgb, var(--customer-theme-surface, #f8faf8) 82%, var(--bg));
   --primary: var(--customer-theme-button, #b6ff4a);
   --primary-hover: color-mix(in srgb, var(--primary) 82%, white);
   --primary-dark: #203814;
-  --ink: #17211a;
-  --muted: #59665d;
-  --border: #e2e8e3;
+  --ink: var(--customer-theme-text, #17211a);
+  --muted: var(--customer-theme-muted, #59665d);
+  --border: var(--customer-theme-border, #e2e8e3);
   --danger: #ff7777;
   --success: #b6ff4a;
   --radius: 18px;
@@ -49,7 +49,7 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 90px;
-  background: #ffffff;
+  background: var(--page-bg);
 }
 
 body {
@@ -203,7 +203,7 @@ nav a:hover {
   padding: clamp(56px, 9vw, 120px) clamp(20px, 10vw, 144px);
   background:
     radial-gradient(ellipse at 85% 45%, rgba(182, 255, 74, 0.14), transparent 35%),
-    linear-gradient(135deg, #101710 0%, #0b100c 60%, #111b10 100%);
+    linear-gradient(135deg, var(--page-surface) 0%, var(--page-panel) 60%, var(--page-surface) 100%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -249,7 +249,7 @@ nav a:hover {
 
 .hero-copy {
   max-width: 560px;
-  color: #b2beb2;
+  color: var(--page-muted);
   font-size: 15px;
   line-height: 1.95;
 }
@@ -326,7 +326,7 @@ nav a:hover {
   padding: 14px;
   background:
     radial-gradient(ellipse at 50% 20%, rgba(182, 255, 74, 0.12), transparent 60%),
-    #1b251d;
+    var(--page-panel-soft);
   color: var(--primary);
   border: 1px solid rgba(255, 255, 255, 0.035);
   border-radius: 12px;
@@ -344,11 +344,11 @@ nav a:hover {
 }
 
 .art-2 {
-  background-color: #24251c;
+  background-color: var(--page-panel-soft);
 }
 
 .art-3 {
-  background-color: #17251c;
+  background-color: var(--page-panel-soft);
 }
 
 .product-label {
@@ -489,7 +489,7 @@ footer {
   justify-content: space-between;
   gap: 16px;
   padding: 30px clamp(18px, 6vw, 88px);
-  background: #ffffff;
+  background: var(--page-bg);
   border-top: 1px solid var(--border);
 }
 
@@ -648,7 +648,7 @@ th {
 }
 /* Customer-selected colors — storefront only */
 body:has(.topbar) {
-  background: #ffffff;
+  background: var(--page-bg);
   color: var(--customer-theme-text, var(--ink));
 }
 
@@ -700,7 +700,7 @@ body:has(.topbar) textarea {
   border-color: var(--customer-theme-border, var(--border));
 }
 /* NEWEIX premium design tokens and reusable surfaces */
-:root{--brand-forest:#173b25;--brand-forest-deep:#0b1710;--brand-lime:#b6ff4a;--brand-lime-soft:rgba(182,255,74,.12);--surface-glass:rgba(16,22,18,.82);--surface-elevated:#19241c;--border-strong:#405344;--text-primary:var(--ink);--text-secondary:var(--muted);--content-width:1160px;--control-height:48px;--motion-standard:180ms ease}
+:root{--brand-forest:var(--page-panel);--brand-forest-deep:var(--page-bg);--brand-lime:var(--page-accent);--brand-lime-soft:color-mix(in srgb,var(--page-accent) 12%,transparent);--surface-glass:color-mix(in srgb,var(--page-surface) 88%,transparent);--surface-elevated:var(--page-panel);--border-strong:var(--page-border);--text-primary:var(--ink);--text-secondary:var(--muted);--content-width:1160px;--control-height:48px;--motion-standard:180ms ease}
 body{text-rendering:optimizeLegibility;accent-color:var(--primary)}input:disabled,select:disabled,textarea:disabled{cursor:not-allowed;opacity:.62}
 .neweix-shell{width:min(var(--content-width),calc(100% - 36px));margin-inline:auto}.neweix-panel{border:1px solid var(--border);border-radius:20px;background:linear-gradient(145deg,var(--surface-raised),var(--surface));box-shadow:var(--shadow)}.neweix-kicker{color:var(--primary);font-size:11px;font-weight:850;letter-spacing:1.8px;text-transform:uppercase}.neweix-button-primary{display:inline-flex;min-height:var(--control-height);align-items:center;justify-content:center;gap:8px;padding:11px 20px;border:1px solid var(--primary);border-radius:12px;background:var(--primary);color:#080b09;font-weight:850;transition:transform var(--motion-standard),box-shadow var(--motion-standard)}.neweix-button-primary:hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(182,255,74,.14)}.neweix-button-secondary{display:inline-flex;min-height:var(--control-height);align-items:center;justify-content:center;padding:10px 18px;border:1px solid var(--border-strong);border-radius:12px;color:var(--ink);background:var(--surface);font-weight:750}.neweix-page-title{margin:8px 0 12px;color:var(--ink);font-size:clamp(28px,4vw,42px);font-weight:900;letter-spacing:-1px;line-height:1.2}
 @media(max-width:640px){.neweix-shell{width:calc(100% - 28px)}}
@@ -713,7 +713,7 @@ body{text-rendering:optimizeLegibility;accent-color:var(--primary)}input:disable
   min-height:min(820px,calc(100svh - 24px));width:min(100% - 32px,680px);
   margin:24px auto;padding:clamp(28px,6vw,64px);
   border:1px solid var(--border);border-radius:28px;
-  background:radial-gradient(ellipse at 100% 0%,rgba(182,255,74,.11),transparent 42%),linear-gradient(145deg,#121a14,#0c110d);
+  background:radial-gradient(ellipse at 100% 0%,rgba(182,255,74,.11),transparent 42%),linear-gradient(145deg,var(--page-panel),var(--page-surface));
   box-shadow:0 24px 80px rgba(0,0,0,.28)
 }
 .auth-page .track-form{max-width:100%;width:100%;gap:14px}
@@ -723,13 +723,13 @@ body{text-rendering:optimizeLegibility;accent-color:var(--primary)}input:disable
 .auth-page .hero-copy{max-width:560px}
 .info-page{position:relative;isolation:isolate}
 .info-page::before{position:absolute;z-index:-1;top:0;right:0;width:min(42vw,460px);aspect-ratio:1;border:1px solid rgba(182,255,74,.08);border-radius:50%;box-shadow:0 0 0 34px rgba(182,255,74,.018),0 0 0 68px rgba(182,255,74,.012);content:"";pointer-events:none}
-.info-page-header{padding:clamp(28px,5vw,52px);border:1px solid var(--border);border-radius:26px;background:radial-gradient(ellipse at 90% 0%,rgba(182,255,74,.12),transparent 45%),linear-gradient(145deg,#151e17,#0c120e);box-shadow:var(--shadow)}
+.info-page-header{padding:clamp(28px,5vw,52px);border:1px solid var(--border);border-radius:26px;background:radial-gradient(ellipse at 90% 0%,rgba(182,255,74,.12),transparent 45%),linear-gradient(145deg,var(--page-panel),var(--page-surface));box-shadow:var(--shadow)}
 .info-page-header h1{margin-top:10px;color:var(--ink);font-size:clamp(34px,5.5vw,58px);font-weight:900;letter-spacing:-1.5px}
 .info-page-section{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:20px;background:linear-gradient(145deg,var(--surface-raised),var(--surface));padding:clamp(20px,3vw,30px);box-shadow:0 10px 30px rgba(0,0,0,.12)}
 .info-page-section h2{display:flex;align-items:center;gap:12px;color:var(--ink);font-size:clamp(18px,2.4vw,23px);font-weight:850}
 .info-page-section h2::before{width:4px;height:24px;flex:none;border-radius:99px;background:var(--primary);content:""}
 .info-page-footer{margin-top:36px;padding:22px 0;border-top:1px solid var(--border)}
-main.min-h-screen.px-4.py-10>div.mx-auto>header{position:relative;margin-bottom:30px;padding:clamp(22px,4vw,34px);overflow:hidden;border:1px solid var(--border);border-radius:22px;background:radial-gradient(ellipse at 100% 0%,rgba(182,255,74,.1),transparent 44%),linear-gradient(145deg,#151e17,#0c120e);box-shadow:0 16px 42px rgba(0,0,0,.18)}
+main.min-h-screen.px-4.py-10>div.mx-auto>header{position:relative;margin-bottom:30px;padding:clamp(22px,4vw,34px);overflow:hidden;border:1px solid var(--border);border-radius:22px;background:radial-gradient(ellipse at 100% 0%,rgba(182,255,74,.1),transparent 44%),linear-gradient(145deg,var(--page-panel),var(--page-surface));box-shadow:0 16px 42px rgba(0,0,0,.18)}
 main.min-h-screen.px-4.py-10>div.mx-auto>header h1{font-size:clamp(28px,4vw,40px);font-weight:900;letter-spacing:-1px}
 main.min-h-screen.px-4.py-10>div.mx-auto>section{border-color:var(--border);border-radius:20px;background:linear-gradient(145deg,var(--surface-raised),var(--surface));box-shadow:0 12px 34px rgba(0,0,0,.14)}
 main.min-h-screen.px-4.py-10>div.mx-auto>section h2{font-weight:850}
@@ -847,14 +847,60 @@ th {
 
 
 /* White page canvas across storefront, account, and admin routes. */
-html, body { background: #ffffff !important; }
+html, body { background: var(--page-bg) !important; }
 body { color: var(--ink); }
 body:has(.topbar),
 body:has(.topbar) .hero,
 body:has(.topbar) .products-section,
-body:has(.topbar) footer { background: #ffffff !important; }
+body:has(.topbar) footer { background: var(--page-bg) !important; }
 .auth-page,
 .info-page-header,
 main.min-h-screen.px-4.py-10 > div.mx-auto > header {
-  background: #ffffff;
+  background: var(--page-bg);
+}
+
+
+/* Global theme contract: all routes consume these semantic tokens. */
+:root {
+  --accent-ink: #080b09;
+  --page-bg: var(--bg);
+  --page-surface: var(--surface);
+  --page-panel: var(--surface-raised);
+  --page-panel-soft: var(--surface-soft);
+  --page-text: var(--ink);
+  --page-muted: var(--muted);
+  --page-border: var(--border);
+  --page-accent: var(--primary);
+  --brand-forest: var(--page-panel);
+  --brand-forest-deep: var(--page-bg);
+  --brand-lime: var(--page-accent);
+  --brand-lime-soft: color-mix(in srgb, var(--page-accent) 12%, transparent);
+  --surface-glass: color-mix(in srgb, var(--page-surface) 88%, transparent);
+  --surface-elevated: var(--page-panel);
+  --border-strong: var(--page-border);
+  --text-primary: var(--page-text);
+  --text-secondary: var(--page-muted);
+}
+
+/* Route-level legacy surfaces now follow the same global palette. */
+.auth-page,
+.info-page-header,
+main.min-h-screen.px-4.py-10 > div.mx-auto > header {
+  color: var(--page-text);
+  background: linear-gradient(145deg, var(--page-panel), var(--page-surface));
+  border-color: var(--page-border);
+}
+.info-page-section,
+main.min-h-screen.px-4.py-10 > div.mx-auto > section,
+.neweix-panel {
+  color: var(--page-text);
+  background: linear-gradient(145deg, var(--page-panel), var(--page-surface));
+  border-color: var(--page-border);
+}
+.auth-page h1,
+.info-page-header h1,
+.info-page-section h2,
+main.min-h-screen.px-4.py-10 h1,
+main.min-h-screen.px-4.py-10 h2 {
+  color: var(--page-text);
 }
