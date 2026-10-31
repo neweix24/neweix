@@ -48,6 +48,25 @@ Recommended staged design:
 
 **Important:** Do not describe stage 1 alone as cryptographically tamper-proof. External signing and independent checkpoint retention are required for protection against privileged database rewrites.
 
+
+### 3A. Stage 1 implemented in PR: SHA-256 integrity chain
+
+Migration added to this PR (not applied to any database):
+`supabase/migrations/20261031180000_eixpay_cryptographic_integrity_chain.sql`
+
+- Adds a private integrity event stream for new EixPay ledger and audit inserts.
+- Uses `extensions.digest(..., 'sha256')` and deterministic PostgreSQL `jsonb::text` serialization.
+- Serializes concurrent writes through a locked singleton chain-state row; source insert, chain event and state update share one database transaction.
+- Stores the source row snapshot so the verifier can compare the current ledger/audit row with the original payload.
+- Adds a Supreme AAL2-only `public.eixpay_verify_integrity()` RPC. It checks sequence continuity, previous hashes, event hashes, source-row equality and chain-state consistency.
+- The verifier takes a shared lock on chain state during its scan so concurrent inserts cannot create a false partial-snapshot failure.
+- Historical ledger/audit records are not backfilled; chain coverage begins with the first insert after the migration is applied.
+- The verification response explicitly reports `independent_signature: false`.
+
+**Validation boundary:** Migration is committed to the PR branch only. It has not been executed against production or staging, and no SQL integration/concurrency test has yet been run. Apply and test first on an isolated Supabase preview branch, including concurrent inserts, tampered source-row simulation, missing chain event simulation, and transaction rollback. Do not apply directly to production.
+
+**Remaining stage 2:** External Ed25519 signing and independently retained checkpoints. The private signing key must be provisioned as a Cloudflare Worker secret (or managed KMS key) outside Postgres and source control. The current Worker config has no signing-key binding, and no signing endpoint has been deployed. Do not claim independent signature protection until that service and its verification workflow exist.
+
 ### 4. CSP is not yet enabled
 
 The application has baseline security headers, but no Content-Security-Policy. Introduce CSP only after inventorying Next.js inline scripts, Supabase Auth flows, image/media hosts, analytics and any third-party assets. Prefer a nonce-based policy where compatible; begin in report-only mode, inspect violations, then enforce. Do not deploy a guessed restrictive policy that could break sign-in or storefront rendering.
