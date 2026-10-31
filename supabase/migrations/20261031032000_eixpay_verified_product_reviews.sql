@@ -47,7 +47,7 @@ security definer
 set search_path = ''
 as $function$
   select r.id, r.rating, r.title, r.body,
-    coalesce(nullif(cp.display_name, ''), nullif(cp.full_name, ''), 'NEWEIX ক্রেতা'),
+    coalesce(nullif(cp.display_name, ''), 'NEWEIX ক্রেতা'),
     r.created_at
   from private.eixpay_product_reviews r
   left join public.customer_profiles cp on cp.user_id = r.user_id
