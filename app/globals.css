@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
-/* NEWEIX — Black & Green Design System */
+/* NEWEIX — White canvas design system */
 :root {
-  color-scheme: dark;
-  --bg: var(--customer-theme-background, #080b09);
-  --surface: color-mix(in srgb, var(--customer-theme-surface, #151d18) 72%, var(--bg));
-  --surface-raised: var(--customer-theme-surface, #151d18);
-  --surface-soft: color-mix(in srgb, var(--customer-theme-surface, #151d18) 82%, var(--bg));
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #f8faf8;
+  --surface-raised: #ffffff;
+  --surface-soft: #f3f6f3;
   --primary: var(--customer-theme-button, #b6ff4a);
   --primary-hover: color-mix(in srgb, var(--primary) 82%, white);
   --primary-dark: #203814;
-  --ink: var(--customer-theme-text, #f4f8f2);
-  --muted: var(--customer-theme-muted, #a0ada1);
-  --border: var(--customer-theme-border, #29352b);
+  --ink: #17211a;
+  --muted: #59665d;
+  --border: #e2e8e3;
   --danger: #ff7777;
   --success: #b6ff4a;
   --radius: 18px;
@@ -49,7 +49,7 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 90px;
-  background: var(--bg);
+  background: #ffffff;
 }
 
 body {
@@ -139,7 +139,7 @@ p {
   gap: 20px;
   min-height: 74px;
   padding: 14px clamp(18px, 6vw, 88px);
-  background: rgba(8, 11, 9, 0.9);
+  background: rgba(255, 255, 255, 0.94);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(18px);
 }
@@ -489,7 +489,7 @@ footer {
   justify-content: space-between;
   gap: 16px;
   padding: 30px clamp(18px, 6vw, 88px);
-  background: #0c110d;
+  background: #ffffff;
   border-top: 1px solid var(--border);
 }
 
@@ -648,7 +648,7 @@ th {
 }
 /* Customer-selected colors — storefront only */
 body:has(.topbar) {
-  background: var(--customer-theme-background, var(--bg));
+  background: #ffffff;
   color: var(--customer-theme-text, var(--ink));
 }
 
@@ -844,3 +844,17 @@ th {
 [class~="text-red-800"] { color: color-mix(in srgb, var(--color-danger) 78%, white) !important; }
 [class~="bg-green-50"] { color: color-mix(in srgb, var(--color-success) 78%, white) !important; background-color: var(--color-success-soft) !important; }
 [class~="text-green-800"] { color: color-mix(in srgb, var(--color-success) 78%, white) !important; }
+
+
+/* White page canvas across storefront, account, and admin routes. */
+html, body { background: #ffffff !important; }
+body { color: var(--ink); }
+body:has(.topbar),
+body:has(.topbar) .hero,
+body:has(.topbar) .products-section,
+body:has(.topbar) footer { background: #ffffff !important; }
+.auth-page,
+.info-page-header,
+main.min-h-screen.px-4.py-10 > div.mx-auto > header {
+  background: #ffffff;
+}
