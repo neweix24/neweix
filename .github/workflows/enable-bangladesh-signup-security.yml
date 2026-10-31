@@ -2,6 +2,11 @@ name: Enable Bangladesh Signup Security
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/enable-bangladesh-signup-security.yml
 
 permissions:
   contents: read
