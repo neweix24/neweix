@@ -1514,7 +1514,8 @@ create or replace function public.eixpay_set_reward_rule(
   p_event_code text,
   p_enabled boolean,
   p_reward_amount bigint,
-  p_max_per_user_per_day integer
+  p_max_per_user_per_day integer,
+  p_settlement_delay_hours integer default 0
 )
 returns jsonb
 language plpgsql
@@ -1531,7 +1532,9 @@ begin
   end if;
   if p_event_code is null or p_enabled is null
      or p_reward_amount is null or p_reward_amount < 0
-     or p_max_per_user_per_day is null or p_max_per_user_per_day < 0 then
+     or p_max_per_user_per_day is null or p_max_per_user_per_day < 0
+     or p_settlement_delay_hours is null or p_settlement_delay_hours < 0
+     or p_settlement_delay_hours > 2160 then
     raise exception using errcode = '22023', message = 'INVALID_REWARD_RULE';
   end if;
 
@@ -1539,6 +1542,7 @@ begin
   set enabled = p_enabled,
       reward_amount = p_reward_amount,
       max_per_user_per_day = p_max_per_user_per_day,
+      settlement_delay_hours = p_settlement_delay_hours,
       updated_at = now()
   where event_code = p_event_code;
 
@@ -1552,7 +1556,8 @@ begin
       'event_code', p_event_code,
       'enabled', p_enabled,
       'reward_amount', p_reward_amount,
-      'max_per_user_per_day', p_max_per_user_per_day
+      'max_per_user_per_day', p_max_per_user_per_day,
+      'settlement_delay_hours', p_settlement_delay_hours
     ));
 
   return jsonb_build_object('success', true);
@@ -1875,7 +1880,7 @@ revoke all on function public.eixpay_award_reward(uuid, text, uuid, text) from p
 revoke all on function public.eixpay_set_transfer_limits(bigint, bigint, bigint, integer) from public, anon;
 grant execute on function public.eixpay_set_transfer_limits(bigint, bigint, bigint, integer) to authenticated;
 revoke all on function public.eixpay_set_program_config(boolean, boolean, boolean, boolean) from public, anon;
-revoke all on function public.eixpay_set_reward_rule(text, boolean, bigint, integer) from public, anon;
+revoke all on function public.eixpay_set_reward_rule(text, boolean, bigint, integer, integer) from public, anon;
 revoke all on function public.neweix_plus_get_status() from public, anon;
 revoke all on function public.eixverse_get_modules() from public, anon;
 
@@ -1890,7 +1895,7 @@ grant execute on function public.eixpay_list_pending_transfers() to authenticate
 grant execute on function public.eixpay_decide_transfer(uuid, text, text) to authenticated;
 grant execute on function public.eixpay_award_reward(uuid, text, uuid, text) to service_role;
 grant execute on function public.eixpay_set_program_config(boolean, boolean, boolean, boolean) to authenticated;
-grant execute on function public.eixpay_set_reward_rule(text, boolean, bigint, integer) to authenticated;
+grant execute on function public.eixpay_set_reward_rule(text, boolean, bigint, integer, integer) to authenticated;
 grant execute on function public.neweix_plus_get_status() to authenticated;
 grant execute on function public.eixverse_get_modules() to authenticated;
 
