@@ -78,7 +78,8 @@ export async function PATCH(request: Request) {
       if (typeof input.eventCode !== "string" || !/^[a-z_]{3,60}$/.test(input.eventCode)
         || typeof input.enabled !== "boolean"
         || typeof input.rewardAmount !== "number" || !Number.isSafeInteger(input.rewardAmount) || input.rewardAmount < 0
-        || typeof input.maxPerDay !== "number" || !Number.isSafeInteger(input.maxPerDay) || input.maxPerDay < 0 || input.maxPerDay > 1000) {
+        || typeof input.maxPerDay !== "number" || !Number.isSafeInteger(input.maxPerDay) || input.maxPerDay < 0 || input.maxPerDay > 1000
+        || typeof input.settlementDelayHours !== "number" || !Number.isSafeInteger(input.settlementDelayHours) || input.settlementDelayHours < 0 || input.settlementDelayHours > 2160) {
         return fail("রিওয়ার্ড নিয়মের তথ্য সঠিক নয়।", 400);
       }
       const { data, error } = await access.supabase.rpc("eixpay_set_reward_rule", {
@@ -86,6 +87,7 @@ export async function PATCH(request: Request) {
         p_enabled: input.enabled,
         p_reward_amount: input.rewardAmount,
         p_max_per_user_per_day: input.maxPerDay,
+        p_settlement_delay_hours: input.settlementDelayHours,
       });
       if (error) return fail(error.code === "42501" ? "Supreme MFA অনুমোদন প্রয়োজন।" : "রিওয়ার্ড নিয়ম সংরক্ষণ করা যায়নি।", error.code === "42501" ? 403 : 400);
       return NextResponse.json({ success: true, data }, { headers });
