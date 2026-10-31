@@ -1,5 +1,6 @@
 import { requireStaff } from "@/lib/auth";
 import EixPayTransferApprovals from "@/features/supreme/eixpay-transfer-approvals";
+import EixPayProgramControl from "@/features/supreme/eixpay-program-control";
 export const dynamic = "force-dynamic";
 export default async function SupremeEixPayPage() {
   await requireStaff(["supreme"]);
@@ -11,7 +12,8 @@ export default async function SupremeEixPayPage() {
           <h1 className="mt-2 text-3xl font-black sm:text-4xl">EixPay Control</h1>
           <p className="mt-2 text-sm text-white/50">Eixon transfer requests and Supreme decisions.</p>
         </header>
-        <EixPayTransferApprovals />
+        <EixPayProgramControl />
+        <div className="mt-10"><EixPayTransferApprovals /></div>
       </div>
     </main>
   );
