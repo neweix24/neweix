@@ -277,6 +277,16 @@ create trigger eixpay_audit_append_only
 before update or delete on private.eixpay_audit_events
 for each row execute function private.prevent_eixpay_audit_mutation();
 
+drop trigger if exists eixpay_reward_claims_append_only on private.eixpay_reward_claims;
+create trigger eixpay_reward_claims_append_only
+before update or delete on private.eixpay_reward_claims
+for each row execute function private.prevent_eixpay_audit_mutation();
+
+drop trigger if exists eixpay_reward_reversals_append_only on private.eixpay_reward_reversals;
+create trigger eixpay_reward_reversals_append_only
+before update or delete on private.eixpay_reward_reversals
+for each row execute function private.prevent_eixpay_audit_mutation();
+
 
 revoke all on function private.prevent_eixpay_ledger_mutation() from public, anon, authenticated, service_role;
 revoke all on function private.prevent_eixpay_audit_mutation() from public, anon, authenticated, service_role;
@@ -1526,6 +1536,12 @@ begin
 
   if p_tier_code = 'free' and not p_enabled then
     raise exception using errcode = '22023', message = 'FREE_TIER_MUST_REMAIN_ENABLED';
+  end if;
+
+  if p_tier_code <> 'free' and p_enabled
+     and p_min_qualified_spend_bdt is null
+     and p_min_qualified_orders is null then
+    raise exception using errcode = '22023', message = 'MEMBERSHIP_TIER_REQUIRES_A_QUALIFICATION_RULE';
   end if;
 
   if not p_enabled and exists (
