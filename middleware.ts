@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest) {
     pathname === "/api/eixpay" || pathname.startsWith("/api/eixpay/") ||
     pathname === "/api/orders";
   const isCustomerPage =
-    pathname.startsWith("/account/") ||
+    pathname === "/account" || pathname.startsWith("/account/") ||
     pathname === "/orders" || pathname.startsWith("/orders/") ||
     pathname === "/wishlist" || pathname.startsWith("/wishlist/");
   const isCustomerProtected = isCustomerPage || isCustomerApi;
@@ -44,6 +44,13 @@ export async function middleware(request: NextRequest) {
   }
 
   const supabase = createServerClient(url, anonKey, {
+    cookieOptions: {
+      path: "/",
+      domain: process.env.NODE_ENV === "production" ? ".neweix.com" : undefined,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 365,
+    },
     cookies: {
       getAll() {
         return request.cookies.getAll();
