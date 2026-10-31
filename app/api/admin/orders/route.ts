@@ -250,6 +250,9 @@ export async function PATCH(request: Request) {
     const status = input.status;
 
     if (input.action === "restock_returned") {
+      if (typeof orderId !== "string" || !UUID_REGEX.test(orderId)) {
+        return NextResponse.json({ error: "সঠিক Order ID দিন।" }, { status: 400 });
+      }
       if (typeof input.note !== "string" || input.note.trim().length < 5 || input.note.trim().length > 500) {
         return NextResponse.json({ error: "স্টক ফেরতের কারণ ৫–৫০০ অক্ষরের মধ্যে লিখুন।" }, { status: 400 });
       }
