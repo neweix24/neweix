@@ -47,7 +47,7 @@
     "binding": "AI"
   },
   "triggers": {
-    "crons": ["*/15 * * * *"]
+    "crons": ["*/5 * * * *", "*/15 * * * *"]
   },
   "assets": {
     "directory": ".open-next/assets",
