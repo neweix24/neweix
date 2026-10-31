@@ -170,6 +170,30 @@ export async function GET(request: NextRequest) {
         console.warn("Customer device registry unavailable:", deviceError instanceof Error ? deviceError.message : "unknown error");
       }
 
+      // Cloudflare supplies this header at the edge; do not trust arbitrary
+      // x-forwarded-for values for security logging.
+      const clientIp = request.headers.get("cf-connecting-ip")?.trim() ?? "";
+      const isPlausibleIp = clientIp.length <= 45 &&
+        /^[0-9a-fA-F:.]+$/.test(clientIp) &&
+        (clientIp.includes(".") || clientIp.includes(":"));
+
+      if (isPlausibleIp) {
+        try {
+          const admin = createAdminSupabaseClient();
+          const { error: ipLogError } = await admin
+            .from("customer_device_access_logs")
+            .insert({
+              user_id: user.id,
+              device_id: deviceId,
+              ip_address: clientIp,
+              user_agent: userAgent,
+            });
+          if (ipLogError) console.warn("Customer IP access logging failed:", ipLogError.message);
+        } catch (ipLogError) {
+          console.warn("Customer IP access log unavailable:", ipLogError instanceof Error ? ipLogError.message : "unknown error");
+        }
+      }
+
       const metadata = user.user_metadata ?? {};
       const metadataName =
         typeof metadata.full_name === "string" ? metadata.full_name :
