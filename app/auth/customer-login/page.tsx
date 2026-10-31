@@ -13,7 +13,7 @@ function CustomerLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(searchParams.get("mode") === "signup");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -94,6 +94,7 @@ function CustomerLoginForm() {
         }
 
         if (data.session) {
+          await fetch("/api/eixpay/referral/apply", { method: "POST", cache: "no-store" }).catch(() => undefined);
           router.replace("/account");
           router.refresh();
         } else {
