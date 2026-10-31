@@ -230,15 +230,22 @@ export async function POST(request: Request) {
   const paymentMethod =
     paymentMethodValue as PaymentMethod;
 
-  const transactionId = cleanString(
-    rawBody.payment_transaction_id
-  );
+  const transactionId = cleanString(rawBody.payment_transaction_id);
+  const deliveryFeePaymentMethod = cleanString(rawBody.delivery_fee_payment_method);
+  const deliveryFeeTransactionId = cleanString(rawBody.delivery_fee_payment_transaction_id);
 
-  if (paymentMethod === "cod" && transactionId) {
-    return errorResponse(
-      "ক্যাশ অন ডেলিভারির জন্য Transaction ID প্রয়োজন নেই।",
-      400
-    );
+  if (paymentMethod === "cod") {
+    if (transactionId) {
+      return errorResponse("COD পণ্যের পেমেন্টের Transaction ID গ্রহণযোগ্য নয়।", 400);
+    }
+    if (!deliveryFeePaymentMethod || !["bkash", "nagad", "rocket"].includes(deliveryFeePaymentMethod)) {
+      return errorResponse("COD অর্ডারের ডেলিভারি চার্জের জন্য bKash, Nagad অথবা Rocket নির্বাচন করুন।", 400);
+    }
+    if (!deliveryFeeTransactionId || deliveryFeeTransactionId.length > 120 || !/^[A-Za-z0-9-]+$/.test(deliveryFeeTransactionId)) {
+      return errorResponse("ডেলিভারি চার্জের সঠিক Transaction ID দিন।", 400);
+    }
+  } else if (deliveryFeePaymentMethod || deliveryFeeTransactionId) {
+    return errorResponse("MFS অর্ডারে ডেলিভারি চার্জ আলাদা করে জমা দেবেন না; মোট বিল একবারে পরিশোধ করুন।", 400);
   }
 
   if (paymentMethod !== "cod") {
@@ -346,19 +353,15 @@ export async function POST(request: Request) {
     }
 
     // The server must enforce mobile payment configuration.
-    if (paymentMethod !== "cod") {
+    const selectedMfs = paymentMethod === "cod" ? deliveryFeePaymentMethod : paymentMethod;
+    if (selectedMfs && ["bkash", "nagad", "rocket"].includes(selectedMfs)) {
       const paymentEnvKeys = {
         bkash: "PAYMENT_BKASH_NUMBER",
         nagad: "PAYMENT_NAGAD_NUMBER",
         rocket: "PAYMENT_ROCKET_NUMBER",
       } as const;
-
-      const configuredNumber =
-        runtimeEnv[paymentEnvKeys[paymentMethod]];
-
-      mobilePaymentEnabled =
-        typeof configuredNumber === "string" &&
-        configuredNumber.trim().length > 0;
+      const configuredNumber = runtimeEnv[paymentEnvKeys[selectedMfs as keyof typeof paymentEnvKeys]];
+      mobilePaymentEnabled = typeof configuredNumber === "string" && configuredNumber.trim().length > 0;
     }
   } catch (error) {
     console.error(
@@ -367,10 +370,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (
-    paymentMethod !== "cod" &&
-    !mobilePaymentEnabled
-  ) {
+  if (!mobilePaymentEnabled) {
     return errorResponse(
       "এই পেমেন্ট পদ্ধতি বর্তমানে চালু নেই। অন্য পদ্ধতি নির্বাচন করুন।",
       400
@@ -464,7 +464,7 @@ export async function POST(request: Request) {
 
     const { data, error } =
       await supabase.rpc(
-        "create_order_with_coupon",
+        "create_order_with_prepaid_delivery",
         {
           p_customer_name: customerName,
           p_customer_phone: customerPhone,
@@ -479,6 +479,8 @@ export async function POST(request: Request) {
           p_items: items,
           p_coupon_code: couponCode,
           p_customer_id: authenticatedCustomerId,
+          p_delivery_fee_payment_method: paymentMethod === "cod" ? deliveryFeePaymentMethod : null,
+          p_delivery_fee_payment_transaction_id: paymentMethod === "cod" ? deliveryFeeTransactionId : null,
         }
       );
 
@@ -573,9 +575,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         message:
-          paymentMethod === "cod"
-            ? "অর্ডার গ্রহণ করা হয়েছে।"
-            : "অর্ডার গ্রহণ করা হয়েছে। পেমেন্ট যাচাই বাকি আছে।",
+          "অর্ডার গ্রহণ করা হয়েছে। পেমেন্ট যাচাই বাকি আছে।",
         order: data,
       },
       {
