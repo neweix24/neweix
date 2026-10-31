@@ -65,8 +65,8 @@ function isValidCartItem(item: unknown): item is CartItem {
 export default function CheckoutView() {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [verifiedPhone, setVerifiedPhone] = useState("");
-  const [verificationRequired, setVerificationRequired] = useState(false);
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [phoneVerified, setPhoneVerified] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [defaultAddress, setDefaultAddress] = useState<SavedAddress | null>(null);
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
@@ -90,22 +90,21 @@ export default function CheckoutView() {
         const supabase = createBrowserSupabaseClient();
         const { data: authData, error: authError } = await supabase.auth.getUser();
 
-        if (authError || !authData.user) {
-          router.replace("/auth/customer-login?next=/checkout");
-          return;
+        // Guest checkout is supported. Phone verification is only required
+        // to link an order to a registered customer account.
+        if (!authError && authData.user) {
+          const phoneResponse = await fetch("/api/account/phone/status", {
+            cache: "no-store",
+          });
+          const phoneStatus = await phoneResponse.json().catch(() => null);
+
+          if (phoneResponse.ok && phoneStatus?.verified && phoneStatus?.phone) {
+            if (!cancelled) {
+              setCustomerPhone(phoneStatus.phone);
+              setPhoneVerified(true);
+            }
+          }
         }
-
-        const phoneResponse = await fetch("/api/account/phone/status", {
-          cache: "no-store",
-        });
-        const phoneStatus = await phoneResponse.json().catch(() => null);
-
-        if (!phoneResponse.ok || !phoneStatus?.verified || !phoneStatus?.phone) {
-          if (!cancelled) setVerificationRequired(true);
-          return;
-        }
-
-        if (!cancelled) setVerifiedPhone(phoneStatus.phone);
 
         const saved = localStorage.getItem("neweix_cart");
         const parsed: unknown = saved ? JSON.parse(saved) : [];
@@ -196,7 +195,10 @@ export default function CheckoutView() {
         if (!cancelled) {
           if (config) setPaymentConfig(config);
           if (loadedProducts) setProducts(loadedProducts);
-          if (savedAddress) setDefaultAddress(savedAddress);
+          if (savedAddress) {
+            setDefaultAddress(savedAddress);
+            setCustomerPhone((current) => current || savedAddress.phone || "");
+          }
         }
       } catch (err) {
         if (!cancelled) {
@@ -215,17 +217,6 @@ export default function CheckoutView() {
       cancelled = true;
     };
   }, [router]);
-
-  if (verificationRequired) {
-    return (
-      <main className={styles.page}>
-        <p className="eyebrow">PHONE VERIFICATION REQUIRED</p>
-        <h1>অর্ডারের আগে ফোন নম্বর যাচাই করুন</h1>
-        <p>NEWEIX-এ অর্ডার করতে আপনার অ্যাকাউন্টে লগইন করে মোবাইল নম্বর OTP দিয়ে যাচাই করতে হবে।</p>
-        <Link href="/account">অ্যাকাউন্টে গিয়ে ফোন নম্বর যাচাই করুন</Link>
-      </main>
-    );
-  }
 
   const cartDetails = cart.map((item) => {
     const product = products.find((p) => p.id === item.product_id);
@@ -341,7 +332,7 @@ export default function CheckoutView() {
 
     const payload = {
       customer_name: String(formData.get("customer_name") ?? "").trim(),
-      customer_phone: String(formData.get("customer_phone") ?? "").trim(),
+      customer_phone: customerPhone.trim(),
       customer_email: String(formData.get("customer_email") ?? "").trim(),
       shipping_address: String(formData.get("shipping_address") ?? "").trim(),
       shipping_city: String(formData.get("shipping_city") ?? "").trim(),
@@ -494,8 +485,12 @@ export default function CheckoutView() {
 
         <label htmlFor="customer_phone">মোবাইল নম্বর *</label>
         <input id="customer_phone" name="customer_phone" type="tel" required
-          autoComplete="tel" readOnly value={verifiedPhone} disabled={submitting}
-          style={fieldStyle} />
+          autoComplete="tel" value={customerPhone}
+          onChange={(event) => setCustomerPhone(event.target.value)}
+          readOnly={phoneVerified} disabled={submitting}
+          placeholder="01XXXXXXXXX" style={fieldStyle} />
+        {phoneVerified && <small>আপনার যাচাইকৃত অ্যাকাউন্ট নম্বর ব্যবহার করা হচ্ছে।</small>}
+        {!phoneVerified && <small>অ্যাকাউন্ট ছাড়া অর্ডার করতে পারবেন। সঠিক যোগাযোগ নম্বর দিন।</small>}
 
         <label htmlFor="customer_email">ইমেইল (ঐচ্ছিক)</label>
         <input id="customer_email" name="customer_email" type="email"
