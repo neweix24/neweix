@@ -39,6 +39,7 @@ export async function POST(request: Request) {
       const message = error.message.includes("MISSION_REWARD_NOT_AVAILABLE")
         ? "Eixon earning অথবা campaign_action reward rule চালু নেই।"
         : error.message.includes("MISSION_REQUIREMENT_NOT_MET") ? "মিশনের শর্ত এখনো পূরণ হয়নি।"
+        : error.message.includes("CAMPAIGN_USER_LIMIT") ? "এই Campaign-এর আপনার Claim সীমা পূর্ণ হয়েছে।"
         : error.message.includes("MISSION_USER_LIMIT") || error.message.includes("MISSION_DAILY_LIMIT") ? "এই মিশনের Claim সীমা পূর্ণ হয়েছে।"
         : "মিশনের পুরস্কার Claim করা যায়নি।";
       return fail(message, status);
