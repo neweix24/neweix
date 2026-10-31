@@ -16,6 +16,9 @@ export type ProductDetailsData = {
   price: number;
   compare_at_price: number | null;
   image_urls: string[] | null;
+  video_url?: string | null;
+  variants?: unknown;
+  sku?: string | null;
   stock: number;
   category_id?: string | null;
 };
@@ -35,6 +38,18 @@ export default function ProductDetails({ product }: { product: ProductDetailsDat
             // eslint-disable-next-line @next/next/no-img-element
             <img key={src + index} src={src} alt={`${product.name} — ছবি ${index + 1}`} />
           )) : <div className={styles.placeholder}>NEWEIX</div>}
+          {product.video_url && (
+            <div className={styles.productVideo}>
+              <iframe
+                src={product.video_url}
+                title={product.name + " পণ্যের ভিডিও"}
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+          )}
         </section>
         <section className={styles.info}>
           <span className={styles.eyebrow}>NEWEIX PRODUCT</span>
@@ -44,7 +59,16 @@ export default function ProductDetails({ product }: { product: ProductDetailsDat
             {product.compare_at_price != null && product.compare_at_price > product.price && <del>{money(product.compare_at_price)}</del>}
           </div>
           <p className={product.stock > 0 ? styles.stock : styles.out}>{product.stock > 0 ? `স্টকে আছে · ${product.stock} টি` : "বর্তমানে স্টক শেষ"}</p>
-          {product.description && <p className={styles.description}>{product.description}</p>}
+          {product.description?.trim() ? <p className={styles.description}>{product.description}</p> : <p className={styles.description}>এই পণ্যের বিস্তারিত বিবরণ এখনো যোগ করা হয়নি। পণ্য সম্পর্কে জানতে আমাদের সঙ্গে যোগাযোগ করুন।</p>}
+          {product.sku && <p className={styles.productMeta}>পণ্য কোড: <strong>{product.sku}</strong></p>}
+          {Array.isArray(product.variants) && product.variants.length > 0 && (
+            <section className={styles.variants} aria-label="পণ্যের ভ্যারিয়েন্ট">
+              <h2>উপলভ্য অপশন</h2>
+              <ul>{product.variants.map((variant, index) => (
+                <li key={index}>{typeof variant === "string" ? variant : JSON.stringify(variant)}</li>
+              ))}</ul>
+            </section>
+          )}
           <AddToCartButton productId={product.id} disabled={product.stock <= 0} maxQuantity={product.stock} />
           <CompareButton productId={product.id} />
           <div className={styles.assurance}><span>নিরাপদ অর্ডার</span><span>বাংলাদেশজুড়ে সেবা</span><span>সহজ অর্ডার ট্র্যাকিং</span></div>
