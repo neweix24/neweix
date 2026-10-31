@@ -1,8 +1,6 @@
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_SKEW_SECONDS = 300;
 const IPLOGS_URL = "https://iplogs.com/v1/check";
-const FULL_CHECK_BUDGET_MS = 3_200;
-const FAST_CHECK_BUDGET_MS = 800;
 
 function response(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -154,10 +152,8 @@ Deno.serve(async (request: Request) => {
     }
   }
 
-  // Prefer the full check, but stay within Supabase Auth's short hook budget.
-  // If the live probe is slow, fall back to IPLogs' in-memory fast verdict.
-  const result = await checkIp("full", FULL_CHECK_BUDGET_MS) ??
-    await checkIp("fast", FAST_CHECK_BUDGET_MS);
+  // Use the documented full IP check only; do not substitute a weaker fast result.
+  const result = await checkIp("full", 4_000);
 
   if (!result) {
     return deny("নেটওয়ার্ক নিরাপত্তা যাচাই সাময়িকভাবে অনুপলব্ধ। পরে আবার চেষ্টা করুন।", 500);
