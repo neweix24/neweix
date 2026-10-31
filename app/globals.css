@@ -965,3 +965,108 @@ body :where(*) {
   [role="button"]) :where(*) {
   color: var(--accent-ink, #080b09) !important;
 }
+
+
+/* NEWEIX gradient refresh — cohesive lime / emerald brand treatment. */
+:root {
+  --brand-gradient: linear-gradient(118deg, #b6ff4a 0%, #73e58b 48%, #39c6a5 100%);
+  --brand-gradient-soft: linear-gradient(135deg, rgba(182,255,74,.18), rgba(57,198,165,.10) 55%, rgba(182,255,74,.04));
+  --page-gradient: linear-gradient(135deg, #fbfff6 0%, #f2fff4 48%, #f3fbff 100%);
+}
+html, body {
+  background-color: #f7fff4 !important;
+}
+body {
+  background-image:
+    radial-gradient(ellipse at 4% 4%, rgba(182,255,74,.18), transparent 34%),
+    radial-gradient(ellipse at 96% 18%, rgba(57,198,165,.12), transparent 32%),
+    linear-gradient(145deg, #fbfff7 0%, #f3fff5 48%, #f5fbff 100%) !important;
+  background-attachment: fixed;
+}
+.topbar {
+  background: linear-gradient(105deg, rgba(255,255,255,.96), rgba(241,255,235,.94), rgba(237,255,249,.94)) !important;
+  border-bottom-color: rgba(105,173,91,.22);
+}
+.brand span,
+.eyebrow,
+.product-label {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+.nav-button,
+.primary-button,
+.neweix-button-primary,
+.product-bottom button {
+  background: var(--brand-gradient) !important;
+  border: 0 !important;
+  box-shadow: 0 8px 22px rgba(89,190,93,.18);
+}
+.nav-button:hover,
+.primary-button:hover,
+.neweix-button-primary:hover,
+.product-bottom button:hover:not(:disabled) {
+  background: linear-gradient(118deg, #a4f43c 0%, #5ddc82 48%, #27b99b 100%) !important;
+  box-shadow: 0 12px 28px rgba(57,178,116,.25);
+}
+.hero {
+  background:
+    radial-gradient(ellipse at 88% 20%, rgba(182,255,74,.28), transparent 38%),
+    radial-gradient(ellipse at 10% 100%, rgba(57,198,165,.12), transparent 42%),
+    linear-gradient(125deg, #f7ffed 0%, #effff4 52%, #f0fbff 100%) !important;
+  border-bottom-color: rgba(105,173,91,.2);
+}
+.product-card,
+.neweix-panel,
+.info-page-section,
+main.min-h-screen.px-4.py-10 > div.mx-auto > section {
+  background: linear-gradient(145deg, rgba(255,255,255,.98) 0%, rgba(247,255,241,.97) 54%, rgba(241,255,250,.98) 100%) !important;
+  border-color: rgba(105,173,91,.24);
+  box-shadow: 0 12px 34px rgba(45,110,65,.08);
+}
+.product-art {
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(182,255,74,.28), transparent 55%),
+    linear-gradient(145deg, #efffdf, #e8fff4 58%, #eaf8ff) !important;
+}
+.auth-page,
+.info-page-header,
+main.min-h-screen.px-4.py-10 > div.mx-auto > header {
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(182,255,74,.23), transparent 45%),
+    linear-gradient(135deg, #ffffff 0%, #f4ffed 52%, #effff8 100%) !important;
+  border-color: rgba(105,173,91,.24);
+}
+.info-page-section h2::before {
+  background: var(--brand-gradient);
+}
+footer {
+  background: linear-gradient(105deg, #f8fff2, #f0fff7, #f2fbff) !important;
+  border-top-color: rgba(105,173,91,.2);
+}
+::selection {
+  color: #102414;
+  background: #b6ff4a;
+}
+:focus-visible {
+  outline-color: #45c995;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .product-card,
+  .neweix-panel,
+  .info-page-section {
+    transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  }
+  .product-card:hover,
+  .neweix-panel:hover {
+    border-color: rgba(57,198,165,.42);
+    box-shadow: 0 18px 42px rgba(45,130,83,.13);
+  }
+}
+/* Preserve customer-selected storefront colors while retaining soft gradient depth. */
+body[data-customer-theme="storefront"] {
+  background-image:
+    radial-gradient(ellipse at 4% 4%, color-mix(in srgb, var(--customer-theme-button, #b6ff4a) 14%, transparent), transparent 36%),
+    linear-gradient(145deg, var(--customer-theme-background, #fff), var(--customer-theme-surface, #f8faf8)) !important;
+}
