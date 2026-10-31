@@ -1,14 +1,18 @@
 -- NEWEIX EixPay cryptographic integrity chain (stage 1).
--- This is tamper-evident against ordinary application roles, NOT against a
--- privileged database owner. Independent Ed25519 checkpoint signing is stage 2.
+-- Tamper-evident against ordinary application roles, NOT a privileged database owner.
+-- Independent Ed25519 checkpoint signing is a separate stage and is not implemented here.
 --
--- Existing rows are intentionally not backfilled. The chain starts with the
+-- Historical rows are intentionally not backfilled. Coverage begins with the
 -- first ledger/audit INSERT after this migration is applied.
 
 do $check$
 begin
   if to_regprocedure('extensions.digest(bytea,text)') is null then
     raise exception 'EIXPAY_INTEGRITY_REQUIRES_PGCRYPTO';
+  end if;
+  if to_regclass('private.eixpay_ledger') is null
+     or to_regclass('private.eixpay_audit_events') is null then
+    raise exception 'EIXPAY_LEDGER_AND_AUDIT_TABLES_REQUIRED';
   end if;
 end;
 $check$;
@@ -30,8 +34,7 @@ create table if not exists private.eixpay_integrity_events (
   source_table text not null
     check (source_table in ('eixpay_ledger', 'eixpay_audit_events')),
   source_id bigint not null,
-  event_payload jsonb not null
-    check (jsonb_typeof(event_payload) = 'object'),
+  source_hash text not null check (source_hash ~ '^[0-9a-f]{64}$'),
   previous_hash text not null check (previous_hash ~ '^[0-9a-f]{64}$'),
   event_hash text not null unique check (event_hash ~ '^[0-9a-f]{64}$'),
   created_at timestamptz not null default now(),
@@ -76,6 +79,7 @@ declare
   v_payload jsonb := to_jsonb(new);
   v_source_table text := tg_table_name;
   v_source_id bigint;
+  v_source_hash text;
   v_event_hash text;
 begin
   if tg_table_schema <> 'private'
@@ -90,8 +94,8 @@ begin
       message = 'EIXPAY_INTEGRITY_SOURCE_ID_REQUIRED';
   end if;
 
-  -- A single locked state row gives the mixed ledger/audit stream a strict,
-  -- transaction-safe total order. Rollback also rolls back the chain update.
+  -- Serialize the combined ledger/audit stream. The lock, source INSERT,
+  -- event INSERT and state update commit or roll back as one transaction.
   insert into private.eixpay_integrity_chain_state(singleton)
   values (true)
   on conflict (singleton) do nothing;
@@ -103,20 +107,28 @@ begin
   for update;
 
   v_sequence := v_sequence + 1;
+  v_source_hash := encode(
+    extensions.digest(convert_to(v_payload::text, 'UTF8'), 'sha256'),
+    'hex'
+  );
   v_event_hash := encode(
     extensions.digest(
-      convert_to(v_previous_hash || '|' || v_payload::text, 'UTF8'),
+      convert_to(
+        v_previous_hash || '|' || v_source_table || '|' ||
+        v_source_id::text || '|' || v_source_hash,
+        'UTF8'
+      ),
       'sha256'
     ),
     'hex'
   );
 
   insert into private.eixpay_integrity_events(
-    sequence, source_table, source_id, event_payload,
+    sequence, source_table, source_id, source_hash,
     previous_hash, event_hash
   )
   values (
-    v_sequence, v_source_table, v_source_id, v_payload,
+    v_sequence, v_source_table, v_source_id, v_source_hash,
     v_previous_hash, v_event_hash
   );
 
@@ -156,6 +168,7 @@ declare
   v_expected_previous text := repeat('0', 64);
   v_expected_hash text;
   v_current_payload jsonb;
+  v_source_hash text;
   v_checked bigint := 0;
   v_first_invalid bigint;
   v_reason text;
@@ -168,15 +181,15 @@ begin
       message = 'SUPREME_MFA_REQUIRED';
   end if;
 
-  -- Hold a shared lock for the full verification pass. Insert triggers need
-  -- FOR UPDATE on this row, so the verifier sees a stable, complete chain.
+  -- The verifier's SHARE lock blocks append-trigger UPDATE locks, giving it
+  -- a stable chain snapshot while it scans all committed events.
   select * into v_state
   from private.eixpay_integrity_chain_state
   where singleton = true
   for share;
 
   for v_event in
-    select sequence, source_table, source_id, event_payload,
+    select sequence, source_table, source_id, source_hash,
            previous_hash, event_hash
     from private.eixpay_integrity_events
     order by sequence asc
@@ -195,33 +208,50 @@ begin
       exit;
     end if;
 
-    v_expected_hash := encode(
-      extensions.digest(
-        convert_to(v_expected_previous || '|' || v_event.event_payload::text, 'UTF8'),
-        'sha256'
-      ),
-      'hex'
-    );
-
-    if v_expected_hash <> v_event.event_hash then
-      v_first_invalid := v_event.sequence;
-      v_reason := 'EVENT_HASH_MISMATCH';
-      exit;
-    end if;
-
     if v_event.source_table = 'eixpay_ledger' then
       select to_jsonb(l) into v_current_payload
       from private.eixpay_ledger l
       where l.id = v_event.source_id;
-    else
+    elsif v_event.source_table = 'eixpay_audit_events' then
       select to_jsonb(a) into v_current_payload
       from private.eixpay_audit_events a
       where a.id = v_event.source_id;
+    else
+      v_first_invalid := v_event.sequence;
+      v_reason := 'UNSUPPORTED_SOURCE_TABLE';
+      exit;
     end if;
 
-    if v_current_payload is distinct from v_event.event_payload then
+    if v_current_payload is null then
+      v_first_invalid := v_event.sequence;
+      v_reason := 'SOURCE_ROW_MISSING';
+      exit;
+    end if;
+
+    v_source_hash := encode(
+      extensions.digest(convert_to(v_current_payload::text, 'UTF8'), 'sha256'),
+      'hex'
+    );
+    if v_source_hash <> v_event.source_hash then
       v_first_invalid := v_event.sequence;
       v_reason := 'SOURCE_ROW_MISMATCH';
+      exit;
+    end if;
+
+    v_expected_hash := encode(
+      extensions.digest(
+        convert_to(
+          v_expected_previous || '|' || v_event.source_table || '|' ||
+          v_event.source_id::text || '|' || v_event.source_hash,
+          'UTF8'
+        ),
+        'sha256'
+      ),
+      'hex'
+    );
+    if v_expected_hash <> v_event.event_hash then
+      v_first_invalid := v_event.sequence;
+      v_reason := 'EVENT_HASH_MISMATCH';
       exit;
     end if;
 
@@ -252,6 +282,6 @@ grant execute on function public.eixpay_verify_integrity()
   to authenticated;
 
 comment on table private.eixpay_integrity_events is
-  'SHA-256 hash chain for new EixPay ledger and audit inserts. Detects ordinary-role tampering; not protection against privileged database owner without external signatures.';
+  'SHA-256 hash chain for new EixPay ledger and audit inserts. Stores only source hashes, not duplicate financial/audit payloads. Detects ordinary-role tampering; not protection against privileged database owner without external signatures.';
 comment on function public.eixpay_verify_integrity() is
   'Supreme AAL2-only verifier for the EixPay ledger/audit SHA-256 chain. Does not provide independent signature verification.';
