@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Icon from "@/components/ui/icon";
 
 type CreateResult = {
   message?: string;
@@ -123,7 +124,7 @@ export default function StaffCreateForm() {
       </div>
 
       <button type="submit" disabled={loading}>
-        {loading ? "তৈরি হচ্ছে..." : "অ্যাকাউন্ট তৈরি করুন"}
+        <><Icon name={loading ? "refresh" : "user"} size={16} /> {loading ? "তৈরি হচ্ছে..." : "অ্যাকাউন্ট তৈরি করুন"}</>
       </button>
 
       {message && (
