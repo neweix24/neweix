@@ -13,6 +13,10 @@ create table if not exists private.eixpay_config (
   transfer_enabled boolean not null default false,
   transfer_legal_review_confirmed boolean not null default false,
   transfer_requires_supreme_approval boolean not null default true,
+  min_transfer_amount bigint not null default 1 check (min_transfer_amount >= 1),
+  max_transfer_amount bigint not null default 5000 check (max_transfer_amount >= min_transfer_amount),
+  max_transfer_daily_amount bigint not null default 10000 check (max_transfer_daily_amount >= max_transfer_amount),
+  max_transfer_requests_per_day integer not null default 5 check (max_transfer_requests_per_day between 1 and 50),
   updated_by uuid,
   updated_at timestamptz not null default now()
 );
@@ -488,6 +492,8 @@ declare
   v_balance bigint;
   v_request private.eixpay_transfer_requests%rowtype;
   v_config private.eixpay_config%rowtype;
+  v_request_count integer;
+  v_daily_amount bigint;
 begin
   if v_user_id is null then
     raise exception using errcode = '28000', message = 'AUTHENTICATION_REQUIRED';
@@ -531,6 +537,42 @@ begin
   if v_balance is null then
     raise exception using errcode = '55000', message = 'EIXPAY_WALLET_NOT_INITIALIZED';
   end if;
+
+  select * into v_request
+  from private.eixpay_transfer_requests
+  where sender_user_id = v_user_id and idempotency_key = p_idempotency_key;
+
+  if found then
+    if v_request.recipient_user_id <> v_recipient_id or v_request.amount <> p_amount then
+      raise exception using errcode = '22023', message = 'IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_TRANSFER';
+    end if;
+    return jsonb_build_object(
+      'success', true,
+      'request_id', v_request.id,
+      'status', v_request.status,
+      'approval_required', true,
+      'duplicate', true
+    );
+  end if;
+
+  if p_amount < v_config.min_transfer_amount or p_amount > v_config.max_transfer_amount then
+    raise exception using errcode = '22023', message = 'TRANSFER_AMOUNT_OUTSIDE_CONFIGURED_LIMITS';
+  end if;
+
+  select count(*)::integer,
+         coalesce(sum(amount) filter (where status in ('pending','approved')), 0)::bigint
+  into v_request_count, v_daily_amount
+  from private.eixpay_transfer_requests
+  where sender_user_id = v_user_id
+    and requested_at >= date_trunc('day', now());
+
+  if v_request_count >= v_config.max_transfer_requests_per_day then
+    raise exception using errcode = '22023', message = 'DAILY_TRANSFER_REQUEST_LIMIT_REACHED';
+  end if;
+  if v_daily_amount + p_amount > v_config.max_transfer_daily_amount then
+    raise exception using errcode = '22023', message = 'DAILY_TRANSFER_AMOUNT_LIMIT_REACHED';
+  end if;
+
   if v_balance < p_amount then
     raise exception using errcode = '22023', message = 'INSUFFICIENT_EIXON_BALANCE';
   end if;
@@ -656,6 +698,9 @@ begin
   if not found or not v_config.transfer_enabled or not v_config.transfer_legal_review_confirmed then
     raise exception using errcode = '55000', message = 'EIXON_TRANSFERS_NOT_AVAILABLE';
   end if;
+  if v_request.amount < v_config.min_transfer_amount or v_request.amount > v_config.max_transfer_amount then
+    raise exception using errcode = '22023', message = 'TRANSFER_AMOUNT_OUTSIDE_CONFIGURED_LIMITS';
+  end if;
 
   insert into private.eixpay_wallets (user_id)
   values (v_request.recipient_user_id)
@@ -674,6 +719,16 @@ begin
 
   if v_sender_balance is null or v_sender_balance < v_request.amount then
     raise exception using errcode = '22023', message = 'INSUFFICIENT_EIXON_BALANCE_AT_APPROVAL';
+  end if;
+
+  if (
+    select coalesce(sum(amount), 0)
+    from private.eixpay_transfer_requests
+    where sender_user_id = v_request.sender_user_id
+      and status = 'approved'
+      and requested_at >= date_trunc('day', now())
+  ) + v_request.amount > v_config.max_transfer_daily_amount then
+    raise exception using errcode = '22023', message = 'DAILY_TRANSFER_AMOUNT_LIMIT_REACHED';
   end if;
 
   update private.eixpay_wallets
@@ -1309,6 +1364,62 @@ begin
 end;
 $function$;
 
+create or replace function public.eixpay_set_transfer_limits(
+  p_min_amount bigint,
+  p_max_amount bigint,
+  p_daily_max_amount bigint,
+  p_max_requests_per_day integer
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_actor uuid := auth.uid();
+begin
+  if v_actor is null
+     or not private.has_staff_role(array['supreme']::text[])
+     or coalesce(auth.jwt() ->> 'aal', '') <> 'aal2' then
+    raise exception using errcode = '42501', message = 'SUPREME_MFA_REQUIRED';
+  end if;
+
+  if p_min_amount is null or p_min_amount < 1
+     or p_max_amount is null or p_max_amount < p_min_amount
+     or p_daily_max_amount is null or p_daily_max_amount < p_max_amount
+     or p_max_requests_per_day is null or p_max_requests_per_day < 1
+     or p_max_requests_per_day > 50 then
+    raise exception using errcode = '22023', message = 'INVALID_TRANSFER_LIMITS';
+  end if;
+
+  update private.eixpay_config
+  set min_transfer_amount = p_min_amount,
+      max_transfer_amount = p_max_amount,
+      max_transfer_daily_amount = p_daily_max_amount,
+      max_transfer_requests_per_day = p_max_requests_per_day,
+      updated_by = v_actor,
+      updated_at = now()
+  where singleton = true;
+
+  insert into private.eixpay_audit_events (actor_id, event_code, metadata)
+  values (v_actor, 'transfer_limits_updated',
+    jsonb_build_object(
+      'min_transfer_amount', p_min_amount,
+      'max_transfer_amount', p_max_amount,
+      'max_transfer_daily_amount', p_daily_max_amount,
+      'max_transfer_requests_per_day', p_max_requests_per_day
+    ));
+
+  return jsonb_build_object(
+    'success', true,
+    'min_transfer_amount', p_min_amount,
+    'max_transfer_amount', p_max_amount,
+    'max_transfer_daily_amount', p_daily_max_amount,
+    'max_transfer_requests_per_day', p_max_requests_per_day
+  );
+end;
+$function$;
+
 create or replace function public.eixpay_set_reward_rule(
   p_event_code text,
   p_enabled boolean,
@@ -1671,6 +1782,8 @@ revoke all on function public.eixpay_request_transfer(text, bigint, text, text) 
 revoke all on function public.eixpay_list_pending_transfers() from public, anon;
 revoke all on function public.eixpay_decide_transfer(uuid, text, text) from public, anon;
 revoke all on function public.eixpay_award_reward(uuid, text, uuid, text) from public, anon, authenticated;
+revoke all on function public.eixpay_set_transfer_limits(bigint, bigint, bigint, integer) from public, anon;
+grant execute on function public.eixpay_set_transfer_limits(bigint, bigint, bigint, integer) to authenticated;
 revoke all on function public.eixpay_set_program_config(boolean, boolean, boolean, boolean) from public, anon;
 revoke all on function public.eixpay_set_reward_rule(text, boolean, bigint, integer) from public, anon;
 revoke all on function public.neweix_plus_get_status() from public, anon;
