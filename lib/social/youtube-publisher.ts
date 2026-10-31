@@ -107,6 +107,34 @@ function isSafeHttpsMediaUrl(value: string): URL {
   return url;
 }
 
+async function readVideoBody(response: Response, maxBytes: number): Promise<ArrayBuffer> {
+  if (!response.body) throw new Error("Video source returned an empty body.");
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        throw new Error("Video file exceeds the 50 MB scheduled-upload limit.");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const combined = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return toArrayBuffer(combined);
+}
+
 export async function uploadYouTubeVideo(input: {
   accessToken: string;
   videoUrl: string;
@@ -115,7 +143,7 @@ export async function uploadYouTubeVideo(input: {
 }): Promise<{ videoId: string; videoUrl: string }> {
   const mediaUrl = isSafeHttpsMediaUrl(input.videoUrl);
   const mediaResponse = await fetch(mediaUrl, {
-    redirect: "follow",
+    redirect: "error",
     signal: AbortSignal.timeout(30_000),
   });
   if (!mediaResponse.ok) throw new Error(`Video download failed (${mediaResponse.status}).`);
@@ -123,10 +151,8 @@ export async function uploadYouTubeVideo(input: {
   if (!contentType.startsWith("video/")) throw new Error("The media URL must return a video file.");
   const declaredSize = Number(mediaResponse.headers.get("content-length") || "0");
   if (declaredSize > 50 * 1024 * 1024) throw new Error("Video file exceeds the 50 MB scheduled-upload limit.");
-  const videoBytes = await mediaResponse.arrayBuffer();
-  if (videoBytes.byteLength === 0 || videoBytes.byteLength > 50 * 1024 * 1024) {
-    throw new Error("Video file is empty or exceeds the 50 MB scheduled-upload limit.");
-  }
+  const videoBytes = await readVideoBody(mediaResponse, 50 * 1024 * 1024);
+  if (videoBytes.byteLength === 0) throw new Error("Video file is empty.");
 
   const initResponse = await fetch(
     "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
@@ -168,7 +194,6 @@ export async function uploadYouTubeVideo(input: {
     headers: {
       Authorization: `Bearer ${input.accessToken}`,
       "Content-Type": contentType,
-      "Content-Length": String(videoBytes.byteLength),
     },
     body: videoBytes,
     signal: AbortSignal.timeout(90_000),
