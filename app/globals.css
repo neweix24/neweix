@@ -13,8 +13,8 @@
   --ink: #17211a;
   --muted: #59665d;
   --border: #e2e8e3;
-  --danger: #ff7777;
-  --success: #b6ff4a;
+  --danger: #b42318;
+  --success: #18794e;
   --radius: 18px;
   --shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
 
@@ -36,10 +36,10 @@
   --border-strong: var(--border);
   --text-primary: var(--ink);
   --text-secondary: var(--muted);
-  --color-danger: #ff7777;
-  --color-danger-soft: rgba(255, 119, 119, 0.09);
-  --color-success: #b6ff4a;
-  --color-success-soft: rgba(182, 255, 74, 0.08);
+  --color-danger: #b42318;
+  --color-danger-soft: rgba(180, 35, 24, 0.08);
+  --color-success: #18794e;
+  --color-success-soft: rgba(24, 121, 78, 0.08);
 }
 
 * {
