@@ -196,7 +196,7 @@ export default function StorefrontHome() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link href="/" className={styles.brand} aria-label="NEWEIX হোম"><span>N</span> NEWEIX</Link>
+        <Link href="/" className={styles.brand} aria-label="NEWEIX হোম"><svg viewBox="0 0 148 30" role="img" aria-label="NEWEIX" focusable="false"><text x="0" y="23">NEWEIX</text></svg></Link>
         <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
           <label className={styles.srOnly} htmlFor="home-product-search">পণ্য খুঁজুন</label>
           <input id="home-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="কোন পণ্য খুঁজছেন?" />
@@ -208,9 +208,6 @@ export default function StorefrontHome() {
           <Link href="/wishlist">পছন্দের তালিকা</Link>
           <Link href="/cart" className={styles.cartLink}>কার্ট <span>{cartCount}</span></Link>
         </nav>
-        <button ref={triggerRef} className={styles.accountButton} type="button" onClick={() => setDrawerOpen(true)} aria-haspopup="dialog" aria-expanded={drawerOpen}>
-          <Icon name="user" size={18} /><span>মাই অ্যাকাউন্ট</span>
-        </button>
       </header>
 
       <main className={styles.main}>
@@ -252,14 +249,13 @@ export default function StorefrontHome() {
 
       </main>
 
-      <footer className={styles.footer}><Link href="/" className={styles.brand}><span>N</span> NEWEIX</Link><p>স্মার্ট কেনাকাটা, আরও সুন্দর অভিজ্ঞতা।</p><nav aria-label="ফুটার"><Link href="/about">আমাদের সম্পর্কে</Link><Link href="/contact">যোগাযোগ</Link><Link href="/faq">সাধারণ জিজ্ঞাসা</Link><Link href="/privacy">গোপনীয়তা</Link><Link href="/terms">শর্তাবলি</Link></nav><small>© {new Date().getFullYear()} NEWEIX. সর্বস্বত্ব সংরক্ষিত।</small></footer>
+      <footer className={styles.footer}><Link href="/" className={styles.brand}><svg viewBox="0 0 148 30" role="img" aria-label="NEWEIX" focusable="false"><text x="0" y="23">NEWEIX</text></svg></Link><p>স্মার্ট কেনাকাটা, আরও সুন্দর অভিজ্ঞতা।</p><nav aria-label="ফুটার"><Link href="/about">আমাদের সম্পর্কে</Link><Link href="/contact">যোগাযোগ</Link><Link href="/faq">সাধারণ জিজ্ঞাসা</Link><Link href="/privacy">গোপনীয়তা</Link><Link href="/terms">শর্তাবলি</Link></nav><small>© {new Date().getFullYear()} NEWEIX. সর্বস্বত্ব সংরক্ষিত।</small></footer>
 
       <nav className={styles.bottomNav} aria-label="মোবাইল নেভিগেশন">
-        <Link href="/" aria-current="page"><Icon name="home" size={19} />হোম</Link>
-        <Link href="/products"><Icon name="grid" size={19} />ক্যাটাগরি</Link>
-        <button type="button" onClick={() => document.getElementById("home-product-search")?.focus()}><Icon name="search" size={19} />সার্চ</button>
-        <Link href="/cart"><span className={styles.bottomCartIcon}><Icon name="cart" size={19} /><b>{cartCount > 99 ? "99+" : cartCount}</b></span>কার্ট</Link>
-        <button type="button" onClick={() => setDrawerOpen(true)}><Icon name="user" size={19} />অ্যাকাউন্ট</button>
+        <Link href="/" aria-current="page"><Icon name="home" size={24} />হোম</Link>
+        <Link href="/products"><Icon name="grid" size={24} />পণ্য ও সার্চ</Link>
+        <Link href="/cart"><span className={styles.bottomCartIcon}><Icon name="cart" size={24} /><b>{cartCount > 99 ? "99+" : cartCount}</b></span>কার্ট</Link>
+        <button type="button" onClick={() => setDrawerOpen(true)}><Icon name="user" size={24} />অ্যাকাউন্ট</button>
       </nav>
 
       {drawerOpen && <div className={styles.overlay} onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerOpen(false); }}>
