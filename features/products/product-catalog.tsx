@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Icon from "@/components/ui/icon";
 import styles from "./product-catalog.module.css";
 
 type Product = {
@@ -178,11 +179,11 @@ export default function ProductCatalog() {
       <header className={styles.header}>
         <Link href="/" className={styles.brand}>NEWEIX</Link>
         <nav aria-label="প্রধান নেভিগেশন">
-          <Link href="/track-order">অর্ডার ট্র্যাক</Link>
-          <Link href="/account">অ্যাকাউন্ট</Link>
-          <Link href="/wishlist">পছন্দের তালিকা ({wishlist.length})</Link>
-          <Link href="/compare">তুলনা ({compareIds.length})</Link>
-          <Link href="/cart">কার্ট</Link>
+          <Link href="/track-order"><Icon name="truck" size={16} /> অর্ডার ট্র্যাক</Link>
+          <Link href="/account"><Icon name="user" size={16} /> অ্যাকাউন্ট</Link>
+          <Link href="/wishlist"><Icon name="heart" size={16} /> পছন্দের তালিকা ({wishlist.length})</Link>
+          <Link href="/compare"><Icon name="compare" size={16} /> তুলনা ({compareIds.length})</Link>
+          <Link href="/cart"><Icon name="cart" size={16} /> কার্ট</Link>
         </nav>
       </header>
 
@@ -191,7 +192,7 @@ export default function ProductCatalog() {
         <h1>পণ্য আবিষ্কার করুন</h1>
         <p>আপনার পছন্দের পণ্য খুঁজুন এবং সহজেই অর্ডার করুন।</p>
         <label className={styles.search}>
-          <span className={styles.srOnly}>পণ্য খুঁজুন</span>
+          <Icon name="search" size={18} /><span className={styles.srOnly}>পণ্য খুঁজুন</span>
           <input
             type="search"
             value={query}
@@ -207,8 +208,8 @@ export default function ProductCatalog() {
           </select>
         </label>}
         {visibleCategories.length > 0 && <div className={styles.categoryChips} aria-label="দ্রুত ক্যাটাগরি">
-          <button type="button" aria-pressed={!categorySlug} className={!categorySlug ? styles.activeChip : ""} onClick={() => setCategorySlug("")}>সব পণ্য</button>
-          {visibleCategories.map((category) => <button key={category.id} type="button" aria-pressed={categorySlug === category.slug} className={categorySlug === category.slug ? styles.activeChip : ""} onClick={() => setCategorySlug(category.slug)}>{category.name}</button>)}
+          <button type="button" aria-pressed={!categorySlug} className={!categorySlug ? styles.activeChip : ""} onClick={() => setCategorySlug("")}><Icon name="grid" size={14} /> সব পণ্য</button>
+          {visibleCategories.map((category) => <button key={category.id} type="button" aria-pressed={categorySlug === category.slug} className={categorySlug === category.slug ? styles.activeChip : ""} onClick={() => setCategorySlug(category.slug)}><Icon name="tag" size={14} /> {category.name}</button>)}
         </div>}
         <div className={styles.filterRow}>
           <label className={styles.priceField}>সর্বনিম্ন দাম
@@ -218,7 +219,7 @@ export default function ProductCatalog() {
             <input aria-label="সর্বোচ্চ দাম" type="number" min="0" inputMode="numeric" placeholder="৳ ১০,০০০" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} />
           </label>
           <label className={styles.stockFilter}><input type="checkbox" checked={inStockOnly} onChange={(event) => setInStockOnly(event.target.checked)} /> শুধু স্টকে থাকা পণ্য</label>
-          <button type="button" className={styles.clearFilters} onClick={() => { setQuery(""); setCategorySlug(""); setMinPrice(""); setMaxPrice(""); setInStockOnly(false); setSort("featured"); }}>ফিল্টার মুছুন</button>
+          <button type="button" className={styles.clearFilters} onClick={() => { setQuery(""); setCategorySlug(""); setMinPrice(""); setMaxPrice(""); setInStockOnly(false); setSort("featured"); }}><Icon name="close" size={15} /> ফিল্টার মুছুন</button>
         </div>
         <label className={styles.search} style={{ marginTop: 12 }}>
           <span className={styles.srOnly}>পণ্যের সাজানোর ধরন</span>
@@ -235,14 +236,14 @@ export default function ProductCatalog() {
         {notice && (
           <div className={styles.notice} role="status">
             {notice}
-            <button type="button" onClick={() => setNotice("")} aria-label="বার্তা বন্ধ করুন">×</button>
+            <button type="button" onClick={() => setNotice("")} aria-label="বার্তা বন্ধ করুন" title="বন্ধ করুন"><Icon name="close" size={17} /></button>
           </div>
         )}
         {loading && <p className={styles.state}>পণ্য লোড হচ্ছে...</p>}
         {!loading && error && (
           <div className={styles.state}>
             <p>পণ্য লোড করা যায়নি। আবার চেষ্টা করুন।</p>
-            <button type="button" onClick={() => void loadProducts()}>আবার চেষ্টা করুন</button>
+            <button type="button" onClick={() => void loadProducts()}><Icon name="refresh" size={16} /> আবার চেষ্টা করুন</button>
           </div>
         )}
         {!loading && !error && products.length === 0 && (
@@ -264,8 +265,8 @@ export default function ProductCatalog() {
               </Link>
               <div className={styles.details}>
                 <div className="mb-2 flex flex-wrap gap-2">
-                  <button type="button" aria-pressed={wishlist.includes(product.id)} onClick={() => toggleWishlist(product)} className="rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}>{wishlist.includes(product.id) ? "♥ পছন্দে আছে" : "♡ পছন্দে রাখুন"}</button>
-                  <button type="button" aria-pressed={compareIds.includes(product.id)} onClick={() => toggleCompare(product)} className="rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}>{compareIds.includes(product.id) ? "✓ তুলনায় আছে" : "⇄ তুলনা করুন"}</button>
+                  <button type="button" aria-pressed={wishlist.includes(product.id)} onClick={() => toggleWishlist(product)} className="rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}><Icon name="heart" size={17} /></button>
+                  <button type="button" aria-pressed={compareIds.includes(product.id)} onClick={() => toggleCompare(product)} className="rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}><Icon name="compare" size={17} /></button>
                 </div>
                 <span className={product.stock > 0 ? styles.inStock : styles.outOfStock}>
                   {product.stock > 0 ? "স্টকে আছে" : "স্টক শেষ"}
