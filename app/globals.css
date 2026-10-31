@@ -4,15 +4,15 @@
 :root {
   color-scheme: light;
   --bg: #ffffff;
-  --surface: #f8faf8;
-  --surface-raised: #ffffff;
-  --surface-soft: #f3f6f3;
+  --surface: var(--customer-theme-surface, #f8faf8);
+  --surface-raised: var(--customer-theme-surface, #ffffff);
+  --surface-soft: color-mix(in srgb, var(--customer-theme-surface, #f8faf8) 82%, var(--bg));
   --primary: var(--customer-theme-button, #b6ff4a);
   --primary-hover: color-mix(in srgb, var(--primary) 82%, white);
   --primary-dark: #203814;
-  --ink: #17211a;
-  --muted: #59665d;
-  --border: #e2e8e3;
+  --ink: var(--customer-theme-text, #17211a);
+  --muted: var(--customer-theme-muted, #59665d);
+  --border: var(--customer-theme-border, #e2e8e3);
   --danger: #ff7777;
   --success: #b6ff4a;
   --radius: 18px;
