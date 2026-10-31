@@ -10,6 +10,8 @@ export default function AccountView() {
 
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [phone, setPhone] = useState("");
   const [verifiedPhone, setVerifiedPhone] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
@@ -44,7 +46,7 @@ export default function AccountView() {
 
         const { data: profile, error } = await supabase
           .from("customer_profiles")
-          .select("full_name")
+          .select("full_name,date_of_birth,avatar_url")
           .eq("user_id", user.id)
           .maybeSingle();
 
@@ -65,6 +67,14 @@ export default function AccountView() {
 
         setEmail(user.email ?? "");
         setName(profile?.full_name ?? metadataName);
+        setDateOfBirth(profile?.date_of_birth ?? "");
+        const metadataAvatar =
+          typeof user.user_metadata?.picture === "string"
+            ? user.user_metadata.picture
+            : typeof user.user_metadata?.avatar_url === "string"
+              ? user.user_metadata.avatar_url
+              : "";
+        setAvatarUrl(profile?.avatar_url ?? metadataAvatar);
 
         const phoneResponse = await fetch("/api/account/phone/status", {
           cache: "no-store",
@@ -102,6 +112,13 @@ export default function AccountView() {
     setErrorMessage("");
 
     const cleanName = name.trim();
+    const cleanDateOfBirth = dateOfBirth || null;
+    const today = new Date().toISOString().slice(0, 10);
+
+    if (cleanDateOfBirth && (cleanDateOfBirth < "1900-01-01" || cleanDateOfBirth > today)) {
+      setErrorMessage("জন্মতারিখ সঠিকভাবে দিন।");
+      return;
+    }
 
     if (cleanName.length < 2 || cleanName.length > 100) {
       setErrorMessage("নাম ২ থেকে ১০০ অক্ষরের মধ্যে লিখুন।");
@@ -130,6 +147,7 @@ export default function AccountView() {
           {
             user_id: user.id,
             full_name: cleanName,
+            date_of_birth: cleanDateOfBirth,
           },
           { onConflict: "user_id" }
         );
@@ -269,6 +287,11 @@ export default function AccountView() {
         ) : (
           <>
             <div className="account-email">
+              {avatarUrl && (
+                <img src={avatarUrl} alt="প্রোফাইল ছবি" width={64} height={64}
+                  referrerPolicy="no-referrer"
+                  style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover" }} />
+              )}
               <span>লগইন ইমেইল</span>
               <strong>{email || "ইমেইল দেওয়া নেই"}</strong>
             </div>
@@ -284,6 +307,17 @@ export default function AccountView() {
                 required
                 value={name}
                 onChange={(event) => setName(event.target.value)}
+              />
+
+              <label htmlFor="customer-date-of-birth">জন্মতারিখ (ঐচ্ছিক)</label>
+              <input
+                id="customer-date-of-birth"
+                type="date"
+                autoComplete="bday"
+                min="1900-01-01"
+                max={new Date().toISOString().slice(0, 10)}
+                value={dateOfBirth}
+                onChange={(event) => setDateOfBirth(event.target.value)}
               />
 
               <div className="phone-verification">
