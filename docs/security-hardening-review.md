@@ -69,14 +69,16 @@ This document replaces older review notes that referred to EixPay/social foundat
 
 ### 8. Deployment and security headers
 
-- Cloudflare production deployment now runs after the GitHub CI workflow completes successfully and checks out the exact tested commit.
+- Cloudflare production deployment is gated on both the matching GitHub CI run and disposable PostgreSQL migration/regression test succeeding; it checks out the exact tested commit.
 - Added a Content-Security-Policy header, including the Cloudflare Turnstile, Google OAuth and YouTube frame hosts.
 - CSP currently permits broad HTTPS resources and inline/eval script compatibility. It is a baseline policy, not a final nonce-based strict CSP. Tightening requires a report/compatibility pass against the live storefront and auth flows.
 - wrangler.jsonc now lists the required server-only integration secrets; .env.example documents their names without values.
 
 ## Verified security foundations
 
-- The last schema audit found RLS enabled on all 44 public/private tables checked.
+- Supabase Performance Advisor's unindexed foreign-key findings were cleared by adding indexes for the newly introduced order and social-media foreign keys.
+
+- The last schema audit found RLS enabled on all 45 public/private tables checked (45 enabled, 0 disabled).
 - Sensitive service-role operations remain server-side.
 - Private EixPay and notification tables are not directly readable by anon or authenticated.
 - Supreme-only operations use server-side role checks and AAL2 checks.
