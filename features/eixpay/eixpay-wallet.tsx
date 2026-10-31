@@ -18,6 +18,7 @@ type Wallet = {
   transfer_enabled?: boolean;
   transfer_requires_supreme_approval?: boolean;
   membership?: { tier_code: string; display_name: string; status: string; expires_at: string | null } | null;
+  referrals?: { total_invited?: number; pending?: number; qualified?: number; rewarded?: number };
 };
 type Activity = {
   id: number; entry_kind: string; event_code: string; amount: number;
@@ -69,7 +70,7 @@ export default function EixPayWallet() {
       const response = await fetch("/api/eixpay/wallet", { cache: "no-store" });
       const result = await response.json().catch(() => null);
       if (!response.ok || !result?.success) throw new Error(result?.error || "EixPay লোড করা যায়নি।");
-      setWallet(result.wallet as Wallet);
+      setWallet({ ...(result.wallet as Wallet), referrals: result.referrals ?? {} });
       setActivity(Array.isArray(result.activity) ? result.activity as Activity[] : []);
       setTransfers(Array.isArray(result.transfers) ? result.transfers as Transfer[] : []);
     } catch (caught) {
@@ -186,6 +187,12 @@ export default function EixPayWallet() {
                   <h2 className="mt-2 text-xl font-bold">বন্ধুকে NEWEIX-এ আমন্ত্রণ জানান</h2>
                   <p className="mt-2 text-sm leading-6 text-white/60">আপনার EIX ID-ই রেফারেল কোড। বন্ধু আপনার লিংক দিয়ে নতুন অ্যাকাউন্ট খুলে ফোন যাচাই করে প্রথম যোগ্য অর্ডার সম্পন্ন করলে—নিয়ম চালু থাকলে দুজনই Eixon রিওয়ার্ড পাবেন।</p>
                   <p className="mt-3 font-mono text-sm text-emerald-100">{wallet?.eix_id ?? "—"}</p>
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div><p className="text-[10px] text-white/45">মোট আমন্ত্রণ</p><p className="mt-1 font-bold">{amount(wallet?.referrals?.total_invited ?? 0)}</p></div>
+                    <div><p className="text-[10px] text-white/45">অপেক্ষমাণ</p><p className="mt-1 font-bold">{amount(wallet?.referrals?.pending ?? 0)}</p></div>
+                    <div><p className="text-[10px] text-white/45">যোগ্য</p><p className="mt-1 font-bold">{amount(wallet?.referrals?.qualified ?? 0)}</p></div>
+                    <div><p className="text-[10px] text-white/45">রিওয়ার্ডপ্রাপ্ত</p><p className="mt-1 font-bold">{amount(wallet?.referrals?.rewarded ?? 0)}</p></div>
+                  </div>
                   {referralMessage && <p role="status" className="mt-2 break-all text-xs text-emerald-200">{referralMessage}</p>}
                 </div>
                 <button type="button" onClick={() => void shareReferral()} disabled={!wallet?.eix_id} className="rounded-full bg-emerald-200 px-5 py-3 text-sm font-bold text-[#092016] hover:bg-emerald-100 disabled:opacity-50">রেফারেল লিংক শেয়ার</button>
