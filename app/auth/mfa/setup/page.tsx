@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import Icon from "@/components/ui/icon";
 
 export default function SupremeMfaSetupPage() {
   const router = useRouter();
@@ -350,8 +351,8 @@ export default function SupremeMfaSetupPage() {
           disabled={busy || !factorId || code.length !== 6}
         >
           {busy
-            ? "যাচাই হচ্ছে..."
-            : "MFA যাচাই ও চালু করো"}
+            ? <><Icon name="refresh" size={17} /> যাচাই হচ্ছে...</>
+            : <><Icon name="shield" size={17} /> MFA যাচাই ও চালু করো</>}
         </button>
       </form>
 
