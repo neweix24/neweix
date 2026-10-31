@@ -64,8 +64,8 @@ export async function POST(request: Request) {
       if (targets.some((target) => target !== "youtube")) {
         return NextResponse.json({ error: "এই মুহূর্তে স্বয়ংক্রিয় প্রকাশ শুধু YouTube-এর জন্য চালু। Facebook, Instagram ও TikTok-এর পোস্ট Draft হিসেবে রাখুন।" }, { status: 400 });
       }
-      if (mediaUrls.length < 1) {
-        return NextResponse.json({ error: "YouTube শিডিউল করতে একটি পাবলিক HTTPS ভিডিও URL দিতে হবে।" }, { status: 400 });
+      if (mediaUrls.length !== 1) {
+        return NextResponse.json({ error: "একটি YouTube পোস্টের জন্য ঠিক একটি পাবলিক HTTPS ভিডিও URL দিন।" }, { status: 400 });
       }
       const { data: youtubeAccount, error: accountError } = await supabase
         .from("social_media_accounts")
