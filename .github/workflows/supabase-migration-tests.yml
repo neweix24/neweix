@@ -28,17 +28,18 @@ jobs:
         with:
           version: 2.81.3
 
-      - name: Start disposable PostgreSQL database only
-        run: supabase db start
+      - name: Start disposable PostgreSQL with non-database services excluded
+        run: supabase start -x gotrue,realtime,storage-api,imgproxy,kong,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
 
-      - name: Normalize legacy duplicate migration version prefixes in the disposable checkout
+      - name: Apply every SQL migration in order without version-table collisions
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
-          mv supabase/migrations/005_smart_search.sql supabase/migrations/0051_smart_search.sql
-          mv supabase/migrations/006_smart_search_rpc.sql supabase/migrations/0061_smart_search_rpc.sql
-          mv supabase/migrations/007_search_embedding_queue.sql supabase/migrations/0071_search_embedding_queue.sql
-
-      - name: Apply every repository migration from an empty local database
-        run: supabase db reset --local
+          set -euo pipefail
+          while IFS= read -r migration; do
+            echo "Applying $migration"
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$migration"
+          done < <(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | sort)
 
       - name: Run EixPay, EixVerse and integrity-chain smoke tests
         env:
