@@ -98,10 +98,14 @@ begin
       'reward_amount', v_checkin.reward_amount);
   end if;
 
-  select case when max(local_date) = v_today - 1
-       then least(coalesce(max(streak_days), 0) + 1, 3650) else 1 end
+  select case when local_date = v_today - 1
+       then least(streak_days + 1, 3650) else 1 end
     into v_streak
-  from private.eixverse_daily_checkins where user_id = v_user;
+  from private.eixverse_daily_checkins
+  where user_id = v_user
+  order by local_date desc
+  limit 1;
+  v_streak := coalesce(v_streak, 1);
 
   select reward_amount into v_reward
   from private.eixpay_reward_rules
