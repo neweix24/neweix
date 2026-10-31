@@ -18,8 +18,9 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 async function authorizeAdmin() {
   const supabase = await createServerSupabaseClient();
   const { data, error: authError } = await supabase.auth.getClaims();
-  const userId = data?.claims?.sub;
-  if (authError || typeof userId !== "string") {
+  const claimSubject = data?.claims?.sub;
+  const userId = typeof claimSubject === "string" ? claimSubject : null;
+  if (authError || !userId) {
     return { error: "লগইন প্রয়োজন।", status: 401 as const };
   }
 
