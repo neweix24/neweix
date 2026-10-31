@@ -36,6 +36,11 @@ jobs:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
           set -euo pipefail
+          duplicate_versions="$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sed -E 's/^([0-9]{14})_.*/\1/' | sort | uniq -d)"
+          if [ -n "$duplicate_versions" ]; then
+            echo "::error::Duplicate migration version(s): $duplicate_versions"
+            exit 1
+          fi
           while IFS= read -r migration; do
             echo "Applying $migration"
             psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$migration"
@@ -46,6 +51,12 @@ jobs:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/eixpay_integrity_smoke_test.sql
+
+      - name: Verify customer phone verification grants
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/customer_phone_verification_grants_test.sql
 
       - name: Stop disposable Supabase
         if: always()
