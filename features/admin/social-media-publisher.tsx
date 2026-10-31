@@ -33,6 +33,17 @@ export default function SocialMediaPublisher() {
 
   useEffect(() => {
     load().catch((error) => setStatus(error instanceof Error ? error.message : "লোড ব্যর্থ হয়েছে।"));
+    const result = new URLSearchParams(window.location.search).get("youtube");
+    const messages: Record<string, string> = {
+      connected: "YouTube চ্যানেল সফলভাবে সংযুক্ত হয়েছে।",
+      missing_credentials: "Google OAuth Client ID ও Client Secret Cloudflare-এ সেট করা হয়নি।",
+      missing_secrets: "Google OAuth এবং Token Encryption secrets সেট করা প্রয়োজন।",
+      state_error: "নিরাপত্তা যাচাই ব্যর্থ হয়েছে। আবার সংযোগ চেষ্টা করুন।",
+      consent_denied: "Google অনুমতি দেওয়া হয়নি।",
+      missing_code: "Google থেকে authorization code পাওয়া যায়নি।",
+      connection_failed: "YouTube সংযোগ ব্যর্থ হয়েছে। Server log পরীক্ষা করুন।",
+    };
+    if (result && messages[result]) setStatus(messages[result]);
   }, [load]);
 
   function toggleTarget(platform: Platform) {
@@ -87,6 +98,7 @@ export default function SocialMediaPublisher() {
               <div className="flex items-center justify-between gap-2"><strong>{platform.label}</strong><span className="text-xs">{linked.length ? "সংযুক্ত" : "সংযুক্ত নয়"}</span></div>
               <p className="mt-1 text-xs opacity-70">{platform.note}</p>
               {linked.length > 0 ? linked.map((account) => <p key={account.id} className="mt-2 text-sm">{account.account_name}</p>) : <p className="mt-2 text-sm opacity-70">Developer credentials ও OAuth অনুমোদন প্রয়োজন।</p>}
+              {platform.id === "youtube" && <a href="/api/admin/social-media/youtube/connect" className="mt-3 inline-flex rounded-xl border px-4 py-2 text-sm font-semibold" style={{ borderColor: "var(--border)" }}>{linked.length ? "YouTube পুনরায় সংযুক্ত করুন" : "Google দিয়ে YouTube সংযুক্ত করুন"}</a>}
             </div>;
           })}
         </div>
@@ -94,7 +106,7 @@ export default function SocialMediaPublisher() {
 
       <section className="rounded-2xl border p-5 sm:p-7" style={cardStyle}>
         <h2 className="text-xl font-bold">নতুন পোস্ট তৈরি</h2>
-        <p className="mt-1 text-sm opacity-70">এখন ড্রাফট ও শিডিউল তৈরি করা যাবে। লাইভ প্রকাশের আগে প্রতিটি প্ল্যাটফর্মের অনুমোদিত সংযোগ সম্পন্ন করতে হবে।</p>
+        <p className="mt-1 text-sm opacity-70">YouTube OAuth সংযোগ প্রথমে চালু হচ্ছে। ভিডিও আপলোড ও প্রকাশের সুবিধা পরবর্তী ধাপে যুক্ত হবে।</p>
         <div className="mt-5 grid gap-4">
           <label className="grid gap-2 text-sm font-semibold">পোস্টের শিরোনাম<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={200} className="min-h-11 rounded-xl border bg-transparent px-3 font-normal" style={{ borderColor: "var(--border)" }} /></label>
           <label className="grid gap-2 text-sm font-semibold">ক্যাপশন / বিবরণ<textarea value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={5000} rows={5} className="rounded-xl border bg-transparent p-3 font-normal" style={{ borderColor: "var(--border)" }} /></label>
