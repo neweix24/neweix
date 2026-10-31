@@ -84,6 +84,7 @@ export async function GET() {
         payment_verified_at, payment_verified_by,
         delivery_provider, delivery_status, delivery_consignment_id,
         delivery_tracking_code, delivery_booked_at, delivery_error,
+        stock_restored_at, stock_restored_by, stock_restoration_note,
         delivery_fee_payment_method, delivery_fee_payment_transaction_id,
         delivery_fee_payment_status, delivery_fee_payment_verified_at,
         created_at,
@@ -245,6 +246,29 @@ export async function PATCH(request: Request) {
     const input = body as Record<string, unknown>;
     const orderId = input.orderId;
     const status = input.status;
+
+    if (input.action === "restock_returned") {
+      if (typeof input.note !== "string" || input.note.trim().length < 5 || input.note.trim().length > 500) {
+        return NextResponse.json({ error: "স্টক ফেরতের কারণ ৫–৫০০ অক্ষরের মধ্যে লিখুন।" }, { status: 400 });
+      }
+      const admin = await getAdminClient();
+      const { data, error } = await admin.rpc("admin_restock_returned_order", {
+        p_order_id: orderId,
+        p_actor_id: staff.user.id,
+        p_note: input.note.trim(),
+      });
+      if (error) {
+        if (error.message.includes("STOCK_ALREADY_RESTORED")) {
+          return NextResponse.json({ error: "এই অর্ডারের স্টক আগেই ফেরত যোগ করা হয়েছে।" }, { status: 409 });
+        }
+        if (error.message.includes("ORDER_NOT_RETURNED")) {
+          return NextResponse.json({ error: "শুধু Returned অর্ডারের স্টক ফেরত যোগ করা যাবে।" }, { status: 409 });
+        }
+        console.error("Returned order restock failed:", error.message);
+        return NextResponse.json({ error: "স্টক ফেরত যোগ করা যায়নি।" }, { status: 500 });
+      }
+      return NextResponse.json({ success: true, result: data, message: "পরীক্ষা শেষে পণ্যের স্টক ফেরত যোগ হয়েছে।" });
+    }
 
     const allowedStatuses = [
       "pending", "confirmed", "processing", "packed",
