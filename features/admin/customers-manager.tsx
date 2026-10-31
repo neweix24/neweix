@@ -63,7 +63,7 @@ export default function CustomersManager() {
           aria-label="কাস্টমার খুঁজুন"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="নাম বা ফোন নম্বর দিয়ে খুঁজুন"
+          placeholder="নাম, ইমেইল বা ফোন নম্বর দিয়ে খুঁজুন"
           className="min-h-11 w-full rounded-xl border px-4 sm:max-w-sm"
           style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--ink)" }}
         />
