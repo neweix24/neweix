@@ -8,7 +8,11 @@ const persistentCookieOptions = {
   maxAge: 60 * 60 * 24 * 365,
 };
 
+let browserClient: ReturnType<typeof createBrowserClient> | null = null;
+
 export function createBrowserSupabaseClient() {
+  if (browserClient) return browserClient;
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -16,7 +20,7 @@ export function createBrowserSupabaseClient() {
     throw new Error("Supabase environment variables are missing.");
   }
 
-  return createBrowserClient(url, anonKey, {
+  browserClient = createBrowserClient(url, anonKey, {
     cookieOptions: persistentCookieOptions,
     auth: {
       persistSession: true,
@@ -24,4 +28,5 @@ export function createBrowserSupabaseClient() {
       detectSessionInUrl: true,
     },
   });
+  return browserClient;
 }
