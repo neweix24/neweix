@@ -23,6 +23,17 @@ type Activity = {
   id: number; entry_kind: string; event_code: string; amount: number;
   balance_after: number; created_at: string;
 };
+type Transfer = {
+  request_id: string;
+  direction: "sent" | "received";
+  counterparty_eix_id: string;
+  amount: number;
+  status: "pending" | "approved" | "rejected" | "cancelled" | "expired";
+  reason: string;
+  requested_at: string;
+  decided_at: string | null;
+  decision_note: string;
+};
 const transferStatusLabels: Record<string, string> = {
   pending: "Supreme অনুমোদনের অপেক্ষায়",
   approved: "অনুমোদিত",
