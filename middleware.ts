@@ -4,6 +4,31 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
+  const pathname = request.nextUrl.pathname;
+  const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
+  const isSupremePath = pathname === "/supreme" || pathname.startsWith("/supreme/");
+  const isCustomerApi =
+    (pathname.startsWith("/api/account/") &&
+      pathname !== "/api/account/phone/send-otp" &&
+      pathname !== "/api/account/phone/status" &&
+      pathname !== "/api/account/phone/verify-otp" &&
+      pathname !== "/api/account/security/register-device") ||
+    pathname === "/api/eixpay" || pathname.startsWith("/api/eixpay/") ||
+    pathname === "/api/orders";
+  const isCustomerPage =
+    pathname === "/account" || pathname.startsWith("/account/") ||
+    pathname === "/orders" || pathname.startsWith("/orders/") ||
+    pathname === "/wishlist" || pathname.startsWith("/wishlist/");
+  const isCustomerProtected = isCustomerPage || isCustomerApi;
+
+  // Do not refresh auth cookies on anonymous storefront navigation, assets,
+  // or unrelated API requests. Each authenticated browser client maintains
+  // its own session; refreshing on every public request creates avoidable
+  // concurrent refresh-token rotations and stale-cookie races.
+  if (!isAdminPath && !isSupremePath && !isCustomerProtected) {
+    return response;
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -29,10 +54,6 @@ export async function middleware(request: NextRequest) {
   // Refresh/rotate Supabase cookies on public storefront requests as well.
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;
-  const pathname = request.nextUrl.pathname;
-  const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
-  const isSupremePath = pathname === "/supreme" || pathname.startsWith("/supreme/");
-
   response.headers.set("Cache-Control", "private, no-store");
 
   // Require verified customer phone numbers before account features are accessible.
@@ -41,16 +62,6 @@ export async function middleware(request: NextRequest) {
     pathname === "/api/account/phone/status" ||
     pathname === "/api/account/phone/verify-otp" ||
     pathname === "/api/account/security/register-device";
-  const isCustomerApi =
-    (pathname.startsWith("/api/account/") && !isPhoneVerificationApi) ||
-    pathname === "/api/eixpay" || pathname.startsWith("/api/eixpay/") ||
-    pathname === "/api/orders";
-  const isCustomerPage =
-    pathname === "/orders" || pathname.startsWith("/orders/") ||
-    pathname === "/wishlist" || pathname.startsWith("/wishlist/") ||
-    (pathname.startsWith("/account/") && pathname !== "/account/");
-  const isCustomerProtected = isCustomerPage || isCustomerApi;
-
   if (isCustomerProtected) {
     if (claimsError || typeof userId !== "string" || !userId) {
       const destination = request.nextUrl.clone();
