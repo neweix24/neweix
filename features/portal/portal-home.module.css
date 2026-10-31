@@ -26,7 +26,7 @@
 .heroCopy { max-width:540px; margin:0; color:var(--portal-muted); font-size:15px; line-height:1.9; }
 .searchForm { display:flex; align-items:center; gap:12px; width:min(100%,550px); min-height:58px; margin-top:28px; padding:7px 8px 7px 17px; border:1px solid rgba(196,243,107,.23); border-radius:16px; background:rgba(17,26,20,.92); color:var(--portal-muted); }
 .searchForm input { flex:1; min-width:0; border:0!important; outline:0!important; box-shadow:none!important; background:transparent!important; color:var(--portal-text)!important; }
-.searchForm button,.addButton { display:grid; flex-shrink:0; width:42px; height:42px; place-items:center; border:0; border-radius:12px; color:#10170d; background:var(--portal-lime); transition:transform .18s ease,background .18s ease; }
+.searchForm button,.addButton { display:grid; flex-shrink:0; width:42px; height:42px; padding:0; place-items:center; border:0; border-radius:12px; color:#10170d; background:var(--portal-lime); transition:transform .18s ease,background .18s ease; }
 .searchForm button:hover,.addButton:hover:not(:disabled) { background:#d7ff91; transform:translateY(-2px); }
 .heroActions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:18px; }
 .primaryAction,.secondaryAction { display:inline-flex; min-height:46px; align-items:center; justify-content:center; gap:10px; padding:11px 17px; border-radius:13px; font-size:13px; font-weight:800; transition:transform .18s ease,border-color .18s ease,background .18s ease; }
