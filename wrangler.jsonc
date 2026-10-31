@@ -30,7 +30,10 @@
   },
   "secrets": {
     "required": [
-      "SUPABASE_SERVICE_ROLE_KEY",\n      "GOOGLE_CLIENT_ID",\n      "GOOGLE_CLIENT_SECRET",\n      "YOUTUBE_TOKEN_ENCRYPTION_KEY"
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "GOOGLE_CLIENT_ID",
+      "GOOGLE_CLIENT_SECRET",
+      "YOUTUBE_TOKEN_ENCRYPTION_KEY"
     ]
   },
   "ai": {
