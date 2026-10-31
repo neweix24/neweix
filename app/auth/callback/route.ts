@@ -102,5 +102,59 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  if (isCustomerFlow) {
+    const { data: authData, error: userError } = await supabase.auth.getUser();
+    const user = authData.user;
+
+    if (!userError && user) {
+      const metadata = user.user_metadata ?? {};
+      const metadataName =
+        typeof metadata.full_name === "string" ? metadata.full_name :
+        typeof metadata.name === "string" ? metadata.name : null;
+      const rawAvatar =
+        typeof metadata.picture === "string" ? metadata.picture :
+        typeof metadata.avatar_url === "string" ? metadata.avatar_url : null;
+      const avatarUrl = rawAvatar && rawAvatar.startsWith("https://") ? rawAvatar : null;
+      const rawLocale = typeof metadata.locale === "string" ? metadata.locale : null;
+      const preferredLanguage = rawLocale && /^[a-z]{2}(-[A-Z]{2})?$/.test(rawLocale) ? rawLocale : null;
+
+      const { data: existingProfile, error: profileReadError } = await supabase
+        .from("customer_profiles")
+        .select("user_id,full_name,avatar_url,preferred_language")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (profileReadError) {
+        console.error("Customer OAuth profile lookup failed:", profileReadError.message);
+      } else if (existingProfile) {
+        const { error: profileUpdateError } = await supabase
+          .from("customer_profiles")
+          .update({
+            email: user.email ?? null,
+            avatar_url: avatarUrl ?? existingProfile.avatar_url,
+            preferred_language: preferredLanguage ?? existingProfile.preferred_language,
+            full_name: existingProfile.full_name || metadataName,
+          })
+          .eq("user_id", user.id);
+        if (profileUpdateError) {
+          console.error("Customer OAuth profile sync failed:", profileUpdateError.message);
+        }
+      } else {
+        const { error: profileInsertError } = await supabase
+          .from("customer_profiles")
+          .insert({
+            user_id: user.id,
+            email: user.email ?? null,
+            full_name: metadataName,
+            avatar_url: avatarUrl,
+            preferred_language: preferredLanguage,
+          });
+        if (profileInsertError) {
+          console.error("Customer OAuth profile creation failed:", profileInsertError.message);
+        }
+      }
+    }
+  }
+
   return response;
 }

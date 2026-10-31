@@ -13,7 +13,7 @@ export async function GET() {
     const admin = await createRuntimeServiceClient();
     const { data, error } = await admin
       .from("customer_profiles")
-      .select("user_id,full_name,display_name,phone,created_at")
+      .select("user_id,full_name,display_name,email,avatar_url,date_of_birth,phone,phone_verified_at,created_at")
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -23,9 +23,21 @@ export async function GET() {
     }
 
     const ids = (data ?? []).map((profile) => profile.user_id);
-    const { data: orders, error: orderError } = ids.length
-      ? await admin.from("orders").select("customer_id,total,created_at,status").in("customer_id", ids).order("created_at", { ascending: false }).limit(3000)
-      : { data: [], error: null };
+    const [ordersResult, addressesResult] = await Promise.all([
+      ids.length
+        ? admin.from("orders").select("customer_id,total,created_at,status").in("customer_id", ids).order("created_at", { ascending: false }).limit(3000)
+        : Promise.resolve({ data: [], error: null }),
+      ids.length
+        ? admin.from("customer_addresses").select("user_id,label,recipient_name,phone,address_line,area,upazila,district,division,postal_code,is_default").in("user_id", ids).order("is_default", { ascending: false })
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+    const { data: orders, error: orderError } = ordersResult;
+    const { data: addresses, error: addressError } = addressesResult;
+
+    if (addressError) {
+      console.error("Customer addresses query failed:", addressError.message);
+      return NextResponse.json({ error: "কাস্টমারের ঠিকানা লোড করা যায়নি।" }, { status: 500 });
+    }
 
     if (orderError) {
       console.error("Customer order summary failed:", orderError.message);
@@ -45,8 +57,16 @@ export async function GET() {
       summary.set(order.customer_id, current);
     }
 
+    const addressMap = new Map<string, typeof addresses>();
+    for (const address of addresses ?? []) {
+      const current = addressMap.get(address.user_id) ?? [];
+      current.push(address);
+      addressMap.set(address.user_id, current);
+    }
+
     const customers = (data ?? []).map((profile) => ({
       ...profile,
+      addresses: addressMap.get(profile.user_id) ?? [],
       order_summary: summary.get(profile.user_id) ?? { count: 0, total: 0, lastOrder: null, lastStatus: null },
     }));
 

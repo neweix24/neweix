@@ -18,7 +18,7 @@ export async function GET() {
 
     const [profileResult, addressesResult, preferencesResult, consentsResult, ordersResult] = await Promise.all([
       admin.from("customer_profiles")
-        .select("full_name,display_name,phone,created_at,updated_at")
+        .select("full_name,display_name,email,avatar_url,date_of_birth,preferred_language,phone,phone_verified_at,created_at,updated_at")
         .eq("user_id", user.id).maybeSingle(),
       admin.from("customer_addresses")
         .select("label,recipient_name,phone,address_line,area,upazila,district,division,postal_code,is_default,created_at")

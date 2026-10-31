@@ -6,7 +6,16 @@ type Customer = {
   user_id: string;
   full_name: string | null;
   display_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  date_of_birth: string | null;
   phone: string | null;
+  phone_verified_at: string | null;
+  addresses?: Array<{
+    label: string; recipient_name: string; phone: string; address_line: string;
+    area: string | null; upazila: string | null; district: string; division: string;
+    postal_code: string | null; is_default: boolean;
+  }>;
   created_at: string;
   order_summary?: { count: number; total: number; lastOrder: string | null; lastStatus: string | null };
 };
@@ -38,7 +47,7 @@ export default function CustomersManager() {
     const term = search.trim().toLocaleLowerCase();
     if (!term) return customers;
     return customers.filter((item) =>
-      [item.full_name, item.display_name, item.phone].some((value) =>
+      [item.full_name, item.display_name, item.email, item.phone].some((value) =>
         (value ?? "").toLocaleLowerCase().includes(term)
       )
     );
@@ -66,9 +75,24 @@ export default function CustomersManager() {
         {filtered.map((customer) => (
           <article key={customer.user_id} className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="font-semibold">{customer.full_name || customer.display_name || "নাম দেওয়া নেই"}</h2>
-                <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>{customer.phone || "ফোন নম্বর দেওয়া নেই"}</p>
+              <div className="flex items-center gap-3">
+                {customer.avatar_url ? (
+                  <img src={customer.avatar_url} alt="" width={48} height={48}
+                    referrerPolicy="no-referrer"
+                    className="h-12 w-12 rounded-full object-cover" />
+                ) : (
+                  <div className="grid h-12 w-12 place-items-center rounded-full" style={{ background: "var(--bg)" }}>
+                    {(customer.full_name || customer.display_name || "C").slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <h2 className="font-semibold">{customer.full_name || customer.display_name || "নাম দেওয়া নেই"}</h2>
+                  <p className="mt-1 break-all text-sm" style={{ color: "var(--muted)" }}>{customer.email || "ইমেইল পাওয়া যায়নি"}</p>
+                  <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
+                    {customer.phone || "ফোন নম্বর দেওয়া নেই"} · {customer.phone_verified_at ? "যাচাইকৃত" : "যাচাই হয়নি"}
+                  </p>
+                  {customer.date_of_birth && <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>জন্মতারিখ: {new Date(customer.date_of_birth).toLocaleDateString("bn-BD")}</p>}
+                </div>
               </div>
               <p className="text-xs" style={{ color: "var(--muted)" }}>
                 যোগ দিয়েছেন: {new Date(customer.created_at).toLocaleDateString("bn-BD")}
@@ -88,6 +112,20 @@ export default function CustomersManager() {
                 <strong className="text-sm">{customer.order_summary?.lastOrder ? new Date(customer.order_summary.lastOrder).toLocaleDateString("bn-BD") : "নেই"}</strong>
               </div>
             </div>
+            {customer.addresses && customer.addresses.length > 0 && (
+              <div className="mt-4 border-t pt-3" style={{ borderColor: "var(--border)" }}>
+                <p className="mb-2 text-xs font-semibold" style={{ color: "var(--muted)" }}>সংরক্ষিত ডেলিভারি ঠিকানা</p>
+                <div className="grid gap-2">
+                  {customer.addresses.map((address, index) => (
+                    <div key={index} className="rounded-xl p-3 text-sm" style={{ background: "var(--bg)" }}>
+                      <p className="font-semibold">{address.label}{address.is_default ? " · ডিফল্ট" : ""}</p>
+                      <p>{address.recipient_name} · {address.phone}</p>
+                      <p>{[address.address_line, address.area, address.upazila, address.district, address.division, address.postal_code].filter(Boolean).join(", ")}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <p className="mt-3 break-all text-xs" style={{ color: "var(--muted)" }}>Customer ID: {customer.user_id}</p>
           </article>
         ))}
