@@ -115,6 +115,8 @@ export async function GET(request: NextRequest) {
         typeof metadata.picture === "string" ? metadata.picture :
         typeof metadata.avatar_url === "string" ? metadata.avatar_url : null;
       const avatarUrl = rawAvatar && rawAvatar.startsWith("https://") ? rawAvatar : null;
+      const rawLocale = typeof metadata.locale === "string" ? metadata.locale : null;
+      const preferredLanguage = rawLocale && /^[a-z]{2}(-[A-Z]{2})?$/.test(rawLocale) ? rawLocale : null;
 
       const { data: existingProfile, error: profileReadError } = await supabase
         .from("customer_profiles")
@@ -130,6 +132,7 @@ export async function GET(request: NextRequest) {
           .update({
             email: user.email ?? null,
             avatar_url: avatarUrl ?? existingProfile.avatar_url,
+            preferred_language: preferredLanguage,
             full_name: existingProfile.full_name || metadataName,
           })
           .eq("user_id", user.id);
@@ -144,6 +147,7 @@ export async function GET(request: NextRequest) {
             email: user.email ?? null,
             full_name: metadataName,
             avatar_url: avatarUrl,
+            preferred_language: preferredLanguage,
           });
         if (profileInsertError) {
           console.error("Customer OAuth profile creation failed:", profileInsertError.message);
