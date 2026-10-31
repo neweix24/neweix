@@ -39,6 +39,40 @@ function isHexColor(value: unknown): value is string {
   return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value);
 }
 
+function relativeLuminance(hex: string): number {
+  const channels = hex.slice(1).match(/.{2}/g)?.map((part) => {
+    const value = parseInt(part, 16) / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+
+  if (!channels || channels.length !== 3) return 0;
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+function contrastRatio(first: string, second: string): number {
+  const a = relativeLuminance(first);
+  const b = relativeLuminance(second);
+  const lighter = Math.max(a, b);
+  const darker = Math.min(a, b);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function getContrastIssues(theme: ThemeSettings): string[] {
+  const checks: [string, string, string, number][] = [
+    ["প্রধান লেখা", theme.text, theme.background, 4.5],
+    ["কার্ডের লেখা", theme.text, theme.surface, 4.5],
+    ["সহায়ক লেখা ও ব্যাকগ্রাউন্ড", theme.muted, theme.background, 4.5],
+    ["সহায়ক লেখা ও কার্ড", theme.muted, theme.surface, 4.5],
+    ["বাটনের লেখা", theme.buttonText, theme.button, 4.5],
+  ];
+
+  return checks
+    .filter(([, foreground, background, minimum]) =>
+      contrastRatio(foreground, background) < minimum
+    )
+    .map(([label]) => label);
+}
+
 function sanitizeTheme(value: unknown): ThemeSettings {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return INITIAL_THEME;
@@ -112,9 +146,17 @@ export default function CustomerThemePage() {
   function updateColor(key: keyof ThemeSettings, value: string) {
     setTheme((current) => ({ ...current, [key]: value }));
     setMessage("");
+    setErrorMessage("");
   }
 
+  const contrastIssues = getContrastIssues(theme);
+
   async function saveTheme() {
+    if (contrastIssues.length > 0) {
+      setErrorMessage("রঙের কনট্রাস্ট যথেষ্ট নয়। সংরক্ষণের আগে নিচের রংগুলো ঠিক করুন।");
+      return;
+    }
+
     setSaving(true);
     setMessage("");
     setErrorMessage("");
@@ -201,6 +243,14 @@ export default function CustomerThemePage() {
 
             <section className="color-list">
               <h2>রং নির্বাচন</h2>
+              <p className="contrast-help">
+                লেখা ও বাটন স্পষ্ট রাখতে WCAG AA অনুযায়ী কনট্রাস্ট যাচাই করা হয়।
+              </p>
+              <p className={contrastIssues.length ? "contrast-warning" : "contrast-ok"} role="status">
+                {contrastIssues.length
+                  ? `যে জায়গায় কনট্রাস্ট বাড়াতে হবে: ${contrastIssues.join(", ")}।`
+                  : "রঙের কনট্রাস্ট ঠিক আছে — থিম সংরক্ষণ করা যাবে।"}
+              </p>
               {FIELDS.map((field) => (
                 <label className="color-row" key={field.key}>
                   <span>{field.label}</span>
@@ -226,7 +276,8 @@ export default function CustomerThemePage() {
               className="save-button"
               type="button"
               onClick={saveTheme}
-              disabled={saving}
+              disabled={saving || contrastIssues.length > 0}
+              aria-describedby="theme-contrast-note"
             >
               {saving ? "সংরক্ষণ হচ্ছে…" : "থিম সংরক্ষণ করো"}
             </button>
@@ -334,6 +385,9 @@ export default function CustomerThemePage() {
         button:disabled { opacity: .6; cursor: wait; }
         .success { color: #16804a; }
         .error { color: #b42318; }
+        .contrast-help { font-size: 13px; opacity: .78; }
+        .contrast-warning { color: #b42318; font-size: 13px; font-weight: 700; }
+        .contrast-ok { color: #16804a; font-size: 13px; font-weight: 700; }
         @media (max-width: 420px) {
           .color-row { align-items: flex-start; }
           .color-row > span:first-child { max-width: 55%; }
