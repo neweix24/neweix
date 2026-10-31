@@ -31,6 +31,12 @@ jobs:
       - name: Start disposable PostgreSQL database only
         run: supabase db start
 
+      - name: Normalize legacy duplicate migration version prefixes in the disposable checkout
+        run: |
+          mv supabase/migrations/005_smart_search.sql supabase/migrations/0051_smart_search.sql
+          mv supabase/migrations/006_smart_search_rpc.sql supabase/migrations/0061_smart_search_rpc.sql
+          mv supabase/migrations/007_search_embedding_queue.sql supabase/migrations/0071_search_embedding_queue.sql
+
       - name: Apply every repository migration from an empty local database
         run: supabase db reset --local
 
