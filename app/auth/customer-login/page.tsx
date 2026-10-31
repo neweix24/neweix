@@ -95,6 +95,7 @@ function CustomerLoginForm() {
         }
 
         if (data.session) {
+          await fetch("/api/account/security/register-device", { method: "POST", cache: "no-store" }).catch(() => undefined);
           await fetch("/api/eixpay/referral/apply", { method: "POST", cache: "no-store" }).catch(() => undefined);
           router.replace("/account");
           router.refresh();
@@ -114,6 +115,7 @@ function CustomerLoginForm() {
         return;
       }
 
+      await fetch("/api/account/security/register-device", { method: "POST", cache: "no-store" }).catch(() => undefined);
       router.replace(getSafeNextPath());
       router.refresh();
     } catch {
