@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 type Rule = { event_code: string; display_name: string; description: string; enabled: boolean; reward_amount: number; max_per_user_per_day: number; settlement_delay_hours: number; requires_verified_phone: boolean };
 type Tier = { tier_code: string; display_name: string; tier_rank: number; is_enabled: boolean; min_qualified_spend_bdt: number | null; min_qualified_orders: number | null; qualification_period_days: number | null; benefits: string[] };
 type Dashboard = {
-  program: { wallet_enabled: boolean; earning_enabled: boolean; redemption_enabled: boolean; transfer_enabled: boolean; transfer_legal_review_confirmed: boolean };
+  program: { wallet_enabled: boolean; earning_enabled: boolean; redemption_enabled: boolean; transfer_enabled: boolean; transfer_legal_review_confirmed: boolean; redemption_legal_review_confirmed: boolean };
   reward_rules: Rule[]; membership_tiers: Tier[];
   stats: { wallet_count: number; total_eixon_balance: number; pending_transfers: number; pending_redemptions: number; pending_order_rewards: number; outstanding_reward_debt: number };
 };
@@ -41,7 +41,7 @@ export default function EixPayProgramControl() {
   }, []);
   useEffect(() => { void load(); }, [load]);
 
-  async function save(path: string, payload: Record<string, unknown>) {
+  async function save(path: string, payload: Record<string, unknown>): Promise<boolean> {
     setBusy(path); setError(""); setMessage("");
     try {
       const response = await fetch(path, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
@@ -49,7 +49,8 @@ export default function EixPayProgramControl() {
       if (!response.ok || !result?.success) throw new Error(result?.error || "সেটিং সংরক্ষণ করা যায়নি।");
       setMessage("সেটিং সফলভাবে সংরক্ষিত হয়েছে।");
       await load();
-    } catch (e) { setError(e instanceof Error ? e.message : "সেটিং সংরক্ষণ করা যায়নি।"); }
+      return true;
+    } catch (e) { setError(e instanceof Error ? e.message : "সেটিং সংরক্ষণ করা যায়নি।"); return false; }
     finally { setBusy(""); }
   }
 
@@ -68,11 +69,11 @@ export default function EixPayProgramControl() {
 
   async function assign() {
     if (!selected) { setError("প্রথমে গ্রাহক নির্বাচন করুন।"); return; }
-    await save("/api/supreme/neweix-plus", {
+    const completed = await save("/api/supreme/neweix-plus", {
       action: "assign", userId: selected.user_id, tierCode: assignTier,
       expiresAt: expiry ? new Date(expiry).toISOString() : null, note,
     });
-    if (!error) { setSelected(null); setExpiry(""); setNote(""); }
+    if (completed) { setSelected(null); setExpiry(""); setNote(""); }
   }
 
   if (busy === "load" || !data) return <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-sm text-white/50">{error || "EixPay কন্ট্রোল লোড হচ্ছে…"}</div>;
@@ -92,8 +93,12 @@ export default function EixPayProgramControl() {
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-200">Program settings</p><h2 className="mt-1 text-xl font-bold">EixPay নিয়ন্ত্রণ</h2>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {([
-            ["walletEnabled","Wallet চালু"],["earningEnabled","Eixon earning চালু"],["redemptionEnabled","Reward redemption চালু"],
+            ["walletEnabled","Wallet চালু"],["earningEnabled","Eixon earning চালু"],
           ] as const).map(([key,label]) => <label key={key} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 p-4 text-sm"><span>{label}</span><input type="checkbox" checked={program[key]} onChange={(e) => setProgram((p) => ({ ...p, [key]: e.target.checked }))} /></label>)}
+          <div className="rounded-xl border border-amber-200/15 bg-amber-200/[0.05] p-4">
+            <label className="flex items-center justify-between gap-3 text-sm"><span>Reward redemption চালু</span><input type="checkbox" checked={program.redemptionEnabled} disabled={!data.program.redemption_legal_review_confirmed} onChange={(e) => setProgram((p) => ({ ...p, redemptionEnabled: e.target.checked }))} /></label>
+            <p className="mt-2 text-xs leading-5 text-amber-100/65">{data.program.redemption_legal_review_confirmed ? "আইনি পর্যালোচনা নিশ্চিত; Supreme প্রয়োজন অনুযায়ী চালু করতে পারবেন।" : "আইনি পর্যালোচনা নিশ্চিত হয়নি; তাই redemption switch লক করা।"}</p>
+          </div>
           <div className="rounded-xl border border-amber-200/15 bg-amber-200/[0.05] p-4">
             <label className="flex items-center justify-between gap-3 text-sm"><span>Customer transfer চালু</span><input type="checkbox" checked={program.transferEnabled} disabled={!data.program.transfer_legal_review_confirmed} onChange={(e) => setProgram((p) => ({ ...p, transferEnabled: e.target.checked }))} /></label>
             <p className="mt-2 text-xs leading-5 text-amber-100/65">{data.program.transfer_legal_review_confirmed ? "প্রত্যেক ট্রান্সফারে Supreme approval বাধ্যতামূলক।" : "আইনি যাচাই নিশ্চিত করা হয়নি; তাই transfer switch লক করা।"}</p>
