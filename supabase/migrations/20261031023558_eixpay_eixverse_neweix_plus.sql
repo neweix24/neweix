@@ -603,6 +603,96 @@ begin
 end;
 $function$;
 
+create or replace function public.eixpay_list_my_transfers(
+  p_limit integer default 20
+)
+returns table (
+  request_id uuid,
+  direction text,
+  counterparty_eix_id text,
+  amount bigint,
+  status text,
+  reason text,
+  requested_at timestamptz,
+  decided_at timestamptz,
+  decision_note text
+)
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_user_id uuid := auth.uid();
+begin
+  if v_user_id is null then
+    raise exception using errcode = '28000', message = 'AUTHENTICATION_REQUIRED';
+  end if;
+
+  return query
+  select
+    r.id,
+    case when r.sender_user_id = v_user_id then 'sent' else 'received' end,
+    case when r.sender_user_id = v_user_id then rw.eix_id else sw.eix_id end,
+    r.amount,
+    r.status,
+    r.reason,
+    r.requested_at,
+    r.decided_at,
+    r.decision_note
+  from private.eixpay_transfer_requests r
+  join private.eixpay_wallets sw on sw.user_id = r.sender_user_id
+  join private.eixpay_wallets rw on rw.user_id = r.recipient_user_id
+  where r.sender_user_id = v_user_id or r.recipient_user_id = v_user_id
+  order by r.requested_at desc
+  limit least(greatest(coalesce(p_limit, 20), 1), 50);
+end;
+$function$;
+
+create or replace function public.eixpay_cancel_transfer(
+  p_request_id uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_user_id uuid := auth.uid();
+  v_request private.eixpay_transfer_requests%rowtype;
+begin
+  if v_user_id is null then
+    raise exception using errcode = '28000', message = 'AUTHENTICATION_REQUIRED';
+  end if;
+  if p_request_id is null then
+    raise exception using errcode = '22023', message = 'INVALID_TRANSFER_REQUEST_ID';
+  end if;
+
+  select * into v_request
+  from private.eixpay_transfer_requests
+  where id = p_request_id and sender_user_id = v_user_id
+  for update;
+
+  if not found then
+    raise exception using errcode = 'P0002', message = 'TRANSFER_REQUEST_NOT_FOUND';
+  end if;
+  if v_request.status <> 'pending' then
+    raise exception using errcode = '55000', message = 'TRANSFER_REQUEST_NOT_PENDING';
+  end if;
+
+  update private.eixpay_transfer_requests
+  set status = 'cancelled',
+      decided_at = now(),
+      decision_note = 'Cancelled by sender before Supreme approval.'
+  where id = p_request_id;
+
+  insert into private.eixpay_audit_events (actor_id, event_code, subject_id, metadata)
+  values (v_user_id, 'transfer_cancelled_by_sender', p_request_id,
+    jsonb_build_object('amount', v_request.amount, 'recipient_user_id', v_request.recipient_user_id));
+
+  return jsonb_build_object('success', true, 'status', 'cancelled', 'balance_changed', false);
+end;
+$function$;
+
 create or replace function public.eixpay_list_pending_transfers()
 returns table (
   request_id uuid,
@@ -1792,6 +1882,10 @@ revoke all on function public.eixverse_get_modules() from public, anon;
 grant execute on function public.eixpay_get_wallet() to authenticated;
 grant execute on function public.eixpay_list_activity(integer, bigint) to authenticated;
 grant execute on function public.eixpay_request_transfer(text, bigint, text, text) to authenticated;
+revoke all on function public.eixpay_list_my_transfers(integer) from public, anon;
+revoke all on function public.eixpay_cancel_transfer(uuid) from public, anon;
+grant execute on function public.eixpay_list_my_transfers(integer) to authenticated;
+grant execute on function public.eixpay_cancel_transfer(uuid) to authenticated;
 grant execute on function public.eixpay_list_pending_transfers() to authenticated;
 grant execute on function public.eixpay_decide_transfer(uuid, text, text) to authenticated;
 grant execute on function public.eixpay_award_reward(uuid, text, uuid, text) to service_role;
