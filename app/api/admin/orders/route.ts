@@ -269,6 +269,9 @@ export async function PATCH(request: Request) {
         if (error.message.includes("ORDER_NOT_RETURNED")) {
           return NextResponse.json({ error: "শুধু Returned অর্ডারের স্টক ফেরত যোগ করা যাবে।" }, { status: 409 });
         }
+        if (error.message.includes("ORDER_ITEMS_MISSING") || error.message.includes("ORDER_PRODUCT_REFERENCE_MISSING") || error.message.includes("ORDER_PRODUCTS_NOT_FOUND")) {
+          return NextResponse.json({ error: "অর্ডারের কিছু পণ্য রেকর্ড পাওয়া যাচ্ছে না। স্টক ফেরতের আগে পণ্য রেকর্ড ম্যানুয়ালি যাচাই করুন।" }, { status: 409 });
+        }
         console.error("Returned order restock failed:", error.message);
         return NextResponse.json({ error: "স্টক ফেরত যোগ করা যায়নি।" }, { status: 500 });
       }
