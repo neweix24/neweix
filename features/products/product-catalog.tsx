@@ -266,7 +266,7 @@ export default function ProductCatalog() {
               <div className={styles.details}>
                 <div className="mb-2 flex flex-wrap gap-2">
                   <button type="button" aria-pressed={wishlist.includes(product.id)} aria-label={wishlist.includes(product.id) ? "পছন্দের তালিকা থেকে সরান" : "পছন্দের তালিকায় যোগ করুন"} title={wishlist.includes(product.id) ? "পছন্দে আছে" : "পছন্দে রাখুন"} onClick={() => toggleWishlist(product)} className={styles.iconButton} style={{ borderColor: "var(--border)" }}><Icon name="heart" size={17} /></button>
-                  <button type="button" aria-pressed={compareIds.includes(product.id)} aria-label={compareIds.includes(product.id) ? "তুলনা থেকে সরান" : "তুলনায় যোগ করুন"} title={compareIds.includes(product.id) ? "তুলনায় আছে" : "তুলনা করুন"} onClick={() => toggleCompare(product)} className="rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}><Icon name="compare" size={17} /></button>
+                  <button type="button" aria-pressed={compareIds.includes(product.id)} aria-label={compareIds.includes(product.id) ? "তুলনা থেকে সরান" : "তুলনায় যোগ করুন"} title={compareIds.includes(product.id) ? "তুলনায় আছে" : "তুলনা করুন"} onClick={() => toggleCompare(product)} className={styles.iconButton} style={{ borderColor: "var(--border)" }}><Icon name="compare" size={17} /></button>
                 </div>
                 <span className={product.stock > 0 ? styles.inStock : styles.outOfStock}>
                   {product.stock > 0 ? "স্টকে আছে" : "স্টক শেষ"}
@@ -282,8 +282,8 @@ export default function ProductCatalog() {
                       <del>{money(Number(product.compare_at_price))}</del>
                     )}
                   </div>
-                  <button type="button" disabled={product.stock < 1} onClick={() => addToCart(product)}>
-                    কার্টে যোগ
+                  <button type="button" disabled={product.stock < 1} onClick={() => addToCart(product)} className={styles.addButton} aria-label={product.name + " কার্টে যোগ করুন"} title="কার্টে যোগ করুন">
+                    <Icon name="plus" size={18} /> কার্টে যোগ
                   </button>
                 </div>
               </div>
