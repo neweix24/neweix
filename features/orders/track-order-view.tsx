@@ -190,7 +190,7 @@ export default function TrackOrderView() {
               disabled={loading}
               className="w-full rounded-lg px-5 py-3 font-semibold transition disabled:cursor-not-allowed disabled:opacity-60" style={{ background: "var(--primary)", color: "#080b09" }}
             >
-              {loading ? "অর্ডার খোঁজা হচ্ছে..." : "অর্ডার খুঁজুন"}
+              <><Icon name={loading ? "refresh" : "search"} size={17} /> {loading ? "অর্ডার খোঁজা হচ্ছে..." : "অর্ডার খুঁজুন"}</>
             </button>
           </form>
         </div>
