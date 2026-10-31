@@ -1,10 +1,10 @@
 .page {
-  --portal-bg: #080d0a;
-  --portal-panel: rgba(18, 27, 21, 0.82);
-  --portal-line: rgba(190, 220, 194, 0.12);
-  --portal-text: #f4f7f2;
-  --portal-muted: #a5b3a7;
-  --portal-lime: #c4f36b;
+  --portal-bg: var(--bg);
+  --portal-panel: var(--surface-raised);
+  --portal-line: var(--border);
+  --portal-text: var(--ink);
+  --portal-muted: var(--muted);
+  --portal-lime: var(--primary);
   min-height: 100vh;
   overflow: hidden;
   color: var(--portal-text);
@@ -38,7 +38,7 @@
   height: 36px;
   place-items: center;
   border-radius: 12px;
-  color: #10170d;
+  color: #080b09;
   background: var(--portal-lime);
   font-size: 19px;
 }
@@ -78,7 +78,7 @@
   padding: 8px 12px;
   border: 1px solid var(--portal-line);
   border-radius: 999px;
-  color: #c3cec4;
+  color: var(--muted);
   background: rgba(255,255,255,.025);
   font-size: 12px;
 }
@@ -98,7 +98,7 @@
   background: linear-gradient(145deg, var(--portal-panel), rgba(11,17,13,.92));
   transition: transform .2s ease, border-color .2s ease, background .2s ease;
 }
-.serviceCard:hover { transform: translateY(-4px); border-color: rgba(196,243,107,.42); background: #152019; }
+.serviceCard:hover { transform: translateY(-4px); border-color: rgba(182,255,74,.42); background: var(--surface-raised); }
 .cardTop { display: flex; align-items: center; justify-content: space-between; }
 .icon {
   display: grid;
@@ -109,11 +109,11 @@
   font-size: 21px;
   font-weight: 800;
 }
-.iconLime { color: #d4ff8c; background: rgba(196,243,107,.12); }
-.iconBlue { color: #8dc8ff; background: rgba(93,168,235,.13); }
-.iconViolet { color: #c5a5ff; background: rgba(158,116,238,.14); }
-.iconAmber { color: #ffd28a; background: rgba(242,177,84,.13); }
-.eyebrow { color: #829185; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; }
+.iconLime { color: var(--primary); background: rgba(182,255,74,.12); }
+.iconBlue { color: var(--primary); background: rgba(182,255,74,.12); }
+.iconViolet { color: var(--primary); background: rgba(182,255,74,.12); }
+.iconAmber { color: var(--primary); background: rgba(182,255,74,.12); }
+.eyebrow { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: 1.5px; }
 .serviceCard h3 { margin: 22px 0 8px; font-size: 19px; letter-spacing: -.3px; }
 .serviceCard p { max-width: 300px; margin: 0; color: var(--portal-muted); font-size: 13px; line-height: 1.8; }
 .cardArrow { position: absolute; right: 22px; bottom: 21px; color: var(--portal-lime); font-size: 20px; transition: transform .2s ease; }
@@ -124,10 +124,10 @@
   gap: 18px;
   padding: 24px 0 32px;
   border-top: 1px solid var(--portal-line);
-  color: #849187;
+  color: var(--muted);
   font-size: 12px;
 }
-.footer strong { color: #dbe6dc; }
+.footer strong { color: var(--ink); }
 @media (max-width: 820px) {
   .serviceGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .headerLinks { gap: 14px; }
