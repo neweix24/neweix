@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Icon from "@/components/ui/icon";
 import styles from "./product-catalog.module.css";
 
 type Product = {
@@ -55,6 +56,8 @@ export default function ProductCatalog() {
 
   useEffect(() => {
     void loadProducts();
+    const initialSearch = new URLSearchParams(window.location.search).get("search");
+    if (initialSearch) setQuery(initialSearch);
     try {
       const saved: unknown = JSON.parse(localStorage.getItem("neweix_wishlist") ?? "[]");
       if (Array.isArray(saved)) setWishlist(Array.from(new Set(saved.filter((id): id is string => typeof id === "string"))).slice(0, 200));
@@ -168,14 +171,14 @@ export default function ProductCatalog() {
         {notice && (
           <div className={styles.notice} role="status">
             {notice}
-            <button type="button" onClick={() => setNotice("")} aria-label="বার্তা বন্ধ করুন">×</button>
+            <button type="button" onClick={() => setNotice("")} aria-label="বার্তা বন্ধ করুন" title="বন্ধ করুন" className={styles.iconButton}><Icon name="close" size={17} /></button>
           </div>
         )}
         {loading && <p className={styles.state}>পণ্য লোড হচ্ছে...</p>}
         {!loading && error && (
           <div className={styles.state}>
             <p>পণ্য লোড করা যায়নি। আবার চেষ্টা করুন।</p>
-            <button type="button" onClick={() => void loadProducts()}>আবার চেষ্টা করুন</button>
+            <button type="button" onClick={() => void loadProducts()} className={styles.actionButton}><Icon name="refresh" size={16} /> আবার চেষ্টা করুন</button>
           </div>
         )}
         {!loading && !error && products.length === 0 && (
@@ -196,9 +199,9 @@ export default function ProductCatalog() {
                 {product.is_featured && <small>বিশেষ পণ্য</small>}
               </Link>
               <div className={styles.details}>
-                <div className="mb-2 flex flex-wrap gap-2">
-                  <button type="button" aria-pressed={wishlist.includes(product.id)} onClick={() => toggleWishlist(product)} className="rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}>{wishlist.includes(product.id) ? "♥ পছন্দে আছে" : "♡ পছন্দে রাখুন"}</button>
-                  <button type="button" aria-pressed={compareIds.includes(product.id)} onClick={() => toggleCompare(product)} className="rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}>{compareIds.includes(product.id) ? "✓ তুলনায় আছে" : "⇄ তুলনা করুন"}</button>
+                <div className={styles.productTools}>
+                  <button type="button" aria-pressed={wishlist.includes(product.id)} aria-label={wishlist.includes(product.id) ? "পছন্দের তালিকা থেকে সরান" : "পছন্দের তালিকায় যোগ করুন"} title={wishlist.includes(product.id) ? "পছন্দে আছে" : "পছন্দে রাখুন"} onClick={() => toggleWishlist(product)} className={styles.iconButton}><Icon name="heart" size={17} /></button>
+                  <button type="button" aria-pressed={compareIds.includes(product.id)} aria-label={compareIds.includes(product.id) ? "তুলনা থেকে সরান" : "তুলনায় যোগ করুন"} title={compareIds.includes(product.id) ? "তুলনায় আছে" : "তুলনা করুন"} onClick={() => toggleCompare(product)} className={styles.iconButton}><Icon name="compare" size={17} /></button>
                 </div>
                 <span className={product.stock > 0 ? styles.inStock : styles.outOfStock}>
                   {product.stock > 0 ? "স্টকে আছে" : "স্টক শেষ"}
@@ -214,9 +217,7 @@ export default function ProductCatalog() {
                       <del>{money(Number(product.compare_at_price))}</del>
                     )}
                   </div>
-                  <button type="button" disabled={product.stock < 1} onClick={() => addToCart(product)}>
-                    কার্টে যোগ
-                  </button>
+                  <button type="button" disabled={product.stock < 1} onClick={() => addToCart(product)} className={styles.addButton} aria-label={`${product.name} কার্টে যোগ করুন`} title="কার্টে যোগ করুন"><Icon name="plus" size={19} /></button>
                 </div>
               </div>
             </article>
