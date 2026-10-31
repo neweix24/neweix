@@ -96,7 +96,36 @@ export async function GET(request: Request) {
         return errorResponse("সঠিক Pathao Consignment ID দিন।", 400);
       }
       const tracking = await getPathaoOrderInfo(consignmentId);
-      return NextResponse.json({ success: true, tracking }, {
+      const trackingRecord = tracking && typeof tracking === "object"
+        ? tracking as { data?: { order_status?: unknown }; order_status?: unknown }
+        : {};
+      const providerStatus = String(trackingRecord.data?.order_status ?? trackingRecord.order_status ?? "").toLowerCase();
+      const deliveryStatus = providerStatus.includes("deliver")
+        ? "delivered"
+        : providerStatus.includes("pick")
+          ? "picked_up"
+          : providerStatus.includes("transit") || providerStatus.includes("in transit")
+            ? "in_transit"
+            : providerStatus.includes("return")
+              ? "returned"
+              : providerStatus.includes("cancel")
+                ? "cancelled"
+                : null;
+      let synced = false;
+      if (deliveryStatus) {
+        const admin = await createRuntimeServiceClient();
+        const { data: updatedOrders, error: syncError } = await admin
+          .from("orders")
+          .update({ delivery_status: deliveryStatus, delivery_error: null, updated_at: new Date().toISOString() })
+          .eq("delivery_consignment_id", consignmentId)
+          .select("id");
+        if (syncError) {
+          console.error("Pathao tracking sync failed:", syncError.message);
+        } else {
+          synced = Boolean(updatedOrders?.length);
+        }
+      }
+      return NextResponse.json({ success: true, tracking, deliveryStatus, synced }, {
         headers: { "Cache-Control": "no-store" },
       });
     }
