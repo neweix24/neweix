@@ -80,7 +80,7 @@ export default function AccountView() {
           .upsert({
             user_id: user.id,
             email: user.email ?? null,
-            full_name: profile?.full_name ?? metadataName || null,
+            full_name: profile?.full_name ?? (metadataName || null),
             avatar_url: profile?.avatar_url ?? (metadataAvatar || null),
             date_of_birth: profile?.date_of_birth ?? null,
             preferred_language: profile?.preferred_language ?? metadataLanguage,
