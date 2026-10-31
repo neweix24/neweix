@@ -31,6 +31,17 @@ function encryptionKeyBytes(encoded: string): Uint8Array {
   return bytes;
 }
 
+/**
+ * Copy bytes into a standalone ArrayBuffer. This avoids passing a
+ * Uint8Array<ArrayBufferLike> (which may be backed by SharedArrayBuffer)
+ * to Web Crypto APIs that require an ArrayBuffer-backed BufferSource.
+ */
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+  return buffer;
+}
+
 function toBase64(bytes: Uint8Array): string {
   let binary = "";
   bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
@@ -38,17 +49,28 @@ function toBase64(bytes: Uint8Array): string {
 }
 
 export async function encryptYouTubeToken(value: string, encodedKey: string): Promise<string> {
-  const key = await crypto.subtle.importKey("raw", encryptionKeyBytes(encodedKey), "AES-GCM", false, ["encrypt"]);
+  const keyBytes = encryptionKeyBytes(encodedKey);
+  const key = await crypto.subtle.importKey("raw", toArrayBuffer(keyBytes), "AES-GCM", false, ["encrypt"]);
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(value));
+  const plaintext = new TextEncoder().encode(value);
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: toArrayBuffer(iv) },
+    key,
+    toArrayBuffer(plaintext),
+  );
   return `v1.${toBase64(iv)}.${toBase64(new Uint8Array(ciphertext))}`;
 }
 
 export async function decryptYouTubeToken(value: string, encodedKey: string): Promise<string> {
   const [version, ivPart, ciphertextPart] = value.split(".");
   if (version !== "v1" || !ivPart || !ciphertextPart) throw new Error("Unsupported encrypted YouTube token format.");
-  const key = await crypto.subtle.importKey("raw", encryptionKeyBytes(encodedKey), "AES-GCM", false, ["decrypt"]);
+  const keyBytes = encryptionKeyBytes(encodedKey);
+  const key = await crypto.subtle.importKey("raw", toArrayBuffer(keyBytes), "AES-GCM", false, ["decrypt"]);
   const decode = (part: string) => Uint8Array.from(atob(part), (char) => char.charCodeAt(0));
-  const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv: decode(ivPart) }, key, decode(ciphertextPart));
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: toArrayBuffer(decode(ivPart)) },
+    key,
+    toArrayBuffer(decode(ciphertextPart)),
+  );
   return new TextDecoder().decode(plaintext);
 }
