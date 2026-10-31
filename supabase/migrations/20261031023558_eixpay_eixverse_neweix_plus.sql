@@ -395,6 +395,13 @@ begin
   where user_id = v_user_id
   for update;
 
+  update private.neweix_plus_memberships
+  set status = 'expired'
+  where user_id = v_user_id
+    and status = 'active'
+    and expires_at is not null
+    and expires_at <= now();
+
   insert into private.neweix_plus_memberships (user_id, tier_code, status, assignment_source)
   select v_user_id, 'free', 'active', 'system'
   where not exists (
@@ -1581,6 +1588,13 @@ begin
 
   -- Keep default membership creation race-safe across account and wallet requests.
   perform pg_advisory_xact_lock(hashtextextended(v_user_id::text, 0));
+
+  update private.neweix_plus_memberships
+  set status = 'expired'
+  where user_id = v_user_id
+    and status = 'active'
+    and expires_at is not null
+    and expires_at <= now();
 
   insert into private.neweix_plus_memberships (user_id, tier_code, status, assignment_source)
   select v_user_id, 'free', 'active', 'system'
