@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import Icon from "@/components/ui/icon";
 import styles from "./storefront-home.module.css";
+import HomepageYouTubeVideos from "@/features/portal/homepage-youtube-videos";
 
 type Product = {
   id: string; name: string; slug: string; price: number;
@@ -211,6 +212,8 @@ export default function StorefrontHome() {
             {categories.map((category) => <Link key={category.id} href={`/products?category=${encodeURIComponent(category.slug)}`}>{category.name}<Icon name="arrow-right" size={15} /></Link>)}
           </div>
         </section>}
+
+        <HomepageYouTubeVideos />
 
         <section className={styles.productSection} aria-labelledby="featured-title">
           <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>DISCOVER NEWEIX</span><h2 id="featured-title">আপনার জন্য পণ্য</h2><p>স্টোরে বর্তমানে থাকা পণ্য থেকে বেছে নিন।</p></div><Link href="/products">সব পণ্য দেখুন <Icon name="arrow-right" size={16} /></Link></div>
