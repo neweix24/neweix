@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import Icon from "@/components/ui/icon";
 
 export default function LoginPage() {
 const router = useRouter();
@@ -137,7 +138,7 @@ return (
     <button
       type="button"
       className="password-visibility-button"
-      aria-label={showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"}
+      aria-label=<Icon name="eye" size={17} />
       aria-pressed={showPassword}
       onClick={() => setShowPassword((visible) => !visible)}
     >
@@ -153,7 +154,7 @@ return (
     {message && <p role="alert">{message}</p>}
 
     <button className="primary-button" type="submit" disabled={busy}>
-      {busy ? "লগইন হচ্ছে…" : "লগইন করুন"}
+      <><Icon name={busy ? "refresh" : "user"} size={17} /> {busy ? "লগইন হচ্ছে…" : "লগইন করুন"}</>
     </button>
   </form>
 
