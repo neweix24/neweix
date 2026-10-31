@@ -13,7 +13,7 @@ export async function GET() {
     const admin = await createRuntimeServiceClient();
     const { data, error } = await admin
       .from("customer_profiles")
-      .select("user_id,full_name,display_name,phone,created_at")
+      .select("user_id,full_name,display_name,email,avatar_url,date_of_birth,phone,phone_verified_at,created_at")
       .order("created_at", { ascending: false })
       .limit(100);
 
