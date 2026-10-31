@@ -17,6 +17,29 @@
   --success: #b6ff4a;
   --radius: 18px;
   --shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+
+  /* Single source of truth: edit this palette to recolor the entire application. */
+  --page-bg: var(--bg);
+  --page-surface: var(--surface);
+  --page-panel: var(--surface-raised);
+  --page-panel-soft: var(--surface-soft);
+  --page-text: var(--ink);
+  --page-muted: var(--muted);
+  --page-border: var(--border);
+  --page-accent: var(--primary);
+  --brand-forest: var(--surface-raised);
+  --brand-forest-deep: var(--bg);
+  --brand-lime: var(--primary);
+  --brand-lime-soft: color-mix(in srgb, var(--primary) 12%, transparent);
+  --surface-glass: color-mix(in srgb, var(--surface) 82%, transparent);
+  --surface-elevated: var(--surface-raised);
+  --border-strong: var(--border);
+  --text-primary: var(--ink);
+  --text-secondary: var(--muted);
+  --color-danger: #ff7777;
+  --color-danger-soft: rgba(255, 119, 119, 0.09);
+  --color-success: #b6ff4a;
+  --color-success-soft: rgba(182, 255, 74, 0.08);
 }
 
 * {
@@ -746,18 +769,7 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 button svg { flex: none; }
 
 
-/* NEWEIX unified page palette: neutralize legacy light utility surfaces globally. */
-:root {
-  --page-bg: #080b09;
-  --page-surface: #101612;
-  --page-panel: #151d18;
-  --page-panel-soft: #1b251e;
-  --page-text: #f4f8f2;
-  --page-muted: #a0ada1;
-  --page-border: #29352b;
-  --page-accent: #b6ff4a;
-}
-
+/* NEWEIX unified page palette: all route surfaces resolve to the root tokens above. */
 /* Legacy Tailwind light surfaces used by older admin and dashboard pages. */
 [class~="bg-white"] {
   color: var(--customer-theme-text, var(--page-text)) !important;
@@ -822,13 +834,13 @@ table, thead, tbody, tr {
   border-color: var(--page-border);
 }
 th {
-  background-color: rgba(182, 255, 74, 0.045);
+  background-color: color-mix(in srgb, var(--page-accent) 4.5%, transparent);
 }
 
 
 /* Semantic alerts retain meaning without reintroducing light panels. */
-[class~="bg-red-50"] { color: #ffb4b4 !important; background-color: rgba(255, 119, 119, 0.09) !important; }
-[class~="border-red-200"] { border-color: rgba(255, 119, 119, 0.28) !important; }
-[class~="text-red-800"] { color: #ffaaaa !important; }
-[class~="bg-green-50"] { color: #c5f7a6 !important; background-color: rgba(182, 255, 74, 0.08) !important; }
-[class~="text-green-800"] { color: #c5f7a6 !important; }
+[class~="bg-red-50"] { color: color-mix(in srgb, var(--color-danger) 78%, white) !important; background-color: var(--color-danger-soft) !important; }
+[class~="border-red-200"] { border-color: color-mix(in srgb, var(--color-danger) 28%, transparent) !important; }
+[class~="text-red-800"] { color: color-mix(in srgb, var(--color-danger) 78%, white) !important; }
+[class~="bg-green-50"] { color: color-mix(in srgb, var(--color-success) 78%, white) !important; background-color: var(--color-success-soft) !important; }
+[class~="text-green-800"] { color: color-mix(in srgb, var(--color-success) 78%, white) !important; }
