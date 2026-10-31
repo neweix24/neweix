@@ -28,6 +28,9 @@ $customer_order_link$;
 create index if not exists orders_customer_id_idx
   on public.orders(customer_id);
 
+alter table public.orders
+  add column if not exists updated_at timestamptz not null default now();
+
 
 create or replace function private.has_staff_role(required_roles text[])
 returns boolean
