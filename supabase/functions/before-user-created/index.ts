@@ -12,9 +12,13 @@ function response(body: unknown, status = 200): Response {
   });
 }
 
-function decodeBase64(value: string): Uint8Array {
+function decodeBase64(value: string): Uint8Array<ArrayBuffer> {
   const binary = atob(value);
-  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index++) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
 }
 
 function safeEqual(left: Uint8Array, right: Uint8Array): boolean {
