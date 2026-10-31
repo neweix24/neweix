@@ -25,5 +25,14 @@ begin
   if not has_function_privilege('service_role', 'public.admin_restock_returned_order(uuid,uuid,text)', 'EXECUTE') then
     raise exception 'FUNCTION REGRESSION: service_role cannot invoke returned-order stock restock';
   end if;
+  if has_function_privilege('authenticated', 'public.neweix_claim_customer_notifications(integer)', 'EXECUTE') then
+    raise exception 'SECURITY REGRESSION: authenticated can claim customer SMS notifications';
+  end if;
+  if not has_function_privilege('service_role', 'public.neweix_claim_customer_notifications(integer)', 'EXECUTE') then
+    raise exception 'FUNCTION REGRESSION: service_role cannot claim customer SMS notifications';
+  end if;
+  if has_table_privilege('authenticated', 'private.customer_notification_outbox', 'SELECT') then
+    raise exception 'SECURITY REGRESSION: authenticated can read customer SMS outbox';
+  end if;
 end;
 $$;
