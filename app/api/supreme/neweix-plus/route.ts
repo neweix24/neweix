@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient, maskBangladeshPhone, normalizeBangladeshPhone } from "@/lib/phone-verification";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store, max-age=0" };
@@ -14,6 +15,52 @@ async function getSupreme() {
   if (mfaError || assurance?.currentLevel !== "aal2") return { ok: false as const, response: fail("Supreme MFA যাচাই সম্পন্ন করুন।", 403) };
   return { ok: true as const, supabase };
 }
+export async function GET(request: Request) {
+  try {
+    const url = new URL(request.url);
+    const query = (url.searchParams.get("query") ?? "").trim();
+    if (query.length < 3 || query.length > 120) return fail("কমপক্ষে ৩ এবং সর্বোচ্চ ১২০ অক্ষরের অনুসন্ধান দিন।", 400);
+    const access = await getSupreme();
+    if (!access.ok) return access.response;
+
+    const admin = createAdminSupabaseClient();
+    const columns = "user_id,full_name,display_name,email,phone";
+    let dbQuery = admin.from("customer_profiles").select(columns).limit(10);
+
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(query)) {
+      dbQuery = dbQuery.eq("user_id", query);
+    } else if (query.includes("@")) {
+      dbQuery = dbQuery.eq("email", query.toLowerCase());
+    } else {
+      const phone = normalizeBangladeshPhone(query);
+      if (phone) {
+        dbQuery = dbQuery.eq("phone", phone);
+      } else {
+        const safe = query.replace(/[,%_()\\\\]/g, "").trim();
+        if (safe.length < 3) return fail("অনুসন্ধানের শব্দটি সঠিক নয়।", 400);
+        dbQuery = dbQuery.or("full_name.ilike.%" + safe + "%,display_name.ilike.%" + safe + "%");
+      }
+    }
+
+    const { data, error } = await dbQuery;
+    if (error) {
+      console.error("Neweix+ customer search failed:", error.code);
+      return fail("গ্রাহক খোঁজা যায়নি।", 503);
+    }
+
+    const customers = (data ?? []).map((row) => ({
+      user_id: row.user_id,
+      name: row.full_name || row.display_name || "NEWEIX customer",
+      email: row.email,
+      masked_phone: row.phone ? maskBangladeshPhone(row.phone) : null,
+    }));
+    return NextResponse.json({ success: true, customers }, { headers });
+  } catch (error) {
+    console.error("Neweix+ customer search failed:", error);
+    return fail("গ্রাহক খোঁজা যায়নি।", 500);
+  }
+}
+
 export async function PATCH(request: Request) {
   try {
     const raw = await request.text();
