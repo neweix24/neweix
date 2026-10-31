@@ -5,7 +5,7 @@ export type IconName =
   | "plus" | "minus" | "trash" | "check" | "refresh" | "close" | "menu"
   | "home" | "grid" | "star" | "wallet" | "membership" | "globe"
   | "settings" | "map-pin" | "shield" | "help" | "mail" | "logout"
-  | "orders" | "truck" | "gift" | "tag" | "compare" | "chevron-right" | "chevron-left" | "sparkles" | "eye" | "copy" | "send" | "filter";
+  | "orders" | "truck" | "gift" | "tag" | "compare" | "chevron-right" | "chevron-left" | "sparkles" | "eye" | "copy" | "send" | "filter" | "edit";
 
 const paths: Record<IconName, ReactNode> = {
   search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></>,
@@ -44,6 +44,7 @@ const paths: Record<IconName, ReactNode> = {
   copy: <><rect x="8" y="8" width="13" height="13" rx="2" /><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" /></>,
   send: <><path d="m22 2-7 20-4-9-9-4 20-7Z" /><path d="M22 2 11 13" /></>,
   filter: <><path d="M4 5h16l-6.5 7.5V19l-3 1v-7.5L4 5Z" /></>,
+  edit: <><path d="m15 5 4 4M4 20l4.5-1 11-11a2.1 2.1 0 0 0-3-3l-11 11L4 20Z" /></>,
   sparkles: <><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z" /><path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16Z" /></>,
 };
 
