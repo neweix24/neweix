@@ -51,7 +51,11 @@ export async function POST(request: Request) {
       typeof body !== "object" ||
       body === null ||
       !("email" in body) ||
-      typeof body.email !== "string"
+      typeof body.email !== "string" ||
+      !("captchaToken" in body) ||
+      typeof body.captchaToken !== "string" ||
+      body.captchaToken.length < 10 ||
+      body.captchaToken.length > 4096
     ) {
       return NextResponse.json(
         { error: "সঠিক ইমেইল দিন।" },
@@ -60,6 +64,7 @@ export async function POST(request: Request) {
     }
 
     const email = body.email.trim().toLowerCase();
+    const captchaToken = body.captchaToken;
 
     if (
       email.length > 254 ||
@@ -121,6 +126,7 @@ export async function POST(request: Request) {
     const { error: resetError } =
       await publicClient.auth.resetPasswordForEmail(email, {
         redirectTo: `${siteUrl}/auth/callback?next=%2Fauth%2Freset-password`,
+        captchaToken,
       });
 
     if (resetError) {
