@@ -824,3 +824,11 @@ table, thead, tbody, tr {
 th {
   background-color: rgba(182, 255, 74, 0.045);
 }
+
+
+/* Semantic alerts retain meaning without reintroducing light panels. */
+[class~="bg-red-50"] { color: #ffb4b4 !important; background-color: rgba(255, 119, 119, 0.09) !important; }
+[class~="border-red-200"] { border-color: rgba(255, 119, 119, 0.28) !important; }
+[class~="text-red-800"] { color: #ffaaaa !important; }
+[class~="bg-green-50"] { color: #c5f7a6 !important; background-color: rgba(182, 255, 74, 0.08) !important; }
+[class~="text-green-800"] { color: #c5f7a6 !important; }
