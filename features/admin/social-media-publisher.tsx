@@ -56,7 +56,7 @@ export default function SocialMediaPublisher() {
       setStatus("শিরোনাম, ক্যাপশন এবং অন্তত একটি প্ল্যাটফর্ম নির্বাচন করুন।");
       return;
     }
-    const mediaUrlList = mediaUrls.split("\\n").map((value) => value.trim()).filter(Boolean);
+    const mediaUrlList = mediaUrls.split("\n").map((value) => value.trim()).filter(Boolean);
     if (!asDraft && targets.some((target) => target !== "youtube")) {
       setStatus("এই মুহূর্তে স্বয়ংক্রিয় প্রকাশ শুধু YouTube-এর জন্য চালু। অন্য প্ল্যাটফর্মের পোস্ট Draft হিসেবে রাখুন।");
       return;
