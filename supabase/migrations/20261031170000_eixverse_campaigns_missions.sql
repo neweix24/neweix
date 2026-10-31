@@ -201,6 +201,15 @@ begin
     raise exception using errcode='55000',message='MISSION_NOT_AVAILABLE';
   end if;
 
+  -- The campaign row lock serializes claims in this campaign, so this
+  -- campaign-wide per-user budget cannot be exceeded by concurrent requests.
+  select count(*) into v_count
+  from private.eixverse_mission_claims
+  where campaign_id=v_c.id and user_id=v_user;
+  if v_count >= v_c.max_claims_per_user then
+    raise exception using errcode='55000',message='CAMPAIGN_USER_LIMIT_REACHED';
+  end if;
+
   if v_m.mission_type='daily_checkin' then
     select id into v_evidence from private.eixverse_daily_checkins
     where user_id=v_user and local_date=(now() at time zone 'Asia/Dhaka')::date;
