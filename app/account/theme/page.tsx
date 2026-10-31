@@ -16,13 +16,13 @@ type ThemeSettings = {
 };
 
 const INITIAL_THEME: ThemeSettings = {
-  background: "#f5f5f5",
-  surface: "#ffffff",
-  text: "#222222",
-  muted: "#666666",
-  button: "#333333",
-  buttonText: "#ffffff",
-  border: "#dddddd",
+  background: "#080b09",
+  surface: "#151d18",
+  text: "#f4f8f2",
+  muted: "#a0ada1",
+  button: "#b6ff4a",
+  buttonText: "#080b09",
+  border: "#29352b",
 };
 
 const FIELDS: { key: keyof ThemeSettings; label: string }[] = [
@@ -327,12 +327,9 @@ export default function CustomerThemePage() {
           cursor: pointer;
         }
         .save-button {
-          background: ${"var(--customer-theme-button, #333333)"};
-          background-color: ${"var(--unused, transparent)"};
-          background-color: #333333;
-          color: white;
+          background: var(--customer-theme-button, var(--primary));
+          color: var(--customer-theme-button-text, #080b09);
         }
-        .save-button { background: ${"transparent"}; }
         .reset-button { background: transparent; color: inherit; }
         button:disabled { opacity: .6; cursor: wait; }
         .success { color: #16804a; }
