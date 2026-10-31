@@ -25,30 +25,43 @@ export async function GET(request: Request) {
 
     const admin = createAdminSupabaseClient();
     const columns = "user_id,full_name,display_name,email,phone";
-    let dbQuery = admin.from("customer_profiles").select(columns).limit(10);
+    let rows: Array<{ user_id: string; full_name: string | null; display_name: string | null; email: string | null; phone: string | null }> = [];
+    let queryError: { code?: string } | null = null;
 
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(query)) {
-      dbQuery = dbQuery.eq("user_id", query);
+      const result = await admin.from("customer_profiles").select(columns).eq("user_id", query).limit(1);
+      rows = result.data ?? [];
+      queryError = result.error;
     } else if (query.includes("@")) {
-      dbQuery = dbQuery.eq("email", query.toLowerCase());
+      const result = await admin.from("customer_profiles").select(columns).eq("email", query.toLowerCase()).limit(1);
+      rows = result.data ?? [];
+      queryError = result.error;
     } else {
       const phone = normalizeBangladeshPhone(query);
       if (phone) {
-        dbQuery = dbQuery.eq("phone", phone);
+        const result = await admin.from("customer_profiles").select(columns).eq("phone", phone).limit(1);
+        rows = result.data ?? [];
+        queryError = result.error;
       } else {
-        const safe = query.replace(/[,%_()\\\\]/g, "").trim();
+        const safe = query.replace(/[,%_().\\\\]/g, "").trim();
         if (safe.length < 3) return fail("অনুসন্ধানের শব্দটি সঠিক নয়।", 400);
-        dbQuery = dbQuery.or("full_name.ilike.%" + safe + "%,display_name.ilike.%" + safe + "%");
+        const byFullName = await admin.from("customer_profiles").select(columns).ilike("full_name", "%" + safe + "%").limit(10);
+        rows = byFullName.data ?? [];
+        queryError = byFullName.error;
+        if (!queryError && rows.length === 0) {
+          const byDisplayName = await admin.from("customer_profiles").select(columns).ilike("display_name", "%" + safe + "%").limit(10);
+          rows = byDisplayName.data ?? [];
+          queryError = byDisplayName.error;
+        }
       }
     }
 
-    const { data, error } = await dbQuery;
-    if (error) {
-      console.error("Neweix+ customer search failed:", error.code);
+    if (queryError) {
+      console.error("Neweix+ customer search failed:", queryError.code);
       return fail("গ্রাহক খোঁজা যায়নি।", 503);
     }
 
-    const customers = (data ?? []).map((row) => ({
+    const customers = rows.map((row) => ({
       user_id: row.user_id,
       name: row.full_name || row.display_name || "NEWEIX customer",
       email: row.email,
