@@ -216,6 +216,7 @@ declare
   v_review private.eixpay_product_reviews%rowtype;
   v_reward jsonb;
   v_awarded bigint := 0;
+  v_reward_reason text;
 begin
   if v_actor is null then
     raise exception using errcode = '28000', message = 'AUTHENTICATION_REQUIRED';
@@ -251,8 +252,10 @@ begin
     if coalesce((v_reward ->> 'success')::boolean, false) then
       v_awarded := coalesce((v_reward ->> 'awarded')::bigint, 0);
     else
-      raise exception using errcode = '55000',
-        message = 'REVIEW_REWARD_NOT_AVAILABLE:' || coalesce(v_reward ->> 'reason','unknown');
+      -- Review moderation is independent of the optional Eixon program.
+      -- Keep the approved review public, record why no reward was issued,
+      -- and allow Supreme to enable rewards later without blocking moderation.
+      v_reward_reason := coalesce(v_reward ->> 'reason', 'reward_not_available');
     end if;
     update private.eixpay_product_reviews
     set status = 'approved', reward_awarded = v_awarded,
@@ -268,9 +271,9 @@ begin
 
   insert into private.eixpay_audit_events(actor_id,event_code,subject_id,metadata)
   values (v_actor, 'product_review_' || p_decision, p_review_id,
-    jsonb_build_object('user_id',v_review.user_id,'product_id',v_review.product_id,'rating',v_review.rating,'reward_awarded',v_awarded));
+    jsonb_build_object('user_id',v_review.user_id,'product_id',v_review.product_id,'rating',v_review.rating,'reward_awarded',v_awarded,'reward_unavailable_reason',v_reward_reason));
 
-  return jsonb_build_object('success',true,'status',case when p_decision='approve' then 'approved' else 'rejected' end,'reward_awarded',v_awarded);
+  return jsonb_build_object('success',true,'status',case when p_decision='approve' then 'approved' else 'rejected' end,'reward_awarded',v_awarded,'reward_unavailable_reason',v_reward_reason);
 end;
 $function$;
 
