@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import EixPayTransferForm from "@/features/eixpay/transfer-request-form";
+import Icon from "@/components/ui/icon";
 import { useCallback, useEffect, useState } from "react";
 
 type Wallet = {
@@ -144,7 +145,7 @@ export default function EixPayWallet() {
           <div className="rounded-3xl border border-amber-300/25 bg-amber-300/10 p-6">
             <p className="font-semibold text-amber-100">{error}</p>
             <p className="mt-2 text-sm text-white/60">ডেটাবেস migration সম্পন্ন হলে ওয়ালেটের তথ্য এখানে দেখা যাবে।</p>
-            <button onClick={() => void load()} className="mt-4 rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-900">আবার চেষ্টা করুন</button>
+            <button onClick={() => void load()} className="mt-4 rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-900"><Icon name="refresh" size={16} /> আবার চেষ্টা করুন</button>
           </div>
         ) : wallet?.wallet_enabled === false ? (
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-white/70">EixPay ওয়ালেট বর্তমানে সাময়িকভাবে বন্ধ।</div>
@@ -167,7 +168,7 @@ export default function EixPayWallet() {
                   <div className="mt-1 flex items-center gap-3">
                     <strong className="font-mono text-lg tracking-wider">{wallet?.eix_id ?? "—"}</strong>
                     <button type="button" onClick={() => void copyEixId()} className="rounded-lg border border-white/20 px-2 py-1 text-xs hover:bg-white/10" disabled={!wallet?.eix_id}>
-                      {copied ? "কপি হয়েছে" : "কপি"}
+                      <><Icon name="copy" size={14} /> {copied ? "কপি হয়েছে" : "কপি"}</>
                     </button>
                   </div>
                 </div>
@@ -195,7 +196,7 @@ export default function EixPayWallet() {
                   </div>
                   {referralMessage && <p role="status" className="mt-2 break-all text-xs text-emerald-200">{referralMessage}</p>}
                 </div>
-                <button type="button" onClick={() => void shareReferral()} disabled={!wallet?.eix_id} className="rounded-full bg-emerald-200 px-5 py-3 text-sm font-bold text-[#092016] hover:bg-emerald-100 disabled:opacity-50">রেফারেল লিংক শেয়ার</button>
+                <button type="button" onClick={() => void shareReferral()} disabled={!wallet?.eix_id} className="rounded-full bg-emerald-200 px-5 py-3 text-sm font-bold text-[#092016] hover:bg-emerald-100 disabled:opacity-50"><Icon name="send" size={16} /> রেফারেল লিংক শেয়ার</button>
               </div>
             </section>
             {(wallet?.reward_debt ?? 0) > 0 && (
