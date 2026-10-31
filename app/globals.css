@@ -925,35 +925,34 @@ main.min-h-screen.px-4.py-10 h2 {
 }
 
 
-/* Brand rule: every interactive button is black with white foreground.
-   Customer storefront themes must never recolor button surfaces. */
+/* Unified button palette: NEWEIX green accent on black-and-white surfaces.
+   Storefront customers can still use their configured button color. */
 :where(button, input[type="button"], input[type="submit"], input[type="reset"],
   a.primary-button, a.nav-button, a.neweix-button-primary, a.neweix-button-secondary,
   [role="button"]) {
-  color: #ffffff !important;
-  background: #000000 !important;
-  border-color: #000000 !important;
+  color: var(--accent-ink, #080b09) !important;
+  background: var(--page-accent, #b6ff4a) !important;
+  border-color: var(--page-accent, #b6ff4a) !important;
 }
 :where(button, input[type="button"], input[type="submit"], input[type="reset"],
   a.primary-button, a.nav-button, a.neweix-button-primary, a.neweix-button-secondary,
   [role="button"]):hover:not(:disabled):not([aria-disabled="true"]) {
-  color: #ffffff !important;
-  background: #262626 !important;
-  border-color: #262626 !important;
+  color: var(--accent-ink, #080b09) !important;
+  background: color-mix(in srgb, var(--page-accent, #b6ff4a) 82%, white) !important;
+  border-color: color-mix(in srgb, var(--page-accent, #b6ff4a) 82%, white) !important;
 }
 :where(button, input[type="button"], input[type="submit"], input[type="reset"],
   a.primary-button, a.nav-button, a.neweix-button-primary, a.neweix-button-secondary,
   [role="button"]):disabled,
 :where([role="button"])[aria-disabled="true"] {
-  color: #ffffff !important;
-  background: #000000 !important;
-  border-color: #000000 !important;
+  color: var(--accent-ink, #080b09) !important;
+  background: var(--page-accent, #b6ff4a) !important;
+  border-color: var(--page-accent, #b6ff4a) !important;
   opacity: 0.48;
 }
 
-
-/* Typography contract: all ordinary interface text is black.
-   Button labels/icons stay white for contrast on black button surfaces. */
+/* Typography contract: ordinary interface text is black.
+   Button labels and icons use dark ink for legibility on lime controls. */
 body,
 body :where(*) {
   color: #000000 !important;
@@ -964,10 +963,5 @@ body :where(*) {
 :where(button, input[type="button"], input[type="submit"], input[type="reset"],
   a.primary-button, a.nav-button, a.neweix-button-primary, a.neweix-button-secondary,
   [role="button"]) :where(*) {
-  color: #ffffff !important;
-}
-:where(button, input[type="button"], input[type="submit"], input[type="reset"],
-  a.primary-button, a.nav-button, a.neweix-button-primary, a.neweix-button-secondary,
-  [role="button"])::placeholder {
-  color: #ffffff !important;
+  color: var(--accent-ink, #080b09) !important;
 }
