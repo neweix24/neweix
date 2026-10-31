@@ -192,7 +192,7 @@ export default function StorefrontHome() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link href="/" className={styles.brand} aria-label="NEWEIX হোম"><svg viewBox="0 0 148 30" role="img" aria-label="NEWEIX" focusable="false"><text x="0" y="23">NEWEIX</text></svg></Link>
+        <Link href="/" className={styles.brand} aria-label="neweix হোম"><svg viewBox="0 0 148 30" role="img" aria-label="neweix" focusable="false"><text x="0" y="23" >neweix</text></svg></Link>
         <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
           <label className={styles.srOnly} htmlFor="home-product-search">পণ্য খুঁজুন</label>
           <input id="home-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="কোন পণ্য খুঁজছেন?" />
@@ -232,7 +232,7 @@ export default function StorefrontHome() {
 
       </main>
 
-      <footer className={styles.footer}><Link href="/" className={styles.brand}><svg viewBox="0 0 148 30" role="img" aria-label="NEWEIX" focusable="false"><text x="0" y="23">NEWEIX</text></svg></Link><p>স্মার্ট কেনাকাটা, আরও সুন্দর অভিজ্ঞতা।</p><nav aria-label="ফুটার"><Link href="/about">আমাদের সম্পর্কে</Link><Link href="/contact">যোগাযোগ</Link><Link href="/faq">সাধারণ জিজ্ঞাসা</Link><Link href="/privacy">গোপনীয়তা</Link><Link href="/terms">শর্তাবলি</Link></nav><small>© {new Date().getFullYear()} NEWEIX. সর্বস্বত্ব সংরক্ষিত।</small></footer>
+      <footer className={styles.footer}><Link href="/" className={styles.brand}><svg viewBox="0 0 148 30" role="img" aria-label="neweix" focusable="false"><text x="0" y="23" >neweix</text></svg></Link><p>স্মার্ট কেনাকাটা, আরও সুন্দর অভিজ্ঞতা।</p><nav aria-label="ফুটার"><Link href="/about">আমাদের সম্পর্কে</Link><Link href="/contact">যোগাযোগ</Link><Link href="/faq">সাধারণ জিজ্ঞাসা</Link><Link href="/privacy">গোপনীয়তা</Link><Link href="/terms">শর্তাবলি</Link></nav><small>© {new Date().getFullYear()} NEWEIX. সর্বস্বত্ব সংরক্ষিত।</small></footer>
 
       <nav className={styles.bottomNav} aria-label="মোবাইল নেভিগেশন">
         <Link href="/" aria-current="page"><Icon name="home" size={24} />হোম</Link>
