@@ -239,7 +239,7 @@ function CustomerLoginForm() {
           <p className="auth-staff-note">
             {isSignUp ? "আগে থেকেই অ্যাকাউন্ট আছে?" : "নতুন অ্যাকাউন্ট তৈরি করবেন?"}{" "}
             <button type="button" onClick={() => { setIsSignUp((value) => !value); setMessage(""); }} style={{ border: 0, padding: 0, background: "transparent", color: "var(--primary)", font: "inherit", fontWeight: 700, cursor: "pointer" }}>
-              {isSignUp ? "লগইন করুন" : "সাইনআপ করুন"}
+              <><Icon name="user" size={15} /> {isSignUp ? "লগইন করুন" : "সাইনআপ করুন"}</>
             </button>
           </p>
 
