@@ -80,7 +80,6 @@ export default function StorefrontHome() {
         const metadataName = typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : typeof user.user_metadata?.name === "string" ? user.user_metadata.name : "";
         setCustomer({ name: profile?.full_name || metadataName || "প্রিয় গ্রাহক", email: user.email ?? "" });
       } catch { if (active) setCustomer(null); }
-      finally { /* Customer lookup completed. */ }
     }
     void loadCustomer();
     return () => { active = false; };
