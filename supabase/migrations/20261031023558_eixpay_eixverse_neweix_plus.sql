@@ -27,6 +27,7 @@ create table if not exists private.eixpay_wallets (
   balance bigint not null default 0 check (balance >= 0),
   lifetime_earned bigint not null default 0 check (lifetime_earned >= 0),
   lifetime_spent bigint not null default 0 check (lifetime_spent >= 0),
+  reward_debt bigint not null default 0 check (reward_debt >= 0),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   last_activity_at timestamptz
@@ -59,21 +60,68 @@ create table if not exists private.eixpay_reward_rules (
   enabled boolean not null default false,
   reward_amount bigint not null default 0 check (reward_amount >= 0),
   max_per_user_per_day integer not null default 0 check (max_per_user_per_day >= 0),
+  settlement_delay_hours integer not null default 0 check (settlement_delay_hours between 0 and 2160),
   requires_verified_phone boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-insert into private.eixpay_reward_rules (event_code, display_name, description)
+insert into private.eixpay_reward_rules (event_code, display_name, description, settlement_delay_hours)
 values
-  ('delivered_order', 'Completed purchase', 'Reward after an eligible order is delivered and its return/refund window is cleared.'),
-  ('approved_referral', 'Referral reward', 'Reward after the invited customer completes qualifying activity.'),
-  ('verified_review', 'Verified review', 'Reward only after a genuine, order-linked review is approved.'),
-  ('daily_checkin', 'Daily activity', 'Capped daily engagement reward with anti-abuse controls.'),
-  ('campaign_action', 'Campaign participation', 'Reward for a verified campaign action.'),
-  ('seller_achievement', 'Seller achievement', 'Reward for a verified seller milestone.'),
-  ('membership_benefit', 'Membership benefit', 'Benefit associated with an active Neweix+ tier.')
+  ('delivered_order', 'Completed purchase', 'Reward after an eligible order is delivered, paid and its return window clears.', 168),
+  ('approved_referral', 'Referral reward', 'Reward after the invited customer completes qualifying activity.', 0),
+  ('verified_review', 'Verified review', 'Reward only after a genuine, order-linked review is approved.', 0),
+  ('daily_checkin', 'Daily activity', 'Capped daily engagement reward with anti-abuse controls.', 0),
+  ('campaign_action', 'Campaign participation', 'Reward for a verified campaign action.', 0),
+  ('seller_achievement', 'Seller achievement', 'Reward for a verified seller milestone.', 0),
+  ('membership_benefit', 'Membership benefit', 'Benefit associated with an active Neweix+ tier.', 0)
 on conflict (event_code) do nothing;
+
+create table if not exists private.eixpay_reward_claims (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  event_code text not null,
+  source_id uuid,
+  idempotency_key text not null,
+  amount bigint not null check (amount > 0),
+  created_at timestamptz not null default now(),
+  constraint eixpay_reward_claim_user_key unique (user_id, idempotency_key),
+  constraint eixpay_reward_claim_source unique (user_id, event_code, source_id)
+);
+
+create index if not exists eixpay_reward_claim_user_event_created_idx
+  on private.eixpay_reward_claims (user_id, event_code, created_at desc);
+
+create table if not exists private.eixpay_reward_reversals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  source_id uuid not null,
+  event_code text not null,
+  amount bigint not null check (amount > 0),
+  idempotency_key text not null,
+  created_at timestamptz not null default now(),
+  constraint eixpay_reward_reversal_source_unique unique (user_id, source_id, event_code),
+  constraint eixpay_reward_reversal_key_unique unique (user_id, idempotency_key)
+);
+
+create table if not exists private.eixpay_order_reward_queue (
+  order_id uuid primary key references public.orders(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'pending'
+    check (status in ('pending', 'blocked', 'awarded', 'cancelled', 'reversed')),
+  reward_amount_snapshot bigint not null check (reward_amount_snapshot > 0),
+  eligible_at timestamptz not null,
+  queued_at timestamptz not null default now(),
+  awarded_at timestamptz,
+  cancelled_at timestamptz,
+  reversed_at timestamptz,
+  last_attempt_at timestamptz,
+  last_result text
+);
+
+create index if not exists eixpay_order_reward_due_idx
+  on private.eixpay_order_reward_queue (eligible_at asc)
+  where status in ('pending', 'blocked');
 
 create table if not exists private.eixpay_transfer_requests (
   id uuid primary key default gen_random_uuid(),
@@ -244,6 +292,9 @@ alter table private.neweix_plus_tiers enable row level security;
 alter table private.neweix_plus_memberships enable row level security;
 alter table private.eixverse_modules enable row level security;
 alter table private.eixpay_audit_events enable row level security;
+alter table private.eixpay_reward_claims enable row level security;
+alter table private.eixpay_reward_reversals enable row level security;
+alter table private.eixpay_order_reward_queue enable row level security;
 
 revoke all on all tables in schema private from anon, authenticated;
 revoke all on all sequences in schema private from anon, authenticated;
@@ -277,6 +328,15 @@ create policy eixverse_modules_no_direct_access on private.eixverse_modules
   for all to anon, authenticated using (false) with check (false);
 drop policy if exists eixpay_audit_events_no_direct_access on private.eixpay_audit_events;
 create policy eixpay_audit_events_no_direct_access on private.eixpay_audit_events
+  for all to anon, authenticated using (false) with check (false);
+drop policy if exists eixpay_reward_claims_no_direct_access on private.eixpay_reward_claims;
+create policy eixpay_reward_claims_no_direct_access on private.eixpay_reward_claims
+  for all to anon, authenticated using (false) with check (false);
+drop policy if exists eixpay_reward_reversals_no_direct_access on private.eixpay_reward_reversals;
+create policy eixpay_reward_reversals_no_direct_access on private.eixpay_reward_reversals
+  for all to anon, authenticated using (false) with check (false);
+drop policy if exists eixpay_order_reward_queue_no_direct_access on private.eixpay_order_reward_queue;
+create policy eixpay_order_reward_queue_no_direct_access on private.eixpay_order_reward_queue
   for all to anon, authenticated using (false) with check (false);
 
 create or replace function public.eixpay_get_wallet()
@@ -352,6 +412,7 @@ begin
     'balance', v_wallet.balance,
     'lifetime_earned', v_wallet.lifetime_earned,
     'lifetime_spent', v_wallet.lifetime_spent,
+    'reward_debt', v_wallet.reward_debt,
     'earning_enabled', v_config.earning_enabled,
     'redemption_enabled', v_config.redemption_enabled,
     'transfer_enabled', (v_config.transfer_enabled and v_config.transfer_legal_review_confirmed),
@@ -652,11 +713,13 @@ begin
 end;
 $function$;
 
-create or replace function public.eixpay_award_reward(
+create or replace function private.eixpay_apply_reward(
   p_user_id uuid,
   p_event_code text,
   p_source_id uuid,
-  p_idempotency_key text
+  p_idempotency_key text,
+  p_amount_override bigint default null,
+  p_actor_id uuid default null
 )
 returns jsonb
 language plpgsql
@@ -666,13 +729,15 @@ as $function$
 declare
   v_config private.eixpay_config%rowtype;
   v_rule private.eixpay_reward_rules%rowtype;
+  v_amount bigint;
   v_balance bigint;
   v_new_balance bigint;
+  v_debt bigint;
+  v_debt_recovered bigint;
+  v_credit bigint;
   v_today_count integer;
+  v_claim_id uuid;
 begin
-  if coalesce(auth.jwt() ->> 'role', '') <> 'service_role' then
-    raise exception using errcode = '42501', message = 'SERVICE_ROLE_REQUIRED';
-  end if;
   if p_user_id is null or p_event_code is null
      or p_idempotency_key is null
      or char_length(p_idempotency_key) < 8
@@ -689,8 +754,13 @@ begin
   from private.eixpay_reward_rules
   where event_code = p_event_code;
 
-  if not found or not v_rule.enabled or v_rule.reward_amount <= 0 then
+  if not found or not v_rule.enabled then
     return jsonb_build_object('success', false, 'reason', 'reward_rule_disabled');
+  end if;
+
+  v_amount := coalesce(p_amount_override, v_rule.reward_amount);
+  if v_amount is null or v_amount <= 0 then
+    return jsonb_build_object('success', false, 'reason', 'reward_amount_unavailable');
   end if;
 
   insert into private.eixpay_wallets (user_id)
@@ -701,13 +771,6 @@ begin
   where user_id = p_user_id
   for update;
 
-  if exists (
-    select 1 from private.eixpay_ledger
-    where wallet_user_id = p_user_id and idempotency_key = p_idempotency_key
-  ) then
-    return jsonb_build_object('success', true, 'duplicate', true);
-  end if;
-
   if v_rule.requires_verified_phone and not exists (
     select 1 from public.customer_profiles
     where user_id = p_user_id and phone_verified_at is not null
@@ -717,23 +780,149 @@ begin
 
   if v_rule.max_per_user_per_day > 0 then
     select count(*) into v_today_count
-    from private.eixpay_ledger
-    where wallet_user_id = p_user_id
+    from private.eixpay_reward_claims
+    where user_id = p_user_id
       and event_code = p_event_code
-      and entry_kind = 'credit'
       and created_at >= date_trunc('day', now());
     if v_today_count >= v_rule.max_per_user_per_day then
       return jsonb_build_object('success', false, 'reason', 'daily_limit_reached');
     end if;
   end if;
 
-  select balance into v_balance
+  insert into private.eixpay_reward_claims
+    (user_id, event_code, source_id, idempotency_key, amount)
+  values (p_user_id, p_event_code, p_source_id, p_idempotency_key, v_amount)
+  on conflict do nothing
+  returning id into v_claim_id;
+
+  if v_claim_id is null then
+    return jsonb_build_object('success', true, 'duplicate', true);
+  end if;
+
+  select balance, reward_debt
+  into v_balance, v_debt
   from private.eixpay_wallets
   where user_id = p_user_id;
 
+  v_debt_recovered := least(v_amount, v_debt);
+  v_credit := v_amount - v_debt_recovered;
+
   update private.eixpay_wallets
-  set balance = balance + v_rule.reward_amount,
-      lifetime_earned = lifetime_earned + v_rule.reward_amount,
+  set balance = balance + v_credit,
+      reward_debt = reward_debt - v_debt_recovered,
+      lifetime_earned = lifetime_earned + v_amount,
+      lifetime_spent = lifetime_spent + v_debt_recovered,
+      updated_at = now(),
+      last_activity_at = now()
+  where user_id = p_user_id
+  returning balance into v_new_balance;
+
+  if v_credit > 0 then
+    insert into private.eixpay_ledger
+      (wallet_user_id, entry_kind, event_code, amount, balance_after, source_id, idempotency_key, actor_id, metadata)
+    values
+      (p_user_id, 'credit', p_event_code, v_credit, v_new_balance, p_source_id,
+       p_idempotency_key || ':credit', p_actor_id,
+       jsonb_build_object('claim_id', v_claim_id, 'reward_amount', v_amount, 'debt_recovered', v_debt_recovered));
+  end if;
+
+  if v_debt_recovered > 0 then
+    insert into private.eixpay_ledger
+      (wallet_user_id, entry_kind, event_code, amount, balance_after, source_id, idempotency_key, actor_id, metadata)
+    values
+      (p_user_id, 'debit', 'reward_debt_recovery', v_debt_recovered, v_new_balance, p_source_id,
+       p_idempotency_key || ':debt', p_actor_id,
+       jsonb_build_object('claim_id', v_claim_id, 'source_event', p_event_code));
+  end if;
+
+  return jsonb_build_object(
+    'success', true,
+    'awarded', v_amount,
+    'debt_recovered', v_debt_recovered,
+    'credited', v_credit,
+    'balance_after', v_new_balance
+  );
+end;
+$function$;
+
+create or replace function public.eixpay_award_reward(
+  p_user_id uuid,
+  p_event_code text,
+  p_source_id uuid,
+  p_idempotency_key text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+begin
+  if coalesce(auth.jwt() ->> 'role', '') <> 'service_role' then
+    raise exception using errcode = '42501', message = 'SERVICE_ROLE_REQUIRED';
+  end if;
+
+  return private.eixpay_apply_reward(
+    p_user_id, p_event_code, p_source_id, p_idempotency_key, null, null
+  );
+end;
+$function$;
+
+create or replace function private.eixpay_reverse_order_reward(
+  p_user_id uuid,
+  p_order_id uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_claim private.eixpay_reward_claims%rowtype;
+  v_balance bigint;
+  v_debt bigint;
+  v_deduct bigint;
+  v_debt_added bigint;
+  v_new_balance bigint;
+  v_reversal_id uuid;
+begin
+  select * into v_claim
+  from private.eixpay_reward_claims
+  where user_id = p_user_id
+    and event_code = 'delivered_order'
+    and source_id = p_order_id
+  for update;
+
+  if not found then
+    update private.eixpay_order_reward_queue
+    set status = 'cancelled', cancelled_at = coalesce(cancelled_at, now()),
+        last_result = 'order_returned_before_reward'
+    where order_id = p_order_id and status in ('pending', 'blocked');
+    return jsonb_build_object('success', true, 'reversed', false, 'reason', 'no_reward_claim');
+  end if;
+
+  insert into private.eixpay_reward_reversals
+    (user_id, source_id, event_code, amount, idempotency_key)
+  values
+    (p_user_id, p_order_id, 'delivered_order', v_claim.amount, 'order-return:' || p_order_id::text)
+  on conflict do nothing
+  returning id into v_reversal_id;
+
+  if v_reversal_id is null then
+    return jsonb_build_object('success', true, 'duplicate', true);
+  end if;
+
+  select balance, reward_debt into v_balance, v_debt
+  from private.eixpay_wallets
+  where user_id = p_user_id
+  for update;
+
+  v_deduct := least(v_balance, v_claim.amount);
+  v_debt_added := v_claim.amount - v_deduct;
+
+  update private.eixpay_wallets
+  set balance = balance - v_deduct,
+      reward_debt = reward_debt + v_debt_added,
+      lifetime_spent = lifetime_spent + v_claim.amount,
       updated_at = now(),
       last_activity_at = now()
   where user_id = p_user_id
@@ -742,16 +931,146 @@ begin
   insert into private.eixpay_ledger
     (wallet_user_id, entry_kind, event_code, amount, balance_after, source_id, idempotency_key, metadata)
   values
-    (p_user_id, 'credit', p_event_code, v_rule.reward_amount, v_new_balance,
-     p_source_id, p_idempotency_key, jsonb_build_object('rule', p_event_code));
+    (p_user_id, 'reversal', 'delivered_order_reversal', v_claim.amount, v_new_balance,
+     p_order_id, 'order-return:' || p_order_id::text,
+     jsonb_build_object('reversal_id', v_reversal_id, 'debt_added', v_debt_added));
+
+  update private.eixpay_order_reward_queue
+  set status = 'reversed', reversed_at = now(), last_result = 'returned_order_reward_reversed'
+  where order_id = p_order_id and status = 'awarded';
 
   return jsonb_build_object(
-    'success', true,
-    'awarded', v_rule.reward_amount,
-    'balance_after', v_new_balance
+    'success', true, 'reversed', true,
+    'amount', v_claim.amount, 'balance_after', v_new_balance, 'debt_added', v_debt_added
   );
 end;
 $function$;
+
+create or replace function private.eixpay_process_due_order_rewards()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_task private.eixpay_order_reward_queue%rowtype;
+  v_result jsonb;
+  v_processed integer := 0;
+begin
+  for v_task in
+    select *
+    from private.eixpay_order_reward_queue
+    where status in ('pending', 'blocked') and eligible_at <= now()
+    order by eligible_at asc
+    for update skip locked
+    limit 100
+  loop
+    v_result := private.eixpay_apply_reward(
+      v_task.user_id,
+      'delivered_order',
+      v_task.order_id,
+      'order-delivered:' || v_task.order_id::text,
+      v_task.reward_amount_snapshot,
+      null
+    );
+
+    if coalesce((v_result ->> 'success')::boolean, false) then
+      if coalesce((v_result ->> 'duplicate')::boolean, false) then
+        update private.eixpay_order_reward_queue
+        set status = 'awarded', awarded_at = coalesce(awarded_at, now()),
+            last_attempt_at = now(), last_result = 'duplicate_claim_already_exists'
+        where order_id = v_task.order_id;
+      else
+        update private.eixpay_order_reward_queue
+        set status = 'awarded', awarded_at = now(),
+            last_attempt_at = now(), last_result = 'reward_awarded'
+        where order_id = v_task.order_id;
+      end if;
+      v_processed := v_processed + 1;
+    else
+      update private.eixpay_order_reward_queue
+      set status = 'blocked',
+          eligible_at = now() + interval '1 day',
+          last_attempt_at = now(),
+          last_result = coalesce(v_result ->> 'reason', 'reward_not_awarded')
+      where order_id = v_task.order_id;
+    end if;
+  end loop;
+
+  return v_processed;
+end;
+$function$;
+
+create or replace function private.eixpay_watch_order_reward_eligibility()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_config private.eixpay_config%rowtype;
+  v_rule private.eixpay_reward_rules%rowtype;
+begin
+  if new.customer_id is null then
+    return new;
+  end if;
+
+  if new.status = 'returned' then
+    perform private.eixpay_reverse_order_reward(new.customer_id, new.id);
+    return new;
+  end if;
+
+  if new.status = 'delivered'
+     and new.payment_status = 'paid'
+     and new.delivery_fee_payment_status in ('paid', 'not_required') then
+    select * into v_config from private.eixpay_config where singleton = true;
+    select * into v_rule from private.eixpay_reward_rules where event_code = 'delivered_order';
+
+    if found
+       and v_config.wallet_enabled
+       and v_config.earning_enabled
+       and v_rule.enabled
+       and v_rule.reward_amount > 0
+       and not exists (
+         select 1 from private.eixpay_order_reward_queue q where q.order_id = new.id
+       ) then
+      insert into private.eixpay_order_reward_queue
+        (order_id, user_id, reward_amount_snapshot, eligible_at)
+      values
+        (new.id, new.customer_id, v_rule.reward_amount,
+         now() + make_interval(hours => v_rule.settlement_delay_hours))
+      on conflict (order_id) do nothing;
+    end if;
+  end if;
+
+  return new;
+end;
+$function$;
+
+drop trigger if exists eixpay_order_reward_eligibility on public.orders;
+create trigger eixpay_order_reward_eligibility
+after insert or update of status, payment_status, delivery_fee_payment_status
+on public.orders
+for each row execute function private.eixpay_watch_order_reward_eligibility();
+
+do $eixpay_cron$
+declare
+  v_job_id bigint;
+begin
+  select jobid into v_job_id
+  from cron.job
+  where jobname = 'eixpay-settle-order-rewards'
+  limit 1;
+  if v_job_id is not null then
+    perform cron.unschedule(v_job_id);
+  end if;
+  perform cron.schedule(
+    'eixpay-settle-order-rewards',
+    '*/15 * * * *',
+    'select private.eixpay_process_due_order_rewards();'
+  );
+end;
+$eixpay_cron$;
 
 create or replace function public.eixpay_set_program_config(
   p_wallet_enabled boolean,
@@ -956,6 +1275,10 @@ $function$;
 
 -- Functions are explicit APIs. No PUBLIC/anon execution; only signed-in users
 -- or the trusted service role can run the matching operation.
+revoke all on function private.eixpay_apply_reward(uuid, text, uuid, text, bigint, uuid) from public, anon, authenticated, service_role;
+revoke all on function private.eixpay_reverse_order_reward(uuid, uuid) from public, anon, authenticated, service_role;
+revoke all on function private.eixpay_process_due_order_rewards() from public, anon, authenticated, service_role;
+revoke all on function private.eixpay_watch_order_reward_eligibility() from public, anon, authenticated, service_role;
 revoke all on function public.eixpay_get_wallet() from public, anon;
 revoke all on function public.eixpay_list_activity(integer, bigint) from public, anon;
 revoke all on function public.eixpay_request_transfer(text, bigint, text, text) from public, anon;
