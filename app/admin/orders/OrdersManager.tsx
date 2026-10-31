@@ -27,6 +27,12 @@ type Order = {
   payment_status: string;
   payment_transaction_id: string | null;
   payment_verified_at: string | null;
+  delivery_provider?: string | null;
+  delivery_status?: string;
+  delivery_consignment_id?: string | null;
+  delivery_tracking_code?: string | null;
+  delivery_booked_at?: string | null;
+  delivery_error?: string | null;
   created_at: string;
   order_items: OrderItem[];
 };
@@ -150,6 +156,62 @@ export default function OrdersManager() {
       setError(
         err instanceof Error ? err.message : "অজানা সমস্যা হয়েছে।"
       );
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function createPathaoShipment(order: Order) {
+    const rawStoreId = window.prompt("Pathao Merchant Store ID দিন:");
+    if (!rawStoreId) return;
+    const storeId = Number(rawStoreId.trim());
+    if (!Number.isSafeInteger(storeId) || storeId < 1) {
+      setError("সঠিক Pathao Store ID দিন।");
+      return;
+    }
+    const specialInstruction = window.prompt("ডেলিভারি নির্দেশনা (ঐচ্ছিক):") || "";
+    if (specialInstruction.length > 500) {
+      setError("নির্দেশনা সর্বোচ্চ ৫০০ অক্ষরের হতে পারবে।");
+      return;
+    }
+    if (!window.confirm(`অর্ডার ${order.order_number} Pathao-তে বুক করবেন?\nCOD সংগ্রহ: ৳${Number(order.total).toLocaleString("bn-BD")}`)) return;
+
+    setBusyId(order.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/pathao", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create_order", orderId: order.id, storeId, specialInstruction }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Pathao বুকিং ব্যর্থ হয়েছে।");
+      setNotice(`${order.order_number}: Pathao Consignment ID ${result.consignmentId} তৈরি হয়েছে।`);
+      await loadOrders();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Pathao বুকিং ব্যর্থ হয়েছে।");
+      await loadOrders();
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function trackPathaoShipment(order: Order) {
+    const consignmentId = order.delivery_consignment_id || order.delivery_tracking_code;
+    if (!consignmentId) return;
+    setBusyId(order.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/pathao?action=track&consignmentId=${encodeURIComponent(consignmentId)}`, {
+        cache: "no-store",
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Tracking তথ্য পাওয়া যায়নি।");
+      setNotice(`${order.order_number}: Pathao tracking তথ্য: ${JSON.stringify(result.tracking).slice(0, 700)}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Tracking তথ্য পাওয়া যায়নি।");
     } finally {
       setBusyId("");
     }
@@ -395,6 +457,27 @@ export default function OrdersManager() {
                     Status সংরক্ষণ হচ্ছে...
                   </p>
                 )}
+              </div>
+
+              <div className="mt-3 rounded-lg border border-dashed border-gray-300 p-3">
+                <p className="text-sm font-semibold">Pathao Courier</p>
+                <p className="mt-1 text-xs text-gray-600">
+                  Status: {order.delivery_status || "not_booked"}
+                  {order.delivery_consignment_id ? ` · Consignment: ${order.delivery_consignment_id}` : ""}
+                </p>
+                {order.delivery_error && <p className="mt-1 text-xs text-red-700">{order.delivery_error}</p>}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(!order.delivery_consignment_id && ["not_booked", "failed"].includes(order.delivery_status || "not_booked")) && (
+                    <button type="button" onClick={() => void createPathaoShipment(order)} disabled={busyId !== "" || statusBusyId !== ""} className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50">
+                      {busyId === order.id ? "Pathao-তে পাঠানো হচ্ছে..." : "Pathao-তে বুক করুন"}
+                    </button>
+                  )}
+                  {order.delivery_consignment_id && (
+                    <button type="button" onClick={() => void trackPathaoShipment(order)} disabled={busyId !== ""} className="rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50">
+                      {busyId === order.id ? "Tracking..." : "Pathao Tracking"}
+                    </button>
+                  )}
+                </div>
               </div>
 
               <p className="mt-3 break-words text-sm text-gray-700">
