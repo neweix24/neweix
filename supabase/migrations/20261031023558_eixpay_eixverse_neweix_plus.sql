@@ -1001,6 +1001,165 @@ begin
 end;
 $function$;
 
+alter table public.orders add column if not exists delivered_at timestamptz;
+
+create or replace function private.neweix_plus_capture_delivery_time()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+begin
+  if tg_op = 'INSERT' then
+    if new.status = 'delivered' and new.delivered_at is null then
+      new.delivered_at := now();
+    end if;
+  else
+    if new.status = 'delivered' and old.status is distinct from 'delivered' then
+      new.delivered_at := coalesce(new.delivered_at, now());
+    end if;
+  end if;
+  return new;
+end;
+$function$;
+
+drop trigger if exists neweix_plus_capture_delivery_time on public.orders;
+create trigger neweix_plus_capture_delivery_time
+before insert or update of status on public.orders
+for each row execute function private.neweix_plus_capture_delivery_time();
+
+update public.orders
+set delivered_at = coalesce(delivered_at, updated_at)
+where status = 'delivered' and delivered_at is null;
+
+create or replace function private.neweix_plus_recalculate_memberships()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_user_id uuid;
+  v_tier private.neweix_plus_tiers%rowtype;
+  v_current private.neweix_plus_memberships%rowtype;
+  v_target_tier text;
+  v_changed integer := 0;
+  v_qualifying_spend numeric;
+  v_qualifying_orders bigint;
+begin
+  for v_user_id in
+    select m.user_id
+    from private.neweix_plus_memberships m
+    where m.status = 'active'
+    union
+    select distinct o.customer_id
+    from public.orders o
+    where o.customer_id is not null
+      and o.status = 'delivered'
+      and o.payment_status = 'paid'
+  loop
+    perform pg_advisory_xact_lock(hashtextextended(v_user_id::text, 0));
+
+    update private.neweix_plus_memberships
+    set status = 'expired'
+    where user_id = v_user_id
+      and status = 'active'
+      and expires_at is not null
+      and expires_at <= now();
+
+    select * into v_current
+    from private.neweix_plus_memberships
+    where user_id = v_user_id and status = 'active'
+    order by starts_at desc
+    limit 1;
+
+    -- A non-expired Supreme assignment is an explicit override.
+    if found and v_current.assignment_source = 'supreme'
+       and (v_current.expires_at is null or v_current.expires_at > now()) then
+      continue;
+    end if;
+
+    v_target_tier := 'free';
+
+    for v_tier in
+      select *
+      from private.neweix_plus_tiers
+      where is_enabled = true
+        and tier_rank > 0
+        and (min_qualified_spend_bdt is not null or min_qualified_orders is not null)
+      order by tier_rank desc
+    loop
+      select
+        coalesce(sum(o.total), 0),
+        count(*)
+      into v_qualifying_spend, v_qualifying_orders
+      from public.orders o
+      where o.customer_id = v_user_id
+        and o.status = 'delivered'
+        and o.payment_status = 'paid'
+        and o.delivery_fee_payment_status in ('paid', 'not_required')
+        and o.delivered_at >= now() - make_interval(days => coalesce(v_tier.qualification_period_days, 30));
+
+      if (v_tier.min_qualified_spend_bdt is null or v_qualifying_spend >= v_tier.min_qualified_spend_bdt)
+         and (v_tier.min_qualified_orders is null or v_qualifying_orders >= v_tier.min_qualified_orders) then
+        v_target_tier := v_tier.tier_code;
+        exit;
+      end if;
+    end loop;
+
+    if v_current.id is not null and v_current.tier_code = v_target_tier then
+      continue;
+    end if;
+
+    if v_current.id is not null then
+      update private.neweix_plus_memberships
+      set status = 'expired',
+          expires_at = case
+            when expires_at is null or expires_at > now() then now()
+            else expires_at
+          end
+      where id = v_current.id;
+    end if;
+
+    insert into private.neweix_plus_memberships
+      (user_id, tier_code, status, starts_at, assignment_source, assignment_note)
+    values
+      (v_user_id, v_target_tier, 'active', now(), 'qualification',
+       'Automatically calculated from paid and delivered orders within the tier qualification period.');
+
+    insert into private.eixpay_audit_events (event_code, subject_id, metadata)
+    values ('neweix_plus_membership_qualified', v_user_id,
+      jsonb_build_object(
+        'new_tier_code', v_target_tier,
+        'qualified_spend_bdt', v_qualifying_spend,
+        'qualified_orders', v_qualifying_orders
+      ));
+
+    v_changed := v_changed + 1;
+  end loop;
+
+  return v_changed;
+end;
+$function$;
+
+do $neweix_plus_cron$
+declare
+  v_job_id bigint;
+begin
+  select jobid into v_job_id from cron.job
+  where jobname = 'neweix-plus-recalculate-memberships'
+  limit 1;
+  if v_job_id is not null then
+    perform cron.unschedule(v_job_id);
+  end if;
+  perform cron.schedule(
+    'neweix-plus-recalculate-memberships',
+    '10 0 * * *',
+    'select private.neweix_plus_recalculate_memberships();'
+  );
+end;
+$neweix_plus_cron$;
+
 create or replace function private.eixpay_watch_order_reward_eligibility()
 returns trigger
 language plpgsql
@@ -1015,7 +1174,7 @@ begin
     return new;
   end if;
 
-  if new.status = 'returned' then
+  if new.status = 'returned' or new.payment_status = 'refunded' then
     perform private.eixpay_reverse_order_reward(new.customer_id, new.id);
     return new;
   end if;
@@ -1471,6 +1630,8 @@ $function$;
 
 -- Functions are explicit APIs. No PUBLIC/anon execution; only signed-in users
 -- or the trusted service role can run the matching operation.
+revoke all on function private.neweix_plus_capture_delivery_time() from public, anon, authenticated, service_role;
+revoke all on function private.neweix_plus_recalculate_memberships() from public, anon, authenticated, service_role;
 revoke all on function private.eixpay_apply_reward(uuid, text, uuid, text, bigint, uuid) from public, anon, authenticated, service_role;
 revoke all on function private.eixpay_reverse_order_reward(uuid, uuid) from public, anon, authenticated, service_role;
 revoke all on function private.eixpay_process_due_order_rewards() from public, anon, authenticated, service_role;
