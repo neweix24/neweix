@@ -238,7 +238,7 @@ export default function StorefrontHome() {
         <Link href="/" aria-current="page"><Icon name="home" size={24} />হোম</Link>
         <Link href="/products"><Icon name="grid" size={24} />পণ্য ও সার্চ</Link>
         <Link href="/cart"><span className={styles.bottomCartIcon}><Icon name="cart" size={24} /><b>{cartCount > 99 ? "99+" : cartCount}</b></span>কার্ট</Link>
-        <Link href="/account"><Icon name="user" size={24} />মাই অ্যাকাউন্ট</Link>
+        <Link href="/account" onClick={(event) => { event.preventDefault(); setDrawerOpen(true); }} aria-haspopup="dialog" aria-expanded={drawerOpen}><Icon name="user" size={24} />মাই অ্যাকাউন্ট</Link>
       </nav>
 
       {drawerOpen && <div className={styles.overlay} onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerOpen(false); }}>
