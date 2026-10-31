@@ -41,16 +41,17 @@ export default function LoginPage() {
     let disposed = false;
 
     const renderCaptcha = () => {
+      const turnstile = getTurnstile();
       if (
         disposed ||
-        !getTurnstile() ||
+        !turnstile ||
         !captchaContainer.current ||
         captchaWidgetId.current
       ) {
         return;
       }
 
-      captchaWidgetId.current = getTurnstile().render(
+      captchaWidgetId.current = turnstile.render(
         captchaContainer.current,
         {
           sitekey: TURNSTILE_SITE_KEY,
@@ -86,8 +87,9 @@ export default function LoginPage() {
 
     return () => {
       disposed = true;
-      if (captchaWidgetId.current && getTurnstile()) {
-        getTurnstile().remove(captchaWidgetId.current);
+      const turnstile = getTurnstile();
+      if (captchaWidgetId.current && turnstile) {
+        turnstile.remove(captchaWidgetId.current);
         captchaWidgetId.current = null;
       }
     };
@@ -120,8 +122,9 @@ export default function LoginPage() {
       setCaptchaToken("");
 
       if (error || !data.user) {
-        if (getTurnstile() && captchaWidgetId.current) {
-          getTurnstile().reset(captchaWidgetId.current);
+        const turnstile = getTurnstile();
+        if (turnstile && captchaWidgetId.current) {
+          turnstile.reset(captchaWidgetId.current);
         }
         if (error?.message.toLowerCase().includes("captcha")) {
           setMessage("নিরাপত্তা যাচাই ব্যর্থ হয়েছে। আবার CAPTCHA সম্পন্ন করে চেষ্টা করুন।");
