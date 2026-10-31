@@ -123,10 +123,10 @@ export default function EixPayProgramControl() {
             const minAmount=Number(transferLimits.minAmount), maxAmount=Number(transferLimits.maxAmount), dailyMaxAmount=Number(transferLimits.dailyMaxAmount), maxRequestsPerDay=Number(transferLimits.maxRequestsPerDay);
             if (![minAmount,maxAmount,dailyMaxAmount,maxRequestsPerDay].every(Number.isSafeInteger) || minAmount<1 || maxAmount<minAmount || dailyMaxAmount<maxAmount || maxRequestsPerDay<1 || maxRequestsPerDay>50) { setError("ট্রান্সফার সীমা সঠিক পূর্ণসংখ্যায় দিন; দৈনিক সীমা প্রতি ট্রান্সফারের সীমার চেয়ে কম হতে পারবে না।"); return; }
             void save("/api/supreme/eixpay", { action:"transfer_limits", minAmount,maxAmount,dailyMaxAmount,maxRequestsPerDay });
-          }} className="mt-4 rounded-full border border-cyan-200/20 px-4 py-2 text-xs font-bold text-cyan-100 hover:bg-cyan-200/10 disabled:opacity-50">{busy === "/api/supreme/eixpay" ? "সংরক্ষণ হচ্ছে…" : "ট্রান্সফার সীমা সংরক্ষণ"}</button>
+          }} className="mt-4 rounded-full border border-cyan-200/20 px-4 py-2 text-xs font-bold text-cyan-100 hover:bg-cyan-200/10 disabled:opacity-50"><><Icon name={busy === "/api/supreme/eixpay" ? "refresh" : "check"} size={15} /> {busy === "/api/supreme/eixpay" ? "সংরক্ষণ হচ্ছে…" : "ট্রান্সফার সীমা সংরক্ষণ"}</></button>
         </div>
         <p className="mt-4 text-xs text-white/40">Staff/Admin transfer approve করতে পারবে না।</p>
-        <button type="button" disabled={Boolean(busy)} onClick={() => void save("/api/supreme/eixpay", { action: "program", ...program })} className="mt-5 rounded-full bg-emerald-300 px-5 py-2.5 text-sm font-black text-[#092016] disabled:opacity-50">{busy === "program" ? "সংরক্ষণ হচ্ছে…" : "প্রোগ্রাম সেটিং সংরক্ষণ"}</button>
+        <button type="button" disabled={Boolean(busy)} onClick={() => void save("/api/supreme/eixpay", { action: "program", ...program })} className="mt-5 rounded-full bg-emerald-300 px-5 py-2.5 text-sm font-black text-[#092016] disabled:opacity-50"><><Icon name={busy === "program" ? "refresh" : "check"} size={16} /> {busy === "program" ? "সংরক্ষণ হচ্ছে…" : "প্রোগ্রাম সেটিং সংরক্ষণ"}</></button>
       </section>
 
       <section className="space-y-4">
@@ -146,7 +146,7 @@ export default function EixPayProgramControl() {
                 const rewardAmount = Number(d.amount); const maxPerDay = Number(d.max); const settlementDelayHours = Number(d.delay);
                 if (!Number.isSafeInteger(rewardAmount) || rewardAmount < 0 || !Number.isSafeInteger(maxPerDay) || maxPerDay < 0 || maxPerDay > 1000 || !Number.isSafeInteger(settlementDelayHours) || settlementDelayHours < 0 || settlementDelayHours > 2160) { setError("রিওয়ার্ডের পরিমাণ, দৈনিক সীমা ও নিষ্পত্তির সময় সঠিক পূর্ণসংখ্যা হতে হবে।"); return; }
                 void save("/api/supreme/eixpay", { action: "reward_rule", eventCode: r.event_code, enabled: d.enabled, rewardAmount, maxPerDay, settlementDelayHours });
-              }} className="mt-4 rounded-full border border-white/15 px-4 py-2 text-xs font-bold hover:bg-white/10 disabled:opacity-50">{busy === r.event_code ? "সংরক্ষণ হচ্ছে…" : "নিয়ম সংরক্ষণ"}</button>
+              }} className="mt-4 rounded-full border border-white/15 px-4 py-2 text-xs font-bold hover:bg-white/10 disabled:opacity-50"><><Icon name={busy === r.event_code ? "refresh" : "check"} size={15} /> {busy === r.event_code ? "সংরক্ষণ হচ্ছে…" : "নিয়ম সংরক্ষণ"}</></button>
             </article>;
           })}
         </div>
@@ -172,7 +172,7 @@ export default function EixPayProgramControl() {
                 const benefits = d.benefits.split("\n").map((x) => x.trim()).filter(Boolean);
                 if ((minSpend !== null && (!Number.isSafeInteger(minSpend) || minSpend < 0)) || (minOrders !== null && (!Number.isSafeInteger(minOrders) || minOrders < 0)) || !Number.isSafeInteger(periodDays) || periodDays < 1 || periodDays > 3650 || benefits.length > 30 || benefits.some((x) => x.length > 240)) { setError("মেম্বারশিপ যোগ্যতা বা সুবিধার তথ্য সঠিক নয়।"); return; }
                 void save("/api/supreme/neweix-plus", { action: "set_tier", tierCode: t.tier_code, enabled: d.enabled, minSpend, minOrders, periodDays, benefits });
-              }} className="mt-4 rounded-full border border-amber-200/20 px-4 py-2 text-xs font-bold text-amber-100 hover:bg-amber-200/10 disabled:opacity-50">{busy === "tier:" + t.tier_code ? "সংরক্ষণ হচ্ছে…" : "স্তর সংরক্ষণ"}</button>
+              }} className="mt-4 rounded-full border border-amber-200/20 px-4 py-2 text-xs font-bold text-amber-100 hover:bg-amber-200/10 disabled:opacity-50"><><Icon name={busy === "tier:" + t.tier_code ? "refresh" : "check"} size={15} /> {busy === "tier:" + t.tier_code ? "সংরক্ষণ হচ্ছে…" : "স্তর সংরক্ষণ"}</></button>
             </article>;
           })}
         </div>
@@ -182,7 +182,7 @@ export default function EixPayProgramControl() {
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-200">Manual membership assignment</p><h2 className="mt-1 text-xl font-bold">গ্রাহককে Neweix+ সদস্যপদ দিন</h2>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ইমেইল, ফোন বা গ্রাহকের নাম" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-white" />
-          <button type="button" disabled={busy === "search"} onClick={() => void searchCustomer()} className="rounded-full border border-white/15 px-5 py-3 text-sm font-bold disabled:opacity-50">{busy === "search" ? "খোঁজা হচ্ছে…" : "গ্রাহক খুঁজুন"}</button>
+          <button type="button" disabled={busy === "search"} onClick={() => void searchCustomer()} className="rounded-full border border-white/15 px-5 py-3 text-sm font-bold disabled:opacity-50"><><Icon name={busy === "search" ? "refresh" : "search"} size={16} /> {busy === "search" ? "খোঁজা হচ্ছে…" : "গ্রাহক খুঁজুন"}</></button>
         </div>
         {customers.length > 0 && <div className="mt-3 space-y-2">{customers.map((customer) => <button type="button" key={customer.user_id} onClick={() => setSelected(customer)} className={"w-full rounded-xl border p-3 text-left text-sm " + (selected?.user_id === customer.user_id ? "border-amber-200/40 bg-amber-200/[0.08]" : "border-white/10 bg-black/10")}>
           <span className="block font-semibold">{customer.name}</span><span className="mt-1 block text-xs text-white/45">{customer.email ?? "ইমেইল নেই"} · {customer.masked_phone ?? "ফোন যাচাই নেই"}</span>
