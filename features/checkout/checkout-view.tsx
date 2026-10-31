@@ -536,7 +536,6 @@ export default function CheckoutView() {
                       checked={mfsMethod === value}
                       onChange={() => {
                         setMfsMethod(value);
-                        setPaymentMethod(value);
                       }}
                       disabled={submitting || !methodConfig?.enabled}
                     />
