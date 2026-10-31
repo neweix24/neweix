@@ -52,12 +52,13 @@ export async function POST(request: Request) {
     }
     if (status !== "draft" && status !== "scheduled") return NextResponse.json({ error: "অবৈধ পোস্ট স্ট্যাটাস।" }, { status: 400 });
     if (mediaUrls.length > 10 || mediaUrls.some((url) =>
-      typeof url !== "string" || url.length > 2048 || !/^https:\\/\\//i.test(url) ||
+      typeof url !== "string" || url.length > 2048 || !/^https:\/\//i.test(url) ||
       (() => { try { const parsed = new URL(url); return Boolean(parsed.username || parsed.password); } catch { return true; } })()
     )) {
       return NextResponse.json({ error: "ভিডিও/মিডিয়া URL অবশ্যই বৈধ HTTPS URL হতে হবে (সর্বোচ্চ ১০টি)।" }, { status: 400 });
     }
 
+    const supabase = await createServerSupabaseClient();
     let parsedSchedule: string | null = null;
     if (status === "scheduled") {
       if (targets.some((target) => target !== "youtube")) {
@@ -83,7 +84,6 @@ export async function POST(request: Request) {
       parsedSchedule = new Date(time).toISOString();
     }
 
-    const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase.from("social_media_posts").insert({
       created_by: staff.user.id,
       title,
