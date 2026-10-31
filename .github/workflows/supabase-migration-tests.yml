@@ -1,0 +1,45 @@
+name: Supabase database migration tests
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-migration-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  postgres-migrations:
+    name: Apply all migrations on disposable local Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.81.3
+
+      - name: Start disposable local Supabase database
+        run: supabase start -x studio,edge-runtime,logflare,vector,imgproxy
+
+      - name: Apply every repository migration from an empty local database
+        run: supabase db reset --local
+
+      - name: Run EixPay, EixVerse and integrity-chain smoke tests
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/eixpay_integrity_smoke_test.sql
+
+      - name: Stop disposable Supabase
+        if: always()
+        run: supabase stop --no-backup
