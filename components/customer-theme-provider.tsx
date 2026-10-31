@@ -5,13 +5,13 @@ import { usePathname } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 const DEFAULT_THEME = {
-  background: "#080b09",
-  surface: "#151d18",
-  text: "#f4f8f2",
-  muted: "#a0ada1",
+  background: "#ffffff",
+  surface: "#ffffff",
+  text: "#17211a",
+  muted: "#59665d",
   button: "#b6ff4a",
   buttonText: "#080b09",
-  border: "#29352b",
+  border: "#e2e8e3",
 };
 
 const COLOR_KEYS = [
@@ -82,7 +82,7 @@ export default function CustomerThemeProvider() {
     function applyTheme(value: unknown) {
       const theme = validateTheme(value);
       for (const key of COLOR_KEYS) {
-        root.style.setProperty(variableNames[key], theme[key]);
+        root.style.setProperty(variableNames[key], key === "background" ? "#ffffff" : theme[key]);
       }
     }
 
