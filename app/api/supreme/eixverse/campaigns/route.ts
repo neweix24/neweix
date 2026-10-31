@@ -34,10 +34,10 @@ export async function POST(request: Request) {
   if (input.action !== "campaign" && input.action !== "mission") return fail("অ্যাকশন সঠিক নয়।",400);
   const access = await supreme();
   if (!access.ok) return access.response;
-  const rpc = input.action === "campaign" ? "eixverse_supreme_save_campaign" : "eixverse_supreme_save_mission";
-  const { data, error } = await access.supabase.rpc(rpc, {
-    [input.action === "campaign" ? "p_campaign" : "p_mission"]: input.data,
-  });
+  const result = input.action === "campaign"
+    ? await access.supabase.rpc("eixverse_supreme_save_campaign", { p_campaign: input.data })
+    : await access.supabase.rpc("eixverse_supreme_save_mission", { p_mission: input.data });
+  const { data, error } = result;
   if (error) {
     const status = error.code === "42501" ? 403 : error.code === "P0002" ? 404 : 400;
     return fail("Campaign বা Mission সংরক্ষণ করা যায়নি। তথ্য ও সময়সীমা যাচাই করুন.",status);
