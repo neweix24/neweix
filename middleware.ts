@@ -30,8 +30,8 @@ export async function middleware(request: NextRequest) {
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;
   const pathname = request.nextUrl.pathname;
-  const isAdminPath = pathname.startsWith("/admin");
-  const isSupremePath = pathname.startsWith("/supreme");
+  const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
+  const isSupremePath = pathname === "/supreme" || pathname.startsWith("/supreme/");
 
   response.headers.set("Cache-Control", "private, no-store");
 
