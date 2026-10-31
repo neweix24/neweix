@@ -12,8 +12,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export async function GET() {
+  await requireStaff(["supreme", "admin"]);
   try {
-    await requireStaff(["supreme", "admin"]);
     const supabase = await createServerSupabaseClient();
     const [accountsResult, postsResult] = await Promise.all([
       supabase.from("social_media_accounts").select("id,platform,account_name,connection_status,connected_at").order("platform"),
@@ -29,8 +29,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const staff = await requireStaff(["supreme", "admin"]);
   try {
-    const staff = await requireStaff(["supreme", "admin"]);
     const contentLength = Number(request.headers.get("content-length") ?? "0");
     if (contentLength > MAX_BODY_BYTES) return NextResponse.json({ error: "অনুরোধের আকার বেশি।" }, { status: 413 });
     const raw = await request.text();
