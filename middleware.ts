@@ -4,6 +4,13 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
+  // Use one canonical hostname so browser auth cookies are never split between www and apex.
+  if (request.nextUrl.hostname === "www.neweix.com") {
+    const canonicalUrl = request.nextUrl.clone();
+    canonicalUrl.hostname = "neweix.com";
+    return NextResponse.redirect(canonicalUrl, 308);
+  }
+
   const pathname = request.nextUrl.pathname;
   const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
   const isSupremePath = pathname === "/supreme" || pathname.startsWith("/supreme/");
