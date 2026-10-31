@@ -168,6 +168,13 @@ begin
       message = 'SUPREME_MFA_REQUIRED';
   end if;
 
+  -- Hold a shared lock for the full verification pass. Insert triggers need
+  -- FOR UPDATE on this row, so the verifier sees a stable, complete chain.
+  select * into v_state
+  from private.eixpay_integrity_chain_state
+  where singleton = true
+  for share;
+
   for v_event in
     select sequence, source_table, source_id, event_payload,
            previous_hash, event_hash
@@ -220,10 +227,6 @@ begin
 
     v_expected_previous := v_expected_hash;
   end loop;
-
-  select * into v_state
-  from private.eixpay_integrity_chain_state
-  where singleton = true;
 
   if v_first_invalid is null
      and (v_state.last_sequence <> v_checked
