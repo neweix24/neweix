@@ -50,7 +50,7 @@ export default function ProductDetails({ product }: { product: ProductDetailsDat
           <div className={styles.assurance}><span>নিরাপদ অর্ডার</span><span>বাংলাদেশজুড়ে সেবা</span><span>সহজ অর্ডার ট্র্যাকিং</span></div>
         </section>
       </div>
-      <ProductReviewPanel />
+      <ProductReviewPanel productId={product.id} returnTo={"/products/" + encodeURIComponent(product.slug)} />
       <RelatedProducts currentProductId={product.id} categoryId={product.category_id ?? null} />
       <RecentlyViewedProducts currentProductId={product.id} />
     </main>

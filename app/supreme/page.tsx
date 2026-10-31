@@ -16,6 +16,9 @@ export default async function SupremePage() {
             <p className="mt-1 text-sm">লগইন করা Role: <strong style={{ color: "var(--primary)" }}>{staff.role}</strong></p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <Link href="/supreme/eixverse" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}>Campaigns & Missions</Link>
+            <Link href="/supreme/eixpay" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}>EixPay Control</Link>
+            <Link href="/supreme/reviews" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}>রিভিউ অনুমোদন</Link>
             <Link href="/supreme/audit-logs" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}>অডিট লগ</Link>
             <Link href="/supreme/system" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}>সিস্টেম মনিটর</Link>
             <Link href="/" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}>স্টোরফ্রন্ট</Link>

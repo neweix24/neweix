@@ -13,7 +13,7 @@ function CustomerLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(searchParams.get("mode") === "signup");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -94,6 +94,7 @@ function CustomerLoginForm() {
         }
 
         if (data.session) {
+          await fetch("/api/eixpay/referral/apply", { method: "POST", cache: "no-store" }).catch(() => undefined);
           router.replace("/account");
           router.refresh();
         } else {
@@ -151,6 +152,11 @@ function CustomerLoginForm() {
           <p className="auth-subtitle">
             Google বা Facebook দিয়ে সাইনআপ/লগইন করুন, অথবা ইমেইল ব্যবহার করুন।
           </p>
+          {searchParams.get("referral") === "1" && (
+            <p role="status" className="mb-4 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3 text-sm leading-6" style={{ color: "var(--primary)" }}>
+              বন্ধুর আমন্ত্রণে NEWEIX-এ স্বাগতম। নতুন অ্যাকাউন্ট তৈরি করে ফোন নম্বর যাচাই ও প্রথম যোগ্য অর্ডার সম্পন্ন করলে Eixon referral reward পাওয়ার সুযোগ থাকবে।
+            </p>
+          )}
 
           <button
             className="auth-social-button"

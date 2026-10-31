@@ -1,0 +1,21 @@
+import { NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export async function GET() {
+  const headers = { "Cache-Control": "private, no-store, max-age=0" };
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: "লগইন প্রয়োজন।" }, { status: 401, headers });
+    const { data, error } = await supabase.rpc("eixverse_get_modules");
+    if (error) {
+      console.error("EixVerse modules query failed:", error.code);
+      return NextResponse.json({ error: "EixVerse তথ্য এখনো প্রস্তুত নয় অথবা লোড করা যায়নি।" }, { status: 503, headers });
+    }
+    return NextResponse.json({ success: true, data }, { headers });
+  } catch (error) {
+    console.error("EixVerse modules GET failed:", error);
+    return NextResponse.json({ error: "EixVerse তথ্য লোড করা যায়নি।" }, { status: 503, headers });
+  }
+}

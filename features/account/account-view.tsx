@@ -404,6 +404,9 @@ export default function AccountView() {
             </form>
 
             <nav className="account-links" aria-label="অ্যাকাউন্টের লিংক">
+              <Link href="/account/eixpay">EixPay Wallet · Eixon</Link>
+              <Link href="/account/neweix-plus">Neweix+ Membership</Link>
+              <Link href="/eixverse">EixVerse</Link>
               <Link href="/orders">আমার অর্ডার</Link>
               <Link href="/wishlist">পছন্দের তালিকা</Link>
               <Link href="/cart">শপিং কার্ট</Link>
