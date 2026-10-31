@@ -236,12 +236,6 @@ function CustomerLoginForm() {
             </button>
           </p>
 
-          {!message && false && (
-            <p className="auth-privacy-note">
-              আপনার তথ্য নিরাপদ রাখতে আমরা সুরক্ষিত লগইন ব্যবহার করি।
-            </p>
-          )}
-
           <p className="auth-guest-note">
             অ্যাকাউন্ট ছাড়াই অর্ডার করতে পারবেন। সাইনআপ করে ফোন নম্বর OTP যাচাই করলে অর্ডার অ্যাকাউন্টে সংরক্ষণসহ অতিরিক্ত সুবিধা পাবেন।
           </p>
