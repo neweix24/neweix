@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Icon from "@/components/ui/icon";
 import styles from "./checkout-view.module.css";
 
 import { useEffect, useState, type FormEvent } from "react";
@@ -478,7 +479,7 @@ export default function CheckoutView() {
           disabled={submitting || missingProducts || stockIssues.length > 0}
           className={styles.submit}
         >
-          {submitting ? "অর্ডার জমা হচ্ছে..." : "অর্ডার নিশ্চিত করুন"}
+          <><Icon name={submitting ? "refresh" : "check"} size={18} /> {submitting ? "অর্ডার জমা হচ্ছে..." : "অর্ডার নিশ্চিত করুন"}</>
         </button>
       </form>
 
