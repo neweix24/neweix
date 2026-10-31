@@ -744,3 +744,80 @@ button:active:not(:disabled) { transform: translateY(1px); }
 button:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
 button:disabled { cursor: not-allowed; opacity: .48; }
 button svg { flex: none; }
+
+
+/* NEWEIX unified page palette: neutralize legacy light utility surfaces globally. */
+:root {
+  --page-bg: #080b09;
+  --page-surface: #101612;
+  --page-panel: #151d18;
+  --page-panel-soft: #1b251e;
+  --page-text: #f4f8f2;
+  --page-muted: #a0ada1;
+  --page-border: #29352b;
+  --page-accent: #b6ff4a;
+}
+
+/* Legacy Tailwind light surfaces used by older admin and dashboard pages. */
+[class~="bg-white"],
+[class~="bg-gray-50"],
+[class~="bg-gray-100"],
+[class~="bg-slate-50"],
+[class~="bg-slate-100"] {
+  color: var(--page-text) !important;
+  background-color: var(--page-panel) !important;
+}
+[class~="bg-white/5"],
+[class~="bg-white/[0.04]"],
+[class~="bg-white/[0.025]"],
+[class~="bg-black/10"] {
+  background-color: var(--page-surface) !important;
+}
+[class~="border-gray-200"],
+[class~="border-gray-300"],
+[class~="border-white/10"],
+[class~="border-white/15"] {
+  border-color: var(--page-border) !important;
+}
+[class~="text-gray-900"],
+[class~="text-gray-800"],
+[class~="text-gray-700"],
+[class~="text-slate-950"] {
+  color: var(--page-text) !important;
+}
+[class~="text-gray-600"],
+[class~="text-gray-500"],
+[class~="text-gray-400"] {
+  color: var(--page-muted) !important;
+}
+
+/* Keep the brand accent consistent on legacy blue dashboard controls. */
+[class~="bg-blue-700"] {
+  color: #080b09 !important;
+  background-color: var(--page-accent) !important;
+}
+[class~="text-blue-700"],
+[class~="text-blue-600"],
+[class~="border-blue-700"] {
+  color: var(--page-accent) !important;
+  border-color: var(--page-accent) !important;
+}
+
+/* Form controls, tables and native dropdowns share the same dark surfaces. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+select,
+textarea {
+  color: var(--page-text);
+  background-color: var(--page-surface);
+  border-color: var(--page-border);
+}
+option {
+  color: var(--page-text);
+  background: var(--page-panel);
+}
+table, thead, tbody, tr {
+  border-color: var(--page-border);
+}
+th {
+  background-color: rgba(182, 255, 74, 0.045);
+}
