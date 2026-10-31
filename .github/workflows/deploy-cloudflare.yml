@@ -1,9 +1,11 @@
 name: Deploy NEWEIX to Cloudflare Workers
 
 on:
-  push:
-    branches: ["main"]
   pull_request:
+    branches: ["main"]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: ["main"]
   workflow_dispatch:
 
@@ -24,8 +26,10 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: https://grhybvlhdnzlopwbaqun.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyaHlidmxoZG56bG9wd2JhcXVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NDYyMjEsImV4cCI6MjEwODIyMjIyMX0.27nR0VFbxwVYQKb5A06BRwizp02CHAmoD9IRMwiJ0Ss
     steps:
-      - name: Checkout
+      - name: Checkout tested commit
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -40,7 +44,7 @@ jobs:
         run: npx opennextjs-cloudflare build
 
   deploy:
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    if: (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     name: Build and deploy production Worker
     runs-on: ubuntu-latest
     timeout-minutes: 30
