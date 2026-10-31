@@ -106,3 +106,16 @@ This document records a review and safe implementation plan. It does not apply S
 ## Preview database cost gate
 
 Creating a dedicated Supabase preview branch requires additional compute. It will not be created because the user requested a no-cost approach. The existing development branch is in `MIGRATIONS_FAILED` state and must not be used for validation. Continue with free static checks and repository CI; run database integration tests only against a genuinely isolated free/local PostgreSQL environment if one becomes available.
+
+## Static compatibility review — 31 Oct 2026
+
+The integrity-chain migration was statically compared with the EixPay foundation migration and the existing private staff-role helper migration on this PR branch:
+
+- Confirmed both `private.eixpay_ledger.id` and `private.eixpay_audit_events.id` are `bigint generated always as identity primary key`; the chain migration's `source_id bigint` and `(payload ->> 'id')::bigint` assumptions match.
+- Confirmed `private.prevent_eixpay_audit_mutation()` exists with the expected zero-argument trigger-function signature and raises on UPDATE/DELETE. The integrity-event append-only trigger references that exact function.
+- Confirmed `private.has_staff_role(required_roles text[])` exists, is SECURITY DEFINER with an empty search_path, and is executable by authenticated users; the verifier calls it with a `text[]` argument and separately enforces JWT AAL2.
+- Confirmed the integrity migration timestamp follows the EixPay foundation migration and the private role-helper migration in the PR migration sequence.
+- The append trigger is AFTER INSERT on both source tables; source insertion, integrity-event append and chain-state update are in the same transaction. The single state-row lock serializes the combined stream.
+- This is a source-level compatibility review only. It does not establish successful PostgreSQL parsing/execution, role behavior under the hosted Supabase runtime, concurrency correctness, or protection from table owners/superusers disabling triggers or rewriting the chain.
+
+**Result:** No source-level mismatch was found in the reviewed ID types, trigger guard, or Supreme role-helper signature. No SQL migration was executed, no production data/schema was changed, and no paid test environment was created. The remaining validation gap is a real isolated PostgreSQL execution test; it cannot be truthfully marked passed based on static inspection or GitHub application CI.
