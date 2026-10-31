@@ -308,13 +308,17 @@ begin
     );
   end if;
 
+  -- Serialize first-time wallet and default membership initialization per customer.
+  perform pg_advisory_xact_lock(hashtextextended(v_user_id::text, 0));
+
   insert into private.eixpay_wallets (user_id)
   values (v_user_id)
   on conflict (user_id) do nothing;
 
   select * into v_wallet
   from private.eixpay_wallets
-  where user_id = v_user_id;
+  where user_id = v_user_id
+  for update;
 
   insert into private.neweix_plus_memberships (user_id, tier_code, status, assignment_source)
   select v_user_id, 'free', 'active', 'system'
@@ -470,6 +474,9 @@ begin
     select * into v_request
     from private.eixpay_transfer_requests
     where sender_user_id = v_user_id and idempotency_key = p_idempotency_key;
+    if v_request.recipient_user_id <> v_recipient_id or v_request.amount <> p_amount then
+      raise exception using errcode = '22023', message = 'IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_TRANSFER';
+    end if;
   end if;
 
   return jsonb_build_object(
@@ -542,7 +549,7 @@ begin
      or coalesce(auth.jwt() ->> 'aal', '') <> 'aal2' then
     raise exception using errcode = '42501', message = 'SUPREME_MFA_REQUIRED';
   end if;
-  if p_request_id is null or p_decision not in ('approve', 'reject') then
+  if p_request_id is null or p_decision is null or p_decision not in ('approve', 'reject') then
     raise exception using errcode = '22023', message = 'INVALID_TRANSFER_DECISION';
   end if;
   if coalesce(char_length(p_note), 0) > 500 then
@@ -872,6 +879,9 @@ begin
   if v_user_id is null then
     raise exception using errcode = '28000', message = 'AUTHENTICATION_REQUIRED';
   end if;
+
+  -- Keep default membership creation race-safe across account and wallet requests.
+  perform pg_advisory_xact_lock(hashtextextended(v_user_id::text, 0));
 
   insert into private.neweix_plus_memberships (user_id, tier_code, status, assignment_source)
   select v_user_id, 'free', 'active', 'system'
