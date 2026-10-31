@@ -2,6 +2,11 @@ name: Configure Supabase Auth CAPTCHA
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/configure-supabase-auth-captcha.yml
 
 permissions:
   contents: read
