@@ -1,6 +1,34 @@
 -- Move the SECURITY DEFINER role helper out of the exposed public API schema.
 -- Keep the same authorization predicate and preserve RLS policy behavior.
 
+-- Keep the customer ownership column present on fresh installs before
+-- owner-scoped order policies are created. Production may already have
+-- customer_id from an earlier baseline; the legacy bootstrap uses
+-- customer_user_id, which is the same authenticated-user foreign key.
+do $customer_order_link$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='orders' and column_name='customer_user_id'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='orders' and column_name='customer_id'
+  ) then
+    alter table public.orders rename column customer_user_id to customer_id;
+  elsif not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='orders' and column_name='customer_id'
+  ) then
+    alter table public.orders
+      add column customer_id uuid references auth.users(id) on delete set null;
+  end if;
+end;
+$customer_order_link$;
+
+create index if not exists orders_customer_id_idx
+  on public.orders(customer_id);
+
+
 create or replace function private.has_staff_role(required_roles text[])
 returns boolean
 language sql
