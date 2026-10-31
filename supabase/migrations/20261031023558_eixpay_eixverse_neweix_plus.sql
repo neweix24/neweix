@@ -564,7 +564,7 @@ begin
   into v_request_count, v_daily_amount
   from private.eixpay_transfer_requests
   where sender_user_id = v_user_id
-    and requested_at >= date_trunc('day', now());
+    and requested_at >= (date_trunc('day', now() at time zone 'Asia/Dhaka') at time zone 'Asia/Dhaka');
 
   if v_request_count >= v_config.max_transfer_requests_per_day then
     raise exception using errcode = '22023', message = 'DAILY_TRANSFER_REQUEST_LIMIT_REACHED';
@@ -816,7 +816,7 @@ begin
     from private.eixpay_transfer_requests
     where sender_user_id = v_request.sender_user_id
       and status = 'approved'
-      and requested_at >= date_trunc('day', now())
+      and requested_at >= (date_trunc('day', now() at time zone 'Asia/Dhaka') at time zone 'Asia/Dhaka')
   ) + v_request.amount > v_config.max_transfer_daily_amount then
     raise exception using errcode = '22023', message = 'DAILY_TRANSFER_AMOUNT_LIMIT_REACHED';
   end if;
@@ -939,7 +939,7 @@ begin
     from private.eixpay_reward_claims
     where user_id = p_user_id
       and event_code = p_event_code
-      and created_at >= date_trunc('day', now());
+      and created_at >= (date_trunc('day', now() at time zone 'Asia/Dhaka') at time zone 'Asia/Dhaka');
     if v_today_count >= v_rule.max_per_user_per_day then
       return jsonb_build_object('success', false, 'reason', 'daily_limit_reached');
     end if;
