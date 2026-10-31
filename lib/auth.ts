@@ -6,19 +6,27 @@ export type StaffRole = "supreme" | "admin" | "staff";
 export async function getCurrentStaff() {
   const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  // Verify the signed JWT locally instead of calling /auth/v1/user on
+  // every server render. This avoids competing refresh-token rotations
+  // between middleware, Server Components and the browser client.
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims;
+  const userId = claims?.sub;
 
-  if (userError || !user) {
+  if (claimsError || typeof userId !== "string" || !userId) {
     return null;
   }
+
+  const user = {
+    ...claims,
+    id: userId,
+    email: typeof claims.email === "string" ? claims.email : undefined,
+  };
 
   const { data: profile, error: profileError } = await supabase
     .from("staff_profiles")
     .select("role, is_active")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (
