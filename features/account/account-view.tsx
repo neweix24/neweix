@@ -17,6 +17,7 @@ export default function AccountView() {
   const [phone, setPhone] = useState("");
   const [verifiedPhone, setVerifiedPhone] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
+  const [editingPhone, setEditingPhone] = useState(false);
   const [challengeId, setChallengeId] = useState("");
   const [otp, setOtp] = useState("");
   const [sendingOtp, setSendingOtp] = useState(false);
@@ -252,6 +253,7 @@ export default function AccountView() {
       if (!response.ok) throw new Error(result?.error || "OTP যাচাই করা যায়নি।");
 
       setPhoneVerified(true);
+      setEditingPhone(false);
       setVerifiedPhone(typeof result?.phone === "string" ? result.phone : phone.trim());
       setPhone("");
       setOtp("");
@@ -345,47 +347,72 @@ export default function AccountView() {
               />
 
               <div className="phone-verification">
-                <strong>ফোন নম্বর যাচাই</strong>
-                <p>অ্যাকাউন্টের অতিরিক্ত সুবিধা এবং অর্ডার অ্যাকাউন্টে সংরক্ষণের জন্য ফোন নম্বর OTP দিয়ে যাচাই করুন। OTP-এর মেয়াদ ৫ মিনিট।</p>
-                {phoneVerified ? (
-                  <p className="success verified-phone" role="status">যাচাইকৃত নম্বর: <strong>{verifiedPhone}</strong> <span className="verified-badge" aria-label="ফোন নম্বর যাচাইকৃত"><Icon name="check" size={13} /> Verified</span></p>
-                ) : (
-                  <p className="error">ফোন যাচাই না করলে অতিথি হিসেবে অর্ডার করতে পারবেন; অর্ডার অ্যাকাউন্টে সংরক্ষিত হবে না।</p>
-                )}
-                <label htmlFor="customer-phone">
-                  {phoneVerified ? "নতুন নম্বর দিয়ে পরিবর্তন করুন" : "মোবাইল নম্বর"}
-                </label>
-                <input
-                  id="customer-phone"
-                  type="tel"
-                  autoComplete="tel"
-                  maxLength={20}
-                  placeholder="যেমন: 01XXXXXXXXX"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  disabled={sendingOtp || verifyingOtp}
-                />
-                <button type="button" onClick={() => void handleSendOtp()}
-                  disabled={sendingOtp || verifyingOtp || !phone.trim()}>
-                  <><Icon name={sendingOtp ? "refresh" : "send"} size={16} /> {sendingOtp ? "OTP পাঠানো হচ্ছে…" : "OTP পাঠান"}</>
-                </button>
-                {challengeId && (
-                  <>
-                    <label htmlFor="customer-phone-otp">৬ সংখ্যার OTP</label>
-                    <input
-                      id="customer-phone-otp"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      maxLength={6}
-                      value={otp}
-                      onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                      disabled={verifyingOtp}
-                    />
-                    <button type="button" onClick={() => void handleVerifyOtp()}
-                      disabled={verifyingOtp || otp.length !== 6}>
-                      <><Icon name={verifyingOtp ? "refresh" : "shield"} size={16} /> {verifyingOtp ? "যাচাই হচ্ছে…" : "OTP যাচাই করুন"}</>
+                <strong>ফোন নম্বর</strong>
+                {phoneVerified && !editingPhone ? (
+                  <div className="verified-phone-row">
+                    <span>{verifiedPhone}</span>
+                    <button
+                      className="phone-edit-button"
+                      type="button"
+                      aria-label="ফোন নম্বর পরিবর্তন করুন"
+                      title="ফোন নম্বর পরিবর্তন করুন"
+                      onClick={() => {
+                        setEditingPhone(true);
+                        setPhone("");
+                        setPhoneMessage("");
+                        setPhoneError("");
+                      }}
+                    >
+                      <Icon name="edit" size={17} />
                     </button>
+                    <span className="verified-badge" aria-label="ফোন নম্বর যাচাইকৃত"><Icon name="check" size={13} /> Verified</span>
+                  </div>
+                ) : (
+                  <>
+                    {phoneVerified && (
+                      <button className="phone-cancel-button" type="button" onClick={() => {
+                        setEditingPhone(false);
+                        setPhone("");
+                        setOtp("");
+                        setChallengeId("");
+                        setPhoneMessage("");
+                        setPhoneError("");
+                      }}>বাতিল</button>
+                    )}
+                    <label htmlFor="customer-phone">মোবাইল নম্বর</label>
+                    <input
+                      id="customer-phone"
+                      type="tel"
+                      autoComplete="tel"
+                      maxLength={20}
+                      placeholder="যেমন: 01XXXXXXXXX"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      disabled={sendingOtp || verifyingOtp}
+                    />
+                    <button type="button" onClick={() => void handleSendOtp()}
+                      disabled={sendingOtp || verifyingOtp || !phone.trim()}>
+                      <><Icon name={sendingOtp ? "refresh" : "send"} size={16} /> {sendingOtp ? "OTP পাঠানো হচ্ছে…" : "OTP পাঠান"}</>
+                    </button>
+                    {challengeId && (
+                      <>
+                        <label htmlFor="customer-phone-otp">৬ সংখ্যার OTP</label>
+                        <input
+                          id="customer-phone-otp"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          maxLength={6}
+                          value={otp}
+                          onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                          disabled={verifyingOtp}
+                        />
+                        <button type="button" onClick={() => void handleVerifyOtp()}
+                          disabled={verifyingOtp || otp.length !== 6}>
+                          <><Icon name={verifyingOtp ? "refresh" : "shield"} size={16} /> {verifyingOtp ? "যাচাই হচ্ছে…" : "OTP যাচাই করুন"}</>
+                        </button>
+                      </>
+                    )}
                   </>
                 )}
                 {phoneMessage && <p className="success" role="status">{phoneMessage}</p>}
@@ -607,10 +634,40 @@ export default function AccountView() {
           cursor: pointer;
         }
 
-        .phone-verification p {
-          margin: 2px 0;
-          line-height: 1.6;
-          overflow-wrap: anywhere;
+        .verified-phone-row {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 9px;
+          min-height: 38px;
+        }
+
+        .phone-edit-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 34px;
+          min-height: 34px;
+          margin: 0;
+          padding: 0;
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          background: var(--surface);
+          color: var(--ink);
+          cursor: pointer;
+        }
+
+        .phone-cancel-button {
+          justify-self: start;
+          min-height: 32px;
+          margin: 0;
+          padding: 4px 10px;
+          border: 1px solid var(--border);
+          border-radius: 7px;
+          background: var(--surface);
+          color: var(--ink);
+          font: inherit;
+          cursor: pointer;
         }
 
         .success {
