@@ -89,7 +89,7 @@ export default function ProductReviewPanel({ productId }: { productId: string })
         <div>
           <p className="mb-2 text-[10px] font-extrabold tracking-[.18em]" style={{ color: "var(--primary)" }}>VERIFIED CUSTOMER FEEDBACK</p>
           <h2 id="review-heading" className="text-2xl font-black">যাচাইকৃত ক্রেতাদের রিভিউ</h2>
-          <p className="mt-2 text-sm leading-7" style={{ color: "var(--muted)" }}>শুধু পেমেন্ট সম্পন্ন ও ডেলিভারি পাওয়া ক্রেতারাই রিভিউ দিতে পারবেন। প্রতিটি রিভিউ প্রকাশের আগে যাচাই করা হয়।</p>
+          <p className="mt-2 text-sm leading-7" style={{ color: "var(--muted)" }}>শুধু Paid ও Delivered অর্ডারের ক্রেতারা ৭ দিনের রিটার্ন-উইন্ডো পার হওয়ার পর রিভিউ দিতে পারবেন। প্রতিটি রিভিউ প্রকাশের আগে যাচাই করা হয়।</p>
         </div>
         <div className="rounded-xl border px-4 py-3 text-right" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
           <p className="text-2xl font-black">{reviews.length ? average.toFixed(1) : "—"} <span className="text-amber-500">★</span></p>
@@ -125,7 +125,7 @@ export default function ProductReviewPanel({ productId }: { productId: string })
               <Link className="mt-3 inline-flex font-bold underline underline-offset-4" style={{ color: "var(--primary)" }} href={"/auth/customer-login?next=" + encodeURIComponent("/products")}>লগইন করুন</Link>
             </div>
           ) : eligibleOrders.length === 0 ? (
-            <p className="mt-3 text-sm leading-7" style={{ color: "var(--muted)" }}>এই পণ্যের জন্য আপনার কোনো যোগ্য অর্ডার পাওয়া যায়নি। Delivered, Paid এবং ডেলিভারি চার্জ নিষ্পত্তি হওয়া অর্ডারের পণ্য থেকেই রিভিউ দেওয়া যায়।</p>
+            <p className="mt-3 text-sm leading-7" style={{ color: "var(--muted)" }}>এই পণ্যের জন্য আপনার কোনো যোগ্য অর্ডার পাওয়া যায়নি। Delivered, Paid এবং ডেলিভারি চার্জ নিষ্পত্তি হওয়া অর্ডারের ৭ দিনের রিটার্ন-উইন্ডো পার হলে রিভিউ দেওয়া যায়।</p>
           ) : (
             <form onSubmit={(event) => void submit(event)} className="mt-4 space-y-3">
               <label className="block text-xs font-semibold">কোন অর্ডারের পণ্য?</label>
