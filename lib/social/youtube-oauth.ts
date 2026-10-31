@@ -4,7 +4,7 @@ export type YouTubeEnv = {
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   YOUTUBE_TOKEN_ENCRYPTION_KEY?: string;
-  NEXT_PUBLIC_SITE_URL?: string;
+  NEXT_PUBLIC_SITE_URL?: string;\n  NEWEIX_SITE_URL?: string;
 };
 
 export async function getYouTubeEnv(): Promise<YouTubeEnv> {
@@ -14,7 +14,7 @@ export async function getYouTubeEnv(): Promise<YouTubeEnv> {
     GOOGLE_CLIENT_ID: String(env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || ""),
     GOOGLE_CLIENT_SECRET: String(env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || ""),
     YOUTUBE_TOKEN_ENCRYPTION_KEY: String(env.YOUTUBE_TOKEN_ENCRYPTION_KEY || process.env.YOUTUBE_TOKEN_ENCRYPTION_KEY || ""),
-    NEXT_PUBLIC_SITE_URL: String(env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://neweix.com"),
+    NEXT_PUBLIC_SITE_URL: String(env.NEXT_PUBLIC_SITE_URL || env.NEWEIX_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.NEWEIX_SITE_URL || "https://neweix.com"),
   };
 }
 
