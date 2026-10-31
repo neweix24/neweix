@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 type Rule = { event_code: string; display_name: string; description: string; enabled: boolean; reward_amount: number; max_per_user_per_day: number; settlement_delay_hours: number; requires_verified_phone: boolean };
 type Tier = { tier_code: string; display_name: string; tier_rank: number; is_enabled: boolean; min_qualified_spend_bdt: number | null; min_qualified_orders: number | null; qualification_period_days: number | null; benefits: string[] };
 type Dashboard = {
-  program: { wallet_enabled: boolean; earning_enabled: boolean; redemption_enabled: boolean; transfer_enabled: boolean; transfer_legal_review_confirmed: boolean; redemption_legal_review_confirmed: boolean };
+  program: { wallet_enabled: boolean; earning_enabled: boolean; redemption_enabled: boolean; transfer_enabled: boolean; transfer_legal_review_confirmed: boolean; redemption_legal_review_confirmed: boolean; min_transfer_amount: number; max_transfer_amount: number; max_transfer_daily_amount: number; max_transfer_requests_per_day: number };
   reward_rules: Rule[]; membership_tiers: Tier[];
   stats: { wallet_count: number; total_eixon_balance: number; pending_transfers: number; pending_redemptions: number; pending_order_rewards: number; outstanding_reward_debt: number };
 };
@@ -13,6 +13,7 @@ type Customer = { user_id: string; name: string; email: string | null; masked_ph
 export default function EixPayProgramControl() {
   const [data, setData] = useState<Dashboard | null>(null);
   const [program, setProgram] = useState({ walletEnabled: true, earningEnabled: false, redemptionEnabled: false, transferEnabled: false });
+  const [transferLimits, setTransferLimits] = useState({ minAmount: "1", maxAmount: "5000", dailyMaxAmount: "10000", maxRequestsPerDay: "5" });
   const [rules, setRules] = useState<Record<string, { enabled: boolean; amount: string; max: string }>>({});
   const [tiers, setTiers] = useState<Record<string, { enabled: boolean; spend: string; orders: string; days: string; benefits: string }>>({});
   const [search, setSearch] = useState("");
@@ -34,6 +35,12 @@ export default function EixPayProgramControl() {
       const d = result.data as Dashboard;
       setData(d);
       setProgram({ walletEnabled: d.program.wallet_enabled, earningEnabled: d.program.earning_enabled, redemptionEnabled: d.program.redemption_enabled, transferEnabled: d.program.transfer_enabled });
+      setTransferLimits({
+        minAmount: String(d.program.min_transfer_amount),
+        maxAmount: String(d.program.max_transfer_amount),
+        dailyMaxAmount: String(d.program.max_transfer_daily_amount),
+        maxRequestsPerDay: String(d.program.max_transfer_requests_per_day),
+      });
       setRules(Object.fromEntries(d.reward_rules.map((r) => [r.event_code, { enabled: r.enabled, amount: String(r.reward_amount), max: String(r.max_per_user_per_day) }])));
       setTiers(Object.fromEntries(d.membership_tiers.map((t) => [t.tier_code, { enabled: t.is_enabled, spend: t.min_qualified_spend_bdt === null ? "" : String(t.min_qualified_spend_bdt), orders: t.min_qualified_orders === null ? "" : String(t.min_qualified_orders), days: String(t.qualification_period_days ?? 30), benefits: t.benefits.join("\n") }])));
     } catch (e) { setError(e instanceof Error ? e.message : "কন্ট্রোল ডেটা লোড করা যায়নি।"); }
@@ -103,6 +110,20 @@ export default function EixPayProgramControl() {
             <label className="flex items-center justify-between gap-3 text-sm"><span>Customer transfer চালু</span><input type="checkbox" checked={program.transferEnabled} disabled={!data.program.transfer_legal_review_confirmed} onChange={(e) => setProgram((p) => ({ ...p, transferEnabled: e.target.checked }))} /></label>
             <p className="mt-2 text-xs leading-5 text-amber-100/65">{data.program.transfer_legal_review_confirmed ? "প্রত্যেক ট্রান্সফারে Supreme approval বাধ্যতামূলক।" : "আইনি যাচাই নিশ্চিত করা হয়নি; তাই transfer switch লক করা।"}</p>
           </div>
+        </div>
+        <div className="mt-5 rounded-2xl border border-white/10 bg-black/10 p-4">
+          <h3 className="font-bold">ট্রান্সফার সীমা</h3>
+          <p className="mt-1 text-xs text-white/45">আইনি অনুমোদনের পরে চালু হলে এই সীমাগুলো customer request ও Supreme approval—দুই পর্যায়েই প্রয়োগ হবে।</p>
+          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {([
+              ["minAmount","সর্বনিম্ন পরিমাণ"],["maxAmount","প্রতি ট্রান্সফারে সর্বোচ্চ"],["dailyMaxAmount","দৈনিক সর্বোচ্চ মোট"],["maxRequestsPerDay","দৈনিক অনুরোধ সংখ্যা"],
+            ] as const).map(([key,label]) => <label key={key} className="text-xs text-white/50">{label}<input type="number" min="1" step="1" value={transferLimits[key]} onChange={(e) => setTransferLimits((v) => ({ ...v, [key]: e.target.value }))} className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white" /></label>)}
+          </div>
+          <button type="button" disabled={Boolean(busy)} onClick={() => {
+            const minAmount=Number(transferLimits.minAmount), maxAmount=Number(transferLimits.maxAmount), dailyMaxAmount=Number(transferLimits.dailyMaxAmount), maxRequestsPerDay=Number(transferLimits.maxRequestsPerDay);
+            if (![minAmount,maxAmount,dailyMaxAmount,maxRequestsPerDay].every(Number.isSafeInteger) || minAmount<1 || maxAmount<minAmount || dailyMaxAmount<maxAmount || maxRequestsPerDay<1 || maxRequestsPerDay>50) { setError("ট্রান্সফার সীমা সঠিক পূর্ণসংখ্যায় দিন; দৈনিক সীমা প্রতি ট্রান্সফারের সীমার চেয়ে কম হতে পারবে না।"); return; }
+            void save("/api/supreme/eixpay", { action:"transfer_limits", minAmount,maxAmount,dailyMaxAmount,maxRequestsPerDay });
+          }} className="mt-4 rounded-full border border-cyan-200/20 px-4 py-2 text-xs font-bold text-cyan-100 hover:bg-cyan-200/10 disabled:opacity-50">{busy === "/api/supreme/eixpay" ? "সংরক্ষণ হচ্ছে…" : "ট্রান্সফার সীমা সংরক্ষণ"}</button>
         </div>
         <p className="mt-4 text-xs text-white/40">Staff/Admin transfer approve করতে পারবে না।</p>
         <button type="button" disabled={Boolean(busy)} onClick={() => void save("/api/supreme/eixpay", { action: "program", ...program })} className="mt-5 rounded-full bg-emerald-300 px-5 py-2.5 text-sm font-black text-[#092016] disabled:opacity-50">{busy === "program" ? "সংরক্ষণ হচ্ছে…" : "প্রোগ্রাম সেটিং সংরক্ষণ"}</button>
