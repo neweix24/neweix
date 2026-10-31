@@ -12,7 +12,7 @@ port = 54322
 major_version = 17
 
 [db.migrations]
-enabled = true
+enabled = false
 
 [db.seed]
 enabled = false
