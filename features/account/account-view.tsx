@@ -10,6 +10,7 @@ export default function AccountView() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
+  const [emailVerified, setEmailVerified] = useState(false);
   const [name, setName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -91,6 +92,8 @@ export default function AccountView() {
         }
 
         setEmail(user.email ?? "");
+        const isOAuthUser = user.identities?.some((identity) => identity.provider !== "email") ?? false;
+        setEmailVerified(Boolean(isOAuthUser && user.email_confirmed_at));
         setName(profile?.full_name ?? metadataName);
         setDateOfBirth(profile?.date_of_birth ?? "");
         setAvatarUrl(profile?.avatar_url ?? metadataAvatar);
@@ -295,7 +298,6 @@ export default function AccountView() {
       </header>
 
       <section className="account-content">
-        <p className="account-eyebrow">CUSTOMER ACCOUNT</p>
         <h1>আমার অ্যাকাউন্ট</h1>
         <p className="account-description">
           আপনার ব্যক্তিগত তথ্য দেখুন ও আপডেট করুন।
@@ -312,7 +314,10 @@ export default function AccountView() {
                   style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover" }} />
               )}
               <span>লগইন ইমেইল</span>
-              <strong>{email || "ইমেইল দেওয়া নেই"}</strong>
+              <div className="account-email-value">
+                <strong>{email || "ইমেইল দেওয়া নেই"}</strong>
+                {emailVerified && <span className="verified-badge" aria-label="ইমেইল যাচাইকৃত"><Icon name="check" size={13} /> Verified</span>}
+              </div>
             </div>
 
             <form className="account-form" onSubmit={handleSave}>
@@ -343,7 +348,7 @@ export default function AccountView() {
                 <strong>ফোন নম্বর যাচাই</strong>
                 <p>অ্যাকাউন্টের অতিরিক্ত সুবিধা এবং অর্ডার অ্যাকাউন্টে সংরক্ষণের জন্য ফোন নম্বর OTP দিয়ে যাচাই করুন। OTP-এর মেয়াদ ৫ মিনিট।</p>
                 {phoneVerified ? (
-                  <p className="success" role="status">যাচাইকৃত নম্বর: {verifiedPhone}</p>
+                  <p className="success verified-phone" role="status">যাচাইকৃত নম্বর: <strong>{verifiedPhone}</strong> <span className="verified-badge" aria-label="ফোন নম্বর যাচাইকৃত"><Icon name="check" size={13} /> Verified</span></p>
                 ) : (
                   <p className="error">ফোন যাচাই না করলে অতিথি হিসেবে অর্ডার করতে পারবেন; অর্ডার অ্যাকাউন্টে সংরক্ষিত হবে না।</p>
                 )}
@@ -499,9 +504,39 @@ export default function AccountView() {
           overflow-wrap: anywhere;
         }
 
-        .account-email span {
+        .account-email > span {
           color: var(--muted);
           font-size: 13px;
+        }
+
+        .account-email-value {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 9px;
+        }
+
+        .verified-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          width: fit-content;
+          padding: 3px 8px;
+          border: 1px solid #86c99b;
+          border-radius: 999px;
+          background: #eaf8ee;
+          color: #176b35;
+          font-size: 11px;
+          font-weight: 700;
+          line-height: 1.4;
+          white-space: nowrap;
+        }
+
+        .verified-phone {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 7px;
         }
 
         .account-form {
