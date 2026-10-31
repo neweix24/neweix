@@ -62,6 +62,7 @@ export default function EixPayWallet() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [referralMessage, setReferralMessage] = useState("");
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
@@ -93,6 +94,24 @@ export default function EixPayWallet() {
       setError(caught instanceof Error ? caught.message : "অনুরোধ বাতিল করা যায়নি।");
     } finally {
       setCancelling("");
+    }
+  }
+
+  async function shareReferral() {
+    if (!wallet?.eix_id) return;
+    const link = window.location.origin + "/r/" + wallet.eix_id;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "NEWEIX-এ যোগ দিন", text: "আমার EIX Referral Link ব্যবহার করে NEWEIX-এ যোগ দিন।", url: link });
+        setReferralMessage("রেফারেল লিংক শেয়ার করা হয়েছে।");
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(link);
+        setReferralMessage("রেফারেল লিংক কপি হয়েছে।");
+      } else {
+        setReferralMessage(link);
+      }
+    } catch {
+      setReferralMessage("রেফারেল লিংক শেয়ার করা যায়নি।");
     }
   }
 
@@ -160,6 +179,18 @@ export default function EixPayWallet() {
             <div className="mt-4 rounded-2xl border border-sky-200/15 bg-sky-200/[0.06] px-4 py-3 text-sm leading-6 text-sky-100/80">
               Eixon হলো NEWEIX-এর অভ্যন্তরীণ রিওয়ার্ড ইউনিট; এটি নগদ অর্থ, ব্যাংক ব্যালেন্স বা বাইরের পেমেন্ট মাধ্যম নয়।
             </div>
+            <section className="mt-5 rounded-2xl border border-emerald-200/15 bg-emerald-200/[0.045] p-5 sm:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="max-w-xl">
+                  <p className="text-xs font-bold uppercase tracking-[.18em] text-emerald-200/70">EixVerse Referral</p>
+                  <h2 className="mt-2 text-xl font-bold">বন্ধুকে NEWEIX-এ আমন্ত্রণ জানান</h2>
+                  <p className="mt-2 text-sm leading-6 text-white/60">আপনার EIX ID-ই রেফারেল কোড। বন্ধু আপনার লিংক দিয়ে নতুন অ্যাকাউন্ট খুলে ফোন যাচাই করে প্রথম যোগ্য অর্ডার সম্পন্ন করলে—নিয়ম চালু থাকলে দুজনই Eixon রিওয়ার্ড পাবেন।</p>
+                  <p className="mt-3 font-mono text-sm text-emerald-100">{wallet?.eix_id ?? "—"}</p>
+                  {referralMessage && <p role="status" className="mt-2 break-all text-xs text-emerald-200">{referralMessage}</p>}
+                </div>
+                <button type="button" onClick={() => void shareReferral()} disabled={!wallet?.eix_id} className="rounded-full bg-emerald-200 px-5 py-3 text-sm font-bold text-[#092016] hover:bg-emerald-100 disabled:opacity-50">রেফারেল লিংক শেয়ার</button>
+              </div>
+            </section>
             {(wallet?.reward_debt ?? 0) > 0 && (
               <div className="mt-4 rounded-2xl border border-amber-200/20 bg-amber-200/[0.06] px-4 py-3 text-sm leading-6 text-amber-100/85">
                 আগের কোনো অর্ডারের রিটার্ন/রিফান্ড সমন্বয়ের জন্য {amount(wallet?.reward_debt ?? 0)} Eixon ভবিষ্যৎ রিওয়ার্ড থেকে সমন্বয় হবে। আপনার ব্যালেন্স ঋণাত্মক করা হবে না।
