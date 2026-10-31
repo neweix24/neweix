@@ -189,9 +189,6 @@ export default function StorefrontHome() {
     }
   }
 
-  const featured = products.filter((product) => product.is_featured && product.stock > 0);
-  const visibleProducts = (featured.length ? featured : products).slice(0, 4);
-
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -210,19 +207,6 @@ export default function StorefrontHome() {
       </header>
 
       <main className={styles.main}>
-        <section className={styles.hero}>
-          <div className={styles.heroText}>
-            <span className={styles.eyebrow}>WELCOME TO NEWEIX</span>
-            <h1>আপনার পছন্দের কেনাকাটা, <em>এখন আরও সহজ।</em></h1>
-            <p>পছন্দের পণ্য খুঁজুন, কার্টে যোগ করুন এবং সহজে অর্ডার করুন। আপনার অর্ডারের অগ্রগতিও রাখুন নিজের নিয়ন্ত্রণে।</p>
-            <div className={styles.heroActions}>
-              <Link href="/products" className={styles.primaryButton}>সব পণ্য দেখুন <Icon name="arrow-right" size={17} /></Link>
-              <Link href="/track-order" className={styles.secondaryButton}><Icon name="package" size={17} /> অর্ডার ট্র্যাক করুন</Link>
-            </div>
-          </div>
-          <div className={styles.heroVisual} aria-hidden="true"><div className={styles.orbit}></div><div className={styles.heroProductVisual}>{visibleProducts[0]?.image_urls?.[0] ? <img src={visibleProducts[0].image_urls[0]} alt="" /> : <span className={styles.heroMonogram}>N</span>}</div><span className={styles.floatTag}>NEWEIX<br/>SHOP SMART</span></div>
-        </section>
-
         {categories.length > 0 && <section className={styles.categorySection} aria-labelledby="category-title">
           <div className={styles.categoryHeading}><div><span className={styles.eyebrow}>SHOP BY CATEGORY</span><h2 id="category-title">ক্যাটাগরি অনুযায়ী পণ্য</h2></div><Link href="/products">সব ক্যাটাগরি <Icon name="arrow-right" size={16} /></Link></div>
           <div className={styles.categoryList}>
