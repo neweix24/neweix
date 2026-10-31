@@ -151,27 +151,70 @@ begin
   if v_user is null then
     raise exception using errcode = '28000', message = 'AUTHENTICATION_REQUIRED';
   end if;
+
   return jsonb_build_object(
-    'today_checkin', (select to_jsonb(c) from private.eixverse_daily_checkins c
-      where c.user_id=v_user and c.local_date=v_today),
-    'streak_days', coalesce((select streak_days from private.eixverse_daily_checkins
-      where user_id=v_user order by local_date desc limit 1),0),
-    'campaigns', coalesce((
-      select jsonb_agg(jsonb_build_object(
-        'id',c.id,'title',c.title,'description',c.description,
-        'starts_at',c.starts_at,'ends_at',c.ends_at,
-        'missions',(select coalesce(jsonb_agg(jsonb_build_object(
-          'id',m.id,'title',m.title,'description',m.description,
-          'mission_type',m.mission_type,'reward_amount',m.reward_amount,
-          'claimed',(select count(*) from private.eixverse_mission_claims mc
-            where mc.mission_id=m.id and mc.user_id=v_user),
-          'max_claims_per_user',m.max_claims_per_user
-        ) order by m.sort_order,m.created_at) ,'[]'::jsonb)
-          from private.eixverse_missions m where m.campaign_id=c.id and m.is_enabled)
-      ) order by c.starts_at), '[]'::jsonb)
-      from private.eixverse_campaigns c
-      where c.status='active' and c.starts_at <= now() and c.ends_at > now()
-    ),'[]'::jsonb)
+    'today_checkin',
+    (
+      select to_jsonb(c)
+      from private.eixverse_daily_checkins c
+      where c.user_id = v_user and c.local_date = v_today
+    ),
+    'streak_days',
+    coalesce(
+      (
+        select streak_days
+        from private.eixverse_daily_checkins
+        where user_id = v_user
+        order by local_date desc
+        limit 1
+      ),
+      0
+    ),
+    'campaigns',
+    coalesce(
+      (
+        select jsonb_agg(
+          jsonb_build_object(
+            'id', c.id,
+            'title', c.title,
+            'description', c.description,
+            'starts_at', c.starts_at,
+            'ends_at', c.ends_at,
+            'missions',
+            coalesce(
+              (
+                select jsonb_agg(
+                  jsonb_build_object(
+                    'id', m.id,
+                    'title', m.title,
+                    'description', m.description,
+                    'mission_type', m.mission_type,
+                    'reward_amount', m.reward_amount,
+                    'claimed',
+                    (
+                      select count(*)
+                      from private.eixverse_mission_claims mc
+                      where mc.mission_id = m.id and mc.user_id = v_user
+                    ),
+                    'max_claims_per_user', m.max_claims_per_user
+                  )
+                  order by m.sort_order, m.created_at
+                )
+                from private.eixverse_missions m
+                where m.campaign_id = c.id and m.is_enabled
+              ),
+              '[]'::jsonb
+            )
+          )
+          order by c.starts_at
+        )
+        from private.eixverse_campaigns c
+        where c.status = 'active'
+          and c.starts_at <= now()
+          and c.ends_at > now()
+      ),
+      '[]'::jsonb
+    )
   );
 end;
 $function$;
