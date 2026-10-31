@@ -40,13 +40,12 @@ function isHexColor(value: unknown): value is string {
 }
 
 function relativeLuminance(hex: string): number {
-  const channels = hex.slice(1).match(/.{2}/g)?.map((part) => {
-    const value = parseInt(part, 16) / 255;
+  const channel = (start: number) => {
+    const value = parseInt(hex.slice(start, start + 2), 16) / 255;
     return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-  });
+  };
 
-  if (!channels || channels.length !== 3) return 0;
-  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  return 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
 }
 
 function contrastRatio(first: string, second: string): number {
