@@ -1,4 +1,4 @@
-import { createClient, type User } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -42,11 +42,12 @@ export function maskBangladeshPhone(phone: string): string {
     : "••••••••";
 }
 
-export async function getAuthenticatedCustomer(): Promise<User | null> {
+export async function getAuthenticatedCustomer(): Promise<{ id: string } | null> {
   try {
     const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase.auth.getUser();
-    return error ? null : data.user;
+    const { data, error } = await supabase.auth.getClaims();
+    const userId = data?.claims?.sub;
+    return error || typeof userId !== "string" ? null : { id: userId };
   } catch {
     return null;
   }
