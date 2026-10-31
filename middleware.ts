@@ -36,10 +36,19 @@ export async function middleware(request: NextRequest) {
   response.headers.set("Cache-Control", "private, no-store");
 
   // Require verified customer phone numbers before account features are accessible.
-  const isCustomerProtected =
+  const isPhoneVerificationApi =
+    pathname === "/api/account/phone/send-otp" ||
+    pathname === "/api/account/phone/status" ||
+    pathname === "/api/account/phone/verify-otp";
+  const isCustomerApi =
+    (pathname.startsWith("/api/account/") && !isPhoneVerificationApi) ||
+    pathname === "/api/eixpay" || pathname.startsWith("/api/eixpay/") ||
+    pathname === "/api/orders";
+  const isCustomerPage =
     pathname === "/orders" || pathname.startsWith("/orders/") ||
     pathname === "/wishlist" || pathname.startsWith("/wishlist/") ||
     (pathname.startsWith("/account/") && pathname !== "/account/");
+  const isCustomerProtected = isCustomerPage || isCustomerApi;
 
   if (isCustomerProtected) {
     if (claimsError || typeof userId !== "string" || !userId) {
@@ -60,6 +69,12 @@ export async function middleware(request: NextRequest) {
       .maybeSingle();
 
     if (customerProfileError || !customerProfile?.phone_verified_at || !customerProfile.phone) {
+      if (isCustomerApi) {
+        return NextResponse.json(
+          { error: "ফোন নম্বর OTP দিয়ে যাচাই করার পর এই সুবিধা ব্যবহার করতে পারবেন।", code: "PHONE_VERIFICATION_REQUIRED" },
+          { status: 403, headers: { "Cache-Control": "private, no-store" } }
+        );
+      }
       const destination = request.nextUrl.clone();
       destination.pathname = "/account";
       destination.search = "";
