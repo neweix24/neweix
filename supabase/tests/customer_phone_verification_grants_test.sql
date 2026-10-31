@@ -19,5 +19,8 @@ begin
   if has_function_privilege('authenticated', 'public.reserve_pathao_order_booking(uuid,uuid)', 'EXECUTE') then
     raise exception 'SECURITY REGRESSION: authenticated can reserve Pathao shipments';
   end if;
+  if has_function_privilege('authenticated', 'public.admin_restock_returned_order(uuid,uuid,text)', 'EXECUTE') then
+    raise exception 'SECURITY REGRESSION: authenticated can invoke returned-order stock restock';
+  end if;
 end;
 $$;
