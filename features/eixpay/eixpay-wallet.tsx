@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import EixPayTransferForm from "@/features/eixpay/transfer-request-form";
 import { useCallback, useEffect, useState } from "react";
 
 type Wallet = {
@@ -143,6 +144,10 @@ export default function EixPayWallet() {
                 <span className="mt-5 inline-flex rounded-full border border-amber-200/20 bg-amber-200/[0.06] px-3 py-1.5 text-xs text-amber-100/80">
                   {wallet?.transfer_enabled ? "Supreme অনুমোদন বাধ্যতামূলক" : "আইনি যাচাই না হওয়া পর্যন্ত বন্ধ"}
                 </span>
+
+              {wallet?.transfer_enabled && (
+                <EixPayTransferForm onSubmitted={() => void load()} />
+              )}
               </div>
               <Link href="/eixverse" className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 transition hover:bg-white/[0.07]">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-200">Ecosystem</p>
