@@ -4,7 +4,6 @@ import Link from "next/link";
 import styles from "./checkout-view.module.css";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type CartItem = {
@@ -63,7 +62,6 @@ function isValidCartItem(item: unknown): item is CartItem {
 }
 
 export default function CheckoutView() {
-  const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerPhone, setCustomerPhone] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
