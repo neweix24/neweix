@@ -286,6 +286,155 @@ begin
 end;
 $function$;
 
+alter table private.eixpay_referrals
+  drop constraint if exists eixpay_referrals_status_check;
+alter table private.eixpay_referrals
+  add constraint eixpay_referrals_status_check
+  check (status in ('pending','qualified','rewarded','rejected','reversed'));
+
+create or replace function private.eixpay_reverse_referral_for_order(
+  p_order_id uuid,
+  p_referred_user_id uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_referral private.eixpay_referrals%rowtype;
+  v_user_id uuid;
+  v_claim private.eixpay_reward_claims%rowtype;
+  v_reversal_id uuid;
+  v_balance bigint;
+  v_debt bigint;
+  v_deduct bigint;
+  v_debt_added bigint;
+  v_new_balance bigint;
+  v_reversed integer := 0;
+begin
+  select * into v_referral
+  from private.eixpay_referrals
+  where qualifying_order_id = p_order_id
+    and referred_user_id = p_referred_user_id
+  for update;
+
+  if not found then
+    return jsonb_build_object('success',true,'reversed',false,'reason','no_qualified_referral');
+  end if;
+
+  if v_referral.status = 'reversed' or v_referral.status = 'rejected' then
+    return jsonb_build_object('success',true,'duplicate',true);
+  end if;
+
+  foreach v_user_id in array array[v_referral.referrer_user_id,v_referral.referred_user_id]
+  loop
+    select * into v_claim
+    from private.eixpay_reward_claims
+    where user_id = v_user_id
+      and event_code = 'approved_referral'
+      and source_id = v_referral.id
+    for update;
+
+    if found then
+      insert into private.eixpay_reward_reversals
+        (user_id,source_id,event_code,amount,idempotency_key)
+      values
+        (v_user_id,v_referral.id,'approved_referral',v_claim.amount,
+         'referral-return:' || v_referral.id::text)
+      on conflict do nothing
+      returning id into v_reversal_id;
+
+      if v_reversal_id is not null then
+        select balance,reward_debt into v_balance,v_debt
+        from private.eixpay_wallets
+        where user_id = v_user_id
+        for update;
+
+        v_deduct := least(v_balance,v_claim.amount);
+        v_debt_added := v_claim.amount - v_deduct;
+
+        update private.eixpay_wallets
+        set balance = balance - v_deduct,
+            reward_debt = reward_debt + v_debt_added,
+            lifetime_spent = lifetime_spent + v_claim.amount,
+            updated_at = now(),
+            last_activity_at = now()
+        where user_id = v_user_id
+        returning balance into v_new_balance;
+
+        insert into private.eixpay_ledger
+          (wallet_user_id,entry_kind,event_code,amount,balance_after,source_id,idempotency_key,metadata)
+        values
+          (v_user_id,'reversal','approved_referral_reversal',v_claim.amount,v_new_balance,
+           v_referral.id,'referral-return:' || v_referral.id::text,
+           jsonb_build_object('reversal_id',v_reversal_id,'debt_added',v_debt_added,'order_id',p_order_id));
+        v_reversed := v_reversed + 1;
+      end if;
+    end if;
+  end loop;
+
+  update private.eixpay_referrals
+  set status = case when v_reversed > 0 or v_referral.status = 'rewarded' then 'reversed' else 'rejected' end
+  where id = v_referral.id;
+
+  insert into private.eixpay_audit_events(actor_id,event_code,subject_id,metadata)
+  values (null,'referral_rewards_reversed',v_referral.id,
+    jsonb_build_object('order_id',p_order_id,'reversed_wallets',v_reversed));
+
+  return jsonb_build_object('success',true,'reversed_wallets',v_reversed);
+end;
+$function$;
+
+-- Extend the existing order lifecycle trigger so a later return/refund also
+-- reverses both referral rewards, using compensating ledger entries.
+create or replace function private.eixpay_watch_order_reward_eligibility()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_config private.eixpay_config%rowtype;
+  v_rule private.eixpay_reward_rules%rowtype;
+begin
+  if new.customer_id is null then
+    return new;
+  end if;
+
+  if new.status = 'returned' or new.payment_status = 'refunded' then
+    perform private.eixpay_reverse_order_reward(new.customer_id,new.id);
+    perform private.eixpay_reverse_referral_for_order(new.id,new.customer_id);
+    return new;
+  end if;
+
+  if new.status = 'delivered'
+     and new.payment_status = 'paid'
+     and new.delivery_fee_payment_status in ('paid','not_required') then
+    select * into v_config from private.eixpay_config where singleton = true;
+    select * into v_rule from private.eixpay_reward_rules where event_code = 'delivered_order';
+
+    if found
+       and v_config.wallet_enabled
+       and v_config.earning_enabled
+       and v_rule.enabled
+       and v_rule.reward_amount > 0
+       and not exists (
+         select 1 from private.eixpay_order_reward_queue q where q.order_id = new.id
+       ) then
+      insert into private.eixpay_order_reward_queue
+        (order_id,user_id,reward_amount_snapshot,eligible_at)
+      values
+        (new.id,new.customer_id,v_rule.reward_amount,
+         now() + make_interval(hours => v_rule.settlement_delay_hours))
+      on conflict (order_id) do nothing;
+    end if;
+  end if;
+
+  return new;
+end;
+$function$;
+
 revoke all on function public.eixpay_apply_referral_code(text) from public, anon;
 grant execute on function public.eixpay_apply_referral_code(text) to authenticated;
 revoke all on function public.eixpay_get_referral_summary() from public, anon;
