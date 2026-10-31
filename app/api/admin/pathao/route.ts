@@ -170,7 +170,9 @@ export async function POST(request: Request) {
       !Number.isSafeInteger(input.storeId) ||
       input.storeId < 1 ||
       (input.specialInstruction != null &&
-        (typeof input.specialInstruction !== "string" || input.specialInstruction.length > 500))) {
+        (typeof input.specialInstruction !== "string" || input.specialInstruction.length > 500)) ||
+      (input.recipientAddress != null &&
+        (typeof input.recipientAddress !== "string" || input.recipientAddress.trim().length < 10 || input.recipientAddress.trim().length > 220))) {
     return errorResponse("অর্ডার, Store ID অথবা নির্দেশনা সঠিক নয়।", 400);
   }
 
@@ -178,6 +180,9 @@ export async function POST(request: Request) {
   const storeId = input.storeId;
   const specialInstruction = typeof input.specialInstruction === "string"
     ? input.specialInstruction.trim()
+    : "";
+  const recipientAddressOverride = typeof input.recipientAddress === "string"
+    ? input.recipientAddress.trim()
     : "";
 
   const admin = await createRuntimeServiceClient();
@@ -215,6 +220,15 @@ export async function POST(request: Request) {
     payment_status: string;
     delivery_fee_payment_status: string;
   };
+
+  const recipientName = order.customer_name.trim();
+  if (recipientName.length < 3 || recipientName.length > 100) {
+    await admin.from("orders").update({
+      delivery_status: "failed",
+      delivery_error: "Customer name must be between 3 and 100 characters for Pathao.",
+    }).eq("id", orderId).eq("delivery_status", "booking");
+    return errorResponse("Pathao-এর জন্য গ্রাহকের নাম ৩–১০০ অক্ষরের মধ্যে হতে হবে।", 400);
+  }
 
   const recipientPhone = normalizePathaoPhone(order.customer_phone);
   if (!recipientPhone) {
@@ -274,9 +288,16 @@ export async function POST(request: Request) {
       (order.delivery_fee_payment_status === "paid" ? Number(order.delivery_fee) : 0))
     : 0;
 
-  const address = [order.shipping_address, order.shipping_city]
+  const address = recipientAddressOverride || [order.shipping_address, order.shipping_city]
     .filter((value): value is string => Boolean(value))
     .join(", ");
+  if (address.length < 10 || address.length > 220) {
+    await admin.from("orders").update({
+      delivery_status: "failed",
+      delivery_error: "Full Pathao address must be between 10 and 220 characters.",
+    }).eq("id", orderId).eq("delivery_status", "booking");
+    return errorResponse("Pathao-এর জন্য পূর্ণ ঠিকানা ১০–২২০ অক্ষরের মধ্যে দিন। রাস্তা/এলাকা, থানা/উপজেলা ও জেলা উল্লেখ করুন।", 400);
+  }
   const itemDescription = items
     .map((item) => `${item.product_name} × ${item.quantity}`)
     .join(", ")
@@ -286,7 +307,7 @@ export async function POST(request: Request) {
     const result = await createPathaoOrder({
       storeId,
       merchantOrderId: order.order_number,
-      recipientName: order.customer_name,
+      recipientName,
       recipientPhone,
       recipientAddress: address,
       itemQuantity: itemQuantity,
