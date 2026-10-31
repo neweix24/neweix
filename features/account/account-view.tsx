@@ -93,7 +93,7 @@ export default function AccountView() {
         }
 
         setEmail(user.email ?? "");
-        const isOAuthUser = user.identities?.some((identity) => identity.provider !== "email") ?? false;
+        const isOAuthUser = user.identities?.some((identity: { provider: string }) => identity.provider !== "email") ?? false;
         setEmailVerified(Boolean(isOAuthUser && user.email_confirmed_at));
         setName(profile?.full_name ?? metadataName);
         setDateOfBirth(profile?.date_of_birth ?? "");
