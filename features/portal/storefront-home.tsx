@@ -196,7 +196,7 @@ export default function StorefrontHome() {
         <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
           <label className={styles.srOnly} htmlFor="home-product-search">পণ্য খুঁজুন</label>
           <input id="home-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="কোন পণ্য খুঁজছেন?" />
-          <button type="submit" aria-label="খুঁজুন"><Icon name="search" size={19} /></button>
+          <Link className={styles.searchLink} href={search.trim() ? `/products?search=${encodeURIComponent(search.trim())}` : "/products"} aria-label="পণ্য খুঁজুন"><Icon name="search" size={19} /></Link>
         </form>
         <nav className={styles.desktopNav} aria-label="প্রধান নেভিগেশন">
           <Link href="/products">সব পণ্য</Link>
@@ -238,7 +238,7 @@ export default function StorefrontHome() {
         <Link href="/" aria-current="page"><Icon name="home" size={24} />হোম</Link>
         <Link href="/products"><Icon name="grid" size={24} />পণ্য ও সার্চ</Link>
         <Link href="/cart"><span className={styles.bottomCartIcon}><Icon name="cart" size={24} /><b>{cartCount > 99 ? "99+" : cartCount}</b></span>কার্ট</Link>
-        <button type="button" onClick={() => setDrawerOpen(true)}><Icon name="user" size={24} />অ্যাকাউন্ট</button>
+        <Link href="/account"><Icon name="user" size={24} />মাই অ্যাকাউন্ট</Link>
       </nav>
 
       {drawerOpen && <div className={styles.overlay} onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerOpen(false); }}>
