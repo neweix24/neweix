@@ -68,7 +68,7 @@ jobs:
             const required = ["CI", "Supabase database migration tests"];
             for (const workflowName of required) {
               let matched = false;
-              for (let attempt = 0; attempt < 18; attempt += 1) {
+              for (let attempt = 0; attempt < 36; attempt += 1) {
                 const { data } = await github.rest.actions.listWorkflowRunsForRepo({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -87,7 +87,7 @@ jobs:
                   core.setFailed(`${workflowName} did not succeed for ${sha}: ${run.conclusion}`);
                   return;
                 }
-                core.info(`Waiting for ${workflowName} on ${sha} (attempt ${attempt + 1}/18)`);
+                core.info(`Waiting for ${workflowName} on ${sha} (attempt ${attempt + 1}/36)`);
                 await new Promise(resolve => setTimeout(resolve, 10000));
               }
               if (!matched) {
