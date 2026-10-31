@@ -49,7 +49,6 @@ export default function StorefrontHome() {
   const [search, setSearch] = useState("");
   const [cartNotice, setCartNotice] = useState("");
   const panelRef = useRef<HTMLElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const refreshCounts = useCallback(() => {
     setCartCount(readCartCount());
