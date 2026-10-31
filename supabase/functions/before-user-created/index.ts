@@ -163,6 +163,13 @@ Deno.serve(async (request: Request) => {
     return deny("নেটওয়ার্ক নিরাপত্তা যাচাই সাময়িকভাবে অনুপলব্ধ। পরে আবার চেষ্টা করুন।", 500);
   }
 
+  // IPLogs can silently downgrade to its fast cache after the daily full-check
+  // quota. Do not accept that weaker result for the strict Bangladesh/VPN gate.
+  if (result.mode === "fast") {
+    console.warn("Signup denied because full-depth IP verification is unavailable.");
+    return deny("পূর্ণাঙ্গ নেটওয়ার্ক নিরাপত্তা যাচাই সাময়িকভাবে পাওয়া যাচ্ছে না। পরে আবার চেষ্টা করুন।", 503);
+  }
+
   const country = result.ip_info?.country_code;
   if (typeof country !== "string" || country.toUpperCase() !== "BD") {
     console.info("Signup denied by country policy.", {
