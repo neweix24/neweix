@@ -23,6 +23,13 @@ type Activity = {
   id: number; entry_kind: string; event_code: string; amount: number;
   balance_after: number; created_at: string;
 };
+const transferStatusLabels: Record<string, string> = {
+  pending: "Supreme অনুমোদনের অপেক্ষায়",
+  approved: "অনুমোদিত",
+  rejected: "প্রত্যাখ্যাত",
+  cancelled: "বাতিল",
+  expired: "মেয়াদ শেষ",
+};
 const eventLabels: Record<string, string> = {
   delivered_order: "অর্ডার রিওয়ার্ড", approved_referral: "রেফারেল রিওয়ার্ড",
   verified_review: "যাচাইকৃত রিভিউ", daily_checkin: "দৈনিক কার্যক্রম",
@@ -39,6 +46,8 @@ function date(value: string) {
 export default function EixPayWallet() {
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [activity, setActivity] = useState<Activity[]>([]);
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
+  const [cancelling, setCancelling] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -50,11 +59,32 @@ export default function EixPayWallet() {
       if (!response.ok || !result?.success) throw new Error(result?.error || "EixPay লোড করা যায়নি।");
       setWallet(result.wallet as Wallet);
       setActivity(Array.isArray(result.activity) ? result.activity as Activity[] : []);
+      setTransfers(Array.isArray(result.transfers) ? result.transfers as Transfer[] : []);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "EixPay লোড করা যায়নি।");
     } finally { setLoading(false); }
   }, []);
   useEffect(() => { void load(); }, [load]);
+  async function cancelTransfer(requestId: string) {
+    if (cancelling) return;
+    setCancelling(requestId);
+    setError("");
+    try {
+      const response = await fetch("/api/eixpay/transfers", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) throw new Error(result?.error || "অনুরোধ বাতিল করা যায়নি।");
+      await load();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "অনুরোধ বাতিল করা যায়নি।");
+    } finally {
+      setCancelling("");
+    }
+  }
+
   async function copyEixId() {
     if (!wallet?.eix_id || !navigator.clipboard?.writeText) return;
     try {
@@ -185,6 +215,36 @@ export default function EixPayWallet() {
                 </div>
               )}
             </section>
+            {transfers.length > 0 && (
+              <section className="mt-6 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035]">
+                <div className="border-b border-white/10 px-5 py-4 sm:px-6">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-200">Transfer records</p>
+                  <h2 className="mt-1 text-xl font-bold">ট্রান্সফার অনুরোধ ও ইতিহাস</h2>
+                </div>
+                <div className="divide-y divide-white/10">
+                  {transfers.map((item) => {
+                    const sent = item.direction === "sent";
+                    const statusClass = item.status === "approved" ? "text-emerald-200" : item.status === "pending" ? "text-amber-200" : item.status === "rejected" ? "text-rose-200" : "text-white/50";
+                    return <div key={item.request_id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold">{sent ? "পাঠানোর অনুরোধ" : "গ্রহণের অনুরোধ"} · <span className="font-mono text-xs text-white/50">{item.counterparty_eix_id}</span></p>
+                        <p className="mt-1 text-xs text-white/40">{date(item.requested_at)} · {item.reason || "কোনো কারণ দেওয়া হয়নি"}</p>
+                        <p className={"mt-1 text-xs font-semibold " + statusClass}>{transferStatusLabels[item.status] ?? item.status}</p>
+                        {item.decision_note && <p className="mt-1 text-xs text-white/40">নোট: {item.decision_note}</p>}
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold">{sent ? "−" : "+"}{amount(item.amount)} Eixon</p>
+                        {sent && item.status === "pending" && (
+                          <button type="button" disabled={Boolean(cancelling)} onClick={() => void cancelTransfer(item.request_id)} className="mt-2 rounded-full border border-rose-200/25 px-3 py-1.5 text-xs font-semibold text-rose-100 hover:bg-rose-200/10 disabled:opacity-50">
+                            {cancelling === item.request_id ? "বাতিল হচ্ছে…" : "অনুরোধ বাতিল"}
+                          </button>
+                        )}
+                      </div>
+                    </div>;
+                  })}
+                </div>
+              </section>
+            )}
           </>
         )}
       </div>
