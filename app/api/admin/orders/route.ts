@@ -12,16 +12,17 @@ const UUID_REGEX =
 
 async function getStaffContext() {
   const supabase = await createServerSupabaseClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const { data: claimsData, error: userError } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub;
 
-  if (userError || !user) {
+  if (userError || typeof userId !== "string") {
     return { error: "লগইন প্রয়োজন।", status: 401 as const };
   }
 
   const { data: profile, error } = await supabase
     .from("staff_profiles")
     .select("role, is_active")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (
@@ -42,7 +43,7 @@ async function getStaffContext() {
     }
   }
 
-  return { user, role: profile.role, supabase };
+  return { user: { id: userId }, role: profile.role, supabase };
 }
 
 async function getAdminClient() {
@@ -96,6 +97,7 @@ export async function GET() {
         payment_method, payment_status,
         delivery_provider, delivery_status, delivery_consignment_id,
         delivery_tracking_code, delivery_booked_at, delivery_error,
+        stock_restored_at, stock_restored_by, stock_restoration_note,
         delivery_fee_payment_method, delivery_fee_payment_transaction_id,
         delivery_fee_payment_status, delivery_fee_payment_verified_at,
         created_at,
