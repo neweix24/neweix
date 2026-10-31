@@ -171,6 +171,15 @@ export default function OrdersManager() {
       setError("সঠিক Pathao Store ID দিন।");
       return;
     }
+    const defaultAddress = [order.shipping_address, order.shipping_city].filter(Boolean).join(", ");
+    const recipientAddress = window.prompt(
+      "Pathao-এর সম্পূর্ণ ঠিকানা দিন (রাস্তা/এলাকা, থানা/উপজেলা, জেলা):",
+      defaultAddress,
+    );
+    if (!recipientAddress || recipientAddress.trim().length < 10 || recipientAddress.trim().length > 220) {
+      setError("Pathao-এর পূর্ণ ঠিকানা ১০–২২০ অক্ষরের মধ্যে দিন।");
+      return;
+    }
     const specialInstruction = window.prompt("ডেলিভারি নির্দেশনা (ঐচ্ছিক):") || "";
     if (specialInstruction.length > 500) {
       setError("নির্দেশনা সর্বোচ্চ ৫০০ অক্ষরের হতে পারবে।");
@@ -185,7 +194,7 @@ export default function OrdersManager() {
       const response = await fetch("/api/admin/pathao", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "create_order", orderId: order.id, storeId, specialInstruction }),
+        body: JSON.stringify({ action: "create_order", orderId: order.id, storeId, recipientAddress: recipientAddress.trim(), specialInstruction }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Pathao বুকিং ব্যর্থ হয়েছে।");
