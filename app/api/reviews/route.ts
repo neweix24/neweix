@@ -35,7 +35,7 @@ export async function GET(request: Request) {
       eligibleOrders = data ?? [];
     }
 
-    return NextResponse.json({ success: true, reviews: reviewsResult.data ?? [], eligibleOrders }, { headers });
+    return NextResponse.json({ success: true, authenticated: Boolean(authResult.data.user), reviews: reviewsResult.data ?? [], eligibleOrders }, { headers });
   } catch (error) {
     console.error("Product reviews GET failed:", error);
     return fail("রিভিউ লোড করা যায়নি।", 500);
