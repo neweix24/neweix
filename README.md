@@ -7,7 +7,7 @@ NEWEIX is a Bangladesh-first e-commerce application built with Next.js 15, React
 - Production hosting: **Cloudflare Workers** (neweix.com).
 - Database and authentication: Supabase.
 - Source repository: neweix24/neweix, branch main.
-- GitHub Actions runs TypeScript, ESLint and build checks. Production deployment is triggered only after the CI workflow succeeds.
+- GitHub Actions runs TypeScript, ESLint and build checks. Production deployment is triggered only after both CI and disposable PostgreSQL migration/regression tests succeed.
 - Local Cloudflare preview: npm run preview.
 - Manual production deployment: npm run deploy (normally use the protected GitHub workflow).
 
