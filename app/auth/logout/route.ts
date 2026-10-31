@@ -18,6 +18,12 @@ export async function POST(request: NextRequest) {
   );
 
   const supabase = createServerClient(url, anonKey, {
+    cookieOptions: {
+      path: "/",
+      domain: process.env.NODE_ENV === "production" ? ".neweix.com" : undefined,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    },
     cookies: {
       getAll() {
         return request.cookies.getAll();
