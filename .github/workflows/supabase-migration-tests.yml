@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   postgres-migrations:
-    name: Apply all migrations on disposable local Supabase
+    name: Apply all migrations on disposable local PostgreSQL
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -28,8 +28,8 @@ jobs:
         with:
           version: 2.81.3
 
-      - name: Start disposable local PostgreSQL database
-        run: supabase db start
+      - name: Start PostgreSQL with non-database services excluded
+        run: supabase start -x gotrue,realtime,storage-api,imgproxy,kong,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
 
       - name: Apply every repository migration from an empty local database
         run: supabase db reset --local
