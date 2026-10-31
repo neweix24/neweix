@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import Icon from "@/components/ui/icon";
 
 type Rule = { event_code: string; display_name: string; description: string; enabled: boolean; reward_amount: number; max_per_user_per_day: number; settlement_delay_hours: number; requires_verified_phone: boolean };
 type Tier = { tier_code: string; display_name: string; tier_rank: number; is_enabled: boolean; min_qualified_spend_bdt: number | null; min_qualified_orders: number | null; qualification_period_days: number | null; benefits: string[] };
