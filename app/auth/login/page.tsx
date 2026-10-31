@@ -1,9 +1,30 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import Icon from "@/components/ui/icon";
+
+const TURNSTILE_SITE_KEY = "0x4AAAAAAFuD44weVKxUV7gX";
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        container: HTMLElement,
+        options: {
+          sitekey: string;
+          callback: (token: string) => void;
+          "expired-callback"?: () => void;
+          "error-callback"?: () => void;
+          theme?: "light" | "dark" | "auto";
+        }
+      ) => string;
+      reset: (widgetId?: string) => void;
+      remove: (widgetId?: string) => void;
+    };
+  }
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,10 +32,68 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaReady, setCaptchaReady] = useState(false);
+  const captchaContainer = useRef<HTMLDivElement>(null);
+  const captchaWidgetId = useRef<string | null>(null);
+
+  useEffect(() => {
+    let disposed = false;
+
+    const renderCaptcha = () => {
+      if (
+        disposed ||
+        !window.turnstile ||
+        !captchaContainer.current ||
+        captchaWidgetId.current
+      ) {
+        return;
+      }
+
+      captchaWidgetId.current = window.turnstile.render(
+        captchaContainer.current,
+        {
+          sitekey: TURNSTILE_SITE_KEY,
+          theme: "auto",
+          callback: (token) => {
+            setCaptchaToken(token);
+            setMessage("");
+          },
+          "expired-callback": () => setCaptchaToken(""),
+          "error-callback": () => {
+            setCaptchaToken("");
+            setMessage("নিরাপত্তা যাচাই লোড হয়নি। পেজ রিফ্রেশ করে আবার চেষ্টা করুন।");
+          },
+        }
+      );
+      setCaptchaReady(true);
+    };
+
+    if (window.turnstile) {
+      renderCaptcha();
+    } else {
+      const existingScript = document.querySelector<HTMLScriptElement>(
+        'script[src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"]'
+      );
+      const script = existingScript ?? document.createElement("script");
+      script.src =
+        "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async = true;
+      script.defer = true;
+      script.addEventListener("load", renderCaptcha);
+      if (!existingScript) document.head.appendChild(script);
+    }
+
+    return () => {
+      disposed = true;
+      if (captchaWidgetId.current && window.turnstile) {
+        window.turnstile.remove(captchaWidgetId.current);
+        captchaWidgetId.current = null;
+      }
+    };
+  }, []);
 
   function navigateAfterAuth(path: string) {
-    // A full document navigation makes the newly written Supabase auth cookies
-    // available to Cloudflare middleware before the protected route is loaded.
     window.location.replace(path);
   }
 
@@ -22,6 +101,11 @@ export default function LoginPage() {
     event.preventDefault();
 
     if (busy) return;
+
+    if (!captchaToken) {
+      setMessage("লগইনের আগে নিরাপত্তা যাচাই সম্পন্ন করুন।");
+      return;
+    }
 
     setMessage("");
     setBusy(true);
@@ -31,15 +115,22 @@ export default function LoginPage() {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
+        options: { captchaToken },
       });
+      setCaptchaToken("");
 
       if (error || !data.user) {
-        setMessage("ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।");
+        if (window.turnstile && captchaWidgetId.current) {
+          window.turnstile.reset(captchaWidgetId.current);
+        }
+        if (error?.message.toLowerCase().includes("captcha")) {
+          setMessage("নিরাপত্তা যাচাই ব্যর্থ হয়েছে। আবার CAPTCHA সম্পন্ন করে চেষ্টা করুন।");
+        } else {
+          setMessage("ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।");
+        }
         return;
       }
 
-      // Confirm that the browser client has persisted a usable session before
-      // navigating to a route whose access is validated by middleware.
       const { data: sessionData, error: sessionError } =
         await supabase.auth.getSession();
 
@@ -155,6 +246,15 @@ export default function LoginPage() {
           <Icon name="eye" size={17} />
         </button>
 
+        <div
+          ref={captchaContainer}
+          aria-label="Cloudflare Turnstile security verification"
+          className="my-4"
+        />
+        {!captchaReady && (
+          <p className="hero-copy">নিরাপত্তা যাচাই লোড হচ্ছে…</p>
+        )}
+
         <p>
           <Link href="/auth/forgot-password">
             পাসওয়ার্ড ভুলে গেছেন?
@@ -163,7 +263,11 @@ export default function LoginPage() {
 
         {message && <p role="alert">{message}</p>}
 
-        <button className="primary-button" type="submit" disabled={busy}>
+        <button
+          className="primary-button"
+          type="submit"
+          disabled={busy || !captchaToken}
+        >
           <><Icon name={busy ? "refresh" : "user"} size={17} /> {busy ? "লগইন হচ্ছে…" : "লগইন করুন"}</>
         </button>
       </form>
