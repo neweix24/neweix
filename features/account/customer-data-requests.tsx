@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import Icon from "@/components/ui/icon";
 import { useRouter } from "next/navigation";
 
 type DataRequest = {
@@ -100,13 +101,13 @@ export default function CustomerDataRequests() {
         <article className="card">
           <h2>তথ্য সংশোধনের অনুরোধ</h2>
           <p>প্রোফাইল বা অন্য কোনো ব্যক্তিগত তথ্য সংশোধনে সহায়তা চাইতে পারেন।</p>
-          <button type="button" disabled={busy} onClick={() => void submitRequest("correction")}>সংশোধনের অনুরোধ</button>
+          <button type="button" disabled={busy} onClick={() => void submitRequest("correction")}><Icon name="settings" size={16} /> সংশোধনের অনুরোধ</button>
         </article>
 
         <article className="card danger-card">
           <h2>অ্যাকাউন্ট মুছে ফেলার অনুরোধ</h2>
           <p>এটি তাৎক্ষণিক মুছে ফেলা নয়। পরিচয় যাচাই, অর্ডার/হিসাবের বাধ্যবাধকতা এবং প্রযোজ্য সংরক্ষণনীতি পর্যালোচনা করে অনুরোধ নিষ্পত্তি করা হবে।</p>
-          <button className="danger" type="button" disabled={busy} onClick={() => void submitRequest("delete")}>অ্যাকাউন্ট মুছে ফেলার অনুরোধ</button>
+          <button className="danger" type="button" disabled={busy} onClick={() => void submitRequest("delete")}><Icon name="trash" size={16} /> অ্যাকাউন্ট মুছে ফেলার অনুরোধ</button>
         </article>
 
         {message && <p className="success" role="status">{message}</p>}
