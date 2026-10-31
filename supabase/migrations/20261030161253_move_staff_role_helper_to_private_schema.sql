@@ -84,5 +84,4 @@ using (
   or (select private.has_staff_role(array['supreme'::text, 'admin'::text]))
 );
 
-revoke all on function public.has_staff_role(text[]) from public, anon, authenticated;
-drop function public.has_staff_role(text[]);
+drop function if exists public.has_staff_role(text[]);
