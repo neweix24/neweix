@@ -90,6 +90,9 @@ export async function middleware(request: NextRequest) {
       .maybeSingle();
 
     if (customerProfileError || !customerProfile?.phone_verified_at || !customerProfile.phone) {
+      // The account root is the phone-verification screen; keep it reachable
+      // for authenticated customers who have not completed OTP verification.
+      if (pathname === "/account") return response;
       if (isCustomerApi) {
         return NextResponse.json(
           { error: "ফোন নম্বর OTP দিয়ে যাচাই করার পর এই সুবিধা ব্যবহার করতে পারবেন।", code: "PHONE_VERIFICATION_REQUIRED" },
