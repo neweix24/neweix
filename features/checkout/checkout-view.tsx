@@ -76,6 +76,8 @@ export default function CheckoutView() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [deliveryFeeQuote, setDeliveryFeeQuote] = useState<number | null>(null);
+  const [deliveryQuoteLoading, setDeliveryQuoteLoading] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [submittedPaymentMethod, setSubmittedPaymentMethod] =
     useState<PaymentMethod>("cod");
@@ -255,6 +257,34 @@ export default function CheckoutView() {
       ? paymentConfig?.paymentMethods?.[mfsMethod]
       : paymentConfig?.paymentMethods?.[paymentMethod];
 
+  async function loadDeliveryQuote(city: string) {
+    const normalizedCity = city.trim();
+    if (normalizedCity.length < 2) {
+      setDeliveryFeeQuote(null);
+      return null;
+    }
+    setDeliveryQuoteLoading(true);
+    try {
+      const response = await fetch(
+        `/api/delivery/quote?city=${encodeURIComponent(normalizedCity)}&subtotal=${encodeURIComponent(String(total))}`,
+        { cache: "no-store" }
+      );
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !Number.isFinite(Number(result?.delivery_fee))) {
+        throw new Error(result?.error || "ডেলিভারি চার্জ হিসাব করা যায়নি।");
+      }
+      const fee = Number(result.delivery_fee);
+      setDeliveryFeeQuote(fee);
+      return fee;
+    } catch (err) {
+      setDeliveryFeeQuote(null);
+      setError(err instanceof Error ? err.message : "ডেলিভারি চার্জ হিসাব করা যায়নি।");
+      return null;
+    } finally {
+      setDeliveryQuoteLoading(false);
+    }
+  }
+
   async function submitOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
@@ -286,6 +316,12 @@ export default function CheckoutView() {
 
     setSubmitting(true);
     const formData = new FormData(form);
+    const quote = await loadDeliveryQuote(String(formData.get("shipping_city") ?? ""));
+    if (quote === null) {
+      setSubmitting(false);
+      setError("ডেলিভারি চার্জ নিশ্চিত করা যায়নি। শহর/জেলা যাচাই করে আবার চেষ্টা করুন।");
+      return;
+    }
 
     const transactionId = String(formData.get("payment_transaction_id") ?? "").trim();
     const deliveryFeeTransactionId = String(formData.get("delivery_fee_payment_transaction_id") ?? "").trim();
@@ -442,7 +478,7 @@ export default function CheckoutView() {
 
         <p><strong>পণ্যের মোট মূল্য: {formatPrice(total)}</strong></p>
         <p>ডেলিভারি: Pathao Courier</p>
-        <p>ডেলিভারি চার্জ: ঠিকানা অনুযায়ী হিসাব করা হবে।</p>
+        <p>ডেলিভারি চার্জ: {deliveryQuoteLoading ? "হিসাব হচ্ছে..." : deliveryFeeQuote === null ? "শহর/জেলা লিখে ফিল্ড থেকে বের হলে হিসাব দেখাবে।" : formatPrice(deliveryFeeQuote)}</p>
 
         {missingProducts && <p role="alert">কিছু পণ্যের তথ্য পাওয়া যায়নি।</p>}
         {stockIssues.length > 0 && <p role="alert">কিছু পণ্যের মজুত পর্যাপ্ত নয়।</p>}
@@ -474,7 +510,7 @@ export default function CheckoutView() {
         <label htmlFor="shipping_city">শহর / জেলা *</label>
         <input id="shipping_city" name="shipping_city" required minLength={2}
           maxLength={120} autoComplete="address-level2" disabled={submitting}
-          placeholder="যেমন: ঢাকা" defaultValue={defaultAddress?.district ?? ""} style={fieldStyle} />
+          placeholder="যেমন: ঢাকা" defaultValue={defaultAddress?.district ?? ""} onBlur={(event) => { void loadDeliveryQuote(event.currentTarget.value); }} style={fieldStyle} />
 
         <label htmlFor="coupon_code">কুপন কোড (ঐচ্ছিক)</label>
         <input id="coupon_code" name="coupon_code" type="text" maxLength={40}
@@ -559,7 +595,7 @@ export default function CheckoutView() {
               </p>
               <p>
                 {paymentMethod === "cod"
-                  ? "শুধু ডেলিভারি চার্জ অগ্রিম পাঠান। পণ্যের মূল্য COD-এ দেবেন। TrxID অ্যাডমিন যাচাই করবেন।"
+                  ? `শুধু ডেলিভারি চার্জ ${deliveryFeeQuote === null ? "উপরের ঠিকানা থেকে হিসাব করুন" : formatPrice(deliveryFeeQuote)} অগ্রিম পাঠান। পণ্যের মূল্য COD-এ দেবেন। TrxID অ্যাডমিন যাচাই করবেন।`
                   : "পণ্য ও ডেলিভারি চার্জসহ অর্ডারের সম্পূর্ণ মোট টাকা পাঠান। TrxID অ্যাডমিন যাচাই করবেন।"}
               </p>
               <label htmlFor={paymentMethod === "cod" ? "delivery_fee_payment_transaction_id" : "payment_transaction_id"}>Transaction ID *</label>
@@ -581,6 +617,7 @@ export default function CheckoutView() {
         </fieldset>
 
         <p><strong>পণ্যের মোট মূল্য: {formatPrice(total)}</strong></p>
+        <p><strong>ডেলিভারি চার্জ: {deliveryFeeQuote === null ? "ঠিকানা দিয়ে হিসাব করুন" : formatPrice(deliveryFeeQuote)}</strong></p>
         <p>{paymentMethod === "cod" ? "COD নির্বাচন করেছেন: শুধু ডেলিভারি চার্জ MFS-এ অগ্রিম দিতে হবে; পণ্যের মূল্য ডেলিভারির সময় দেবেন।" : "MFS নির্বাচন করেছেন: পণ্য ও ডেলিভারি চার্জের সম্পূর্ণ মূল্য অগ্রিম দিতে হবে।"}</p>
         <p>ডেলিভারি চার্জ সার্ভার নির্ধারণ করবে। TrxID জমা দিলেই পেমেন্ট নিশ্চিত হবে না; অ্যাডমিন যাচাই করবেন।</p>
 
