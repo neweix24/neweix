@@ -87,7 +87,7 @@ export default function MfaPage() {
       }
 
       const factor = factors.totp.find(
-        (item) => item.status === "verified"
+        (item: { status: string }) => item.status === "verified"
       );
 
       if (!factor) {
