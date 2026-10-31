@@ -31,13 +31,16 @@ export default function MfaPage() {
     try {
       const supabase = createBrowserSupabaseClient();
 
-      // 1. বর্তমান লগইন সেশন যাচাই
+      // 1. Read the existing browser session without triggering an
+      // extra /user request or refresh-token rotation before MFA.
+      // The protected /supreme route independently verifies signed claims
+      // and AAL2 on the server before granting dashboard access.
       const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      if (userError || !user) {
+      const user = session?.user;
+      if (!user || !session?.access_token) {
         router.replace("/auth/login");
         return;
       }
