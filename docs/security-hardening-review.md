@@ -119,3 +119,13 @@ The integrity-chain migration was statically compared with the EixPay foundation
 - This is a source-level compatibility review only. It does not establish successful PostgreSQL parsing/execution, role behavior under the hosted Supabase runtime, concurrency correctness, or protection from table owners/superusers disabling triggers or rewriting the chain.
 
 **Result:** No source-level mismatch was found in the reviewed ID types, trigger guard, or Supreme role-helper signature. No SQL migration was executed, no production data/schema was changed, and no paid test environment was created. The remaining validation gap is a real isolated PostgreSQL execution test; it cannot be truthfully marked passed based on static inspection or GitHub application CI.
+
+
+## Migration validation and production history reconciliation — 31 Oct 2026
+
+- Added a no-cost GitHub Actions workflow that starts a disposable local Supabase/PostgreSQL environment, applies every SQL migration in order with `psql`, and runs rollback-only EixPay/integrity smoke tests. Automatic CLI migration replay is disabled for this CI database because the legacy repository contains duplicate numeric prefixes (`005`, `006`, `007`); applying SQL files directly avoids the Supabase migration-history primary-key collision while still executing the SQL bodies.
+- The first CLI-driven replay exposed duplicate version identifiers: `005`, `006`, and `007`. This is a real repository migration hygiene issue; the CI workaround is not a production migration-history repair.
+- Read-only comparison of production `supabase_migrations.schema_migrations` with repository filenames found significant historical version/name divergence. Production has 34 applied version entries, while the branch has 37 migration files; several old files use short numeric prefixes or timestamps that do not match the production version history. Do not run `supabase db push` or mark these versions applied until a deliberate baseline/version mapping is reviewed.
+- Read-only production preflight confirms required existing dependencies include PostgreSQL 17, `pgcrypto`, `pg_cron`, `public.orders`, `public.order_items`, `public.products`, `public.customer_profiles`, and `private.has_staff_role(text[])`. The EixPay foundation migration adds `orders.delivered_at` before later EixPay migrations use it.
+- Fixed verified-review moderation so Supreme can approve/reject a valid review even when Eixon earning is disabled. Reward issuance remains optional; unavailable-reward reason is recorded in the audit event and returned to the caller. No Eixon reward is issued while earning/rules are disabled.
+- No production DDL or data changes were made. No production migration has been applied and no Worker has been deployed.
