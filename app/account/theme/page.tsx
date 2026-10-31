@@ -16,13 +16,13 @@ type ThemeSettings = {
 };
 
 const INITIAL_THEME: ThemeSettings = {
-  background: "#080b09",
-  surface: "#151d18",
-  text: "#f4f8f2",
-  muted: "#a0ada1",
+  background: "#ffffff",
+  surface: "#f8faf8",
+  text: "#17211a",
+  muted: "#59665d",
   button: "#b6ff4a",
   buttonText: "#080b09",
-  border: "#29352b",
+  border: "#e2e8e3",
 };
 
 const FIELDS: { key: keyof ThemeSettings; label: string }[] = [
@@ -212,7 +212,7 @@ export default function CustomerThemePage() {
         <p className="eyebrow">YOUR PERSONAL DESIGN</p>
         <h1>নিজের থিম নিজেই তৈরি করো</h1>
         <p className="description">
-          রং বেছে নাও, প্রিভিউ দেখো এবং নিজের অ্যাকাউন্টের জন্য সংরক্ষণ করো।
+          রং বেছে নাও, প্রিভিউ দেখো এবং শুধু পাবলিক NEWEIX ওয়েবসাইটের জন্য সংরক্ষণ করো।
         </p>
 
         {loading ? (
@@ -227,7 +227,7 @@ export default function CustomerThemePage() {
               <p style={{ color: theme.muted }}>লাইভ প্রিভিউ</p>
               <h2>তোমার NEWEIX</h2>
               <p style={{ color: theme.muted }}>
-                এই ডিজাইনটি তোমার পছন্দের রং অনুযায়ী দেখা যাবে।
+                এই রংগুলো শুধু পাবলিক ওয়েবসাইটের পেজে প্রযোজ্য হবে; অ্যাকাউন্ট, ওয়ালেট, চেকআউট ও অ্যাডমিন অংশ অপরিবর্তিত থাকবে।
               </p>
               <button
                 type="button"
