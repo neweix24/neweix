@@ -8,6 +8,20 @@ export const dynamic = "force-dynamic";
 const PAGE_SIZE = 25;
 const MAX_SEARCH_LENGTH = 80;
 
+type CustomerAddress = {
+  user_id: string;
+  label: string | null;
+  recipient_name: string | null;
+  phone: string | null;
+  address_line: string | null;
+  area: string | null;
+  upazila: string | null;
+  district: string | null;
+  division: string | null;
+  postal_code: string | null;
+  is_default: boolean;
+};
+
 export async function GET(request: NextRequest) {
   const actor = await getSupremeApiActor();
   if (!actor.ok) return NextResponse.json({ error: actor.error }, { status: actor.status });
@@ -49,7 +63,7 @@ export async function GET(request: NextRequest) {
             .select("user_id,label,recipient_name,phone,address_line,area,upazila,district,division,postal_code,is_default")
             .in("user_id", ids)
             .order("is_default", { ascending: false })
-        : Promise.resolve({ data: [], error: null }),
+        : Promise.resolve({ data: [] as CustomerAddress[], error: null }),
       ids.length
         ? (async () => {
             const allOrders: Array<{ customer_id: string | null; total: number | string | null; created_at: string; status: string }> = [];
