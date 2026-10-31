@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import Icon from "@/components/ui/icon";
 
 export default function AccountView() {
   const router = useRouter();
@@ -361,7 +362,7 @@ export default function AccountView() {
                 />
                 <button type="button" onClick={() => void handleSendOtp()}
                   disabled={sendingOtp || verifyingOtp || !phone.trim()}>
-                  {sendingOtp ? "OTP পাঠানো হচ্ছে…" : "OTP পাঠান"}
+                  <><Icon name={sendingOtp ? "refresh" : "send"} size={16} /> {sendingOtp ? "OTP পাঠানো হচ্ছে…" : "OTP পাঠান"}</>
                 </button>
                 {challengeId && (
                   <>
@@ -378,7 +379,7 @@ export default function AccountView() {
                     />
                     <button type="button" onClick={() => void handleVerifyOtp()}
                       disabled={verifyingOtp || otp.length !== 6}>
-                      {verifyingOtp ? "যাচাই হচ্ছে…" : "OTP যাচাই করুন"}
+                      <><Icon name={verifyingOtp ? "refresh" : "shield"} size={16} /> {verifyingOtp ? "যাচাই হচ্ছে…" : "OTP যাচাই করুন"}</>
                     </button>
                   </>
                 )}
@@ -399,7 +400,7 @@ export default function AccountView() {
               )}
 
               <button type="submit" disabled={saving}>
-                {saving ? "সংরক্ষণ হচ্ছে…" : "তথ্য সংরক্ষণ করুন"}
+                <><Icon name={saving ? "refresh" : "check"} size={16} /> {saving ? "সংরক্ষণ হচ্ছে…" : "তথ্য সংরক্ষণ করুন"}</>
               </button>
             </form>
 
@@ -422,7 +423,7 @@ export default function AccountView() {
               onClick={handleLogout}
               disabled={loggingOut}
             >
-              {loggingOut ? "লগআউট হচ্ছে…" : "লগআউট"}
+              <><Icon name={loggingOut ? "refresh" : "logout"} size={16} /> {loggingOut ? "লগআউট হচ্ছে…" : "লগআউট"}</>
             </button>
           </>
         )}
