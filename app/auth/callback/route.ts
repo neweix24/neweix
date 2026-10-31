@@ -4,6 +4,13 @@ import { createAdminSupabaseClient } from "@/lib/phone-verification";
 
 export const dynamic = "force-dynamic";
 
+const persistentCookieOptions = {
+  path: "/",
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  maxAge: 60 * 60 * 24 * 365,
+};
+
 function safeNextPath(value: string | null): string {
   if (
     !value ||
@@ -78,6 +85,7 @@ export async function GET(request: NextRequest) {
   const response = NextResponse.redirect(new URL(next, request.url));
 
   const supabase = createServerClient(url, anonKey, {
+    cookieOptions: persistentCookieOptions,
     cookies: {
       getAll() {
         return request.cookies.getAll();
