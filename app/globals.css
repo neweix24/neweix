@@ -950,3 +950,24 @@ main.min-h-screen.px-4.py-10 h2 {
   border-color: #000000 !important;
   opacity: 0.48;
 }
+
+
+/* Typography contract: all ordinary interface text is black.
+   Button labels/icons stay white for contrast on black button surfaces. */
+body,
+body :where(*) {
+  color: #000000 !important;
+}
+:where(button, input[type="button"], input[type="submit"], input[type="reset"],
+  a.primary-button, a.nav-button, a.neweix-button-primary, a.neweix-button-secondary,
+  [role="button"]),
+:where(button, input[type="button"], input[type="submit"], input[type="reset"],
+  a.primary-button, a.nav-button, a.neweix-button-primary, a.neweix-button-secondary,
+  [role="button"]) :where(*) {
+  color: #ffffff !important;
+}
+:where(button, input[type="button"], input[type="submit"], input[type="reset"],
+  a.primary-button, a.nav-button, a.neweix-button-primary, a.neweix-button-secondary,
+  [role="button"])::placeholder {
+  color: #ffffff !important;
+}
