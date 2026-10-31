@@ -286,7 +286,7 @@ export default function EixPayWallet() {
                         <p className="font-bold">{sent ? "−" : "+"}{amount(item.amount)} Eixon</p>
                         {sent && item.status === "pending" && (
                           <button type="button" disabled={Boolean(cancelling)} onClick={() => void cancelTransfer(item.request_id)} className="mt-2 rounded-full border border-rose-200/25 px-3 py-1.5 text-xs font-semibold text-rose-100 hover:bg-rose-200/10 disabled:opacity-50">
-                            {cancelling === item.request_id ? "বাতিল হচ্ছে…" : "অনুরোধ বাতিল"}
+                            <><Icon name={cancelling === item.request_id ? "refresh" : "close"} size={15} /> {cancelling === item.request_id ? "বাতিল হচ্ছে…" : "অনুরোধ বাতিল"}</>
                           </button>
                         )}
                       </div>
