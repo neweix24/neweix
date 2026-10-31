@@ -72,6 +72,7 @@ export default function CheckoutView() {
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
   const [paymentConfigError, setPaymentConfigError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
+  const [mfsMethod, setMfsMethod] = useState<"bkash" | "nagad" | "rocket">("bkash");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -386,7 +387,8 @@ export default function CheckoutView() {
           </p>
         )}
 
-        <p>ডেলিভারি চার্জ আলাদাভাবে নিশ্চিত করা হবে।</p>
+        <p>ডেলিভারি: Pathao Courier। বুকিংয়ের আগে অ্যাডমিন অনুমোদন করবেন।</p>
+        <p>ডেলিভারি চার্জ অর্ডারের বিবরণে দেখানো হয়েছে।</p>
         <Link className="primary-button" href="/">হোমপেজে ফিরুন</Link>
         <Link className={styles.secondaryLink} href="/track-order">অর্ডার ট্র্যাক করুন</Link>
       </main>
@@ -436,7 +438,8 @@ export default function CheckoutView() {
         ))}
 
         <p><strong>পণ্যের মোট মূল্য: {formatPrice(total)}</strong></p>
-        <p>ডেলিভারি চার্জ: এখনো হিসাব করা হয়নি; নিশ্চিত করে জানানো হবে।</p>
+        <p>ডেলিভারি: Pathao Courier</p>
+        <p>ডেলিভারি চার্জ: ঠিকানা অনুযায়ী হিসাব করা হবে।</p>
 
         {missingProducts && <p role="alert">কিছু পণ্যের তথ্য পাওয়া যায়নি।</p>}
         {stockIssues.length > 0 && <p role="alert">কিছু পণ্যের মজুত পর্যাপ্ত নয়।</p>}
@@ -475,38 +478,76 @@ export default function CheckoutView() {
           pattern="[A-Za-z0-9_-]{3,40}" title="৩–৪০ অক্ষরের ইংরেজি অক্ষর, সংখ্যা, হাইফেন বা আন্ডারস্কোর"
           autoComplete="off" disabled={submitting} placeholder="যেমন: SAVE10" style={fieldStyle} />
 
+        <section className={styles.paymentOptions} aria-labelledby="delivery-heading">
+          <h2 id="delivery-heading">ডেলিভারি পদ্ধতি</h2>
+          <label style={{ display: "flex", gap: 10, alignItems: "center", margin: "12px 0" }}>
+            <input type="radio" name="delivery_method" value="pathao" checked readOnly />
+            <span><strong>Pathao Courier</strong> — কুরিয়ারে হোম ডেলিভারি</span>
+          </label>
+          <p>ডেলিভারি চার্জ গন্তব্য অনুযায়ী অর্ডারে হিসাব হবে। Pathao-তে পার্সেল বুকিংয়ের আগে অ্যাডমিন পর্যালোচনা ও অনুমোদন করবেন।</p>
+        </section>
+
         <fieldset className={styles.paymentOptions}>
           <legend>পেমেন্ট পদ্ধতি নির্বাচন করুন *</legend>
 
-          {([
-            ["cod", "Cash on Delivery (COD)"],
-            ["bkash", "bKash"],
-            ["nagad", "Nagad"],
-            ["rocket", "Rocket"],
-          ] as [PaymentMethod, string][]).map(([value, label]) => {
-            const methodConfig =
-              value === "cod" ? null : paymentConfig?.paymentMethods?.[value];
+          <label style={{ display: "flex", gap: 10, alignItems: "center", margin: "12px 0" }}>
+            <input
+              type="radio"
+              name="payment_method_choice"
+              value="cod"
+              checked={paymentMethod === "cod"}
+              onChange={() => setPaymentMethod("cod")}
+              disabled={submitting}
+            />
+            <span><strong>১. Cash on Delivery (COD)</strong> — পণ্য হাতে পেয়ে টাকা দিন</span>
+          </label>
 
-            return (
-              <label key={value} style={{ display: "flex", gap: 10, alignItems: "center", margin: "12px 0" }}>
-                <input
-                  type="radio"
-                  name="payment_method_choice"
-                  value={value}
-                  checked={paymentMethod === value}
-                  onChange={() => setPaymentMethod(value)}
-                  disabled={submitting || (value !== "cod" && !methodConfig?.enabled)}
-                />
-                <span>{label}</span>
-                {value !== "cod" && !methodConfig?.enabled && (
-                  <small>(এই মুহূর্তে অনুপলব্ধ)</small>
-                )}
-              </label>
-            );
-          })}
+          <label style={{ display: "flex", gap: 10, alignItems: "center", margin: "12px 0" }}>
+            <input
+              type="radio"
+              name="payment_method_choice"
+              value="mfs"
+              checked={paymentMethod !== "cod"}
+              onChange={() => {
+                setPaymentMethod(mfsMethod);
+              }}
+              disabled={submitting}
+            />
+            <span><strong>২. Mobile Financial Service (MFS)</strong></span>
+          </label>
+
+          {paymentMethod !== "cod" && (
+            <div style={{ margin: "8px 0 16px", padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
+              <p style={{ marginTop: 0 }}>MFS প্রদানকারী নির্বাচন করুন:</p>
+              {([
+                ["bkash", "bKash"],
+                ["nagad", "Nagad"],
+                ["rocket", "Rocket"],
+              ] as const).map(([value, label]) => {
+                const methodConfig = paymentConfig?.paymentMethods?.[value];
+                return (
+                  <label key={value} style={{ display: "flex", gap: 10, alignItems: "center", margin: "10px 0" }}>
+                    <input
+                      type="radio"
+                      name="mfs_provider"
+                      value={value}
+                      checked={mfsMethod === value}
+                      onChange={() => {
+                        setMfsMethod(value);
+                        setPaymentMethod(value);
+                      }}
+                      disabled={submitting || !methodConfig?.enabled}
+                    />
+                    <span>{label}</span>
+                    {!methodConfig?.enabled && <small>(নম্বর এখনো সেট করা হয়নি)</small>}
+                  </label>
+                );
+              })}
+            </div>
+          )}
 
           {paymentConfigError && (
-            <p role="alert">{paymentConfigError} COD নির্বাচন করে অর্ডার দিতে পারবেন।</p>
+            <p role="alert">{paymentConfigError} আপাতত COD নির্বাচন করে অর্ডার দিতে পারবেন।</p>
           )}
 
           {paymentMethod !== "cod" && selectedMobilePayment?.enabled && (
@@ -517,8 +558,8 @@ export default function CheckoutView() {
                 {selectedMobilePayment.number}
               </p>
               <p>
-                টাকা পাঠানোর পর Transaction ID লিখুন। Transaction ID জমা দিলেই
-                পেমেন্ট নিশ্চিত হবে না; যাচাই করা হবে।
+                অর্ডারের মোট পরিমাণ অনুযায়ী টাকা পাঠান। টাকা পাঠানোর পর Transaction ID লিখুন।
+                শুধু TrxID জমা দিলেই পেমেন্ট নিশ্চিত হবে না; অ্যাডমিন যাচাই করবেন।
               </p>
               <label htmlFor="payment_transaction_id">Transaction ID *</label>
               <input
@@ -539,7 +580,7 @@ export default function CheckoutView() {
         </fieldset>
 
         <p><strong>পণ্যের মোট মূল্য: {formatPrice(total)}</strong></p>
-        <p>চূড়ান্ত ডেলিভারি চার্জ পরে নিশ্চিত করা হবে।</p>
+        <p>Pathao Courier-এর চূড়ান্ত ডেলিভারি চার্জ অর্ডারের সার্ভার-হিসাবে নির্ধারিত হবে।</p>
 
         {error && (
           <p role="alert" className={styles.error}>
