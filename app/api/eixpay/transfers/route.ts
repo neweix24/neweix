@@ -12,6 +12,24 @@ function errorStatus(code?: string) {
   if (code === "22023") return 400;
   return 500;
 }
+export async function GET() {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: "লগইন প্রয়োজন।" }, { status: 401, headers });
+
+    const { data, error } = await supabase.rpc("eixpay_list_my_transfers", { p_limit: 20 });
+    if (error) {
+      console.error("EixPay transfer history failed:", error.code);
+      return NextResponse.json({ error: "ট্রান্সফার ইতিহাস লোড করা যায়নি।" }, { status: 503, headers });
+    }
+    return NextResponse.json({ success: true, transfers: data ?? [] }, { headers });
+  } catch (error) {
+    console.error("EixPay transfer history GET failed:", error);
+    return NextResponse.json({ error: "ট্রান্সফার ইতিহাস লোড করা যায়নি।" }, { status: 500, headers });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const raw = await request.text();
@@ -57,3 +75,43 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "ট্রান্সফারের অনুরোধ সম্পন্ন করা যায়নি।" }, { status: 500, headers });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const raw = await request.text();
+    if (new TextEncoder().encode(raw).byteLength > 2048) {
+      return NextResponse.json({ error: "অনুরোধটি অনেক বড়।" }, { status: 413, headers });
+    }
+    let body: unknown;
+    try { body = JSON.parse(raw); } catch {
+      return NextResponse.json({ error: "সঠিক JSON অনুরোধ দিন।" }, { status: 400, headers });
+    }
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "অনুরোধের তথ্য সঠিক নয়।" }, { status: 400, headers });
+    }
+    const requestId = (body as Record<string, unknown>).requestId;
+    if (typeof requestId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) {
+      return NextResponse.json({ error: "ট্রান্সফার অনুরোধের ID সঠিক নয়।" }, { status: 400, headers });
+    }
+
+    const supabase = await createServerSupabaseClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: "লগইন প্রয়োজন।" }, { status: 401, headers });
+
+    const { data, error } = await supabase.rpc("eixpay_cancel_transfer", { p_request_id: requestId });
+    if (error) {
+      const status = error.code === "28000" ? 401 : error.code === "P0002" ? 404 : error.code === "55000" ? 409 : error.code === "42501" ? 403 : 400;
+      return NextResponse.json({
+        error: error.code === "P0002" ? "ট্রান্সফার অনুরোধ পাওয়া যায়নি।"
+          : error.code === "55000" ? "এই অনুরোধটি আর বাতিল করা যাবে না।"
+          : error.code === "42501" ? "এই কার্যক্রমের অনুমতি নেই।"
+          : "ট্রান্সফার অনুরোধ বাতিল করা যায়নি।",
+      }, { status, headers });
+    }
+    return NextResponse.json({ success: true, result: data }, { headers });
+  } catch (error) {
+    console.error("EixPay transfer cancellation failed:", error);
+    return NextResponse.json({ error: "ট্রান্সফার অনুরোধ বাতিল করা যায়নি।" }, { status: 500, headers });
+  }
+}
+
