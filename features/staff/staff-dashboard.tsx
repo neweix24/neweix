@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Icon from "@/components/ui/icon";
 
 export default function StaffDashboard() {
   return (
@@ -14,13 +15,13 @@ export default function StaffDashboard() {
         <section className="grid gap-4 sm:grid-cols-2">
           <Link href="/admin/products" className="rounded-2xl border p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
             <span className="eyebrow">PRODUCTS & INVENTORY</span>
-            <h2 className="mt-2 text-xl font-bold">পণ্য ও স্টক দেখুন →</h2>
+            <h2 className="mt-2 flex items-center gap-2 text-xl font-bold"><Icon name="package" size={20} /> পণ্য ও স্টক দেখুন <Icon name="arrow-right" size={17} /></h2>
             <p>পণ্যের তালিকা, বর্তমান মজুত ও কম স্টকের অবস্থা দেখুন।</p>
           </Link>
-          <Link href="/admin/submissions" className="rounded-2xl border p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}><span className="eyebrow">PRODUCT SUBMISSIONS</span><h2 className="mt-2 text-xl font-bold">পণ্য অনুমোদনের জন্য জমা দিন →</h2><p>নতুন পণ্যের প্রস্তাব পাঠান এবং অনুমোদনের অবস্থা দেখুন।</p></Link>
+          <Link href="/admin/submissions" className="rounded-2xl border p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}><span className="eyebrow">PRODUCT SUBMISSIONS</span><h2 className="mt-2 flex items-center gap-2 text-xl font-bold"><Icon name="tag" size={20} /> পণ্য অনুমোদনের জন্য জমা দিন <Icon name="arrow-right" size={17} /></h2><p>নতুন পণ্যের প্রস্তাব পাঠান এবং অনুমোদনের অবস্থা দেখুন।</p></Link>
           <Link href="/" className="rounded-2xl border p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
             <span className="eyebrow">STOREFRONT</span>
-            <h2 className="mt-2 text-xl font-bold">ওয়েবসাইট দেখুন →</h2>
+            <h2 className="mt-2 flex items-center gap-2 text-xl font-bold"><Icon name="globe" size={20} /> ওয়েবসাইট দেখুন <Icon name="arrow-right" size={17} /></h2>
             <p>NEWEIX-এর মূল ওয়েবসাইটে ফিরে যান।</p>
           </Link>
         </section>
