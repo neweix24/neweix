@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Icon from "@/components/ui/icon";
 
 type AuditEntry = {
   id: number;
@@ -52,7 +53,7 @@ export default function AuditLogViewer() {
         <label className="grid flex-1 gap-1 text-sm">Actor UUID
           <input value={actorId} onChange={(event) => setActorId(event.target.value)} maxLength={36} className="rounded-lg border bg-transparent px-3 py-2" style={{ borderColor: "var(--border)" }} placeholder="Supreme/Admin user ID" />
         </label>
-        <button type="button" onClick={() => void load(null)} disabled={loading} className="rounded-lg border px-4 py-2" style={{ borderColor: "var(--border)" }}>ফিল্টার প্রয়োগ</button>
+        <button type="button" onClick={() => void load(null)} disabled={loading} className="rounded-lg border px-4 py-2" style={{ borderColor: "var(--border)" }}><Icon name="filter" size={16} /> ফিল্টার প্রয়োগ</button>
       </div>
       {error && <p role="alert" className="mt-4 rounded-xl border border-red-500/40 p-4 text-sm">{error}</p>}
       {loading ? <p className="py-8 text-sm" style={{ color: "var(--muted)" }}>অডিট লগ লোড হচ্ছে…</p> : !error && logs.length === 0 ? <p className="py-8 text-sm" style={{ color: "var(--muted)" }}>কোনো অডিট লগ পাওয়া যায়নি।</p> : !error && (
@@ -71,8 +72,8 @@ export default function AuditLogViewer() {
         </div>
       )}
       <div className="mt-5 flex items-center justify-between gap-3">
-        <button type="button" disabled={loading || !cursor} onClick={() => void load(null)} className="rounded-lg border px-4 py-2 text-sm" style={{ borderColor: "var(--border)" }}>প্রথম পৃষ্ঠা</button>
-        <button type="button" disabled={loading || !nextCursor} onClick={() => void load(nextCursor)} className="rounded-lg border px-4 py-2 text-sm" style={{ borderColor: "var(--border)" }}>পরের পৃষ্ঠা</button>
+        <button type="button" disabled={loading || !cursor} onClick={() => void load(null)} className="rounded-lg border px-4 py-2 text-sm" style={{ borderColor: "var(--border)" }}><Icon name="refresh" size={15} /> প্রথম পৃষ্ঠা</button>
+        <button type="button" disabled={loading || !nextCursor} onClick={() => void load(nextCursor)} className="rounded-lg border px-4 py-2 text-sm" style={{ borderColor: "var(--border)" }}>পরের পৃষ্ঠা <Icon name="chevron-right" size={15} /></button>
       </div>
     </section>
   );
