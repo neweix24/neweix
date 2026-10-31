@@ -135,7 +135,15 @@ alter table public.orders
   add column if not exists shipping_address text,
   add column if not exists shipping_city text,
   add column if not exists payment_method text not null default 'cod',
-  add column if not exists payment_status text not null default 'pending';
+  add column if not exists payment_status text not null default 'pending',
+  add column if not exists discount integer not null default 0,
+  add column if not exists coupon_code text;
+
+-- Commerce totals include discounts; keep only non-negative total/discount checks.
+alter table public.orders drop constraint if exists orders_total_check;
+alter table public.orders add constraint orders_total_check check (total >= 0);
+alter table public.orders drop constraint if exists orders_discount_check;
+alter table public.orders add constraint orders_discount_check check (discount >= 0);
 
 update public.orders set customer_phone = phone where customer_phone is null;
 update public.orders set shipping_address = address where shipping_address is null;
