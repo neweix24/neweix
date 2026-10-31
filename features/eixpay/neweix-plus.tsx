@@ -79,6 +79,13 @@ export default function NeweixPlus() {
                     return <div key={tier.tier_code} className={"rounded-2xl border p-4 " + tierClass}>
                       <div className="flex items-center justify-between gap-2"><strong className="text-lg">{tier.display_name}</strong><span className={"rounded-full px-2.5 py-1 text-[10px] font-bold " + badgeClass}>{isCurrent ? "আপনার স্তর" : tier.is_enabled ? "Available" : "Coming soon"}</span></div>
                       <p className="mt-2 text-xs leading-5 text-white/45">{tier.is_enabled ? "এই সদস্যপদ বর্তমানে সক্রিয়।" : "সুবিধা, যোগ্যতা ও মেয়াদ নির্ধারণের পর চালু হবে।"}</p>
+                      {(tier.min_qualified_spend_bdt !== null || tier.min_qualified_orders !== null) && (
+                        <div className="mt-3 border-t border-white/10 pt-3 text-xs leading-5 text-white/55">
+                          {tier.min_qualified_spend_bdt !== null && <p>যোগ্য কেনাকাটা: ৳{new Intl.NumberFormat("en-US").format(tier.min_qualified_spend_bdt)}</p>}
+                          {tier.min_qualified_orders !== null && <p>যোগ্য অর্ডার: {new Intl.NumberFormat("en-US").format(tier.min_qualified_orders)}টি</p>}
+                          {tier.qualification_period_days !== null && <p>সময়সীমা: {tier.qualification_period_days} দিন</p>}
+                        </div>
+                      )}
                     </div>;
                   })}
                 </div>
