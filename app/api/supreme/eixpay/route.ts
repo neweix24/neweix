@@ -55,6 +55,25 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ success: true, data }, { headers });
     }
 
+    if (input.action === "transfer_limits") {
+      const values = [input.minAmount, input.maxAmount, input.dailyMaxAmount, input.maxRequestsPerDay];
+      if (!values.every((value) => typeof value === "number" && Number.isSafeInteger(value))
+        || (input.minAmount as number) < 1
+        || (input.maxAmount as number) < (input.minAmount as number)
+        || (input.dailyMaxAmount as number) < (input.maxAmount as number)
+        || (input.maxRequestsPerDay as number) < 1 || (input.maxRequestsPerDay as number) > 50) {
+        return fail("ট্রান্সফার সীমার তথ্য সঠিক নয়।", 400);
+      }
+      const { data, error } = await access.supabase.rpc("eixpay_set_transfer_limits", {
+        p_min_amount: input.minAmount,
+        p_max_amount: input.maxAmount,
+        p_daily_max_amount: input.dailyMaxAmount,
+        p_max_requests_per_day: input.maxRequestsPerDay,
+      });
+      if (error) return fail(error.code === "42501" ? "Supreme MFA অনুমোদন প্রয়োজন।" : "ট্রান্সফার সীমা সংরক্ষণ করা যায়নি।", error.code === "42501" ? 403 : 400);
+      return NextResponse.json({ success: true, data }, { headers });
+    }
+
     if (input.action === "reward_rule") {
       if (typeof input.eventCode !== "string" || !/^[a-z_]{3,60}$/.test(input.eventCode)
         || typeof input.enabled !== "boolean"
