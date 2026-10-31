@@ -81,13 +81,19 @@ export async function GET() {
         id, order_number, customer_name, customer_phone, phone, address,
         shipping_address, shipping_city, status, subtotal, delivery_fee, total,
         payment_method, payment_status, payment_transaction_id,
-        payment_verified_at, payment_verified_by, created_at,
+        payment_verified_at, payment_verified_by,
+        delivery_fee_payment_method, delivery_fee_payment_transaction_id,
+        delivery_fee_payment_status, delivery_fee_payment_verified_at,
+        created_at,
         order_items (id, product_name, unit_price, quantity)
       `
       : `
         id, order_number, customer_name, customer_phone, phone, address,
         shipping_address, shipping_city, status, subtotal, delivery_fee, total,
-        payment_method, payment_status, created_at,
+        payment_method, payment_status,
+        delivery_fee_payment_method, delivery_fee_payment_transaction_id,
+        delivery_fee_payment_status, delivery_fee_payment_verified_at,
+        created_at,
         order_items (id, product_name, unit_price, quantity)
       `;
     const { data, error } = await admin
@@ -147,16 +153,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "পেমেন্ট রেফারেন্স যাচাই শুধু Supreme করতে পারবেন।" }, { status: 403 });
     }
 
+    const action = "action" in body && body.action === "verify_delivery_fee"
+      ? "verify_delivery_fee"
+      : "verify_order_payment";
     const orderId = body.orderId;
     const admin = await getAdminClient();
 
-    const { data, error } = await admin.rpc("admin_verify_order_payment", {
-      p_order_id: orderId,
-      p_actor_id: staff.user.id,
-    });
+    const { data, error } = action === "verify_delivery_fee"
+      ? await admin.rpc("admin_verify_order_delivery_fee_payment", {
+          p_order_id: orderId,
+          p_actor_id: staff.user.id,
+        })
+      : await admin.rpc("admin_verify_order_payment", {
+          p_order_id: orderId,
+          p_actor_id: staff.user.id,
+        });
 
     if (error) {
-      if (error.message.includes("ORDER_NOT_VERIFIABLE")) {
+      if (error.message.includes("ORDER_NOT_VERIFIABLE") || error.message.includes("DELIVERY_FEE_PAYMENT_NOT_VERIFIABLE")) {
         return NextResponse.json(
           {
             error:
@@ -176,7 +190,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       order: data,
-      message: "পেমেন্ট Paid হিসেবে সংরক্ষিত হয়েছে এবং অডিট লগ তৈরি হয়েছে।",
+      message: action === "verify_delivery_fee"
+        ? "ডেলিভারি চার্জের পেমেন্ট Paid হিসেবে সংরক্ষিত হয়েছে এবং অডিট লগ তৈরি হয়েছে।"
+        : "পেমেন্ট Paid হিসেবে সংরক্ষিত হয়েছে এবং অডিট লগ তৈরি হয়েছে.",
     });
   } catch (error) {
     console.error("Admin orders POST failed:", error);
