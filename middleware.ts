@@ -35,6 +35,42 @@ export async function middleware(request: NextRequest) {
 
   response.headers.set("Cache-Control", "private, no-store");
 
+  // Require verified customer phone numbers before account features are accessible.
+  const isCustomerProtected =
+    pathname === "/orders" || pathname.startsWith("/orders/") ||
+    pathname === "/wishlist" || pathname.startsWith("/wishlist/") ||
+    (pathname.startsWith("/account/") && pathname !== "/account/");
+
+  if (isCustomerProtected) {
+    if (claimsError || typeof userId !== "string" || !userId) {
+      const destination = request.nextUrl.clone();
+      destination.pathname = "/auth/customer-login";
+      destination.search = "";
+      destination.searchParams.set("next", pathname + request.nextUrl.search);
+      const redirectResponse = NextResponse.redirect(destination);
+      response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
+      redirectResponse.headers.set("Cache-Control", "private, no-store");
+      return redirectResponse;
+    }
+
+    const { data: customerProfile, error: customerProfileError } = await supabase
+      .from("customer_profiles")
+      .select("phone, phone_verified_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (customerProfileError || !customerProfile?.phone_verified_at || !customerProfile.phone) {
+      const destination = request.nextUrl.clone();
+      destination.pathname = "/account";
+      destination.search = "";
+      destination.searchParams.set("verifyPhone", "1");
+      const redirectResponse = NextResponse.redirect(destination);
+      response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
+      redirectResponse.headers.set("Cache-Control", "private, no-store");
+      return redirectResponse;
+    }
+  }
+
   // Public pages and guest checkout never require a customer or staff login.
   if (!isAdminPath && !isSupremePath) return response;
 
