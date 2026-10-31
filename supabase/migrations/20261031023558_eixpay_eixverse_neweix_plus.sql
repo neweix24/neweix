@@ -1248,7 +1248,7 @@ begin
       order by tier_rank desc
     loop
       select
-        coalesce(sum(o.total), 0),
+        coalesce(sum(greatest(o.subtotal - coalesce(o.discount, 0), 0)), 0),
         count(*)
       into v_qualifying_spend, v_qualifying_orders
       from public.orders o
