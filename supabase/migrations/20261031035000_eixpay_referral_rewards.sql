@@ -435,6 +435,12 @@ begin
 end;
 $function$;
 
+revoke all on function private.eixpay_qualify_referral_for_order(uuid, uuid) from public, anon, authenticated, service_role;
+revoke all on function private.eixpay_process_qualified_referral_rewards() from public, anon, authenticated, service_role;
+revoke all on function private.eixpay_reverse_referral_for_order(uuid, uuid) from public, anon, authenticated, service_role;
+revoke all on function private.eixpay_process_due_order_rewards() from public, anon, authenticated, service_role;
+revoke all on function private.eixpay_watch_order_reward_eligibility() from public, anon, authenticated, service_role;
+
 revoke all on function public.eixpay_apply_referral_code(text) from public, anon;
 grant execute on function public.eixpay_apply_referral_code(text) to authenticated;
 revoke all on function public.eixpay_get_referral_summary() from public, anon;
