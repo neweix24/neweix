@@ -77,7 +77,7 @@ export async function GET() {
     }
 
     const admin = await getAdminClient();
-    const orderColumns = staff.role === "supreme"
+    const orderColumns: string = staff.role === "supreme"
       ? `
         id, order_number, customer_name, customer_phone, phone, address,
         shipping_address, shipping_city, status, subtotal, delivery_fee, total,
