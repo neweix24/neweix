@@ -1059,6 +1059,8 @@ begin
       and o.status = 'delivered'
       and o.payment_status = 'paid'
   loop
+    v_qualifying_spend := 0;
+    v_qualifying_orders := 0;
     perform pg_advisory_xact_lock(hashtextextended(v_user_id::text, 0));
 
     update private.neweix_plus_memberships
