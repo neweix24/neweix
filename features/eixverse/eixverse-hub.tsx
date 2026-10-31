@@ -1,8 +1,9 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import EixVerseMissions from "@/features/eixverse/eixverse-missions";
 type ModuleItem = { module_code: string; display_name: string; description: string; status: "active" | "planned" | "disabled"; sort_order: number };
-const destinations: Record<string, string> = { eixpay: "/account/eixpay", neweix_plus: "/account/neweix-plus" };
+const destinations: Record<string, string> = { eixpay: "/account/eixpay", neweix_plus: "/account/neweix-plus", campaigns: "#missions" };
 export default function EixVerseHub() {
   const [modules, setModules] = useState<ModuleItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +58,7 @@ export default function EixVerseHub() {
             </div>
           )}
         </section>
+        <div id="missions"><EixVerseMissions /></div>
       </div>
     </main>
   );
