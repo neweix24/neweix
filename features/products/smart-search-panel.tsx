@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import Icon from "@/components/ui/icon";
 
 type Product = {
   id: string;
@@ -228,7 +229,7 @@ export default function SmartSearchPanel() {
               color: "#080b09",
             }}
           >
-            {loading ? "খুঁজছে…" : "খুঁজুন"}
+            <><Icon name={loading ? "refresh" : "search"} size={17} /> {loading ? "খুঁজছে…" : "খুঁজুন"}</>
           </button>
         </div>
 
@@ -279,7 +280,7 @@ export default function SmartSearchPanel() {
             <option value="price_desc">দাম: বেশি থেকে কম</option>
             <option value="newest">নতুন পণ্য</option>
           </select>
-          <button type="button" onClick={clearFilters}>ফিল্টার রিসেট</button>
+          <button type="button" onClick={clearFilters}><Icon name="close" size={15} /> ফিল্টার রিসেট</button>
         </div>
       </form>
 
