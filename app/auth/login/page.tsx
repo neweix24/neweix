@@ -138,11 +138,11 @@ return (
     <button
       type="button"
       className="password-visibility-button"
-      aria-label=<><Icon name="eye" size={17} /> {showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"}</>
+      aria-label={showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"}
       aria-pressed={showPassword}
       onClick={() => setShowPassword((visible) => !visible)}
     >
-      {showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"}
+      <Icon name="eye" size={17} />
     </button>
 
     <p>
