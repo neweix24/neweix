@@ -46,7 +46,7 @@ export default function AccountView() {
 
         const { data: profile, error } = await supabase
           .from("customer_profiles")
-          .select("full_name,date_of_birth,avatar_url")
+          .select("full_name,date_of_birth,avatar_url,preferred_language")
           .eq("user_id", user.id)
           .maybeSingle();
 
@@ -65,15 +65,33 @@ export default function AccountView() {
               ? user.user_metadata.name
               : "";
 
-        setEmail(user.email ?? "");
-        setName(profile?.full_name ?? metadataName);
-        setDateOfBirth(profile?.date_of_birth ?? "");
-        const metadataAvatar =
+        const rawMetadataAvatar =
           typeof user.user_metadata?.picture === "string"
             ? user.user_metadata.picture
             : typeof user.user_metadata?.avatar_url === "string"
               ? user.user_metadata.avatar_url
               : "";
+        const metadataAvatar = rawMetadataAvatar.startsWith("https://") ? rawMetadataAvatar : "";
+        const rawLocale = typeof user.user_metadata?.locale === "string" ? user.user_metadata.locale : "";
+        const metadataLanguage = /^[a-z]{2}(-[A-Z]{2})?$/.test(rawLocale) ? rawLocale : null;
+
+        const { error: profileSyncError } = await supabase
+          .from("customer_profiles")
+          .upsert({
+            user_id: user.id,
+            email: user.email ?? null,
+            full_name: profile?.full_name ?? metadataName || null,
+            avatar_url: profile?.avatar_url ?? (metadataAvatar || null),
+            date_of_birth: profile?.date_of_birth ?? null,
+            preferred_language: profile?.preferred_language ?? metadataLanguage,
+          }, { onConflict: "user_id" });
+        if (profileSyncError) {
+          console.error("Customer account profile sync failed:", profileSyncError.message);
+        }
+
+        setEmail(user.email ?? "");
+        setName(profile?.full_name ?? metadataName);
+        setDateOfBirth(profile?.date_of_birth ?? "");
         setAvatarUrl(profile?.avatar_url ?? metadataAvatar);
 
         const phoneResponse = await fetch("/api/account/phone/status", {
