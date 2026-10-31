@@ -193,7 +193,7 @@ declare
 begin
   if v_user is null then raise exception using errcode='28000',message='AUTHENTICATION_REQUIRED'; end if;
   if p_mission_id is null then raise exception using errcode='22023',message='INVALID_MISSION'; end if;
-  select * into v_m from private.eixverse_missions where id=p_mission_id and is_enabled;
+  select * into v_m from private.eixverse_missions where id=p_mission_id and is_enabled for update;
   if not found then raise exception using errcode='P0002',message='MISSION_NOT_FOUND'; end if;
   select * into v_c from private.eixverse_campaigns where id=v_m.campaign_id for update;
   if not found or v_c.status <> 'active' or v_c.starts_at > now() or v_c.ends_at <= now()
