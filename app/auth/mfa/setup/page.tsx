@@ -24,11 +24,11 @@ export default function SupremeMfaSetupPage() {
 
         // 1. লগইন করা আছে কি না যাচাই
         const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+          data: { session },
+        } = await supabase.auth.getSession();
+        const user = session?.user;
 
-        if (userError || !user) {
+        if (!user) {
           router.replace("/auth/login");
           return;
         }
@@ -189,11 +189,11 @@ export default function SupremeMfaSetupPage() {
 
       // বর্তমান লগইন সেশন পুনরায় যাচাই
       const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
+      const user = session?.user;
 
-      if (userError || !user) {
+      if (!user) {
         router.replace("/auth/login");
         return;
       }
