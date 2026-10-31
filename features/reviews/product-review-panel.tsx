@@ -23,7 +23,7 @@ function reviewDate(value: string) {
   return new Intl.DateTimeFormat("bn-BD", { dateStyle: "medium" }).format(new Date(value));
 }
 
-export default function ProductReviewPanel({ productId }: { productId: string }) {
+export default function ProductReviewPanel({ productId, returnTo }: { productId: string; returnTo: string }) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [eligibleOrders, setEligibleOrders] = useState<EligibleOrder[]>([]);
   const [authenticated, setAuthenticated] = useState(false);
@@ -122,7 +122,7 @@ export default function ProductReviewPanel({ productId }: { productId: string })
           {!authenticated ? (
             <div className="mt-3 text-sm leading-7" style={{ color: "var(--muted)" }}>
               রিভিউ দিতে গ্রাহক অ্যাকাউন্টে লগইন করুন এবং এই পণ্যটি কেনা, পেমেন্ট ও ডেলিভারি সম্পন্ন থাকতে হবে।
-              <Link className="mt-3 inline-flex font-bold underline underline-offset-4" style={{ color: "var(--primary)" }} href={"/auth/customer-login?next=" + encodeURIComponent("/products")}>লগইন করুন</Link>
+              <Link className="mt-3 inline-flex font-bold underline underline-offset-4" style={{ color: "var(--primary)" }} href={"/auth/customer-login?next=" + encodeURIComponent(returnTo)}>লগইন করুন</Link>
             </div>
           ) : eligibleOrders.length === 0 ? (
             <p className="mt-3 text-sm leading-7" style={{ color: "var(--muted)" }}>এই পণ্যের জন্য আপনার কোনো যোগ্য অর্ডার পাওয়া যায়নি। Delivered, Paid এবং ডেলিভারি চার্জ নিষ্পত্তি হওয়া অর্ডারের ৭ দিনের রিটার্ন-উইন্ডো পার হলে রিভিউ দেওয়া যায়।</p>
