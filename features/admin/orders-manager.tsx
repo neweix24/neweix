@@ -26,6 +26,10 @@ type Order = {
   payment_status: string;
   payment_transaction_id: string | null;
   payment_verified_at: string | null;
+  delivery_fee_payment_method: string | null;
+  delivery_fee_payment_transaction_id: string | null;
+  delivery_fee_payment_status: string;
+  delivery_fee_payment_verified_at: string | null;
   created_at: string;
   order_items: OrderItem[];
 };
@@ -43,6 +47,7 @@ const paymentStatusNames: Record<string, string> = {
   paid: "পেমেন্ট সম্পন্ন",
   failed: "ব্যর্থ",
   refunded: "ফেরত দেওয়া হয়েছে",
+  not_required: "প্রযোজ্য নয়",
 };
 
 const orderStatusNames: Record<string, string> = {
@@ -149,6 +154,36 @@ export default function OrdersManager() {
       setError(
         err instanceof Error ? err.message : "অজানা সমস্যা হয়েছে।"
       );
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function verifyDeliveryFee(order: Order) {
+    const transactionId = order.delivery_fee_payment_transaction_id?.trim();
+    if (!transactionId) {
+      setError("ডেলিভারি চার্জের Transaction ID নেই।");
+      return;
+    }
+    const confirmed = window.confirm(
+      `অর্ডার ${order.order_number}\nডেলিভারি চার্জ: ৳${Number(order.delivery_fee).toLocaleString("bn-BD")}\nMFS: ${paymentNames[order.delivery_fee_payment_method || ""] || order.delivery_fee_payment_method}\nTransaction ID: ${transactionId}\n\nপেমেন্ট প্রদানকারীর রেকর্ডে ডেলিভারি চার্জের টাকা পেয়েছেন কি?`
+    );
+    if (!confirmed) return;
+    setBusyId(order.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.id, action: "verify_delivery_fee" }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "ডেলিভারি চার্জ যাচাই করা যায়নি।");
+      setNotice(`${order.order_number}: ডেলিভারি চার্জ Paid হয়েছে।`);
+      await loadOrders();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ডেলিভারি চার্জ যাচাইয়ে সমস্যা হয়েছে।");
     } finally {
       setBusyId("");
     }
@@ -407,6 +442,26 @@ export default function OrdersManager() {
                   <span className="font-medium">Transaction ID: </span>
                   {order.payment_transaction_id}
                 </p>
+              )}
+
+              {order.payment_method === "cod" && Number(order.delivery_fee) > 0 && (
+                <div className="mt-3 rounded-lg border p-3">
+                  <p className="text-sm font-semibold">ডেলিভারি চার্জের অগ্রিম পেমেন্ট</p>
+                  <p className="mt-1 text-sm">পরিমাণ: ৳{Number(order.delivery_fee).toLocaleString("bn-BD")}</p>
+                  <p className="mt-1 text-sm">MFS: {paymentNames[order.delivery_fee_payment_method || ""] || order.delivery_fee_payment_method || "নির্বাচিত নয়"}</p>
+                  <p className="mt-1 break-all text-sm">TrxID: {order.delivery_fee_payment_transaction_id || "নেই"}</p>
+                  <p className="mt-1 text-sm">অবস্থা: {paymentStatusNames[order.delivery_fee_payment_status] || order.delivery_fee_payment_status}</p>
+                  {order.delivery_fee_payment_status === "verification_pending" && (
+                    <button
+                      type="button"
+                      onClick={() => void verifyDeliveryFee(order)}
+                      disabled={busyId !== "" || statusBusyId !== ""}
+                      className="neweix-button-primary mt-3 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {busyId === order.id ? "সংরক্ষণ হচ্ছে..." : "ডেলিভারি চার্জ যাচাই করে Paid করুন"}
+                    </button>
+                  )}
+                </div>
               )}
 
               <div className="mt-3 border-t pt-3">
