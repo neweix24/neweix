@@ -23,12 +23,35 @@ export type ProductDetailsData = {
   category_id?: string | null;
 };
 
+function getYouTubeEmbedUrl(rawUrl?: string | null): string | null {
+  if (!rawUrl?.trim()) return null;
+
+  try {
+    const url = new URL(rawUrl.trim());
+    const host = url.hostname.toLowerCase().replace(/^www\\./, "").replace(/^m\\./, "");
+    let videoId: string | null = null;
+
+    if (host === "youtu.be") {
+      videoId = url.pathname.split("/").filter(Boolean)[0] ?? null;
+    } else if (host === "youtube.com" || host === "youtube-nocookie.com") {
+      const parts = url.pathname.split("/").filter(Boolean);
+      if (url.pathname === "/watch") videoId = url.searchParams.get("v");
+      else if (["embed", "shorts", "live", "v"].includes(parts[0] ?? "")) videoId = parts[1] ?? null;
+    }
+
+    if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) return null;
+    return `https://www.youtube-nocookie.com/embed/${videoId}`;
+  } catch {
+    return null;
+  }
+}
+
 function money(value: number) {
   return new Intl.NumberFormat("bn-BD", { maximumFractionDigits: 0 }).format(Number(value)) + " ৳";
 }
 
 export default function ProductDetails({ product }: { product: ProductDetailsData }) {
-  const images = product.image_urls ?? [];
+  const images = product.image_urls ?? [];\n  const videoEmbedUrl = getYouTubeEmbedUrl(product.video_url);
   return (
     <main className={styles.page}>
       <div className={styles.breadcrumb}><Link href="/products">← সব পণ্য</Link><span>/</span><span>{product.name}</span></div>
@@ -38,10 +61,10 @@ export default function ProductDetails({ product }: { product: ProductDetailsDat
             // eslint-disable-next-line @next/next/no-img-element
             <img key={src + index} src={src} alt={`${product.name} — ছবি ${index + 1}`} />
           )) : <div className={styles.placeholder}>NEWEIX</div>}
-          {product.video_url && (
+          {videoEmbedUrl && (
             <div className={styles.productVideo}>
               <iframe
-                src={product.video_url}
+                src={videoEmbedUrl}
                 title={product.name + " পণ্যের ভিডিও"}
                 loading="lazy"
                 referrerPolicy="strict-origin-when-cross-origin"
