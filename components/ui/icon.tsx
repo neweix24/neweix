@@ -1,13 +1,13 @@
 "use client";
 
-import type { SVGProps } from "react";
+import type { ReactNode, SVGProps } from "react";
 
 export type IconName =
   | "search" | "user" | "cart" | "heart" | "package"
   | "arrow-right" | "plus" | "check" | "refresh" | "close"
-  | "shield" | "menu" | "grid" | "sparkles";
+  | "shield" | "menu" | "grid" | "sparkles" | "compare";
 
-const paths: Record<IconName, React.ReactNode> = {
+const paths: Record<IconName, ReactNode> = {
   search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></>,
   user: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>,
   cart: <><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 1.9-1.4L22 8H6" /><circle cx="10" cy="21" r="1" /><circle cx="18" cy="21" r="1" /></>,
@@ -21,6 +21,7 @@ const paths: Record<IconName, React.ReactNode> = {
   shield: <><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z" /><path d="m9 12 2 2 4-4" /></>,
   menu: <><path d="M4 6h16M4 12h16M4 18h16" /></>,
   grid: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
+  compare: <><path d="M8 4H4v16h4M16 4h4v16h-4M9 8h6M9 12h6M9 16h6" /></>,
   sparkles: <><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z" /><path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16Z" /></>,
 };
 
