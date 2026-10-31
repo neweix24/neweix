@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     const isDhaka = /(dhaka|ঢাকা)/i.test(city);
     let fee = settings.get(isDhaka ? "delivery_fee_dhaka" : "delivery_fee_outside");
     if (!Number.isFinite(fee)) fee = isDhaka ? 80 : 130;
-    fee = Math.max(0, fee);
+    fee = Math.max(0, Number(fee ?? (isDhaka ? 80 : 130)));
     const threshold = Math.max(0, settings.get("free_delivery_threshold") || 0);
     if (threshold > 0 && subtotal >= threshold) fee = 0;
 
