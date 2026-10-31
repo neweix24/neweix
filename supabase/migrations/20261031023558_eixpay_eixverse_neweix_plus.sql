@@ -9,6 +9,7 @@ create table if not exists private.eixpay_config (
   wallet_enabled boolean not null default true,
   earning_enabled boolean not null default false,
   redemption_enabled boolean not null default false,
+  redemption_legal_review_confirmed boolean not null default false,
   transfer_enabled boolean not null default false,
   transfer_legal_review_confirmed boolean not null default false,
   transfer_requires_supreme_approval boolean not null default true,
@@ -1245,6 +1246,7 @@ as $function$
 declare
   v_actor uuid := auth.uid();
   v_transfer_enabled boolean;
+  v_redemption_enabled boolean;
 begin
   if v_actor is null
      or not private.has_staff_role(array['supreme']::text[])
@@ -1259,15 +1261,16 @@ begin
     raise exception using errcode = '22023', message = 'WALLET_MUST_BE_ENABLED';
   end if;
 
-  select (p_transfer_enabled and transfer_legal_review_confirmed)
-  into v_transfer_enabled
+  select (p_transfer_enabled and transfer_legal_review_confirmed),
+         (p_redemption_enabled and redemption_legal_review_confirmed)
+  into v_transfer_enabled, v_redemption_enabled
   from private.eixpay_config
   where singleton = true;
 
   update private.eixpay_config
   set wallet_enabled = p_wallet_enabled,
       earning_enabled = p_earning_enabled,
-      redemption_enabled = p_redemption_enabled,
+      redemption_enabled = coalesce(v_redemption_enabled, false),
       transfer_enabled = coalesce(v_transfer_enabled, false),
       transfer_requires_supreme_approval = true,
       updated_by = v_actor,
@@ -1279,7 +1282,7 @@ begin
     jsonb_build_object(
       'wallet_enabled', p_wallet_enabled,
       'earning_enabled', p_earning_enabled,
-      'redemption_enabled', p_redemption_enabled,
+      'redemption_enabled', coalesce(v_redemption_enabled, false),
       'transfer_enabled', coalesce(v_transfer_enabled, false)
     ));
 
@@ -1287,7 +1290,7 @@ begin
     'success', true,
     'wallet_enabled', p_wallet_enabled,
     'earning_enabled', p_earning_enabled,
-    'redemption_enabled', p_redemption_enabled,
+    'redemption_enabled', coalesce(v_redemption_enabled, false),
     'transfer_enabled', coalesce(v_transfer_enabled, false),
     'transfer_requires_supreme_approval', true
   );
@@ -1507,11 +1510,12 @@ begin
      or p_enabled is null
      or p_min_qualified_spend_bdt < 0
      or p_min_qualified_orders < 0
+     or p_qualification_period_days is null
      or p_qualification_period_days < 1 or p_qualification_period_days > 3650
      or p_benefits is null or jsonb_typeof(p_benefits) <> 'array'
-     or jsonb_array_length(p_benefits) > 30
+     or jsonb_array_length(case when jsonb_typeof(p_benefits) = 'array' then p_benefits else '[]'::jsonb end) > 30
      or exists (
-       select 1 from jsonb_array_elements(p_benefits) as item(value)
+       select 1 from jsonb_array_elements(case when jsonb_typeof(p_benefits) = 'array' then p_benefits else '[]'::jsonb end) as item(value)
        where jsonb_typeof(item.value) <> 'string'
           or char_length(item.value #>> '{}') > 240
      ) then
