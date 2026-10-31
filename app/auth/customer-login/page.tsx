@@ -1,11 +1,33 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import Script from "next/script";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import Icon from "@/components/ui/icon";
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        container: HTMLElement,
+        options: {
+          sitekey: string;
+          callback: (token: string) => void;
+          "expired-callback"?: () => void;
+          "error-callback"?: () => void;
+          theme?: "light" | "dark" | "auto";
+        }
+      ) => string;
+      reset: (widgetId?: string) => void;
+      remove: (widgetId: string) => void;
+    };
+  }
+}
+
+const TURNSTILE_SITE_KEY = "0x4AAAAAAFtxqj-OF3yfnL11";
 
 function CustomerLoginForm() {
   const router = useRouter();
@@ -17,6 +39,37 @@ function CustomerLoginForm() {
   const [isSignUp, setIsSignUp] = useState(searchParams.get("mode") === "signup");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [turnstileReady, setTurnstileReady] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const captchaContainerRef = useRef<HTMLDivElement>(null);
+  const captchaWidgetIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!turnstileReady || !captchaContainerRef.current || !window.turnstile || captchaWidgetIdRef.current) return;
+    captchaWidgetIdRef.current = window.turnstile.render(captchaContainerRef.current, {
+      sitekey: TURNSTILE_SITE_KEY,
+      theme: "auto",
+      callback: (token) => { setCaptchaToken(token); setMessage(""); },
+      "expired-callback": () => setCaptchaToken(""),
+      "error-callback": () => {
+        setCaptchaToken("");
+        setMessage("নিরাপত্তা যাচাই সম্পন্ন হয়নি। আবার চেষ্টা করুন।");
+      },
+    });
+    return () => {
+      if (captchaWidgetIdRef.current && window.turnstile) {
+        window.turnstile.remove(captchaWidgetIdRef.current);
+        captchaWidgetIdRef.current = null;
+      }
+    };
+  }, [turnstileReady]);
+
+  function resetCaptcha() {
+    setCaptchaToken("");
+    if (captchaWidgetIdRef.current && window.turnstile) {
+      window.turnstile.reset(captchaWidgetIdRef.current);
+    }
+  }
 
   function getSafeNextPath() {
     const next = searchParams.get("next");
@@ -67,6 +120,10 @@ function CustomerLoginForm() {
   async function handleEmailAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
+    if (!captchaToken) {
+      setMessage("অ্যাকাউন্টের নিরাপত্তা যাচাই সম্পন্ন করুন।");
+      return;
+    }
     setBusy(true);
 
     try {
@@ -86,9 +143,11 @@ function CustomerLoginForm() {
           options: {
             emailRedirectTo: callbackUrl.toString(),
             data: { full_name: fullName.trim() },
+            captchaToken,
           },
         });
 
+        resetCaptcha();
         if (error) {
           setMessage("সাইনআপ করা যায়নি। ইমেইলটি আগে ব্যবহার করা হয়েছে কি না যাচাই করুন।");
           return;
@@ -108,7 +167,9 @@ function CustomerLoginForm() {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
+        options: { captchaToken },
       });
+      resetCaptcha();
 
       if (error || !data.user) {
         setMessage("ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।");
@@ -119,6 +180,7 @@ function CustomerLoginForm() {
       router.replace(getSafeNextPath());
       router.refresh();
     } catch {
+      resetCaptcha();
       setMessage("লগইন করা যায়নি। আবার চেষ্টা করুন।");
     } finally {
       setBusy(false);
@@ -126,6 +188,13 @@ function CustomerLoginForm() {
   }
 
   return (
+    <>
+    <Script
+      src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+      strategy="afterInteractive"
+      onLoad={() => setTurnstileReady(true)}
+      onError={() => setMessage("নিরাপত্তা যাচাই লোড করা যায়নি। পেজটি রিফ্রেশ করুন।")}
+    />
     <main className="customer-auth">
       <section className="auth-brand-panel">
         <Link href="/" className="auth-brand">
@@ -218,6 +287,8 @@ function CustomerLoginForm() {
               onChange={(event) => setPassword(event.target.value)}
               required
             />
+
+            <div className="my-3 min-h-[65px]" ref={captchaContainerRef} aria-label="Cloudflare security verification" />
 
             {message && (
               <p className="auth-message" role="alert">
@@ -527,6 +598,7 @@ function CustomerLoginForm() {
         }
       `}</style>
     </main>
+    </>
   );
 }
 
