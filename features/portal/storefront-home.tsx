@@ -217,8 +217,8 @@ export default function StorefrontHome() {
         <section className={styles.productSection} aria-labelledby="featured-title">
           <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>DISCOVER NEWEIX</span><h2 id="featured-title">আপনার জন্য পণ্য</h2><p>স্টোরে বর্তমানে থাকা পণ্য থেকে বেছে নিন।</p></div><Link href="/products">সব পণ্য দেখুন <Icon name="arrow-right" size={16} /></Link></div>
           {cartNotice && <p className={styles.cartNotice} role="status">{cartNotice}<button type="button" onClick={() => setCartNotice("")} aria-label="বার্তা বন্ধ করুন"><Icon name="close" size={17} /></button></p>}
-          {productsLoading ? <p className={styles.state} role="status">পণ্য লোড হচ্ছে…</p> : visibleProducts.length ? (
-            <div className={styles.productGrid}>{visibleProducts.map((product) => (
+          {productsLoading ? <p className={styles.state} role="status">পণ্য লোড হচ্ছে…</p> : products.length ? (
+            <div className={styles.productGrid}>{products.map((product) => (
               <article className={styles.productCard} key={product.id}>
                 <Link href={`/products/${encodeURIComponent(product.slug)}`} className={styles.productImage}>
                   {product.image_urls?.[0] ? <img src={product.image_urls[0]} alt={product.name} loading="lazy"/> : <Icon name="package" size={42} />}
