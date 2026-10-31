@@ -88,3 +88,4 @@ jobs:
             "$response_file" >/dev/null
 
           echo "Verified: Before User Created hook is enabled and points to the deployed Edge Function."
+          echo "Strict signup policy is now wired to the active Bangladesh/VPN verification function."
