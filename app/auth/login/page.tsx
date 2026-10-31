@@ -134,11 +134,16 @@ export default function LoginPage() {
         return;
       }
 
-      const { data: sessionData, error: sessionError } =
-        await supabase.auth.getSession();
-
-      if (sessionError || !sessionData.session) {
-        setMessage("লগইন হয়েছে, কিন্তু নিরাপদ সেশন সংরক্ষণ হয়নি। পেজ রিফ্রেশ করে আবার চেষ্টা করুন।");
+      // signInWithPassword already returns the newly issued session.
+      // Re-reading it immediately can race cookie storage/refresh handling.
+      // Validate the actual sign-in response instead of triggering another
+      // auth read/refresh before continuing.
+      if (
+        !data.session?.access_token ||
+        !data.session?.refresh_token ||
+        data.session.user.id !== data.user.id
+      ) {
+        setMessage("লগইন সেশন তৈরি হয়নি। CAPTCHA সম্পন্ন করে আবার চেষ্টা করুন।");
         return;
       }
 
