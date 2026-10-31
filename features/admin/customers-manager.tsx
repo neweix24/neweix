@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Customer = {
   user_id: string;
@@ -20,59 +20,96 @@ type Customer = {
   order_summary?: { count: number; total: number; lastOrder: string | null; lastStatus: string | null };
 };
 
+type Pagination = {
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_previous: boolean;
+};
+
+const money = new Intl.NumberFormat("bn-BD", {
+  style: "currency",
+  currency: "BDT",
+  maximumFractionDigits: 0,
+});
+
+const orderStatusLabels: Record<string, string> = {
+  pending: "অপেক্ষমাণ",
+  confirmed: "নিশ্চিত",
+  processing: "প্রক্রিয়াধীন",
+  packed: "প্যাকেট করা",
+  shipped: "পাঠানো হয়েছে",
+  delivered: "ডেলিভারি সম্পন্ন",
+};
+
 export default function CustomersManager() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1, page_size: 25, total: 0, total_pages: 0, has_next: false, has_previous: false,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    let active = true;
-    void (async () => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      setError("");
       try {
-        const response = await fetch("/api/admin/customers", { cache: "no-store" });
+        const params = new URLSearchParams({ page: String(page) });
+        if (search.trim()) params.set("q", search.trim());
+        const response = await fetch(`/api/admin/customers?${params.toString()}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "কাস্টমার তালিকা লোড করা যায়নি।");
-        if (active) setCustomers(Array.isArray(result.customers) ? result.customers : []);
+        setCustomers(Array.isArray(result.customers) ? result.customers : []);
+        if (result.pagination) setPagination(result.pagination as Pagination);
       } catch (err) {
-        if (active) setError(err instanceof Error ? err.message : "সার্ভারে সমস্যা হয়েছে।");
+        if (err instanceof Error && err.name === "AbortError") return;
+        setError(err instanceof Error ? err.message : "সার্ভারে সমস্যা হয়েছে।");
       } finally {
-        if (active) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
-    })();
-    return () => { active = false; };
-  }, []);
+    }, 250);
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase();
-    if (!term) return customers;
-    return customers.filter((item) =>
-      [item.full_name, item.display_name, item.email, item.phone].some((value) =>
-        (value ?? "").toLocaleLowerCase().includes(term)
-      )
-    );
-  }, [customers, search]);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [page, search]);
 
   return (
     <section className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm" style={{ color: "var(--muted)" }}>
-          নিবন্ধিত কাস্টমার: <strong>{customers.length}</strong> (সর্বশেষ ১০০টি প্রোফাইল)
-        </p>
+        <div>
+          <p className="text-sm" style={{ color: "var(--muted)" }}>
+            মোট নিবন্ধিত কাস্টমার: <strong>{pagination.total.toLocaleString("bn-BD")}</strong>
+          </p>
+          <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+            প্রতি পৃষ্ঠায় {pagination.page_size} জন · সার্ভার-সাইড সার্চ
+          </p>
+        </div>
         <input
           aria-label="কাস্টমার খুঁজুন"
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) => { setSearch(event.target.value); setPage(1); }}
           placeholder="নাম, ইমেইল বা ফোন নম্বর দিয়ে খুঁজুন"
+          maxLength={80}
           className="min-h-11 w-full rounded-xl border px-4 sm:max-w-sm"
           style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--ink)" }}
         />
       </div>
       {loading && <p role="status">কাস্টমার তথ্য লোড হচ্ছে…</p>}
       {error && <p role="alert" className="text-red-600">{error}</p>}
-      {!loading && !error && filtered.length === 0 && <p>কোনো কাস্টমার পাওয়া যায়নি।</p>}
+      {!loading && !error && customers.length === 0 && <p>কোনো কাস্টমার পাওয়া যায়নি।</p>}
       <div className="grid gap-3">
-        {filtered.map((customer) => (
+        {customers.map((customer) => (
           <article key={customer.user_id} className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
@@ -100,16 +137,20 @@ export default function CustomersManager() {
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
               <div className="rounded-xl p-3" style={{ background: "var(--bg)" }}>
-                <p className="text-xs" style={{ color: "var(--muted)" }}>অর্ডার</p>
-                <strong>{customer.order_summary?.count ?? 0}</strong>
+                <p className="text-xs" style={{ color: "var(--muted)" }}>বাতিল/ফেরত বাদে অর্ডার</p>
+                <strong>{(customer.order_summary?.count ?? 0).toLocaleString("bn-BD")}</strong>
               </div>
               <div className="rounded-xl p-3" style={{ background: "var(--bg)" }}>
-                <p className="text-xs" style={{ color: "var(--muted)" }}>মোট অর্ডার মূল্য</p>
-                <strong>{new Intl.NumberFormat("bn-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(customer.order_summary?.total ?? 0)}</strong>
+                <p className="text-xs" style={{ color: "var(--muted)" }}>বাতিল/ফেরত বাদে অর্ডার মূল্য</p>
+                <strong>{money.format(customer.order_summary?.total ?? 0)}</strong>
               </div>
               <div className="rounded-xl p-3 col-span-2 sm:col-span-1" style={{ background: "var(--bg)" }}>
-                <p className="text-xs" style={{ color: "var(--muted)" }}>সর্বশেষ অর্ডার</p>
-                <strong className="text-sm">{customer.order_summary?.lastOrder ? new Date(customer.order_summary.lastOrder).toLocaleDateString("bn-BD") : "নেই"}</strong>
+                <p className="text-xs" style={{ color: "var(--muted)" }}>সর্বশেষ সক্রিয় অর্ডার</p>
+                <strong className="text-sm">
+                  {customer.order_summary?.lastOrder
+                    ? `${new Date(customer.order_summary.lastOrder).toLocaleDateString("bn-BD")} · ${orderStatusLabels[customer.order_summary.lastStatus ?? ""] ?? customer.order_summary.lastStatus ?? ""}`
+                    : "নেই"}
+                </strong>
               </div>
             </div>
             {customer.addresses && customer.addresses.length > 0 && (
@@ -130,6 +171,23 @@ export default function CustomersManager() {
           </article>
         ))}
       </div>
+      {pagination.total_pages > 1 && (
+        <nav aria-label="কাস্টমার তালিকার পৃষ্ঠা" className="flex flex-wrap items-center justify-between gap-3 border-t pt-4" style={{ borderColor: "var(--border)" }}>
+          <p className="text-sm" style={{ color: "var(--muted)" }}>
+            পৃষ্ঠা {pagination.page.toLocaleString("bn-BD")} / {pagination.total_pages.toLocaleString("bn-BD")}
+          </p>
+          <div className="flex gap-2">
+            <button type="button" disabled={!pagination.has_previous || loading}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              className="rounded-lg border px-4 py-2 text-sm disabled:opacity-40"
+              style={{ borderColor: "var(--border)" }}>আগের পৃষ্ঠা</button>
+            <button type="button" disabled={!pagination.has_next || loading}
+              onClick={() => setPage((current) => current + 1)}
+              className="rounded-lg border px-4 py-2 text-sm disabled:opacity-40"
+              style={{ borderColor: "var(--border)" }}>পরের পৃষ্ঠা</button>
+          </div>
+        </nav>
+      )}
     </section>
   );
 }
