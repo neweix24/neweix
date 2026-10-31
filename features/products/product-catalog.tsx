@@ -265,8 +265,8 @@ export default function ProductCatalog() {
               </Link>
               <div className={styles.details}>
                 <div className="mb-2 flex flex-wrap gap-2">
-                  <button type="button" aria-pressed={wishlist.includes(product.id)} onClick={() => toggleWishlist(product)} className="rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}><Icon name="heart" size={17} /></button>
-                  <button type="button" aria-pressed={compareIds.includes(product.id)} onClick={() => toggleCompare(product)} className="rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}><Icon name="compare" size={17} /></button>
+                  <button type="button" aria-pressed={wishlist.includes(product.id)} aria-label={wishlist.includes(product.id) ? "পছন্দের তালিকা থেকে সরান" : "পছন্দের তালিকায় যোগ করুন"} title={wishlist.includes(product.id) ? "পছন্দে আছে" : "পছন্দে রাখুন"} onClick={() => toggleWishlist(product)} className="rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}><Icon name="heart" size={17} /></button>
+                  <button type="button" aria-pressed={compareIds.includes(product.id)} aria-label={compareIds.includes(product.id) ? "তুলনা থেকে সরান" : "তুলনায় যোগ করুন"} title={compareIds.includes(product.id) ? "তুলনায় আছে" : "তুলনা করুন"} onClick={() => toggleCompare(product)} className="rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}><Icon name="compare" size={17} /></button>
                 </div>
                 <span className={product.stock > 0 ? styles.inStock : styles.outOfStock}>
                   {product.stock > 0 ? "স্টকে আছে" : "স্টক শেষ"}
