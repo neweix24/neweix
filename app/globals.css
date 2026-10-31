@@ -4,15 +4,15 @@
 :root {
   color-scheme: light;
   --bg: #ffffff;
-  --surface: var(--customer-theme-surface, #f8faf8);
-  --surface-raised: var(--customer-theme-surface, #ffffff);
-  --surface-soft: color-mix(in srgb, var(--customer-theme-surface, #f8faf8) 82%, var(--bg));
-  --primary: var(--customer-theme-button, #b6ff4a);
+  --surface: #f8faf8;
+  --surface-raised: #ffffff;
+  --surface-soft: #f3f6f3;
+  --primary: #b6ff4a;
   --primary-hover: color-mix(in srgb, var(--primary) 82%, white);
   --primary-dark: #203814;
-  --ink: var(--customer-theme-text, #17211a);
-  --muted: var(--customer-theme-muted, #59665d);
-  --border: var(--customer-theme-border, #e2e8e3);
+  --ink: #17211a;
+  --muted: #59665d;
+  --border: #e2e8e3;
   --danger: #ff7777;
   --success: #b6ff4a;
   --radius: 18px;
@@ -304,7 +304,7 @@ nav a:hover {
   min-width: 0;
   overflow: hidden;
   padding: 12px 12px 20px;
-  background: linear-gradient(160deg, #151b16, #0e130f);
+  background: linear-gradient(160deg, var(--page-panel), var(--page-surface));
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: 0 3px 16px rgba(0, 0, 0, 0.12);
@@ -313,7 +313,7 @@ nav a:hover {
 
 .product-card:hover {
   transform: translateY(-4px);
-  border-color: #688a42;
+  border-color: color-mix(in srgb, var(--page-accent) 55%, var(--page-border));
   box-shadow: var(--shadow);
 }
 
@@ -646,55 +646,74 @@ th {
     padding: 26px 20px;
   }
 }
-/* Customer-selected colors — storefront only */
-body:has(.topbar) {
+/* Customer-selected colors are scoped to public storefront routes only. */
+body[data-customer-theme="storefront"] {
+  --bg: var(--customer-theme-background, #ffffff);
+  --surface: var(--customer-theme-surface, #f8faf8);
+  --surface-raised: var(--customer-theme-surface, #ffffff);
+  --surface-soft: color-mix(in srgb, var(--customer-theme-surface, #f8faf8) 82%, var(--customer-theme-background, #ffffff));
+  --primary: var(--customer-theme-button, #b6ff4a);
+  --ink: var(--customer-theme-text, #17211a);
+  --muted: var(--customer-theme-muted, #59665d);
+  --border: var(--customer-theme-border, #e2e8e3);
+  --page-bg: var(--bg);
+  --page-surface: var(--surface);
+  --page-panel: var(--surface-raised);
+  --page-panel-soft: var(--surface-soft);
+  --page-text: var(--ink);
+  --page-muted: var(--muted);
+  --page-border: var(--border);
+  --page-accent: var(--primary);
+  --brand-lime: var(--primary);
+  --text-primary: var(--ink);
+  --text-secondary: var(--muted);
   background: var(--page-bg);
-  color: var(--customer-theme-text, var(--ink));
+  color: var(--ink);
 }
 
-body:has(.topbar) .topbar {
+body[data-customer-theme="storefront"] .topbar {
   background: var(--customer-theme-surface, var(--surface));
   border-color: var(--customer-theme-border, var(--border));
   color: var(--customer-theme-text, var(--ink));
 }
 
-body:has(.topbar) .hero,
-body:has(.topbar) .products-section,
-body:has(.topbar) .product-card,
-body:has(.topbar) footer {
+body[data-customer-theme="storefront"] .hero,
+body[data-customer-theme="storefront"] .products-section,
+body[data-customer-theme="storefront"] .product-card,
+body[data-customer-theme="storefront"] footer {
   background: var(--customer-theme-background, var(--bg));
   color: var(--customer-theme-text, var(--ink));
 }
 
-body:has(.topbar) .product-card {
+body[data-customer-theme="storefront"] .product-card {
   background: var(--customer-theme-surface, var(--surface));
   border-color: var(--customer-theme-border, var(--border));
 }
 
-body:has(.topbar) h1,
-body:has(.topbar) h2,
-body:has(.topbar) h3,
-body:has(.topbar) .brand,
-body:has(.topbar) .product-bottom strong {
+body[data-customer-theme="storefront"] h1,
+body[data-customer-theme="storefront"] h2,
+body[data-customer-theme="storefront"] h3,
+body[data-customer-theme="storefront"] .brand,
+body[data-customer-theme="storefront"] .product-bottom strong {
   color: var(--customer-theme-text, var(--ink));
 }
 
-body:has(.topbar) p,
-body:has(.topbar) footer p {
+body[data-customer-theme="storefront"] p,
+body[data-customer-theme="storefront"] footer p {
   color: var(--customer-theme-muted, var(--muted));
 }
 
-body:has(.topbar) .primary-button,
-body:has(.topbar) .nav-button,
-body:has(.topbar) .product-bottom button {
+body[data-customer-theme="storefront"] .primary-button,
+body[data-customer-theme="storefront"] .nav-button,
+body[data-customer-theme="storefront"] .product-bottom button {
   background: var(--customer-theme-button, var(--primary));
   color: var(--customer-theme-button-text, #080b09);
   border-color: var(--customer-theme-border, var(--border));
 }
 
-body:has(.topbar) input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-body:has(.topbar) select,
-body:has(.topbar) textarea {
+body[data-customer-theme="storefront"] input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+body[data-customer-theme="storefront"] select,
+body[data-customer-theme="storefront"] textarea {
   background: var(--customer-theme-surface, var(--surface));
   color: var(--customer-theme-text, var(--ink));
   border-color: var(--customer-theme-border, var(--border));
@@ -849,10 +868,10 @@ th {
 /* White page canvas across storefront, account, and admin routes. */
 html, body { background: var(--page-bg) !important; }
 body { color: var(--ink); }
-body:has(.topbar),
-body:has(.topbar) .hero,
-body:has(.topbar) .products-section,
-body:has(.topbar) footer { background: var(--page-bg) !important; }
+body[data-customer-theme="storefront"],
+body[data-customer-theme="storefront"] .hero,
+body[data-customer-theme="storefront"] .products-section,
+body[data-customer-theme="storefront"] footer { background: var(--page-bg) !important; }
 .auth-page,
 .info-page-header,
 main.min-h-screen.px-4.py-10 > div.mx-auto > header {
