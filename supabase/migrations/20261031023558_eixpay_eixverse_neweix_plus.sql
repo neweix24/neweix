@@ -1273,12 +1273,215 @@ begin
 end;
 $function$;
 
+create or replace function public.eixpay_supreme_get_dashboard()
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_config jsonb;
+  v_rules jsonb;
+  v_tiers jsonb;
+  v_stats jsonb;
+begin
+  if auth.uid() is null
+     or not private.has_staff_role(array['supreme']::text[])
+     or coalesce(auth.jwt() ->> 'aal', '') <> 'aal2' then
+    raise exception using errcode = '42501', message = 'SUPREME_MFA_REQUIRED';
+  end if;
+
+  select to_jsonb(c) into v_config
+  from private.eixpay_config c
+  where c.singleton = true;
+
+  select coalesce(jsonb_agg(to_jsonb(r) order by r.event_code), '[]'::jsonb)
+  into v_rules
+  from private.eixpay_reward_rules r;
+
+  select coalesce(jsonb_agg(to_jsonb(t) order by t.tier_rank), '[]'::jsonb)
+  into v_tiers
+  from private.neweix_plus_tiers t;
+
+  select jsonb_build_object(
+    'wallet_count', (select count(*) from private.eixpay_wallets),
+    'total_eixon_balance', (select coalesce(sum(balance), 0) from private.eixpay_wallets),
+    'pending_transfers', (select count(*) from private.eixpay_transfer_requests where status = 'pending'),
+    'pending_redemptions', (select count(*) from private.eixpay_redemptions where status = 'pending'),
+    'pending_order_rewards', (select count(*) from private.eixpay_order_reward_queue where status in ('pending','blocked')),
+    'outstanding_reward_debt', (select coalesce(sum(reward_debt), 0) from private.eixpay_wallets)
+  ) into v_stats;
+
+  return jsonb_build_object(
+    'program', v_config,
+    'reward_rules', v_rules,
+    'membership_tiers', v_tiers,
+    'stats', v_stats
+  );
+end;
+$function$;
+
+create or replace function public.neweix_plus_set_tier(
+  p_tier_code text,
+  p_enabled boolean,
+  p_min_qualified_spend_bdt bigint,
+  p_min_qualified_orders integer,
+  p_qualification_period_days integer,
+  p_benefits jsonb
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_actor uuid := auth.uid();
+  v_updated private.neweix_plus_tiers%rowtype;
+begin
+  if v_actor is null
+     or not private.has_staff_role(array['supreme']::text[])
+     or coalesce(auth.jwt() ->> 'aal', '') <> 'aal2' then
+    raise exception using errcode = '42501', message = 'SUPREME_MFA_REQUIRED';
+  end if;
+
+  if p_tier_code is null or p_tier_code not in ('free','silver','gold','platinum','diamond','vip')
+     or p_enabled is null
+     or p_min_qualified_spend_bdt < 0
+     or p_min_qualified_orders < 0
+     or p_qualification_period_days < 1 or p_qualification_period_days > 3650
+     or p_benefits is null or jsonb_typeof(p_benefits) <> 'array'
+     or jsonb_array_length(p_benefits) > 30
+     or exists (
+       select 1 from jsonb_array_elements(p_benefits) as item(value)
+       where jsonb_typeof(item.value) <> 'string'
+          or char_length(item.value #>> '{}') > 240
+     ) then
+    raise exception using errcode = '22023', message = 'INVALID_MEMBERSHIP_TIER_CONFIG';
+  end if;
+
+  if p_tier_code = 'free' and not p_enabled then
+    raise exception using errcode = '22023', message = 'FREE_TIER_MUST_REMAIN_ENABLED';
+  end if;
+
+  if not p_enabled and exists (
+    select 1 from private.neweix_plus_memberships
+    where tier_code = p_tier_code and status = 'active'
+  ) then
+    raise exception using errcode = '55000', message = 'TIER_HAS_ACTIVE_MEMBERS';
+  end if;
+
+  update private.neweix_plus_tiers
+  set is_enabled = p_enabled,
+      min_qualified_spend_bdt = p_min_qualified_spend_bdt,
+      min_qualified_orders = p_min_qualified_orders,
+      qualification_period_days = p_qualification_period_days,
+      benefits = p_benefits,
+      updated_at = now()
+  where tier_code = p_tier_code
+  returning * into v_updated;
+
+  if not found then
+    raise exception using errcode = '22023', message = 'UNKNOWN_MEMBERSHIP_TIER';
+  end if;
+
+  insert into private.eixpay_audit_events (actor_id, event_code, metadata)
+  values (v_actor, 'neweix_plus_tier_updated',
+    jsonb_build_object(
+      'tier_code', p_tier_code,
+      'enabled', p_enabled,
+      'min_qualified_spend_bdt', p_min_qualified_spend_bdt,
+      'min_qualified_orders', p_min_qualified_orders,
+      'qualification_period_days', p_qualification_period_days
+    ));
+
+  return jsonb_build_object('success', true, 'tier', to_jsonb(v_updated));
+end;
+$function$;
+
+create or replace function public.neweix_plus_assign_member(
+  p_user_id uuid,
+  p_tier_code text,
+  p_expires_at timestamptz default null,
+  p_note text default ''
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_actor uuid := auth.uid();
+  v_tier private.neweix_plus_tiers%rowtype;
+  v_membership private.neweix_plus_memberships%rowtype;
+begin
+  if v_actor is null
+     or not private.has_staff_role(array['supreme']::text[])
+     or coalesce(auth.jwt() ->> 'aal', '') <> 'aal2' then
+    raise exception using errcode = '42501', message = 'SUPREME_MFA_REQUIRED';
+  end if;
+
+  if p_user_id is null or p_tier_code is null
+     or coalesce(char_length(p_note), 0) > 500 then
+    raise exception using errcode = '22023', message = 'INVALID_MEMBERSHIP_ASSIGNMENT';
+  end if;
+
+  select * into v_tier
+  from private.neweix_plus_tiers
+  where tier_code = p_tier_code and is_enabled = true;
+
+  if not found then
+    raise exception using errcode = '22023', message = 'MEMBERSHIP_TIER_NOT_AVAILABLE';
+  end if;
+
+  if p_expires_at is not null and p_expires_at <= now() then
+    raise exception using errcode = '22023', message = 'MEMBERSHIP_EXPIRY_MUST_BE_IN_FUTURE';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(p_user_id::text, 0));
+
+  update private.neweix_plus_memberships
+  set status = 'cancelled',
+      assignment_note = coalesce(trim(p_note), 'Replaced by Supreme membership assignment.')
+  where user_id = p_user_id and status = 'active';
+
+  insert into private.neweix_plus_memberships
+    (user_id, tier_code, status, starts_at, expires_at, assignment_source, assigned_by, assignment_note)
+  values
+    (p_user_id, p_tier_code, 'active', now(), p_expires_at, 'supreme', v_actor, coalesce(trim(p_note), ''))
+  returning * into v_membership;
+
+  insert into private.eixpay_audit_events (actor_id, event_code, subject_id, metadata)
+  values (v_actor, 'neweix_plus_member_assigned', p_user_id,
+    jsonb_build_object(
+      'membership_id', v_membership.id,
+      'tier_code', p_tier_code,
+      'expires_at', p_expires_at,
+      'note', coalesce(trim(p_note), '')
+    ));
+
+  return jsonb_build_object(
+    'success', true,
+    'membership_id', v_membership.id,
+    'tier_code', v_membership.tier_code,
+    'starts_at', v_membership.starts_at,
+    'expires_at', v_membership.expires_at
+  );
+end;
+$function$;
+
 -- Functions are explicit APIs. No PUBLIC/anon execution; only signed-in users
 -- or the trusted service role can run the matching operation.
 revoke all on function private.eixpay_apply_reward(uuid, text, uuid, text, bigint, uuid) from public, anon, authenticated, service_role;
 revoke all on function private.eixpay_reverse_order_reward(uuid, uuid) from public, anon, authenticated, service_role;
 revoke all on function private.eixpay_process_due_order_rewards() from public, anon, authenticated, service_role;
 revoke all on function private.eixpay_watch_order_reward_eligibility() from public, anon, authenticated, service_role;
+
+revoke all on function public.eixpay_supreme_get_dashboard() from public, anon;
+revoke all on function public.neweix_plus_set_tier(text, boolean, bigint, integer, integer, jsonb) from public, anon;
+revoke all on function public.neweix_plus_assign_member(uuid, text, timestamptz, text) from public, anon;
+grant execute on function public.eixpay_supreme_get_dashboard() to authenticated;
+grant execute on function public.neweix_plus_set_tier(text, boolean, bigint, integer, integer, jsonb) to authenticated;
+grant execute on function public.neweix_plus_assign_member(uuid, text, timestamptz, text) to authenticated;
 revoke all on function public.eixpay_get_wallet() from public, anon;
 revoke all on function public.eixpay_list_activity(integer, bigint) from public, anon;
 revoke all on function public.eixpay_request_transfer(text, bigint, text, text) from public, anon;
