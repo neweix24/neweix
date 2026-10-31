@@ -196,7 +196,7 @@ export default function StorefrontHome() {
         <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
           <label className={styles.srOnly} htmlFor="home-product-search">পণ্য খুঁজুন</label>
           <input id="home-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="কোন পণ্য খুঁজছেন?" />
-          <Link className={styles.searchLink} href={search.trim() ? `/products?search=${encodeURIComponent(search.trim())}` : "/products"} aria-label="পণ্য খুঁজুন"><Icon name="search" size={19} /></Link>
+          <button type="submit" aria-label="খুঁজুন"><Icon name="search" size={19} /></button>
         </form>
         <nav className={styles.desktopNav} aria-label="প্রধান নেভিগেশন">
           <Link href="/products">সব পণ্য</Link>
