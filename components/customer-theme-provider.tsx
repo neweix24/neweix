@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 const DEFAULT_THEME = {
-  background: "#080b09",
+  background: "#ffffff",
   surface: "#151d18",
   text: "#f4f8f2",
   muted: "#a0ada1",
@@ -82,7 +82,7 @@ export default function CustomerThemeProvider() {
     function applyTheme(value: unknown) {
       const theme = validateTheme(value);
       for (const key of COLOR_KEYS) {
-        root.style.setProperty(variableNames[key], theme[key]);
+        root.style.setProperty(variableNames[key], key === "background" ? "#ffffff" : theme[key]);
       }
     }
 
