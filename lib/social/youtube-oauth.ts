@@ -4,7 +4,8 @@ export type YouTubeEnv = {
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   YOUTUBE_TOKEN_ENCRYPTION_KEY?: string;
-  NEXT_PUBLIC_SITE_URL?: string;\n  NEWEIX_SITE_URL?: string;
+  NEXT_PUBLIC_SITE_URL?: string;
+  NEWEIX_SITE_URL?: string;
 };
 
 export async function getYouTubeEnv(): Promise<YouTubeEnv> {
