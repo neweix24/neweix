@@ -89,3 +89,27 @@ jobs:
 
           echo "Verified: Before User Created hook is enabled and points to the deployed Edge Function."
           echo "Strict signup policy is now wired to the active Bangladesh/VPN verification function."
+
+      - name: Enable leaked-password protection when supported by the Supabase plan
+        continue-on-error: true
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          response_file="$(mktemp)"
+          trap 'rm -f "$response_file"' EXIT
+          status="$(curl --silent --show-error \
+            --output "$response_file" \
+            --write-out '%{http_code}' \
+            --request PATCH \
+            --url 'https://api.supabase.com/v1/projects/grhybvlhdnzlopwbaqun/config/auth' \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            --header 'Content-Type: application/json' \
+            --data '{"password_hibp_enabled":true}')"
+          if [[ "$status" == "200" ]] && jq -e '.password_hibp_enabled == true' "$response_file" >/dev/null; then
+            echo "Leaked-password protection is enabled."
+          else
+            echo "::warning::Supabase did not enable leaked-password protection (HTTP $status). This setting may require a Pro plan or higher permissions."
+          fi
+
