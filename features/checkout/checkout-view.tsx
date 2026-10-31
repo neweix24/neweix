@@ -214,7 +214,7 @@ export default function CheckoutView() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, []);
 
   const cartDetails = cart.map((item) => {
     const product = products.find((p) => p.id === item.product_id);
