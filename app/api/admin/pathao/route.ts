@@ -15,13 +15,17 @@ export const dynamic = "force-dynamic";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-async function authorizeAdmin() {
+type AdminAuthResult =
+  | { ok: true; userId: string; role: string }
+  | { ok: false; error: string; status: number };
+
+async function authorizeAdmin(): Promise<AdminAuthResult> {
   const supabase = await createServerSupabaseClient();
   const { data, error: authError } = await supabase.auth.getClaims();
   const claimSubject = data?.claims?.sub;
   const userId = typeof claimSubject === "string" ? claimSubject : null;
   if (authError || !userId) {
-    return { error: "লগইন প্রয়োজন।", status: 401 as const };
+    return { ok: false, error: "লগইন প্রয়োজন।", status: 401 };
   }
 
   const { data: profile, error } = await supabase
@@ -32,18 +36,18 @@ async function authorizeAdmin() {
 
   if (error || !profile || profile.is_active !== true ||
       !["supreme", "admin"].includes(profile.role)) {
-    return { error: "এই কাজের অনুমতি নেই।", status: 403 as const };
+    return { ok: false, error: "এই কাজের অনুমতি নেই।", status: 403 };
   }
 
   if (profile.role === "supreme") {
     const { data: assurance, error: mfaError } =
       await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     if (mfaError || assurance.currentLevel !== "aal2") {
-      return { error: "Supreme অ্যাকাউন্টে MFA সম্পন্ন করুন।", status: 403 as const };
+      return { ok: false, error: "Supreme অ্যাকাউন্টে MFA সম্পন্ন করুন।", status: 403 };
     }
   }
 
-  return { userId, role: profile.role };
+  return { ok: true, userId, role: profile.role };
 }
 
 function normalizePathaoPhone(value: string) {
@@ -61,7 +65,7 @@ function errorResponse(message: string, status: number) {
 
 export async function GET(request: Request) {
   const staff = await authorizeAdmin();
-  if ("error" in staff) return errorResponse(staff.error, staff.status);
+  if (!staff.ok) return errorResponse(staff.error, staff.status);
 
   const params = new URL(request.url).searchParams;
   const action = params.get("action") || "status";
