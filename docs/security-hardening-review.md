@@ -55,15 +55,15 @@ Migration added to this PR (not applied to any database):
 `supabase/migrations/20261031180000_eixpay_cryptographic_integrity_chain.sql`
 
 - Adds a private integrity event stream for new EixPay ledger and audit inserts.
-- Uses `extensions.digest(..., 'sha256')` and deterministic PostgreSQL `jsonb::text` serialization.
+- Uses `extensions.digest(..., 'sha256')` over PostgreSQL `jsonb::text` serialization, and binds the source table and source ID into each chained event hash.
 - Serializes concurrent writes through a locked singleton chain-state row; source insert, chain event and state update share one database transaction.
-- Stores the source row snapshot so the verifier can compare the current ledger/audit row with the original payload.
+- Stores only a SHA-256 hash of each source row (not a duplicate copy of financial/audit payloads); the verifier re-hashes the current source row.
 - Adds a Supreme AAL2-only `public.eixpay_verify_integrity()` RPC. It checks sequence continuity, previous hashes, event hashes, source-row equality and chain-state consistency.
 - The verifier takes a shared lock on chain state during its scan so concurrent inserts cannot create a false partial-snapshot failure.
 - Historical ledger/audit records are not backfilled; chain coverage begins with the first insert after the migration is applied.
 - The verification response explicitly reports `independent_signature: false`.
 
-**Validation boundary:** Migration is committed to the PR branch only. It has not been executed against production or staging, and no SQL integration/concurrency test has yet been run. Apply and test first on an isolated Supabase preview branch, including concurrent inserts, tampered source-row simulation, missing chain event simulation, and transaction rollback. Do not apply directly to production.
+**Validation boundary:** Migration is committed to the PR branch only. A read-only check of the connected Supabase production project shows the EixPay ledger and audit tables are not present yet, so this migration cannot be tested there without first applying the earlier EixPay foundation migrations. No SQL integration/concurrency test has been run. The only existing Supabase development branch is named `main` and reports `MIGRATIONS_FAILED`; it is not a valid test target. A separate preview branch is required before SQL testing.
 
 **Remaining stage 2:** External Ed25519 signing and independently retained checkpoints. The private signing key must be provisioned as a Cloudflare Worker secret (or managed KMS key) outside Postgres and source control. The current Worker config has no signing-key binding, and no signing endpoint has been deployed. Do not claim independent signature protection until that service and its verification workflow exist.
 
@@ -94,8 +94,13 @@ This document records a review and safe implementation plan. It does not apply S
 
 ## Latest integrity-chain commit validation status
 
-- Integrity-chain migration and documentation were committed to PR #20 at `f3caaec23454dbcfd4993b9b842d6484d8ef2936`.
+- Integrity-chain migration and documentation are committed to PR #20; latest integrity migration update is `e4e9e280f029efc4a2fb7f7c7917b82352fc0619`.
 - GitHub Actions PR workflow query returned no workflow runs for this latest documentation/migration commit.
 - GitHub combined status currently reports a failing `Vercel` status with target URL indicating a build-rate-limit/plan restriction. This is not a successful Cloudflare build and must not be reported as one.
 - No migration execution, SQL integration test, concurrency test, TypeScript build, or Worker preview has been completed for the new integrity-chain change.
 - Required next validation: run the migration on an isolated Supabase preview branch, exercise concurrent inserts and tampering/rollback cases, then run the repository's typecheck/lint/build and Cloudflare OpenNext preview. Production rollout remains blocked pending review and explicit authorization.
+
+
+## Preview database cost gate
+
+Creating a dedicated Supabase preview branch requires additional compute. Supabase quoted **$0.01344 per hour** (approximately **$9.81 per 30.4-day month** while running). No branch was created because explicit approval for this recurring cost is required. The existing preview branch is in `MIGRATIONS_FAILED` state and must not be used for validation.
