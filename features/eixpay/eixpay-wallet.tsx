@@ -12,6 +12,7 @@ type Wallet = {
   balance?: number;
   lifetime_earned?: number;
   lifetime_spent?: number;
+  reward_debt?: number;
   earning_enabled?: boolean;
   redemption_enabled?: boolean;
   transfer_enabled?: boolean;
@@ -118,6 +119,11 @@ export default function EixPayWallet() {
             <div className="mt-4 rounded-2xl border border-sky-200/15 bg-sky-200/[0.06] px-4 py-3 text-sm leading-6 text-sky-100/80">
               Eixon হলো NEWEIX-এর অভ্যন্তরীণ রিওয়ার্ড ইউনিট; এটি নগদ অর্থ, ব্যাংক ব্যালেন্স বা বাইরের পেমেন্ট মাধ্যম নয়।
             </div>
+            {(wallet?.reward_debt ?? 0) > 0 && (
+              <div className="mt-4 rounded-2xl border border-amber-200/20 bg-amber-200/[0.06] px-4 py-3 text-sm leading-6 text-amber-100/85">
+                আগের কোনো অর্ডারের রিটার্ন/রিফান্ড সমন্বয়ের জন্য {amount(wallet?.reward_debt ?? 0)} Eixon ভবিষ্যৎ রিওয়ার্ড থেকে সমন্বয় হবে। আপনার ব্যালেন্স ঋণাত্মক করা হবে না।
+              </div>
+            )}
             <section className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Link href="/account/neweix-plus" className="group rounded-3xl border border-amber-200/15 bg-gradient-to-br from-amber-200/10 to-white/[0.03] p-5 transition hover:border-amber-200/35">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-200">Membership</p>
