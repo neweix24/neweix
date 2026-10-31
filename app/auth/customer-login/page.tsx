@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import Icon from "@/components/ui/icon";
 
 function CustomerLoginForm() {
   const router = useRouter();
@@ -227,7 +228,7 @@ function CustomerLoginForm() {
               type="submit"
               disabled={busy}
             >
-              {busy ? "অপেক্ষা করুন..." : isSignUp ? "অ্যাকাউন্ট তৈরি করুন" : "লগইন করুন"}
+              <><Icon name={busy ? "refresh" : "user"} size={17} /> {busy ? "অপেক্ষা করুন..." : isSignUp ? "অ্যাকাউন্ট তৈরি করুন" : "লগইন করুন"}</>
             </button>
           </form>
 
