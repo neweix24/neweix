@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import Icon from "@/components/ui/icon";
 import styles from "./portal-home.module.css";
@@ -145,7 +145,10 @@ export default function PortalHome() {
               {featured.map((product) => (
                 <article className={styles.productCard} key={product.id}>
                   <Link href={`/products/${encodeURIComponent(product.slug)}`} className={styles.productImage} aria-label={`${product.name} দেখুন`}>
-                    {product.image_urls?.[0] ? <img src={product.image_urls[0]} alt={product.name} loading="lazy" /> : <Icon name="package" size={42} />}
+                    {product.image_urls?.[0] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={product.image_urls[0]} alt={product.name} loading="lazy" />
+                    ) : <Icon name="package" size={42} />}
                     {product.is_featured && <span className={styles.featuredTag}>জনপ্রিয়</span>}
                   </Link>
                   <div className={styles.productInfo}>
