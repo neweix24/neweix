@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
 
       const { data: existingProfile, error: profileReadError } = await supabase
         .from("customer_profiles")
-        .select("user_id,full_name,avatar_url")
+        .select("user_id,full_name,avatar_url,preferred_language")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
           .update({
             email: user.email ?? null,
             avatar_url: avatarUrl ?? existingProfile.avatar_url,
-            preferred_language: preferredLanguage,
+            preferred_language: preferredLanguage ?? existingProfile.preferred_language,
             full_name: existingProfile.full_name || metadataName,
           })
           .eq("user_id", user.id);
