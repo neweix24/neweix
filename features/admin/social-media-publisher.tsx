@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 type Platform = "facebook" | "instagram" | "tiktok" | "youtube";
 type Account = { id: string; platform: Platform; account_name: string; connection_status: string };
-type Post = { id: string; title: string; caption: string; post_targets: Platform[]; status: string; scheduled_at: string | null; created_at: string };
+type Post = { id: string; title: string; caption: string; media_urls: string[]; post_targets: Platform[]; status: string; scheduled_at: string | null; created_at: string };
 
 const platforms: { id: Platform; label: string; note: string }[] = [
   { id: "facebook", label: "Facebook Page", note: "Page publishing API" },
@@ -18,6 +18,7 @@ export default function SocialMediaPublisher() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [title, setTitle] = useState("");
   const [caption, setCaption] = useState("");
+  const [mediaUrls, setMediaUrls] = useState("");
   const [targets, setTargets] = useState<Platform[]>([]);
   const [scheduledAt, setScheduledAt] = useState("");
   const [status, setStatus] = useState("");
@@ -55,6 +56,15 @@ export default function SocialMediaPublisher() {
       setStatus("শিরোনাম, ক্যাপশন এবং অন্তত একটি প্ল্যাটফর্ম নির্বাচন করুন।");
       return;
     }
+    const mediaUrlList = mediaUrls.split("\\n").map((value) => value.trim()).filter(Boolean);
+    if (!asDraft && targets.some((target) => target !== "youtube")) {
+      setStatus("এই মুহূর্তে স্বয়ংক্রিয় প্রকাশ শুধু YouTube-এর জন্য চালু। অন্য প্ল্যাটফর্মের পোস্ট Draft হিসেবে রাখুন।");
+      return;
+    }
+    if (!asDraft && mediaUrlList.length === 0) {
+      setStatus("YouTube ভিডিওর পাবলিক HTTPS URL দিন।");
+      return;
+    }
     if (!asDraft && !scheduledAt) {
       setStatus("প্রকাশের তারিখ ও সময় নির্ধারণ করুন।");
       return;
@@ -65,15 +75,16 @@ export default function SocialMediaPublisher() {
       const response = await fetch("/api/admin/social-media", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, caption, targets, scheduledAt: asDraft ? null : new Date(scheduledAt).toISOString(), status: asDraft ? "draft" : "scheduled" }),
+        body: JSON.stringify({ title, caption, mediaUrls: mediaUrlList, targets, scheduledAt: asDraft ? null : new Date(scheduledAt).toISOString(), status: asDraft ? "draft" : "scheduled" }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "পোস্ট সংরক্ষণ করা যায়নি।");
       setTitle("");
       setCaption("");
+      setMediaUrls("");
       setTargets([]);
       setScheduledAt("");
-      setStatus(asDraft ? "ড্রাফট সংরক্ষণ হয়েছে।" : "পোস্ট শিডিউল হয়েছে। সংযুক্ত অ্যাকাউন্ট ও API অনুমোদন ছাড়া এটি প্রকাশ হবে না।");
+      setStatus(asDraft ? "ড্রাফট সংরক্ষণ হয়েছে।" : "YouTube ভিডিও প্রকাশের জন্য শিডিউল হয়েছে। নির্ধারিত সময়ে ভিডিওটি Public হবে।");
       await load();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "পোস্ট সংরক্ষণ ব্যর্থ হয়েছে।");
@@ -106,10 +117,11 @@ export default function SocialMediaPublisher() {
 
       <section className="rounded-2xl border p-5 sm:p-7" style={cardStyle}>
         <h2 className="text-xl font-bold">নতুন পোস্ট তৈরি</h2>
-        <p className="mt-1 text-sm opacity-70">YouTube OAuth সংযোগ প্রথমে চালু হচ্ছে। ভিডিও আপলোড ও প্রকাশের সুবিধা পরবর্তী ধাপে যুক্ত হবে।</p>
+        <p className="mt-1 text-sm opacity-70">YouTube-এর জন্য ভিডিও URL দিয়ে স্বয়ংক্রিয় প্রকাশ শিডিউল করা যাবে। Facebook, Instagram ও TikTok এখন Draft-only—তাদের নিজস্ব API অনুমোদন প্রয়োজন।</p>
         <div className="mt-5 grid gap-4">
           <label className="grid gap-2 text-sm font-semibold">পোস্টের শিরোনাম<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={200} className="min-h-11 rounded-xl border bg-transparent px-3 font-normal" style={{ borderColor: "var(--border)" }} /></label>
           <label className="grid gap-2 text-sm font-semibold">ক্যাপশন / বিবরণ<textarea value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={5000} rows={5} className="rounded-xl border bg-transparent p-3 font-normal" style={{ borderColor: "var(--border)" }} /></label>
+          <label className="grid gap-2 text-sm font-semibold">ভিডিও URL (প্রতি লাইনে একটি, YouTube-এর জন্য প্রয়োজন)<textarea value={mediaUrls} onChange={(event) => setMediaUrls(event.target.value)} rows={3} placeholder="https://example.com/video.mp4" className="rounded-xl border bg-transparent p-3 font-normal" style={{ borderColor: "var(--border)" }} /></label>
           <fieldset><legend className="mb-2 text-sm font-semibold">কোন প্ল্যাটফর্মে যাবে?</legend><div className="grid gap-2 sm:grid-cols-2">{platforms.map((platform) => <label key={platform.id} className="flex items-center gap-3 rounded-xl border p-3 text-sm" style={{ borderColor: "var(--border)" }}><input type="checkbox" checked={targets.includes(platform.id)} onChange={() => toggleTarget(platform.id)} />{platform.label}</label>)}</div></fieldset>
           <label className="grid gap-2 text-sm font-semibold">প্রকাশের তারিখ ও সময়<input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} className="min-h-11 rounded-xl border bg-transparent px-3 font-normal" style={{ borderColor: "var(--border)" }} /></label>
           <div className="flex flex-wrap gap-3"><button type="button" disabled={busy} onClick={() => createPost(true)} className="rounded-xl border px-5 py-3 font-semibold" style={{ borderColor: "var(--border)" }}>ড্রাফট সংরক্ষণ</button><button type="button" disabled={busy} onClick={() => createPost(false)} className="rounded-xl border px-5 py-3 font-semibold" style={{ borderColor: "var(--border)" }}>শিডিউল করুন</button></div>
@@ -119,7 +131,7 @@ export default function SocialMediaPublisher() {
 
       <section className="rounded-2xl border p-5 sm:p-7" style={cardStyle}>
         <h2 className="text-xl font-bold">পোস্টের তালিকা</h2>
-        <div className="mt-4 space-y-3">{posts.length === 0 ? <p className="text-sm opacity-70">এখনো কোনো পোস্ট তৈরি হয়নি।</p> : posts.map((post) => <article key={post.id} className="rounded-xl border p-4" style={{ borderColor: "var(--border)" }}><div className="flex flex-wrap items-center justify-between gap-2"><strong>{post.title}</strong><span className="rounded-full border px-3 py-1 text-xs">{post.status}</span></div><p className="mt-2 line-clamp-3 whitespace-pre-wrap text-sm opacity-80">{post.caption}</p><p className="mt-2 text-xs opacity-70">প্ল্যাটফর্ম: {post.post_targets.join(", ")}{post.scheduled_at ? " · " + new Date(post.scheduled_at).toLocaleString() : ""}</p></article>)}</div>
+        <div className="mt-4 space-y-3">{posts.length === 0 ? <p className="text-sm opacity-70">এখনো কোনো পোস্ট তৈরি হয়নি।</p> : posts.map((post) => <article key={post.id} className="rounded-xl border p-4" style={{ borderColor: "var(--border)" }}><div className="flex flex-wrap items-center justify-between gap-2"><strong>{post.title}</strong><span className="rounded-full border px-3 py-1 text-xs">{post.status}</span></div><p className="mt-2 line-clamp-3 whitespace-pre-wrap text-sm opacity-80">{post.caption}</p><p className="mt-2 text-xs opacity-70">প্ল্যাটফর্ম: {post.post_targets.join(", ")}{post.scheduled_at ? " · " + new Date(post.scheduled_at).toLocaleString() : ""}</p>{post.media_urls?.length > 0 && <p className="mt-1 break-all text-xs opacity-60">Media: {post.media_urls.join(", ")}</p>}</article>)}</div>
       </section>
     </div>
   );
