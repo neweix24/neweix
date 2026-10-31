@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import Icon from "@/components/ui/icon";
 
 type CartItem = { product_id: string; quantity: number };
 
@@ -60,9 +61,9 @@ export default function AddToCartButton({
   return (
     <div style={{ marginTop: 16 }}>
       <button type="button" className="primary-button" onClick={add} disabled={disabled}>
-        {disabled ? "স্টক শেষ" : "কার্টে যোগ করুন"}
+        {disabled ? "স্টক শেষ" : <><Icon name="cart" size={18} /> কার্টে যোগ করুন</>}
       </button>{" "}
-      <Link href="/cart">কার্ট দেখুন</Link>
+      <Link href="/cart"><Icon name="cart" size={16} /> কার্ট দেখুন</Link>
       {message && <p role="status" aria-live="polite">{message}</p>}
     </div>
   );
