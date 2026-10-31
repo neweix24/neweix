@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { createAdminSupabaseClient } from "@/lib/phone-verification";
 
 export const dynamic = "force-dynamic";
 
@@ -119,6 +120,56 @@ export async function GET(request: NextRequest) {
     const user = authData.user;
 
     if (!userError && user) {
+      // Keep a random, first-party browser device ID. Never derive it from fingerprint data.
+      const existingDeviceId = request.cookies.get("neweix_device_id")?.value;
+      const deviceId = existingDeviceId && /^[0-9a-f-]{36}$/i.test(existingDeviceId)
+        ? existingDeviceId
+        : crypto.randomUUID();
+      response.cookies.set("neweix_device_id", deviceId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+      });
+
+      const userAgent = request.headers.get("user-agent")?.slice(0, 1000) ?? null;
+      const ua = userAgent ?? "";
+      const deviceType = /ipad|tablet/i.test(ua)
+        ? "tablet"
+        : /mobile|android|iphone|ipod/i.test(ua)
+          ? "mobile"
+          : ua ? "desktop" : "unknown";
+      const operatingSystem =
+        /Windows NT/i.test(ua) ? "Windows" :
+        /Android/i.test(ua) ? "Android" :
+        /iPhone|iPad|iPod/i.test(ua) ? "iOS" :
+        /Mac OS X/i.test(ua) ? "macOS" :
+        /Linux/i.test(ua) ? "Linux" : "unknown";
+      const browser =
+        /Edg\//i.test(ua) ? "Edge" :
+        /Firefox\//i.test(ua) ? "Firefox" :
+        /Chrome\//i.test(ua) && !/Edg\//i.test(ua) ? "Chrome" :
+        /Safari\//i.test(ua) && !/Chrome\//i.test(ua) ? "Safari" : "unknown";
+
+      try {
+        const admin = createAdminSupabaseClient();
+        const { error: deviceError } = await admin
+          .from("customer_devices")
+          .upsert({
+            user_id: user.id,
+            device_id: deviceId,
+            device_type: deviceType,
+            operating_system: operatingSystem,
+            browser,
+            user_agent: userAgent,
+            last_seen_at: new Date().toISOString(),
+          }, { onConflict: "user_id,device_id" });
+        if (deviceError) console.warn("Customer device registration failed:", deviceError.message);
+      } catch (deviceError) {
+        console.warn("Customer device registry unavailable:", deviceError instanceof Error ? deviceError.message : "unknown error");
+      }
+
       const metadata = user.user_metadata ?? {};
       const metadataName =
         typeof metadata.full_name === "string" ? metadata.full_name :
