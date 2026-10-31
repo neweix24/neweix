@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Icon from "@/components/ui/icon";
 import styles from "./checkout-view.module.css";
 
 import { useEffect, useState, type FormEvent } from "react";
@@ -417,8 +418,8 @@ export default function CheckoutView() {
 
         <p>ডেলিভারি: Pathao Courier। বুকিংয়ের আগে অ্যাডমিন অনুমোদন করবেন।</p>
         <p>ডেলিভারি চার্জ অর্ডারের বিবরণে দেখানো হয়েছে।</p>
-        <Link className="primary-button" href="/">হোমপেজে ফিরুন</Link>
-        <Link className={styles.secondaryLink} href="/track-order">অর্ডার ট্র্যাক করুন</Link>
+        <Link className="primary-button" href="/"><Icon name="home" size={17} /> হোমপেজে ফিরুন</Link>
+        <Link className={styles.secondaryLink} href="/track-order"><Icon name="truck" size={17} /> অর্ডার ট্র্যাক করুন</Link>
       </main>
     );
   }
@@ -428,7 +429,7 @@ export default function CheckoutView() {
       <main className={styles.page}>
         <h1>আপনার কার্ট খালি</h1>
         {error && <p role="alert">{error}</p>}
-        <Link className="primary-button" href="/">পণ্য দেখুন</Link>
+        <Link className="primary-button" href="/"><Icon name="grid" size={17} /> পণ্য দেখুন</Link>
       </main>
     );
   }
@@ -625,11 +626,11 @@ export default function CheckoutView() {
           disabled={submitting || missingProducts || stockIssues.length > 0}
           className={styles.submit}
         >
-          {submitting ? "অর্ডার জমা হচ্ছে..." : "অর্ডার নিশ্চিত করুন"}
+          <><Icon name={submitting ? "refresh" : "check"} size={18} /> {submitting ? "অর্ডার জমা হচ্ছে..." : "অর্ডার নিশ্চিত করুন"}</>
         </button>
       </form>
 
-      <p><Link href="/cart">← কার্টে ফিরে যান</Link></p>
+      <p><Link href="/cart"><Icon name="cart" size={16} /> কার্টে ফিরে যান</Link></p>
     </main>
   );
 }

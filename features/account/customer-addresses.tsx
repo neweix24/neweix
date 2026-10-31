@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import Icon from "@/components/ui/icon";
 
 type Address = {
   id: string; label: string; recipient_name: string; phone: string;
@@ -145,8 +146,8 @@ export default function CustomerAddresses() {
                   <p>{address.recipient_name} · {address.phone}</p>
                   <p>{address.address_line}{address.area ? ", " + address.area : ""}{address.upazila ? ", " + address.upazila : ""}, {address.district}, {address.division}{address.postal_code ? " - " + address.postal_code : ""}</p>
                   <div className="actions">
-                    <button type="button" className="text-button" onClick={() => beginEdit(address)}>সম্পাদনা</button>
-                    <button type="button" className="delete" onClick={() => void deleteAddress(address.id)}>মুছুন</button>
+                    <button type="button" className="text-button" onClick={() => beginEdit(address)}><Icon name="settings" size={15} /> সম্পাদনা</button>
+                    <button type="button" className="delete" onClick={() => void deleteAddress(address.id)}><Icon name="trash" size={15} /> মুছুন</button>
                   </div>
                 </article>
               ))}
@@ -179,8 +180,8 @@ export default function CustomerAddresses() {
                 <span>ডিফল্ট ডেলিভারি ঠিকানা হিসেবে রাখুন</span>
               </label>
               <div className="form-actions">
-                <button type="submit" disabled={saving}>{saving ? "সংরক্ষণ হচ্ছে…" : editingId ? "পরিবর্তন সংরক্ষণ" : "ঠিকানা সংরক্ষণ করুন"}</button>
-                {editingId && <button type="button" className="cancel" onClick={resetForm}>বাতিল</button>}
+                <button type="submit" disabled={saving}><><Icon name={saving ? "refresh" : "check"} size={16} /> {saving ? "সংরক্ষণ হচ্ছে…" : editingId ? "পরিবর্তন সংরক্ষণ" : "ঠিকানা সংরক্ষণ করুন"}</></button>
+                {editingId && <button type="button" className="cancel" onClick={resetForm}><Icon name="close" size={15} /> বাতিল</button>}
               </div>
             </form>
           </>

@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import Icon from "@/components/ui/icon";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -74,7 +75,7 @@ export default function ForgotPasswordPage() {
         )}
 
         <button className="primary-button" type="submit" disabled={busy}>
-          {busy ? "যাচাই করা হচ্ছে…" : "রিসেট লিংক পাঠান"}
+          <><Icon name={busy ? "refresh" : "mail"} size={17} /> {busy ? "যাচাই করা হচ্ছে…" : "রিসেট লিংক পাঠান"}</>
         </button>
       </form>
 

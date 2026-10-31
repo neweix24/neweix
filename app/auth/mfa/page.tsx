@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import Icon from "@/components/ui/icon";
 
 export default function MfaPage() {
   const router = useRouter();
@@ -203,7 +204,7 @@ export default function MfaPage() {
           type="submit"
           disabled={busy || code.length !== 6}
         >
-          {busy ? "যাচাই হচ্ছে..." : "কোড যাচাই করুন"}
+          <><Icon name={busy ? "refresh" : "shield"} size={17} /> {busy ? "যাচাই হচ্ছে..." : "কোড যাচাই করুন"}</>
         </button>
       </form>
 

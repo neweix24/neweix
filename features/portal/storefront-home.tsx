@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import Icon from "@/components/ui/icon";
 import styles from "./storefront-home.module.css";
 
 type Product = {
@@ -199,7 +200,7 @@ export default function StorefrontHome() {
         <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
           <label className={styles.srOnly} htmlFor="home-product-search">পণ্য খুঁজুন</label>
           <input id="home-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="কোন পণ্য খুঁজছেন?" />
-          <button type="submit" aria-label="খুঁজুন">⌕</button>
+          <button type="submit" aria-label="খুঁজুন"><Icon name="search" size={19} /></button>
         </form>
         <nav className={styles.desktopNav} aria-label="প্রধান নেভিগেশন">
           <Link href="/products">সব পণ্য</Link>
@@ -208,7 +209,7 @@ export default function StorefrontHome() {
           <Link href="/cart" className={styles.cartLink}>কার্ট <span>{cartCount}</span></Link>
         </nav>
         <button ref={triggerRef} className={styles.accountButton} type="button" onClick={() => setDrawerOpen(true)} aria-haspopup="dialog" aria-expanded={drawerOpen}>
-          <span aria-hidden="true">☰</span><span>মাই অ্যাকাউন্ট</span>
+          <Icon name="user" size={18} /><span>মাই অ্যাকাউন্ট</span>
         </button>
       </header>
 
@@ -219,68 +220,59 @@ export default function StorefrontHome() {
             <h1>আপনার পছন্দের কেনাকাটা, <em>এখন আরও সহজ।</em></h1>
             <p>পছন্দের পণ্য খুঁজুন, কার্টে যোগ করুন এবং সহজে অর্ডার করুন। আপনার অর্ডারের অগ্রগতিও রাখুন নিজের নিয়ন্ত্রণে।</p>
             <div className={styles.heroActions}>
-              <Link href="/products" className={styles.primaryButton}>সব পণ্য দেখুন <span>→</span></Link>
-              <Link href="/track-order" className={styles.secondaryButton}>অর্ডার ট্র্যাক করুন</Link>
+              <Link href="/products" className={styles.primaryButton}>সব পণ্য দেখুন <Icon name="arrow-right" size={17} /></Link>
+              <Link href="/track-order" className={styles.secondaryButton}><Icon name="package" size={17} /> অর্ডার ট্র্যাক করুন</Link>
             </div>
-            <div className={styles.trustLine}><span>✓</span> অর্ডার ট্র্যাকিং <span>✓</span> সহজ চেকআউট <span>✓</span> বাংলা অভিজ্ঞতা</div>
           </div>
-          <div className={styles.heroVisual} aria-hidden="true"><div className={styles.orbit}></div><div className={styles.heroMonogram}>N</div><span className={styles.floatTag}>NEWEIX<br/>SHOP SMART</span></div>
+          <div className={styles.heroVisual} aria-hidden="true"><div className={styles.orbit}></div><div className={styles.heroProductVisual}>{visibleProducts[0]?.image_urls?.[0] ? <img src={visibleProducts[0].image_urls[0]} alt="" /> : <span className={styles.heroMonogram}>N</span>}</div><span className={styles.floatTag}>NEWEIX<br/>SHOP SMART</span></div>
         </section>
 
         {categories.length > 0 && <section className={styles.categorySection} aria-labelledby="category-title">
-          <div className={styles.categoryHeading}><div><span className={styles.eyebrow}>SHOP BY CATEGORY</span><h2 id="category-title">ক্যাটাগরি অনুযায়ী পণ্য</h2></div><Link href="/products">সব ক্যাটাগরি →</Link></div>
+          <div className={styles.categoryHeading}><div><span className={styles.eyebrow}>SHOP BY CATEGORY</span><h2 id="category-title">ক্যাটাগরি অনুযায়ী পণ্য</h2></div><Link href="/products">সব ক্যাটাগরি <Icon name="arrow-right" size={16} /></Link></div>
           <div className={styles.categoryList}>
-            {categories.map((category) => <Link key={category.id} href={`/products?category=${encodeURIComponent(category.slug)}`}>{category.name}<span aria-hidden="true">→</span></Link>)}
+            {categories.map((category) => <Link key={category.id} href={`/products?category=${encodeURIComponent(category.slug)}`}>{category.name}<Icon name="arrow-right" size={15} /></Link>)}
           </div>
         </section>}
 
-        <section className={styles.quickLinks} aria-label="দ্রুত সেবা">
-          <Link href="/products"><span>▦</span><strong>সব পণ্য</strong><small>ক্যাটালগ দেখুন</small></Link>
-          <Link href="/products?sort=featured"><span>✦</span><strong>বিশেষ পণ্য</strong><small>বাছাইকৃত পণ্য</small></Link>
-          <Link href="/track-order"><span>⌁</span><strong>অর্ডার ট্র্যাক</strong><small>অবস্থা জানুন</small></Link>
-          <Link href="/wishlist"><span>♡</span><strong>পছন্দের তালিকা</strong><small>{wishlistCount}টি সংরক্ষিত</small></Link>
-        </section>
-
         <section className={styles.productSection} aria-labelledby="featured-title">
-          <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>DISCOVER NEWEIX</span><h2 id="featured-title">আপনার জন্য পণ্য</h2><p>স্টোরে বর্তমানে থাকা পণ্য থেকে বেছে নিন।</p></div><Link href="/products">সব পণ্য দেখুন →</Link></div>
-          {cartNotice && <p className={styles.cartNotice} role="status">{cartNotice}<button type="button" onClick={() => setCartNotice("")} aria-label="বার্তা বন্ধ করুন">×</button></p>}
+          <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>DISCOVER NEWEIX</span><h2 id="featured-title">আপনার জন্য পণ্য</h2><p>স্টোরে বর্তমানে থাকা পণ্য থেকে বেছে নিন।</p></div><Link href="/products">সব পণ্য দেখুন <Icon name="arrow-right" size={16} /></Link></div>
+          {cartNotice && <p className={styles.cartNotice} role="status">{cartNotice}<button type="button" onClick={() => setCartNotice("")} aria-label="বার্তা বন্ধ করুন"><Icon name="close" size={17} /></button></p>}
           {productsLoading ? <p className={styles.state} role="status">পণ্য লোড হচ্ছে…</p> : visibleProducts.length ? (
             <div className={styles.productGrid}>{visibleProducts.map((product) => (
               <article className={styles.productCard} key={product.id}>
                 <Link href={`/products/${encodeURIComponent(product.slug)}`} className={styles.productImage}>
-                  {product.image_urls?.[0] ? <img src={product.image_urls[0]} alt={product.name} loading="lazy"/> : <span>NEWEIX</span>}
+                  {product.image_urls?.[0] ? <img src={product.image_urls[0]} alt={product.name} loading="lazy"/> : <Icon name="package" size={42} />}
                   {product.is_featured && <small>বিশেষ পণ্য</small>}
                 </Link>
-                <div className={styles.productInfo}><Link href={`/products/${encodeURIComponent(product.slug)}`}>{product.name}</Link><strong>{money(Number(product.price))}</strong>{product.compare_at_price != null && product.compare_at_price > product.price && <del>{money(Number(product.compare_at_price))}</del>}<span className={product.stock > 0 ? styles.inStock : styles.outStock}>{product.stock > 0 ? "স্টকে আছে" : "স্টক শেষ"}</span><button type="button" disabled={product.stock < 1} onClick={() => addToCart(product)} className={styles.addToCart}>কার্টে যোগ করুন</button></div>
+                <div className={styles.productInfo}><Link href={`/products/${encodeURIComponent(product.slug)}`}>{product.name}</Link><strong>{money(Number(product.price))}</strong>{product.compare_at_price != null && product.compare_at_price > product.price && <del>{money(Number(product.compare_at_price))}</del>}<span className={product.stock > 0 ? styles.inStock : styles.outStock}>{product.stock > 0 ? "স্টকে আছে" : "স্টক শেষ"}</span><button type="button" disabled={product.stock < 1} onClick={() => addToCart(product)} className={styles.addToCart}><Icon name="plus" size={17} /> কার্টে যোগ করুন</button></div>
               </article>
             ))}</div>
           ) : <div className={styles.emptyProducts}>এখনো প্রদর্শনের মতো পণ্য পাওয়া যায়নি। <Link href="/products">ক্যাটালগ দেখুন</Link></div>}
         </section>
 
-        <section className={styles.helpStrip}><div><span className={styles.eyebrow}>NEED A HAND?</span><h2>কেনাকাটায় সাহায্য লাগবে?</h2><p>সাধারণ প্রশ্নের উত্তর বা যোগাযোগের তথ্য সহজেই খুঁজে নিন।</p></div><div><Link href="/faq">সাধারণ জিজ্ঞাসা</Link><Link href="/contact">যোগাযোগ করুন</Link></div></section>
       </main>
 
       <footer className={styles.footer}><Link href="/" className={styles.brand}><span>N</span> NEWEIX</Link><p>স্মার্ট কেনাকাটা, আরও সুন্দর অভিজ্ঞতা।</p><nav aria-label="ফুটার"><Link href="/about">আমাদের সম্পর্কে</Link><Link href="/contact">যোগাযোগ</Link><Link href="/faq">সাধারণ জিজ্ঞাসা</Link><Link href="/privacy">গোপনীয়তা</Link><Link href="/terms">শর্তাবলি</Link></nav><small>© {new Date().getFullYear()} NEWEIX. সর্বস্বত্ব সংরক্ষিত।</small></footer>
 
       <nav className={styles.bottomNav} aria-label="মোবাইল নেভিগেশন">
-        <Link href="/" aria-current="page"><span>⌂</span>হোম</Link>
-        <Link href="/products"><span>▦</span>ক্যাটাগরি</Link>
-        <button type="button" onClick={() => document.getElementById("home-product-search")?.focus()}><span>⌕</span>সার্চ</button>
-        <Link href="/cart"><span>▱<b>{cartCount > 99 ? "99+" : cartCount}</b></span>কার্ট</Link>
-        <button type="button" onClick={() => setDrawerOpen(true)}><span>☰</span>অ্যাকাউন্ট</button>
+        <Link href="/" aria-current="page"><Icon name="home" size={19} />হোম</Link>
+        <Link href="/products"><Icon name="grid" size={19} />ক্যাটাগরি</Link>
+        <button type="button" onClick={() => document.getElementById("home-product-search")?.focus()}><Icon name="search" size={19} />সার্চ</button>
+        <Link href="/cart"><span className={styles.bottomCartIcon}><Icon name="cart" size={19} /><b>{cartCount > 99 ? "99+" : cartCount}</b></span>কার্ট</Link>
+        <button type="button" onClick={() => setDrawerOpen(true)}><Icon name="user" size={19} />অ্যাকাউন্ট</button>
       </nav>
 
       {drawerOpen && <div className={styles.overlay} onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerOpen(false); }}>
         <aside ref={panelRef} className={styles.drawer} role="dialog" aria-modal="true" aria-labelledby="drawer-title" tabIndex={-1}>
-          <div className={styles.drawerHead}><div><span className={styles.eyebrow}>NEWEIX CUSTOMER</span><h2 id="drawer-title">মাই অ্যাকাউন্ট</h2></div><button type="button" onClick={() => setDrawerOpen(false)} aria-label="মেনু বন্ধ করুন">×</button></div>
-          {authLoading ? <div className={styles.customerCard}>অ্যাকাউন্টের তথ্য লোড হচ্ছে…</div> : customer ? <div className={styles.customerCard}><span className={styles.avatar}>{customer.name.slice(0,1).toUpperCase()}</span><div><strong>{customer.name}</strong><small>{customer.email}</small></div></div> : <div className={styles.guestCard}><strong>স্বাগতম!</strong><p>অর্ডার ও প্রোফাইল পরিচালনা করতে লগইন করুন।</p><Link href="/auth/customer-login?next=/account" onClick={() => setDrawerOpen(false)}>লগইন / অ্যাকাউন্ট তৈরি</Link></div>}
-          <div className={styles.drawerGroup}><span>আমার কেনাকাটা</span><Link href="/orders" onClick={() => setDrawerOpen(false)}>▤ <span>আমার অর্ডার</span></Link><Link href="/track-order" onClick={() => setDrawerOpen(false)}>⌁ <span>অর্ডার ট্র্যাক করুন</span></Link><Link href="/wishlist" onClick={() => setDrawerOpen(false)}>♡ <span>পছন্দের তালিকা</span><b>{wishlistCount}</b></Link><Link href="/cart" onClick={() => setDrawerOpen(false)}>▱ <span>শপিং কার্ট</span><b>{cartCount}</b></Link></div>
-          <div className={styles.drawerGroup}><span>আমার অ্যাকাউন্ট</span><Link href="/account/eixpay" onClick={() => setDrawerOpen(false)}>◈ <span>EixPay Wallet · Eixon</span></Link><Link href="/account/neweix-plus" onClick={() => setDrawerOpen(false)}>✦ <span>Neweix+ Membership</span></Link><Link href="/eixverse" onClick={() => setDrawerOpen(false)}>◎ <span>EixVerse</span></Link><Link href="/account" onClick={() => setDrawerOpen(false)}>◎ <span>প্রোফাইল ও তথ্য</span></Link><Link href="/account/theme" onClick={() => setDrawerOpen(false)}>◐ <span>থিম ও পছন্দ</span></Link>
-             <Link href="/account/addresses" onClick={() => setDrawerOpen(false)}>⌖ <span>ডেলিভারি ঠিকানা</span></Link>
-             <Link href="/account/privacy" onClick={() => setDrawerOpen(false)}>♧ <span>গোপনীয়তা ও সম্মতি</span></Link>
-             <Link href="/account/data-requests" onClick={() => setDrawerOpen(false)}>♧ <span>আমার তথ্য নিয়ন্ত্রণ</span></Link></div>
-          <div className={styles.drawerGroup}><span>সাহায্য ও সহায়তা</span><Link href="/faq" onClick={() => setDrawerOpen(false)}>? <span>সাধারণ জিজ্ঞাসা</span></Link><Link href="/contact" onClick={() => setDrawerOpen(false)}>✉ <span>যোগাযোগ</span></Link></div>
-          {customer && <button className={styles.logoutButton} type="button" onClick={() => void logout()}>লগআউট</button>}
+          <div className={styles.drawerHead}><div><span className={styles.eyebrow}>NEWEIX CUSTOMER</span><h2 id="drawer-title">মাই অ্যাকাউন্ট</h2></div><button type="button" onClick={() => setDrawerOpen(false)} aria-label="মেনু বন্ধ করুন"><Icon name="close" size={18} /></button></div>
+          {authLoading ? <div className={styles.customerCard}>অ্যাকাউন্টের তথ্য লোড হচ্ছে…</div> : customer ? <div className={styles.customerCard}><span className={styles.avatar}>{customer.name.slice(0,1).toUpperCase()}</span><div><strong>{customer.name}</strong><small>{customer.email}</small></div></div> : <div className={styles.guestCard}><strong>স্বাগতম!</strong><p>অর্ডার ও প্রোফাইল পরিচালনা করতে লগইন করুন।</p><Link href="/auth/customer-login?next=/account" onClick={() => setDrawerOpen(false)}><Icon name="user" size={17} /> লগইন / অ্যাকাউন্ট তৈরি <Icon name="arrow-right" size={16} /></Link></div>}
+          <div className={styles.drawerGroup}><span>আমার কেনাকাটা</span><Link href="/orders" onClick={() => setDrawerOpen(false)}><Icon name="orders" size={17} /> <span>আমার অর্ডার</span></Link><Link href="/track-order" onClick={() => setDrawerOpen(false)}><Icon name="truck" size={17} /> <span>অর্ডার ট্র্যাক করুন</span></Link><Link href="/wishlist" onClick={() => setDrawerOpen(false)}><Icon name="heart" size={17} /> <span>পছন্দের তালিকা</span><b>{wishlistCount}</b></Link><Link href="/cart" onClick={() => setDrawerOpen(false)}><Icon name="cart" size={17} /> <span>শপিং কার্ট</span><b>{cartCount}</b></Link></div>
+          <div className={styles.drawerGroup}><span>আমার অ্যাকাউন্ট</span><Link href="/account/eixpay" onClick={() => setDrawerOpen(false)}><Icon name="wallet" size={17} /> <span>EixPay Wallet · Eixon</span></Link><Link href="/account/neweix-plus" onClick={() => setDrawerOpen(false)}><Icon name="membership" size={17} /> <span>Neweix+ Membership</span></Link><Link href="/eixverse" onClick={() => setDrawerOpen(false)}><Icon name="globe" size={17} /> <span>EixVerse</span></Link><Link href="/account" onClick={() => setDrawerOpen(false)}><Icon name="user" size={17} /> <span>প্রোফাইল ও তথ্য</span></Link><Link href="/account/theme" onClick={() => setDrawerOpen(false)}><Icon name="settings" size={17} /> <span>থিম ও পছন্দ</span></Link>
+             <Link href="/account/addresses" onClick={() => setDrawerOpen(false)}><Icon name="map-pin" size={17} /> <span>ডেলিভারি ঠিকানা</span></Link>
+             <Link href="/account/privacy" onClick={() => setDrawerOpen(false)}><Icon name="shield" size={17} /> <span>গোপনীয়তা ও সম্মতি</span></Link>
+             <Link href="/account/data-requests" onClick={() => setDrawerOpen(false)}><Icon name="settings" size={17} /> <span>আমার তথ্য নিয়ন্ত্রণ</span></Link></div>
+          <div className={styles.drawerGroup}><span>সাহায্য ও সহায়তা</span><Link href="/faq" onClick={() => setDrawerOpen(false)}><Icon name="help" size={17} /> <span>সাধারণ জিজ্ঞাসা</span></Link><Link href="/contact" onClick={() => setDrawerOpen(false)}><Icon name="mail" size={17} /> <span>যোগাযোগ</span></Link></div>
+          {customer && <button className={styles.logoutButton} type="button" onClick={() => void logout()}><Icon name="logout" size={17} /> লগআউট</button>}
           <p className={styles.drawerFoot}>আপনার কেনাকাটা, আপনার নিয়ন্ত্রণে।</p>
         </aside>
       </div>}

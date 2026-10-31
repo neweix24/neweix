@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import Icon from "@/components/ui/icon";
 
 export default function GlobalError({
   error,
@@ -21,8 +22,8 @@ export default function GlobalError({
         <h1 className="text-3xl font-black">দুঃখিত, একটি সমস্যা হয়েছে</h1>
         <p className="mt-3">পেজটি লোড করা যায়নি। আবার চেষ্টা করুন অথবা হোমপেজে ফিরে যান।</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <button type="button" onClick={() => reset()} className="rounded-full px-5 py-3 font-bold" style={{ background: "var(--primary)", color: "#080b09" }}>আবার চেষ্টা করুন</button>
-          <Link href="/" className="rounded-full border px-5 py-3 font-bold" style={{ borderColor: "var(--border)" }}>হোমপেজ</Link>
+          <button type="button" onClick={() => reset()} className="rounded-full px-5 py-3 font-bold" style={{ background: "var(--primary)", color: "#080b09" }}><Icon name="refresh" size={17} /> আবার চেষ্টা করুন</button>
+          <Link href="/" className="rounded-full border px-5 py-3 font-bold" style={{ borderColor: "var(--border)" }}><Icon name="home" size={17} /> হোমপেজ</Link>
         </div>
       </section>
     </main>

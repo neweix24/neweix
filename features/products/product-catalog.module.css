@@ -54,3 +54,19 @@
 
 .card{transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}.card:hover{transform:translateY(-3px);border-color:var(--primary);box-shadow:0 16px 36px rgba(0,0,0,.24)}.image img{transition:transform .3s ease}.card:hover .image img{transform:scale(1.025)}
 @media(prefers-reduced-motion:reduce){.card,.image img{transition:none}.card:hover,.card:hover .image img{transform:none}}
+
+
+/* Icon-first controls and compact filtering */
+.searchControl{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 13px;border:1px solid var(--border);border-radius:12px;background:var(--surface-raised);color:var(--muted)}
+.searchControl input{flex:1;min-width:0;border:0!important;background:transparent!important;box-shadow:none!important}
+.searchControl>svg{flex:none;color:var(--primary)}
+.productTools{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.iconButton{display:grid;width:38px;min-width:38px;height:38px;min-height:38px;place-items:center;padding:0;border:1px solid var(--border);border-radius:11px;color:var(--muted);background:var(--surface)}
+.iconButton:hover:not(:disabled),.iconButton[aria-pressed="true"]{color:var(--primary);border-color:var(--primary);background:var(--brand-lime-soft)}
+.addButton{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:9px 13px;border:1px solid var(--primary);border-radius:11px;color:#080b09;background:var(--primary);font-weight:800}
+.addButton:hover:not(:disabled){background:var(--primary-hover);transform:translateY(-1px)}
+.categoryChips button{display:inline-flex;align-items:center;gap:7px}
+.clearFilters{display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.notice button{display:grid;width:34px;min-width:34px;height:34px;min-height:34px;place-items:center;padding:0;border:1px solid var(--border);border-radius:9px}
+.header nav a{display:inline-flex;align-items:center;gap:6px}
+@media(max-width:640px){.addButton{width:100%}.productTools{margin-bottom:8px}}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Icon from "@/components/ui/icon";
 
 type State = "idle" | "loading" | "success" | "error";
 
@@ -54,13 +55,13 @@ export default function PathaoPanel() {
 
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" onClick={() => void run("status")} disabled={state === "loading"} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-          Credentials পরীক্ষা
+          <Icon name="shield" size={16} /> Credentials পরীক্ষা
         </button>
         <button type="button" onClick={() => void run("stores")} disabled={state === "loading"} className="rounded-lg border px-4 py-2 text-sm font-semibold disabled:opacity-50">
-          Store List আনুন
+          <Icon name="grid" size={16} /> Store List আনুন
         </button>
         <button type="button" onClick={() => void run("cities")} disabled={state === "loading"} className="rounded-lg border px-4 py-2 text-sm font-semibold disabled:opacity-50">
-          City List আনুন
+          <Icon name="map-pin" size={16} /> City List আনুন
         </button>
       </div>
 

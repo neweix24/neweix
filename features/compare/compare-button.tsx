@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Icon from "@/components/ui/icon";
 
 const KEY = "neweix_compare";
 const LIMIT = 4;
@@ -49,7 +50,7 @@ export default function CompareButton({ productId }: { productId: string }) {
   return (
     <div className="mt-3">
       <button type="button" onClick={toggle} aria-pressed={ids.includes(productId)} className="rounded-xl border px-4 py-2 text-sm font-semibold" style={{ borderColor: "var(--border)", color: "var(--ink)" }}>
-        {ids.includes(productId) ? "✓ তুলনায় আছে" : "⇄ তুলনা করুন"}
+        <><Icon name="compare" size={16} /> {ids.includes(productId) ? "তুলনায় আছে" : "তুলনা করুন"}</>
       </button>
       {message && <p role="status" aria-live="polite" className="mt-2 text-sm" style={{ color: "var(--muted)" }}>{message}</p>}
     </div>

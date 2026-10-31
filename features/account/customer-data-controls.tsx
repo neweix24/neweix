@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import Icon from "@/components/ui/icon";
 
 const CONSENT_VERSION = "2026-10-31";
 
@@ -264,7 +265,7 @@ export default function CustomerDataControls() {
             {errorMessage && <p className="error" role="alert">{errorMessage}</p>}
 
             <button type="submit" disabled={saving}>
-              {saving ? "সংরক্ষণ হচ্ছে…" : "পছন্দ সংরক্ষণ করুন"}
+              <><Icon name={saving ? "refresh" : "check"} size={16} /> {saving ? "সংরক্ষণ হচ্ছে…" : "পছন্দ সংরক্ষণ করুন"}</>
             </button>
           </form>
         )}

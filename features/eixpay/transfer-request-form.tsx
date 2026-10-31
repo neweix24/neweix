@@ -1,5 +1,6 @@
 "use client";
 import { useState, type FormEvent } from "react";
+import Icon from "@/components/ui/icon";
 
 export default function EixPayTransferForm({ onSubmitted }: { onSubmitted: () => void }) {
   const [recipient, setRecipient] = useState("");
@@ -56,7 +57,7 @@ export default function EixPayTransferForm({ onSubmitted }: { onSubmitted: () =>
       <input id="eix-reason" value={reason} onChange={(event) => setReason(event.target.value)} maxLength={240} className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-white outline-none focus:border-cyan-200/40" />
       {message && <p className="text-sm text-emerald-200" role="status">{message}</p>}
       {error && <p className="text-sm text-rose-200" role="alert">{error}</p>}
-      <button type="submit" disabled={busy || !recipient.trim() || !amount} className="rounded-full bg-cyan-200 px-5 py-2.5 text-sm font-black text-[#092016] disabled:opacity-50">{busy ? "অনুরোধ পাঠানো হচ্ছে…" : "অনুমোদনের অনুরোধ পাঠান"}</button>
+      <button type="submit" disabled={busy || !recipient.trim() || !amount} className="rounded-full bg-cyan-200 px-5 py-2.5 text-sm font-black text-[#092016] disabled:opacity-50"><><Icon name={busy ? "refresh" : "send"} size={17} /> {busy ? "অনুরোধ পাঠানো হচ্ছে…" : "অনুমোদনের অনুরোধ পাঠান"}</></button>
     </form>
   );
 }
