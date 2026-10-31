@@ -103,6 +103,41 @@ begin
 end;
 $function$;
 
+create or replace function public.eixpay_get_referral_summary()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $function$
+declare
+  v_user_id uuid := auth.uid();
+  v_pending integer;
+  v_qualified integer;
+  v_rewarded integer;
+  v_total integer;
+begin
+  if v_user_id is null then
+    raise exception using errcode = '28000', message = 'AUTHENTICATION_REQUIRED';
+  end if;
+  select
+    count(*)::integer,
+    count(*) filter (where status = 'pending')::integer,
+    count(*) filter (where status = 'qualified')::integer,
+    count(*) filter (where status = 'rewarded')::integer
+  into v_total, v_pending, v_qualified, v_rewarded
+  from private.eixpay_referrals
+  where referrer_user_id = v_user_id;
+
+  return jsonb_build_object(
+    'total_invited', coalesce(v_total,0),
+    'pending', coalesce(v_pending,0),
+    'qualified', coalesce(v_qualified,0),
+    'rewarded', coalesce(v_rewarded,0)
+  );
+end;
+$function$;
+
 create or replace function private.eixpay_qualify_referral_for_order(
   p_order_id uuid,
   p_user_id uuid
@@ -248,6 +283,8 @@ $function$;
 
 revoke all on function public.eixpay_apply_referral_code(text) from public, anon;
 grant execute on function public.eixpay_apply_referral_code(text) to authenticated;
+revoke all on function public.eixpay_get_referral_summary() from public, anon;
+grant execute on function public.eixpay_get_referral_summary() to authenticated;
 
 do $cron$
 begin
