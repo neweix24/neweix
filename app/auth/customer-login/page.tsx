@@ -12,6 +12,8 @@ function CustomerLoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -61,13 +63,44 @@ function CustomerLoginForm() {
     }
   }
 
-  async function signInWithEmail(event: FormEvent<HTMLFormElement>) {
+  async function handleEmailAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
     setBusy(true);
 
     try {
       const supabase = createBrowserSupabaseClient();
+
+      if (isSignUp) {
+        if (fullName.trim().length < 2 || fullName.trim().length > 100) {
+          setMessage("নাম ২ থেকে ১০০ অক্ষরের মধ্যে লিখুন।");
+          return;
+        }
+
+        const callbackUrl = new URL("/auth/callback", window.location.origin);
+        callbackUrl.searchParams.set("next", "/account");
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            emailRedirectTo: callbackUrl.toString(),
+            data: { full_name: fullName.trim() },
+          },
+        });
+
+        if (error) {
+          setMessage("সাইনআপ করা যায়নি। ইমেইলটি আগে ব্যবহার করা হয়েছে কি না যাচাই করুন।");
+          return;
+        }
+
+        if (data.session) {
+          router.replace("/account");
+          router.refresh();
+        } else {
+          setMessage("সাইনআপ সফল হয়েছে। ইমেইলে পাঠানো লিংক নিশ্চিত করুন। এরপর অ্যাকাউন্টে গিয়ে ফোন নম্বর OTP দিয়ে যাচাই করুন।");
+        }
+        return;
+      }
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -114,9 +147,9 @@ function CustomerLoginForm() {
           </Link>
 
           <p className="auth-eyebrow">WELCOME TO NEWEIX</p>
-          <h2>আপনার অ্যাকাউন্টে প্রবেশ করুন</h2>
+          <h2>{isSignUp ? "NEWEIX অ্যাকাউন্ট তৈরি করুন" : "আপনার অ্যাকাউন্টে প্রবেশ করুন"}</h2>
           <p className="auth-subtitle">
-            Google, Facebook অথবা ইমেইল দিয়ে চালিয়ে যান।
+            Google বা Facebook দিয়ে সাইনআপ/লগইন করুন, অথবা ইমেইল ব্যবহার করুন।
           </p>
 
           <button
@@ -143,7 +176,13 @@ function CustomerLoginForm() {
             <span>অথবা ইমেইল ব্যবহার করুন</span>
           </div>
 
-          <form className="auth-email-form" onSubmit={signInWithEmail}>
+          <form className="auth-email-form" onSubmit={handleEmailAuth}>
+            {isSignUp && (
+              <>
+                <label htmlFor="customer-full-name">আপনার নাম</label>
+                <input id="customer-full-name" type="text" autoComplete="name" minLength={2} maxLength={100} required value={fullName} onChange={(event) => setFullName(event.target.value)} />
+              </>
+            )}
             <label htmlFor="customer-email">ইমেইল ঠিকানা</label>
             <input
               id="customer-email"
@@ -156,15 +195,16 @@ function CustomerLoginForm() {
             />
 
             <div className="auth-password-label">
-              <label htmlFor="customer-password">পাসওয়ার্ড</label>
+              <label htmlFor="customer-password">{isSignUp ? "পাসওয়ার্ড তৈরি করুন" : "পাসওয়ার্ড"}</label>
               <Link href="/auth/forgot-password">পাসওয়ার্ড ভুলে গেছেন?</Link>
             </div>
 
             <input
               id="customer-password"
               type="password"
-              autoComplete="current-password"
-              placeholder="আপনার পাসওয়ার্ড"
+              autoComplete={isSignUp ? "new-password" : "current-password"}
+              minLength={isSignUp ? 8 : undefined}
+              placeholder={isSignUp ? "কমপক্ষে ৮ অক্ষর" : "আপনার পাসওয়ার্ড"}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
@@ -181,18 +221,29 @@ function CustomerLoginForm() {
               type="submit"
               disabled={busy}
             >
-              {busy ? "অপেক্ষা করুন..." : "লগইন করুন"}
+              {busy ? "অপেক্ষা করুন..." : isSignUp ? "অ্যাকাউন্ট তৈরি করুন" : "লগইন করুন"}
             </button>
           </form>
 
-          {!message && (
+          <p className="auth-privacy-note">
+            {isSignUp ? "সাইনআপের পর অ্যাকাউন্টের অতিরিক্ত সুবিধা চালু করতে ফোন নম্বর OTP দিয়ে যাচাই করুন।" : "নতুন গ্রাহক? ইমেইল দিয়ে অ্যাকাউন্ট তৈরি করতে নিচের অপশন ব্যবহার করুন।"}
+          </p>
+
+          <p className="auth-staff-note">
+            {isSignUp ? "আগে থেকেই অ্যাকাউন্ট আছে?" : "নতুন অ্যাকাউন্ট তৈরি করবেন?"}{" "}
+            <button type="button" onClick={() => { setIsSignUp((value) => !value); setMessage(""); }} style={{ border: 0, padding: 0, background: "transparent", color: "var(--primary)", font: "inherit", fontWeight: 700, cursor: "pointer" }}>
+              {isSignUp ? "লগইন করুন" : "সাইনআপ করুন"}
+            </button>
+          </p>
+
+          {!message && false && (
             <p className="auth-privacy-note">
               আপনার তথ্য নিরাপদ রাখতে আমরা সুরক্ষিত লগইন ব্যবহার করি।
             </p>
           )}
 
           <p className="auth-guest-note">
-            অ্যাকাউন্ট ছাড়াই অর্ডার করতে পারবেন। অ্যাকাউন্টের অতিরিক্ত সুবিধা পেতে সাইনআপ করে ফোন নম্বর OTP দিয়ে যাচাই করুন।
+            অ্যাকাউন্ট ছাড়াই অর্ডার করতে পারবেন। সাইনআপ করে ফোন নম্বর OTP যাচাই করলে অর্ডার অ্যাকাউন্টে সংরক্ষণসহ অতিরিক্ত সুবিধা পাবেন।
           </p>
 
           <p className="auth-staff-note">
