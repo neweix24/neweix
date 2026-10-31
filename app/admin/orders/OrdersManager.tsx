@@ -33,6 +33,8 @@ type Order = {
   delivery_tracking_code?: string | null;
   delivery_booked_at?: string | null;
   delivery_error?: string | null;
+  stock_restored_at?: string | null;
+  stock_restoration_note?: string | null;
   created_at: string;
   order_items: OrderItem[];
 };
@@ -212,6 +214,33 @@ export default function OrdersManager() {
       setNotice(`${order.order_number}: Pathao tracking তথ্য: ${JSON.stringify(result.tracking).slice(0, 700)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Tracking তথ্য পাওয়া যায়নি।");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function restockReturnedOrder(order: Order) {
+    const note = window.prompt("পণ্য পরীক্ষা করে স্টক ফেরত যোগ করার কারণ লিখুন (৫–৫০০ অক্ষর):");
+    if (!note || note.trim().length < 5 || note.trim().length > 500) {
+      if (note !== null) setError("কারণ ৫–৫০০ অক্ষরের মধ্যে লিখুন।");
+      return;
+    }
+    if (!window.confirm(`অর্ডার ${order.order_number}-এর পণ্য পরীক্ষা সম্পন্ন হয়েছে এবং স্টকে ফেরত যোগ করবেন?`)) return;
+    setBusyId(order.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "restock_returned", orderId: order.id, note: note.trim() }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "স্টক ফেরত যোগ করা যায়নি।");
+      setNotice(`${order.order_number}: পণ্যের স্টক ফেরত যোগ হয়েছে।`);
+      await loadOrders();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "স্টক ফেরত যোগ করা যায়নি।");
     } finally {
       setBusyId("");
     }
@@ -458,6 +487,24 @@ export default function OrdersManager() {
                   </p>
                 )}
               </div>
+
+              {order.status === "returned" && (
+                <div className="mt-3 rounded-lg border border-dashed border-gray-300 p-3">
+                  {order.stock_restored_at ? (
+                    <p className="text-sm text-green-700">
+                      স্টক ফেরত যোগ হয়েছে: {new Date(order.stock_restored_at).toLocaleString("bn-BD")}
+                      {order.stock_restoration_note ? ` · ${order.stock_restoration_note}` : ""}
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-sm">পণ্য হাতে পাওয়ার পর মান ও পরিমাণ পরীক্ষা করে স্টক ফেরত যোগ করুন।</p>
+                      <button type="button" onClick={() => void restockReturnedOrder(order)} disabled={busyId !== "" || statusBusyId !== ""} className="mt-2 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50">
+                        {busyId === order.id ? "স্টক আপডেট হচ্ছে..." : "পরীক্ষা শেষে স্টক ফেরত যোগ করুন"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
 
               <div className="mt-3 rounded-lg border border-dashed border-gray-300 p-3">
                 <p className="text-sm font-semibold">Pathao Courier</p>
