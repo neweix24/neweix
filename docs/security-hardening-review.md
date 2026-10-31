@@ -94,13 +94,15 @@ This document records a review and safe implementation plan. It does not apply S
 
 ## Latest integrity-chain commit validation status
 
-- Integrity-chain migration and documentation are committed to PR #20; latest integrity migration update is `e4e9e280f029efc4a2fb7f7c7917b82352fc0619`.
-- GitHub Actions PR workflow query returned no workflow runs for this latest documentation/migration commit.
-- GitHub combined status currently reports a failing `Vercel` status with target URL indicating a build-rate-limit/plan restriction. This is not a successful Cloudflare build and must not be reported as one.
-- No migration execution, SQL integration test, concurrency test, TypeScript build, or Worker preview has been completed for the new integrity-chain change.
-- Required next validation: run the migration on an isolated Supabase preview branch, exercise concurrent inserts and tampering/rollback cases, then run the repository's typecheck/lint/build and Cloudflare OpenNext preview. Production rollout remains blocked pending review and explicit authorization.
+- Integrity-chain migration and documentation are committed to PR #20. Latest branch head: `f00274798de3a0777cabf8deef85764aa38f0ce3`.
+- GitHub Actions CI, NEWEIX frontend checks and Storefront PR checks completed successfully for this head.
+- Cloudflare Worker workflow is still in progress; it is not yet a successful deployment result.
+- A separate Vercel status reports build-rate-limit/plan restriction; this is not the Cloudflare Worker result.
+- No SQL migration execution, SQL integration/concurrency test, or local PostgreSQL test has been completed for the integrity-chain migration.
+- The connected production Supabase project does not contain the EixPay foundation tables. Its existing development branch is in `MIGRATIONS_FAILED` state.
+- No paid preview branch will be created. Free next steps are static review, GitHub checks, and local PostgreSQL testing only if a PostgreSQL runtime is available; no production changes are authorized by this review.
 
 
 ## Preview database cost gate
 
-Creating a dedicated Supabase preview branch requires additional compute. Supabase quoted **$0.01344 per hour** (approximately **$9.81 per 30.4-day month** while running). No branch was created because explicit approval for this recurring cost is required. The existing preview branch is in `MIGRATIONS_FAILED` state and must not be used for validation.
+Creating a dedicated Supabase preview branch requires additional compute. It will not be created because the user requested a no-cost approach. The existing development branch is in `MIGRATIONS_FAILED` state and must not be used for validation. Continue with free static checks and repository CI; run database integration tests only against a genuinely isolated free/local PostgreSQL environment if one becomes available.
