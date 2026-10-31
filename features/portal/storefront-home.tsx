@@ -49,7 +49,6 @@ export default function StorefrontHome() {
   const [search, setSearch] = useState("");
   const [cartNotice, setCartNotice] = useState("");
   const panelRef = useRef<HTMLElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const refreshCounts = useCallback(() => {
     setCartCount(readCartCount());
@@ -190,13 +189,10 @@ export default function StorefrontHome() {
     }
   }
 
-  const featured = products.filter((product) => product.is_featured && product.stock > 0);
-  const visibleProducts = (featured.length ? featured : products).slice(0, 4);
-
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link href="/" className={styles.brand} aria-label="NEWEIX হোম"><span>N</span> NEWEIX</Link>
+        <Link href="/" className={styles.brand} aria-label="neweix হোম"><svg viewBox="0 0 148 30" role="img" aria-label="neweix" focusable="false"><text x="0" y="23" >neweix</text></svg></Link>
         <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
           <label className={styles.srOnly} htmlFor="home-product-search">পণ্য খুঁজুন</label>
           <input id="home-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="কোন পণ্য খুঁজছেন?" />
@@ -208,25 +204,9 @@ export default function StorefrontHome() {
           <Link href="/wishlist">পছন্দের তালিকা</Link>
           <Link href="/cart" className={styles.cartLink}>কার্ট <span>{cartCount}</span></Link>
         </nav>
-        <button ref={triggerRef} className={styles.accountButton} type="button" onClick={() => setDrawerOpen(true)} aria-haspopup="dialog" aria-expanded={drawerOpen}>
-          <Icon name="user" size={18} /><span>মাই অ্যাকাউন্ট</span>
-        </button>
       </header>
 
       <main className={styles.main}>
-        <section className={styles.hero}>
-          <div className={styles.heroText}>
-            <span className={styles.eyebrow}>WELCOME TO NEWEIX</span>
-            <h1>আপনার পছন্দের কেনাকাটা, <em>এখন আরও সহজ।</em></h1>
-            <p>পছন্দের পণ্য খুঁজুন, কার্টে যোগ করুন এবং সহজে অর্ডার করুন। আপনার অর্ডারের অগ্রগতিও রাখুন নিজের নিয়ন্ত্রণে।</p>
-            <div className={styles.heroActions}>
-              <Link href="/products" className={styles.primaryButton}>সব পণ্য দেখুন <Icon name="arrow-right" size={17} /></Link>
-              <Link href="/track-order" className={styles.secondaryButton}><Icon name="package" size={17} /> অর্ডার ট্র্যাক করুন</Link>
-            </div>
-          </div>
-          <div className={styles.heroVisual} aria-hidden="true"><div className={styles.orbit}></div><div className={styles.heroProductVisual}>{visibleProducts[0]?.image_urls?.[0] ? <img src={visibleProducts[0].image_urls[0]} alt="" /> : <span className={styles.heroMonogram}>N</span>}</div><span className={styles.floatTag}>NEWEIX<br/>SHOP SMART</span></div>
-        </section>
-
         {categories.length > 0 && <section className={styles.categorySection} aria-labelledby="category-title">
           <div className={styles.categoryHeading}><div><span className={styles.eyebrow}>SHOP BY CATEGORY</span><h2 id="category-title">ক্যাটাগরি অনুযায়ী পণ্য</h2></div><Link href="/products">সব ক্যাটাগরি <Icon name="arrow-right" size={16} /></Link></div>
           <div className={styles.categoryList}>
@@ -237,8 +217,8 @@ export default function StorefrontHome() {
         <section className={styles.productSection} aria-labelledby="featured-title">
           <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>DISCOVER NEWEIX</span><h2 id="featured-title">আপনার জন্য পণ্য</h2><p>স্টোরে বর্তমানে থাকা পণ্য থেকে বেছে নিন।</p></div><Link href="/products">সব পণ্য দেখুন <Icon name="arrow-right" size={16} /></Link></div>
           {cartNotice && <p className={styles.cartNotice} role="status">{cartNotice}<button type="button" onClick={() => setCartNotice("")} aria-label="বার্তা বন্ধ করুন"><Icon name="close" size={17} /></button></p>}
-          {productsLoading ? <p className={styles.state} role="status">পণ্য লোড হচ্ছে…</p> : visibleProducts.length ? (
-            <div className={styles.productGrid}>{visibleProducts.map((product) => (
+          {productsLoading ? <p className={styles.state} role="status">পণ্য লোড হচ্ছে…</p> : products.length ? (
+            <div className={styles.productGrid}>{products.map((product) => (
               <article className={styles.productCard} key={product.id}>
                 <Link href={`/products/${encodeURIComponent(product.slug)}`} className={styles.productImage}>
                   {product.image_urls?.[0] ? <img src={product.image_urls[0]} alt={product.name} loading="lazy"/> : <Icon name="package" size={42} />}
@@ -252,14 +232,13 @@ export default function StorefrontHome() {
 
       </main>
 
-      <footer className={styles.footer}><Link href="/" className={styles.brand}><span>N</span> NEWEIX</Link><p>স্মার্ট কেনাকাটা, আরও সুন্দর অভিজ্ঞতা।</p><nav aria-label="ফুটার"><Link href="/about">আমাদের সম্পর্কে</Link><Link href="/contact">যোগাযোগ</Link><Link href="/faq">সাধারণ জিজ্ঞাসা</Link><Link href="/privacy">গোপনীয়তা</Link><Link href="/terms">শর্তাবলি</Link></nav><small>© {new Date().getFullYear()} NEWEIX. সর্বস্বত্ব সংরক্ষিত।</small></footer>
+      <footer className={styles.footer}><Link href="/" className={styles.brand}><svg viewBox="0 0 148 30" role="img" aria-label="neweix" focusable="false"><text x="0" y="23" >neweix</text></svg></Link><p>স্মার্ট কেনাকাটা, আরও সুন্দর অভিজ্ঞতা।</p><nav aria-label="ফুটার"><Link href="/about">আমাদের সম্পর্কে</Link><Link href="/contact">যোগাযোগ</Link><Link href="/faq">সাধারণ জিজ্ঞাসা</Link><Link href="/privacy">গোপনীয়তা</Link><Link href="/terms">শর্তাবলি</Link></nav><small>© {new Date().getFullYear()} NEWEIX. সর্বস্বত্ব সংরক্ষিত।</small></footer>
 
       <nav className={styles.bottomNav} aria-label="মোবাইল নেভিগেশন">
-        <Link href="/" aria-current="page"><Icon name="home" size={19} />হোম</Link>
-        <Link href="/products"><Icon name="grid" size={19} />ক্যাটাগরি</Link>
-        <button type="button" onClick={() => document.getElementById("home-product-search")?.focus()}><Icon name="search" size={19} />সার্চ</button>
-        <Link href="/cart"><span className={styles.bottomCartIcon}><Icon name="cart" size={19} /><b>{cartCount > 99 ? "99+" : cartCount}</b></span>কার্ট</Link>
-        <button type="button" onClick={() => setDrawerOpen(true)}><Icon name="user" size={19} />অ্যাকাউন্ট</button>
+        <Link href="/" aria-current="page"><Icon name="home" size={24} />হোম</Link>
+        <Link href="/products"><Icon name="grid" size={24} />পণ্য ও সার্চ</Link>
+        <Link href="/cart"><span className={styles.bottomCartIcon}><Icon name="cart" size={24} /><b>{cartCount > 99 ? "99+" : cartCount}</b></span>কার্ট</Link>
+        <button type="button" onClick={() => setDrawerOpen(true)}><Icon name="user" size={24} />অ্যাকাউন্ট</button>
       </nav>
 
       {drawerOpen && <div className={styles.overlay} onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerOpen(false); }}>

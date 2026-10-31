@@ -3,20 +3,43 @@
 /* NEWEIX — Black & Green Design System */
 :root {
   color-scheme: dark;
-  --bg: #080b09;
-  --surface: #101612;
-  --surface-raised: #151d18;
-  --surface-soft: #1b251e;
-  --primary: #b6ff4a;
-  --primary-hover: #c9ff7b;
+  --bg: var(--customer-theme-background, #080b09);
+  --surface: color-mix(in srgb, var(--customer-theme-surface, #151d18) 72%, var(--bg));
+  --surface-raised: var(--customer-theme-surface, #151d18);
+  --surface-soft: color-mix(in srgb, var(--customer-theme-surface, #151d18) 82%, var(--bg));
+  --primary: var(--customer-theme-button, #b6ff4a);
+  --primary-hover: color-mix(in srgb, var(--primary) 82%, white);
   --primary-dark: #203814;
-  --ink: #f4f8f2;
-  --muted: #a0ada1;
-  --border: #29352b;
+  --ink: var(--customer-theme-text, #f4f8f2);
+  --muted: var(--customer-theme-muted, #a0ada1);
+  --border: var(--customer-theme-border, #29352b);
   --danger: #ff7777;
   --success: #b6ff4a;
   --radius: 18px;
   --shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+
+  /* Single source of truth: edit this palette to recolor the entire application. */
+  --page-bg: var(--bg);
+  --page-surface: var(--surface);
+  --page-panel: var(--surface-raised);
+  --page-panel-soft: var(--surface-soft);
+  --page-text: var(--ink);
+  --page-muted: var(--muted);
+  --page-border: var(--border);
+  --page-accent: var(--primary);
+  --brand-forest: var(--surface-raised);
+  --brand-forest-deep: var(--bg);
+  --brand-lime: var(--primary);
+  --brand-lime-soft: color-mix(in srgb, var(--primary) 12%, transparent);
+  --surface-glass: color-mix(in srgb, var(--surface) 82%, transparent);
+  --surface-elevated: var(--surface-raised);
+  --border-strong: var(--border);
+  --text-primary: var(--ink);
+  --text-secondary: var(--muted);
+  --color-danger: #ff7777;
+  --color-danger-soft: rgba(255, 119, 119, 0.09);
+  --color-success: #b6ff4a;
+  --color-success-soft: rgba(182, 255, 74, 0.08);
 }
 
 * {
@@ -665,7 +688,7 @@ body:has(.topbar) .primary-button,
 body:has(.topbar) .nav-button,
 body:has(.topbar) .product-bottom button {
   background: var(--customer-theme-button, var(--primary));
-  color: var(--customer-theme-button-text, #ffffff);
+  color: var(--customer-theme-button-text, #080b09);
   border-color: var(--customer-theme-border, var(--border));
 }
 
@@ -744,3 +767,80 @@ button:active:not(:disabled) { transform: translateY(1px); }
 button:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
 button:disabled { cursor: not-allowed; opacity: .48; }
 button svg { flex: none; }
+
+
+/* NEWEIX unified page palette: all route surfaces resolve to the root tokens above. */
+/* Legacy Tailwind light surfaces used by older admin and dashboard pages. */
+[class~="bg-white"] {
+  color: var(--customer-theme-text, var(--page-text)) !important;
+  background-color: var(--customer-theme-surface, var(--page-panel)) !important;
+}
+[class~="bg-gray-50"],
+[class~="bg-gray-100"],
+[class~="bg-slate-50"],
+[class~="bg-slate-100"] {
+  color: var(--customer-theme-text, var(--page-text)) !important;
+  background-color: var(--customer-theme-background, var(--page-bg)) !important;
+}
+[class~="bg-white/5"],
+[class~="bg-white/[0.04]"],
+[class~="bg-white/[0.025]"],
+[class~="bg-black/10"] {
+  background-color: var(--page-surface) !important;
+}
+[class~="border-gray-200"],
+[class~="border-gray-300"],
+[class~="border-white/10"],
+[class~="border-white/15"] {
+  border-color: var(--page-border) !important;
+}
+[class~="text-gray-900"],
+[class~="text-gray-800"],
+[class~="text-gray-700"],
+[class~="text-slate-950"] {
+  color: var(--page-text) !important;
+}
+[class~="text-gray-600"],
+[class~="text-gray-500"],
+[class~="text-gray-400"] {
+  color: var(--page-muted) !important;
+}
+
+/* Keep the brand accent consistent on legacy blue dashboard controls. */
+[class~="bg-blue-700"] {
+  color: #080b09 !important;
+  background-color: var(--page-accent) !important;
+}
+[class~="text-blue-700"],
+[class~="text-blue-600"],
+[class~="border-blue-700"] {
+  color: var(--page-accent) !important;
+  border-color: var(--page-accent) !important;
+}
+
+/* Form controls, tables and native dropdowns share the same dark surfaces. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+select,
+textarea {
+  color: var(--page-text);
+  background-color: var(--page-surface);
+  border-color: var(--page-border);
+}
+option {
+  color: var(--page-text);
+  background: var(--page-panel);
+}
+table, thead, tbody, tr {
+  border-color: var(--page-border);
+}
+th {
+  background-color: color-mix(in srgb, var(--page-accent) 4.5%, transparent);
+}
+
+
+/* Semantic alerts retain meaning without reintroducing light panels. */
+[class~="bg-red-50"] { color: color-mix(in srgb, var(--color-danger) 78%, white) !important; background-color: var(--color-danger-soft) !important; }
+[class~="border-red-200"] { border-color: color-mix(in srgb, var(--color-danger) 28%, transparent) !important; }
+[class~="text-red-800"] { color: color-mix(in srgb, var(--color-danger) 78%, white) !important; }
+[class~="bg-green-50"] { color: color-mix(in srgb, var(--color-success) 78%, white) !important; background-color: var(--color-success-soft) !important; }
+[class~="text-green-800"] { color: color-mix(in srgb, var(--color-success) 78%, white) !important; }

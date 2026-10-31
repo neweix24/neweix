@@ -59,7 +59,7 @@ export default function SupremeDashboardClient() {
     <main className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900">
       <div className="mx-auto max-w-6xl space-y-6">
         <header className="rounded-2xl bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-wider text-blue-700">
+          <p className="text-sm font-semibold uppercase tracking-wider text-lime-300">
             NEWEIX · SUPREME PANEL
           </p>
 
@@ -75,7 +75,7 @@ export default function SupremeDashboardClient() {
             type="button"
             onClick={() => void loadDashboard()}
             disabled={loading}
-            className="mt-5 rounded-lg bg-blue-700 px-5 py-3 font-medium text-white disabled:opacity-50"
+            className="mt-5 rounded-lg bg-lime-300 px-5 py-3 font-medium text-white disabled:opacity-50"
           >
             {loading ? "লোড হচ্ছে..." : "তথ্য রিফ্রেশ করুন"}
           </button>
@@ -150,7 +150,7 @@ export default function SupremeDashboardClient() {
 
           <a
             href="/admin/products"
-            className="mt-5 inline-block rounded-lg border border-blue-700 px-4 py-3 font-medium text-blue-700"
+            className="mt-5 inline-block rounded-lg border border-lime-300 px-4 py-3 font-medium text-lime-300"
           >
             সব পণ্য ও স্টক দেখুন →
           </a>
