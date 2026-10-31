@@ -51,7 +51,8 @@ function money(value: number) {
 }
 
 export default function ProductDetails({ product }: { product: ProductDetailsData }) {
-  const images = product.image_urls ?? [];\n  const videoEmbedUrl = getYouTubeEmbedUrl(product.video_url);
+  const images = product.image_urls ?? [];
+  const videoEmbedUrl = getYouTubeEmbedUrl(product.video_url);
   return (
     <main className={styles.page}>
       <div className={styles.breadcrumb}><Link href="/products">← সব পণ্য</Link><span>/</span><span>{product.name}</span></div>
