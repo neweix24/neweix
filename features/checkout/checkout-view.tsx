@@ -252,7 +252,7 @@ export default function CheckoutView() {
 
   const selectedMobilePayment =
     paymentMethod === "cod"
-      ? null
+      ? paymentConfig?.paymentMethods?.[mfsMethod]
       : paymentConfig?.paymentMethods?.[paymentMethod];
 
   async function submitOrder(event: FormEvent<HTMLFormElement>) {
@@ -287,16 +287,17 @@ export default function CheckoutView() {
     setSubmitting(true);
     const formData = new FormData(form);
 
-    const transactionId = String(
-      formData.get("payment_transaction_id") ?? ""
-    ).trim();
+    const transactionId = String(formData.get("payment_transaction_id") ?? "").trim();
+    const deliveryFeeTransactionId = String(formData.get("delivery_fee_payment_transaction_id") ?? "").trim();
 
-    if (
-      paymentMethod !== "cod" &&
-      (!transactionId ||
-        transactionId.length > 120 ||
-        !/^[A-Za-z0-9-]+$/.test(transactionId))
-    ) {
+    if (paymentMethod === "cod" &&
+      (!deliveryFeeTransactionId || deliveryFeeTransactionId.length > 120 || !/^[A-Za-z0-9-]+$/.test(deliveryFeeTransactionId))) {
+      setError("ডেলিভারি চার্জের সঠিক Transaction ID দিন।");
+      setSubmitting(false);
+      return;
+    }
+    if (paymentMethod !== "cod" &&
+      (!transactionId || transactionId.length > 120 || !/^[A-Za-z0-9-]+$/.test(transactionId))) {
       setError("সঠিক Transaction ID দিন (ইংরেজি অক্ষর, সংখ্যা ও হাইফেন)।");
       setSubmitting(false);
       return;
@@ -311,6 +312,8 @@ export default function CheckoutView() {
       coupon_code: String(formData.get("coupon_code") ?? "").trim().toUpperCase() || null,
       payment_method: paymentMethod,
       payment_transaction_id: paymentMethod === "cod" ? null : transactionId,
+      delivery_fee_payment_method: paymentMethod === "cod" ? mfsMethod : null,
+      delivery_fee_payment_transaction_id: paymentMethod === "cod" ? deliveryFeeTransactionId : null,
       items: cart.map(({ product_id, quantity }) => ({ product_id, quantity })),
     };
 
@@ -379,7 +382,7 @@ export default function CheckoutView() {
         <h2 className={styles.orderNumber}>{orderNumber}</h2>
 
         {submittedPaymentMethod === "cod" ? (
-          <p>পেমেন্ট পদ্ধতি: ক্যাশ অন ডেলিভারি (COD)।</p>
+          <p>পণ্যের মূল্য COD-এ পরিশোধ করবেন। ডেলিভারি চার্জের MFS পেমেন্ট যাচাই অপেক্ষমাণ।</p>
         ) : (
           <p role="status">
             পেমেন্টের Transaction ID জমা হয়েছে। পেমেন্ট যাচাই না হওয়া পর্যন্ত
@@ -516,9 +519,8 @@ export default function CheckoutView() {
             <span><strong>২. Mobile Financial Service (MFS)</strong></span>
           </label>
 
-          {paymentMethod !== "cod" && (
-            <div style={{ margin: "8px 0 16px", padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
-              <p style={{ marginTop: 0 }}>MFS প্রদানকারী নির্বাচন করুন:</p>
+          <div style={{ margin: "8px 0 16px", padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
+              <p style={{ marginTop: 0 }}>{paymentMethod === "cod" ? "ডেলিভারি চার্জ অগ্রিম দেওয়ার MFS নির্বাচন করুন:" : "MFS প্রদানকারী নির্বাচন করুন:"}</p>
               {([
                 ["bkash", "bKash"],
                 ["nagad", "Nagad"],
@@ -543,14 +545,13 @@ export default function CheckoutView() {
                   </label>
                 );
               })}
-            </div>
-          )}
+          </div>
 
           {paymentConfigError && (
             <p role="alert">{paymentConfigError} আপাতত COD নির্বাচন করে অর্ডার দিতে পারবেন।</p>
           )}
 
-          {paymentMethod !== "cod" && selectedMobilePayment?.enabled && (
+          {selectedMobilePayment?.enabled && (
             <div className={styles.paymentDetails}>
               <h3>{selectedMobilePayment.label} পেমেন্ট</h3>
               <p>নিচের নম্বরে Send Money করুন:</p>
@@ -558,13 +559,14 @@ export default function CheckoutView() {
                 {selectedMobilePayment.number}
               </p>
               <p>
-                অর্ডারের মোট পরিমাণ অনুযায়ী টাকা পাঠান। টাকা পাঠানোর পর Transaction ID লিখুন।
-                শুধু TrxID জমা দিলেই পেমেন্ট নিশ্চিত হবে না; অ্যাডমিন যাচাই করবেন।
+                {paymentMethod === "cod"
+                  ? "শুধু ডেলিভারি চার্জ অগ্রিম পাঠান। পণ্যের মূল্য COD-এ দেবেন। TrxID অ্যাডমিন যাচাই করবেন।"
+                  : "পণ্য ও ডেলিভারি চার্জসহ অর্ডারের সম্পূর্ণ মোট টাকা পাঠান। TrxID অ্যাডমিন যাচাই করবেন।"}
               </p>
-              <label htmlFor="payment_transaction_id">Transaction ID *</label>
+              <label htmlFor={paymentMethod === "cod" ? "delivery_fee_payment_transaction_id" : "payment_transaction_id"}>Transaction ID *</label>
               <input
-                id="payment_transaction_id"
-                name="payment_transaction_id"
+                id={paymentMethod === "cod" ? "delivery_fee_payment_transaction_id" : "payment_transaction_id"}
+                name={paymentMethod === "cod" ? "delivery_fee_payment_transaction_id" : "payment_transaction_id"}
                 required
                 minLength={1}
                 maxLength={120}
@@ -580,7 +582,8 @@ export default function CheckoutView() {
         </fieldset>
 
         <p><strong>পণ্যের মোট মূল্য: {formatPrice(total)}</strong></p>
-        <p>Pathao Courier-এর চূড়ান্ত ডেলিভারি চার্জ অর্ডারের সার্ভার-হিসাবে নির্ধারিত হবে।</p>
+        <p>{paymentMethod === "cod" ? "COD নির্বাচন করেছেন: শুধু ডেলিভারি চার্জ MFS-এ অগ্রিম দিতে হবে; পণ্যের মূল্য ডেলিভারির সময় দেবেন।" : "MFS নির্বাচন করেছেন: পণ্য ও ডেলিভারি চার্জের সম্পূর্ণ মূল্য অগ্রিম দিতে হবে।"}</p>
+        <p>ডেলিভারি চার্জ সার্ভার নির্ধারণ করবে। TrxID জমা দিলেই পেমেন্ট নিশ্চিত হবে না; অ্যাডমিন যাচাই করবেন।</p>
 
         {error && (
           <p role="alert" className={styles.error}>
