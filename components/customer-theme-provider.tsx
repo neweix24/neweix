@@ -6,12 +6,12 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 const DEFAULT_THEME = {
   background: "#ffffff",
-  surface: "#151d18",
-  text: "#f4f8f2",
-  muted: "#a0ada1",
+  surface: "#ffffff",
+  text: "#17211a",
+  muted: "#59665d",
   button: "#b6ff4a",
   buttonText: "#080b09",
-  border: "#29352b",
+  border: "#e2e8e3",
 };
 
 const COLOR_KEYS = [
