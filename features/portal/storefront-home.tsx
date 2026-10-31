@@ -40,7 +40,6 @@ export default function StorefrontHome() {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
@@ -81,7 +80,7 @@ export default function StorefrontHome() {
         const metadataName = typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : typeof user.user_metadata?.name === "string" ? user.user_metadata.name : "";
         setCustomer({ name: profile?.full_name || metadataName || "প্রিয় গ্রাহক", email: user.email ?? "" });
       } catch { if (active) setCustomer(null); }
-      finally { if (active) setAuthLoading(false); }
+      finally { /* Customer lookup completed. */ }
     }
     void loadCustomer();
     return () => { active = false; };
