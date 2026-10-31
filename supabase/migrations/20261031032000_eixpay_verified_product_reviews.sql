@@ -87,7 +87,8 @@ begin
     and o.customer_id = v_user_id
     and o.status = 'delivered'
     and o.payment_status = 'paid'
-    and o.delivery_status = 'delivered'
+    and o.delivery_status not in ('returned','cancelled','failed')
+    and o.updated_at <= now() - interval '7 days'
     and o.delivery_fee_payment_status in ('paid','not_required')
     and not exists (
       select 1 from private.eixpay_product_reviews r
@@ -134,7 +135,8 @@ begin
     and o.customer_id = v_user_id
     and o.status = 'delivered'
     and o.payment_status = 'paid'
-    and o.delivery_status = 'delivered'
+    and o.delivery_status not in ('returned','cancelled','failed')
+    and o.updated_at <= now() - interval '7 days'
     and o.delivery_fee_payment_status in ('paid','not_required')
   for update of o;
 
@@ -224,7 +226,7 @@ begin
   ) then
     raise exception using errcode = '42501', message = 'SUPREME_MFA_REQUIRED';
   end if;
-  if p_review_id is null or p_decision not in ('approve','reject')
+  if p_review_id is null or p_decision is null or p_decision not in ('approve','reject')
      or char_length(coalesce(p_note,'')) > 500 then
     raise exception using errcode = '22023', message = 'INVALID_REVIEW_DECISION';
   end if;
