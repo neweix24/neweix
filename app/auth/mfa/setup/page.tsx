@@ -82,7 +82,7 @@ export default function SupremeMfaSetupPage() {
 
         // আগে থেকেই যাচাইকৃত TOTP থাকলে সেটআপের বদলে যাচাইকরণ পেজে যাও
         const verifiedFactor = factors.totp.find(
-          (factor) => factor.status === "verified"
+          (factor: { status: string }) => factor.status === "verified"
         );
 
         if (verifiedFactor) {
@@ -92,7 +92,7 @@ export default function SupremeMfaSetupPage() {
 
         // 5. আগের অসম্পূর্ণ TOTP সেটআপগুলো সরানো
         const unverifiedFactors = factors.all.filter(
-          (factor) =>
+          (factor: { factor_type: string; status: string; id: string }) =>
             factor.factor_type === "totp" &&
             factor.status === "unverified"
         );
