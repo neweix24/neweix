@@ -2,17 +2,13 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request,
-  });
+  let response = NextResponse.next({ request });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
-    return new NextResponse("Supabase configuration missing.", {
-      status: 500,
-    });
+    return new NextResponse("Supabase configuration missing.", { status: 500 });
   }
 
   const supabase = createServerClient(url, anonKey, {
@@ -21,14 +17,8 @@ export async function middleware(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => {
-          request.cookies.set(name, value);
-        });
-
-        response = NextResponse.next({
-          request,
-        });
-
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
@@ -36,47 +26,43 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  // Refresh/rotate Supabase cookies on public storefront requests as well.
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub;
+  const pathname = request.nextUrl.pathname;
+  const isAdminPath = pathname.startsWith("/admin");
+  const isSupremePath = pathname.startsWith("/supreme");
+
+  response.headers.set("Cache-Control", "private, no-store");
+
+  // Public pages and guest checkout never require a customer or staff login.
+  if (!isAdminPath && !isSupremePath) return response;
+
   function redirectWithCookies(path: string) {
     const destination = request.nextUrl.clone();
     destination.pathname = path;
     destination.search = "";
-
     const redirectResponse = NextResponse.redirect(destination);
-
-    response.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie);
-    });
-
+    response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
+    redirectResponse.headers.set("Cache-Control", "private, no-store");
     return redirectResponse;
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
+  if (claimsError || typeof userId !== "string" || !userId) {
     const destination = request.nextUrl.clone();
     destination.pathname = "/auth/login";
     destination.search = "";
-    destination.searchParams.set(
-      "next",
-      request.nextUrl.pathname + request.nextUrl.search
-    );
-
+    destination.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
     const redirectResponse = NextResponse.redirect(destination);
-
-    response.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie);
-    });
-
+    response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
+    redirectResponse.headers.set("Cache-Control", "private, no-store");
     return redirectResponse;
   }
 
   const { data: profile, error: profileError } = await supabase
     .from("staff_profiles")
     .select("role, is_active")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (
@@ -88,47 +74,36 @@ export async function middleware(request: NextRequest) {
     return redirectWithCookies("/unauthorized");
   }
 
-  const pathname = request.nextUrl.pathname;
+  if (isSupremePath) {
+    if (profile.role !== "supreme") return redirectWithCookies("/unauthorized");
 
-  if (pathname.startsWith("/supreme")) {
-    if (profile.role !== "supreme") {
-      return redirectWithCookies("/unauthorized");
-    }
-
-    const { data: factors, error: factorsError } =
-      await supabase.auth.mfa.listFactors();
-
+    const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
     if (factorsError) {
       return new NextResponse("MFA verification unavailable.", {
         status: 503,
+        headers: { "Cache-Control": "private, no-store" },
       });
     }
 
-    const verifiedFactor = factors.totp.find(
-      (factor) => factor.status === "verified"
-    );
-
-    if (!verifiedFactor) {
-      return redirectWithCookies("/auth/mfa/setup");
-    }
+    const verifiedFactor = factors.totp.find((factor) => factor.status === "verified");
+    if (!verifiedFactor) return redirectWithCookies("/auth/mfa/setup");
 
     const { data: assurance, error: assuranceError } =
       await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-
     if (assuranceError) {
       return new NextResponse("MFA verification unavailable.", {
         status: 503,
+        headers: { "Cache-Control": "private, no-store" },
       });
     }
-
-    if (assurance.currentLevel !== "aal2") {
-      return redirectWithCookies("/auth/mfa");
-    }
+    if (assurance.currentLevel !== "aal2") return redirectWithCookies("/auth/mfa");
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/supreme/:path*"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };
