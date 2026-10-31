@@ -70,3 +70,25 @@
 .notice button{display:grid;width:34px;min-width:34px;height:34px;min-height:34px;place-items:center;padding:0;border:1px solid var(--border);border-radius:9px}
 .header nav a{display:inline-flex;align-items:center;gap:6px}
 @media(max-width:640px){.addButton{width:100%}.productTools{margin-bottom:8px}}
+
+
+/* Search-page controls: consistent white surfaces, black text and high-contrast actions. */
+.searchForm{display:flex;align-items:stretch;gap:10px;width:min(100%,680px);margin-top:24px}
+.searchForm .search{display:flex;align-items:center;gap:10px;flex:1;min-width:0;margin:0;padding:0 14px;border:1px solid var(--page-border);border-radius:12px;background:#fff;color:#000}
+.searchForm .search>svg{flex:none;color:#000}
+.searchForm .search input{width:100%;min-width:0;min-height:48px;padding:10px 0;border:0!important;outline:0;background:transparent!important;color:#000!important;box-shadow:none!important}
+.searchForm .search input::placeholder{color:#626262}
+.searchForm .search:focus-within{border-color:#000;outline:3px solid rgba(0,0,0,.12);outline-offset:1px}
+.searchSubmit{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:112px;min-height:48px;padding:10px 18px;border:1px solid #000;border-radius:12px;background:#000;color:#fff;font-weight:800}
+.searchSubmit:disabled{opacity:.45;cursor:not-allowed}
+.categoryChips button,.clearFilters,.bottom button,.state button{color:#fff;background:#000;border-color:#000}
+.categoryChips .activeChip{color:#fff;background:#262626;border-color:#262626}
+.priceField,.stockFilter,.intro p,.state,.details p{color:#000}
+.priceField input,.search select{color:#000;background:#fff;border-color:#bdbdbd}
+.card{background:#fff;border-color:#dedede}
+.image{background:#f5f5f5;color:#000}
+.name,.bottom strong,.brand,.header nav,.details,.intro h1{color:#000}
+.inStock{color:#176b3a}.outOfStock{color:#b42318}
+.bottom button{background:#000;color:#fff}
+.notice{color:#000;background:#f5f5f5;border-color:#d6d6d6}
+@media(max-width:640px){.searchForm{gap:8px}.searchSubmit{min-width:94px;padding-inline:12px}}
