@@ -103,6 +103,18 @@ export async function GET(request: NextRequest) {
   }
 
   if (isCustomerFlow) {
+    const referralCode = request.cookies.get("neweix_referral_code")?.value;
+    if (referralCode) {
+      const { error: referralError } = await supabase.rpc("eixpay_apply_referral_code", {
+        p_referral_code: referralCode,
+      });
+      if (referralError) console.warn("Customer referral attribution was not applied:", referralError.code);
+      response.cookies.set("neweix_referral_code", "", {
+        httpOnly: true, secure: process.env.NODE_ENV === "production",
+        sameSite: "lax", path: "/", maxAge: 0,
+      });
+    }
+
     const { data: authData, error: userError } = await supabase.auth.getUser();
     const user = authData.user;
 
