@@ -7,23 +7,23 @@ import Icon from "@/components/ui/icon";
 
 const TURNSTILE_SITE_KEY = "0x4AAAAAAFuD44weVKxUV7gX";
 
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (
-        container: HTMLElement,
-        options: {
-          sitekey: string;
-          callback: (token: string) => void;
-          "expired-callback"?: () => void;
-          "error-callback"?: () => void;
-          theme?: "light" | "dark" | "auto";
-        }
-      ) => string;
-      reset: (widgetId?: string) => void;
-      remove: (widgetId?: string) => void;
-    };
-  }
+type TurnstileApi = {
+  render: (
+    container: HTMLElement,
+    options: {
+      sitekey: string;
+      callback: (token: string) => void;
+      "expired-callback"?: () => void;
+      "error-callback"?: () => void;
+      theme?: "light" | "dark" | "auto";
+    }
+  ) => string;
+  reset: (widgetId?: string) => void;
+  remove: (widgetId?: string) => void;
+};
+
+function getTurnstile() {
+  return (window as Window & { turnstile?: TurnstileApi }).turnstile;
 }
 
 export default function LoginPage() {
@@ -43,14 +43,14 @@ export default function LoginPage() {
     const renderCaptcha = () => {
       if (
         disposed ||
-        !window.turnstile ||
+        !getTurnstile() ||
         !captchaContainer.current ||
         captchaWidgetId.current
       ) {
         return;
       }
 
-      captchaWidgetId.current = window.turnstile.render(
+      captchaWidgetId.current = getTurnstile().render(
         captchaContainer.current,
         {
           sitekey: TURNSTILE_SITE_KEY,
@@ -69,7 +69,7 @@ export default function LoginPage() {
       setCaptchaReady(true);
     };
 
-    if (window.turnstile) {
+    if (getTurnstile()) {
       renderCaptcha();
     } else {
       const existingScript = document.querySelector<HTMLScriptElement>(
@@ -86,8 +86,8 @@ export default function LoginPage() {
 
     return () => {
       disposed = true;
-      if (captchaWidgetId.current && window.turnstile) {
-        window.turnstile.remove(captchaWidgetId.current);
+      if (captchaWidgetId.current && getTurnstile()) {
+        getTurnstile().remove(captchaWidgetId.current);
         captchaWidgetId.current = null;
       }
     };
@@ -120,8 +120,8 @@ export default function LoginPage() {
       setCaptchaToken("");
 
       if (error || !data.user) {
-        if (window.turnstile && captchaWidgetId.current) {
-          window.turnstile.reset(captchaWidgetId.current);
+        if (getTurnstile() && captchaWidgetId.current) {
+          getTurnstile().reset(captchaWidgetId.current);
         }
         if (error?.message.toLowerCase().includes("captcha")) {
           setMessage("নিরাপত্তা যাচাই ব্যর্থ হয়েছে। আবার CAPTCHA সম্পন্ন করে চেষ্টা করুন।");
