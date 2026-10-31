@@ -32,20 +32,24 @@ function isHexColor(value: unknown): value is string {
 
 function validateTheme(value: unknown): Theme {
   const theme = { ...DEFAULT_THEME };
-
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return theme;
-  }
-
+  if (!value || typeof value !== "object" || Array.isArray(value)) return theme;
   const input = value as Record<string, unknown>;
-
   for (const key of COLOR_KEYS) {
-    if (isHexColor(input[key])) {
-      theme[key] = input[key];
-    }
+    if (isHexColor(input[key])) theme[key] = input[key];
   }
-
   return theme;
+}
+
+// Only public shopping/marketing pages inherit customer-selected colors.
+// Account, wallet, checkout, authentication and every workspace stay system-controlled.
+function isStorefrontPage(pathname: string): boolean {
+  const excludedPrefixes = [
+    "/admin", "/staff", "/supreme", "/dashboard", "/account",
+    "/wallet", "/checkout", "/auth", "/orders", "/api",
+  ];
+  return !excludedPrefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix + "/")
+  );
 }
 
 export default function CustomerThemeProvider() {
@@ -54,14 +58,7 @@ export default function CustomerThemeProvider() {
   useEffect(() => {
     let active = true;
     let requestVersion = 0;
-    const root = document.documentElement;
-
-    const isAdminPage =
-      pathname === "/admin" || pathname.startsWith("/admin/");
-
-    const isCustomerPage =
-      !isAdminPage &&
-      !pathname.startsWith("/auth/");
+    const body = document.body;
 
     const variableNames: Record<keyof Theme, string> = {
       background: "--customer-theme-background",
@@ -74,21 +71,22 @@ export default function CustomerThemeProvider() {
     };
 
     function clearTheme() {
+      body.removeAttribute("data-customer-theme");
       for (const name of Object.values(variableNames)) {
-        root.style.removeProperty(name);
+        body.style.removeProperty(name);
       }
     }
 
     function applyTheme(value: unknown) {
       const theme = validateTheme(value);
       for (const key of COLOR_KEYS) {
-        root.style.setProperty(variableNames[key], key === "background" ? "#ffffff" : theme[key]);
+        body.style.setProperty(variableNames[key], theme[key]);
       }
+      body.setAttribute("data-customer-theme", "storefront");
     }
 
     clearTheme();
-
-    if (!isCustomerPage) {
+    if (!isStorefrontPage(pathname)) {
       return () => {
         active = false;
         clearTheme();
@@ -99,16 +97,12 @@ export default function CustomerThemeProvider() {
 
     async function loadTheme() {
       const currentRequest = ++requestVersion;
-
-      // Never leave the previous account's colors visible while identity changes.
       clearTheme();
-
       try {
         const {
           data: { user },
           error: authError,
         } = await supabase.auth.getUser();
-
         if (!active || currentRequest !== requestVersion) return;
         if (authError || !user) return;
 
@@ -119,20 +113,13 @@ export default function CustomerThemeProvider() {
           .maybeSingle();
 
         if (!active || currentRequest !== requestVersion) return;
-        if (error || !data?.theme) return;
-
-        applyTheme(data.theme);
+        if (!error && data?.theme) applyTheme(data.theme);
       } catch {
-        // থিম লোড না হলেও ওয়েবসাইট স্বাভাবিকভাবে চলবে।
         if (active && currentRequest === requestVersion) clearTheme();
       }
     }
 
-    // Load the signed-in user's theme on page entry.
     void loadTheme();
-
-    // Also reload/clear immediately when the signed-in account changes,
-    // including sign-out and sign-in without a route change.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {
