@@ -759,13 +759,16 @@ button svg { flex: none; }
 }
 
 /* Legacy Tailwind light surfaces used by older admin and dashboard pages. */
-[class~="bg-white"],
+[class~="bg-white"] {
+  color: var(--customer-theme-text, var(--page-text)) !important;
+  background-color: var(--customer-theme-surface, var(--page-panel)) !important;
+}
 [class~="bg-gray-50"],
 [class~="bg-gray-100"],
 [class~="bg-slate-50"],
 [class~="bg-slate-100"] {
-  color: var(--page-text) !important;
-  background-color: var(--page-panel) !important;
+  color: var(--customer-theme-text, var(--page-text)) !important;
+  background-color: var(--customer-theme-background, var(--page-bg)) !important;
 }
 [class~="bg-white/5"],
 [class~="bg-white/[0.04]"],
