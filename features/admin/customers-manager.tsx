@@ -11,6 +11,11 @@ type Customer = {
   date_of_birth: string | null;
   phone: string | null;
   phone_verified_at: string | null;
+  addresses?: Array<{
+    label: string; recipient_name: string; phone: string; address_line: string;
+    area: string | null; upazila: string | null; district: string; division: string;
+    postal_code: string | null; is_default: boolean;
+  }>;
   created_at: string;
   order_summary?: { count: number; total: number; lastOrder: string | null; lastStatus: string | null };
 };
@@ -107,6 +112,20 @@ export default function CustomersManager() {
                 <strong className="text-sm">{customer.order_summary?.lastOrder ? new Date(customer.order_summary.lastOrder).toLocaleDateString("bn-BD") : "নেই"}</strong>
               </div>
             </div>
+            {customer.addresses && customer.addresses.length > 0 && (
+              <div className="mt-4 border-t pt-3" style={{ borderColor: "var(--border)" }}>
+                <p className="mb-2 text-xs font-semibold" style={{ color: "var(--muted)" }}>সংরক্ষিত ডেলিভারি ঠিকানা</p>
+                <div className="grid gap-2">
+                  {customer.addresses.map((address, index) => (
+                    <div key={index} className="rounded-xl p-3 text-sm" style={{ background: "var(--bg)" }}>
+                      <p className="font-semibold">{address.label}{address.is_default ? " · ডিফল্ট" : ""}</p>
+                      <p>{address.recipient_name} · {address.phone}</p>
+                      <p>{[address.address_line, address.area, address.upazila, address.district, address.division, address.postal_code].filter(Boolean).join(", ")}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <p className="mt-3 break-all text-xs" style={{ color: "var(--muted)" }}>Customer ID: {customer.user_id}</p>
           </article>
         ))}
