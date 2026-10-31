@@ -39,7 +39,8 @@ export async function middleware(request: NextRequest) {
   const isPhoneVerificationApi =
     pathname === "/api/account/phone/send-otp" ||
     pathname === "/api/account/phone/status" ||
-    pathname === "/api/account/phone/verify-otp";
+    pathname === "/api/account/phone/verify-otp" ||
+    pathname === "/api/account/security/register-device";
   const isCustomerApi =
     (pathname.startsWith("/api/account/") && !isPhoneVerificationApi) ||
     pathname === "/api/eixpay" || pathname.startsWith("/api/eixpay/") ||
