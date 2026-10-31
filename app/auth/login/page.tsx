@@ -178,7 +178,7 @@ export default function LoginPage() {
         }
 
         const verifiedFactor = factors.totp.find(
-          (factor) => factor.status === "verified"
+          (factor: { status: string }) => factor.status === "verified"
         );
 
         if (!verifiedFactor) {
