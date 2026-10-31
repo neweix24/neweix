@@ -5,13 +5,13 @@ import { usePathname } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 const DEFAULT_THEME = {
-  background: "#f5f5f5",
-  surface: "#ffffff",
-  text: "#222222",
-  muted: "#666666",
-  button: "#333333",
-  buttonText: "#ffffff",
-  border: "#dddddd",
+  background: "#080b09",
+  surface: "#151d18",
+  text: "#f4f8f2",
+  muted: "#a0ada1",
+  button: "#b6ff4a",
+  buttonText: "#080b09",
+  border: "#29352b",
 };
 
 const COLOR_KEYS = [
