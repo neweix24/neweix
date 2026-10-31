@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Icon from "@/components/ui/icon";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 type Review = {
@@ -135,13 +136,13 @@ export default function ProductReviewPanel({ productId, returnTo }: { productId:
               </select>
               <label className="block text-xs font-semibold">আপনার রেটিং</label>
               <div className="flex gap-1" role="group" aria-label="রেটিং নির্বাচন">
-                {[1,2,3,4,5].map((value) => <button key={value} type="button" onClick={() => setRating(value)} aria-pressed={rating === value} className="rounded-lg px-2 py-1 text-2xl" style={{ color: value <= rating ? "#d97706" : "var(--muted)" }}>★</button>)}
+                {[1,2,3,4,5].map((value) => <button key={value} type="button" onClick={() => setRating(value)} aria-pressed={rating === value} className="rounded-lg px-2 py-1 text-2xl" style={{ color: value <= rating ? "#d97706" : "var(--muted)" }} aria-label={`${value} স্টার`}><Icon name="star" size={21} /></button>)}
               </div>
               <label htmlFor="review-title" className="block text-xs font-semibold">শিরোনাম</label>
               <input id="review-title" required minLength={3} maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} className="w-full rounded-lg border bg-transparent p-3 text-sm" style={{ borderColor: "var(--border)", color: "var(--ink)" }} />
               <label htmlFor="review-body" className="block text-xs font-semibold">আপনার মতামত (২০–২০০০ অক্ষর)</label>
               <textarea id="review-body" required minLength={20} maxLength={2000} rows={5} value={body} onChange={(event) => setBody(event.target.value)} className="w-full resize-y rounded-lg border bg-transparent p-3 text-sm" style={{ borderColor: "var(--border)", color: "var(--ink)" }} />
-              <button type="submit" disabled={submitting} className="w-full rounded-full px-4 py-3 text-sm font-bold disabled:opacity-50" style={{ background: "var(--primary)", color: "var(--bg)" }}>{submitting ? "জমা হচ্ছে…" : "রিভিউ জমা দিন"}</button>
+              <button type="submit" disabled={submitting} className="w-full rounded-full px-4 py-3 text-sm font-bold disabled:opacity-50" style={{ background: "var(--primary)", color: "var(--bg)" }}><><Icon name={submitting ? "refresh" : "check"} size={17} /> {submitting ? "জমা হচ্ছে…" : "রিভিউ জমা দিন"}</></button>
               <p className="text-xs leading-5" style={{ color: "var(--muted)" }}>রিভিউ Supreme যাচাই না করা পর্যন্ত প্রকাশিত হবে না। অনুমোদনের পর Eixon রিওয়ার্ড চালু থাকলে পুরস্কার যোগ হবে।</p>
             </form>
           )}
