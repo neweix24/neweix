@@ -53,6 +53,7 @@ export default function CustomerThemeProvider() {
 
   useEffect(() => {
     let active = true;
+    let requestVersion = 0;
     const root = document.documentElement;
 
     const isAdminPage =
@@ -78,6 +79,13 @@ export default function CustomerThemeProvider() {
       }
     }
 
+    function applyTheme(value: unknown) {
+      const theme = validateTheme(value);
+      for (const key of COLOR_KEYS) {
+        root.style.setProperty(variableNames[key], theme[key]);
+      }
+    }
+
     clearTheme();
 
     if (!isCustomerPage) {
@@ -87,14 +95,22 @@ export default function CustomerThemeProvider() {
       };
     }
 
+    const supabase = createBrowserSupabaseClient();
+
     async function loadTheme() {
+      const currentRequest = ++requestVersion;
+
+      // Never leave the previous account's colors visible while identity changes.
+      clearTheme();
+
       try {
-        const supabase = createBrowserSupabaseClient();
         const {
           data: { user },
+          error: authError,
         } = await supabase.auth.getUser();
 
-        if (!active || !user) return;
+        if (!active || currentRequest !== requestVersion) return;
+        if (authError || !user) return;
 
         const { data, error } = await supabase
           .from("customer_theme_settings")
@@ -102,25 +118,35 @@ export default function CustomerThemeProvider() {
           .eq("user_id", user.id)
           .maybeSingle();
 
-        if (!active || error || !data?.theme) return;
+        if (!active || currentRequest !== requestVersion) return;
+        if (error || !data?.theme) return;
 
-        const theme = validateTheme(data.theme);
-
-        for (const key of COLOR_KEYS) {
-          root.style.setProperty(
-            variableNames[key],
-            theme[key]
-          );
-        }
+        applyTheme(data.theme);
       } catch {
         // থিম লোড না হলেও ওয়েবসাইট স্বাভাবিকভাবে চলবে।
+        if (active && currentRequest === requestVersion) clearTheme();
       }
     }
 
+    // Load the signed-in user's theme on page entry.
     void loadTheme();
+
+    // Also reload/clear immediately when the signed-in account changes,
+    // including sign-out and sign-in without a route change.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      clearTheme();
+      requestVersion += 1;
+      queueMicrotask(() => {
+        if (active) void loadTheme();
+      });
+    });
 
     return () => {
       active = false;
+      requestVersion += 1;
+      subscription.unsubscribe();
       clearTheme();
     };
   }, [pathname]);
