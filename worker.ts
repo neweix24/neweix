@@ -6,6 +6,8 @@ import { createClient } from "@supabase/supabase-js";
 type Env = {
   NEXT_PUBLIC_SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
+  BULKSMSBD_API_KEY?: string;
+  BULKSMSBD_SENDER_ID?: string;
   AI: {
     run(model: string, input: { text: string[] }): Promise<{ data?: number[][] }>;
   };
@@ -172,6 +174,123 @@ async function processSearchEmbeddingQueue(env: Env): Promise<void> {
   });
 }
 
+
+type CustomerNotificationJob = {
+  id: string;
+  phone: string;
+  message: string;
+  attempts: number;
+};
+
+function normalizeBulkSmsPhone(phone: string): string | null {
+  let digits = phone.replace(/\\D/g, "");
+  if (digits.startsWith("00880")) digits = digits.slice(2);
+  if (digits.startsWith("01")) digits = `88${digits}`;
+  return /^8801[3-9]\\d{8}$/.test(digits) ? digits : null;
+}
+
+function getBulkSmsResponseCode(raw: string): number | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed === "number" || typeof parsed === "string") {
+      const code = Number(parsed);
+      return Number.isFinite(code) ? code : null;
+    }
+    if (parsed && typeof parsed === "object") {
+      const record = parsed as Record<string, unknown>;
+      const value = record.response_code ?? record.code ?? record.status;
+      const code = Number(value);
+      return Number.isFinite(code) ? code : null;
+    }
+  } catch {
+    // BulkSMSBD commonly returns a plain numeric code.
+  }
+  const match = raw.match(/^\\s*(\\d{3,4})\\b/);
+  return match ? Number(match[1]) : null;
+}
+
+async function processCustomerNotificationQueue(env: Env): Promise<void> {
+  if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Customer SMS queue is missing Supabase bindings.");
+  }
+  if (!env.BULKSMSBD_API_KEY || !env.BULKSMSBD_SENDER_ID) {
+    throw new Error("Customer SMS queue is missing BulkSMSBD credentials.");
+  }
+
+  const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: jobs, error: claimError } = await supabase.rpc(
+    "neweix_claim_customer_notifications",
+    { p_limit: 10 },
+  );
+  if (claimError) throw new Error(`Customer SMS queue claim failed: ${claimError.message}`);
+  if (!Array.isArray(jobs) || jobs.length === 0) return;
+
+  let sent = 0;
+  let failed = 0;
+  for (const job of jobs as CustomerNotificationJob[]) {
+    const number = normalizeBulkSmsPhone(job.phone);
+    if (!number) {
+      await supabase.rpc("neweix_fail_customer_notification", {
+        p_id: job.id,
+        p_error: "Invalid Bangladesh phone number",
+      });
+      failed += 1;
+      continue;
+    }
+
+    try {
+      const form = new FormData();
+      form.set("api_key", env.BULKSMSBD_API_KEY);
+      form.set("type", "text");
+      form.set("number", number);
+      form.set("senderid", env.BULKSMSBD_SENDER_ID);
+      form.set("message", job.message.slice(0, 500));
+
+      const response = await fetch("https://bulksmsbd.net/api/smsapi", {
+        method: "POST",
+        body: form,
+        signal: AbortSignal.timeout(12_000),
+      });
+      const raw = (await response.text()).trim();
+      const responseCode = getBulkSmsResponseCode(raw);
+      const accepted = response.ok &&
+        (responseCode === 202 || (response.status === 202 && responseCode === null));
+
+      if (!accepted) {
+        await supabase.rpc("neweix_fail_customer_notification", {
+          p_id: job.id,
+          p_error: `BulkSMSBD rejected request (HTTP ${response.status}, code ${responseCode ?? "unknown"})`,
+        });
+        failed += 1;
+        continue;
+      }
+
+      const { error: completeError } = await supabase.rpc(
+        "neweix_complete_customer_notification",
+        { p_id: job.id },
+      );
+      if (completeError) {
+        await supabase.rpc("neweix_fail_customer_notification", {
+          p_id: job.id,
+          p_error: completeError.message,
+        });
+        failed += 1;
+        continue;
+      }
+      sent += 1;
+    } catch (error) {
+      await supabase.rpc("neweix_fail_customer_notification", {
+        p_id: job.id,
+        p_error: error instanceof Error ? error.message : "BulkSMSBD network failure",
+      });
+      failed += 1;
+    }
+  }
+  console.log("[customer-sms-cron] batch complete", { processed: jobs.length, sent, failed });
+}
+
 export default {
   fetch: openNextWorker.fetch,
   async scheduled(
@@ -179,8 +298,17 @@ export default {
     env: Env,
     _ctx: ExecutionContextLike,
   ): Promise<void> {
-    console.log("[search-cron] started", controller.cron, new Date(controller.scheduledTime).toISOString());
-    await processSearchEmbeddingQueue(env);
+    console.log("[neweix-cron] started", controller.cron, new Date(controller.scheduledTime).toISOString());
+    const tasks: Promise<void>[] = [processCustomerNotificationQueue(env)];
+    if (controller.cron === "*/15 * * * *") {
+      tasks.push(processSearchEmbeddingQueue(env));
+    }
+    const results = await Promise.allSettled(tasks);
+    for (const result of results) {
+      if (result.status === "rejected") {
+        console.error("[neweix-cron] task failed", result.reason instanceof Error ? result.reason.message : "unknown error");
+      }
+    }
   },
 };
 
