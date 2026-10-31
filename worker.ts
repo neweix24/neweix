@@ -434,8 +434,9 @@ async function processSocialPublishingQueue(env: Env): Promise<void> {
           last_error: message.slice(0, 1000),
           updated_at: new Date().toISOString(),
         }).eq("post_id", post.id).eq("platform", platform);
+        const tokenExpired = message.toLowerCase().includes("invalid_grant");
         await supabase.from("social_media_accounts").update({
-          connection_status: message.toLowerCase().includes("invalid_grant") ? "expired" : "error",
+          ...(tokenExpired ? { connection_status: "expired" } : {}),
           last_error: message.slice(0, 1000),
           updated_at: new Date().toISOString(),
         }).eq("id", youtubeAccount.id);
