@@ -35,9 +35,9 @@ The Security Advisor reports these tables as RLS-enabled with no policies:
 
 A read-only privilege check confirmed that neither `anon` nor `authenticated` has SELECT privilege on these tables. This is currently deny-by-default, not evidence of public exposure. Do not add broad policies merely to silence the advisor. Review each table's intended server-side access path and add only narrowly scoped policies/grants if direct client access is actually required.
 
-### 3. Cryptographic ledger integrity is not yet implemented
+### 3. Cryptographic ledger integrity: stage 1 added to PR, not applied
 
-The current ledger/audit append-only triggers prevent ordinary UPDATE/DELETE operations, but there is no hash chain or independent digital signature. A database-level hash chain can detect accidental or ordinary-role tampering, but a privileged database owner could rewrite the rows and recompute the chain.
+The PR now contains a database-local SHA-256 hash chain migration for new ledger/audit inserts, but it has not been applied or tested. The current append-only triggers prevent ordinary UPDATE/DELETE operations; the new chain adds tamper evidence for ordinary application roles. There is still no independent digital signature. A database-level hash chain can detect accidental or ordinary-role tampering, but a privileged database owner could rewrite the rows and recompute the chain.
 
 Recommended staged design:
 1. Add deterministic canonical event serialization and SHA-256 chaining for new audit events, with a transaction-safe sequence/locking strategy.
