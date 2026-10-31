@@ -151,3 +151,76 @@ export async function testPathaoConnection() {
     environment: config.baseUrl.includes("sandbox") ? "sandbox" : "production",
   };
 }
+
+
+export type PathaoCreateOrderInput = {
+  storeId: number;
+  merchantOrderId: string;
+  recipientName: string;
+  recipientPhone: string;
+  recipientAddress: string;
+  itemQuantity: number;
+  itemWeightKg: number;
+  amountToCollect: number;
+  itemDescription?: string;
+  specialInstruction?: string;
+};
+
+type PathaoCreateOrderResponse = {
+  data?: {
+    consignment_id?: string;
+    merchant_order_id?: string;
+    order_status?: string;
+    delivery_fee?: number;
+  };
+  message?: string;
+};
+
+export async function createPathaoOrder(input: PathaoCreateOrderInput) {
+  const config = await getPathaoConfig();
+  const token = await getPathaoAccessToken(config);
+  const response = await fetch(`${config.baseUrl}/aladdin/api/v1/orders`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      store_id: input.storeId,
+      merchant_order_id: input.merchantOrderId,
+      recipient_name: input.recipientName,
+      recipient_phone: input.recipientPhone,
+      recipient_address: input.recipientAddress,
+      delivery_type: 48,
+      item_type: 2,
+      item_quantity: input.itemQuantity,
+      item_weight: input.itemWeightKg,
+      amount_to_collect: input.amountToCollect,
+      ...(input.itemDescription ? { item_description: input.itemDescription.slice(0, 200) } : {}),
+      ...(input.specialInstruction ? { special_instruction: input.specialInstruction.slice(0, 500) } : {}),
+    }),
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
+  });
+
+  const payload = await response.json().catch(() => null) as PathaoCreateOrderResponse | null;
+  if (!response.ok || !payload?.data?.consignment_id) {
+    const message = typeof payload?.message === "string" ? payload.message : "Pathao order booking failed.";
+    throw new Error(`Pathao API (${response.status}): ${message}`);
+  }
+  return payload.data;
+}
+
+export async function getPathaoOrderInfo(consignmentId: string) {
+  if (!/^[A-Za-z0-9-]{3,80}$/.test(consignmentId)) {
+    throw new Error("Pathao consignment ID is invalid.");
+  }
+  const config = await getPathaoConfig();
+  const token = await getPathaoAccessToken(config);
+  return pathaoRequest<unknown>(
+    config,
+    `/aladdin/api/v1/orders/${encodeURIComponent(consignmentId)}/info`,
+    token,
+  );
+}
