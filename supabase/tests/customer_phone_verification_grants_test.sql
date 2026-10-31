@@ -22,5 +22,8 @@ begin
   if has_function_privilege('authenticated', 'public.admin_restock_returned_order(uuid,uuid,text)', 'EXECUTE') then
     raise exception 'SECURITY REGRESSION: authenticated can invoke returned-order stock restock';
   end if;
+  if not has_function_privilege('service_role', 'public.admin_restock_returned_order(uuid,uuid,text)', 'EXECUTE') then
+    raise exception 'FUNCTION REGRESSION: service_role cannot invoke returned-order stock restock';
+  end if;
 end;
 $$;
