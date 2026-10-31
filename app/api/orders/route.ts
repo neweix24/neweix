@@ -238,10 +238,13 @@ export async function POST(request: Request) {
     if (transactionId) {
       return errorResponse("COD পণ্যের পেমেন্টের Transaction ID গ্রহণযোগ্য নয়।", 400);
     }
-    if (!deliveryFeePaymentMethod || !["bkash", "nagad", "rocket"].includes(deliveryFeePaymentMethod)) {
-      return errorResponse("COD অর্ডারের ডেলিভারি চার্জের জন্য bKash, Nagad অথবা Rocket নির্বাচন করুন।", 400);
+    if (Boolean(deliveryFeePaymentMethod) !== Boolean(deliveryFeeTransactionId)) {
+      return errorResponse("ডেলিভারি চার্জের পেমেন্ট পদ্ধতি ও Transaction ID দুটোই দিন, অথবা দুটোই ফাঁকা রাখুন।", 400);
     }
-    if (!deliveryFeeTransactionId || deliveryFeeTransactionId.length > 120 || !/^[A-Za-z0-9-]+$/.test(deliveryFeeTransactionId)) {
+    if (deliveryFeePaymentMethod && !["bkash", "nagad", "rocket"].includes(deliveryFeePaymentMethod)) {
+      return errorResponse("ডেলিভারি চার্জের জন্য bKash, Nagad অথবা Rocket নির্বাচন করুন।", 400);
+    }
+    if (deliveryFeeTransactionId && (deliveryFeeTransactionId.length > 120 || !/^[A-Za-z0-9-]+$/.test(deliveryFeeTransactionId))) {
       return errorResponse("ডেলিভারি চার্জের সঠিক Transaction ID দিন।", 400);
     }
   } else if (deliveryFeePaymentMethod || deliveryFeeTransactionId) {
@@ -354,7 +357,11 @@ export async function POST(request: Request) {
 
     // The server must enforce mobile payment configuration.
     const selectedMfs = paymentMethod === "cod" ? deliveryFeePaymentMethod : paymentMethod;
-    if (selectedMfs && ["bkash", "nagad", "rocket"].includes(selectedMfs)) {
+    const requiresMfsConfiguration = paymentMethod !== "cod" || Boolean(deliveryFeePaymentMethod || deliveryFeeTransactionId);
+    if (!requiresMfsConfiguration && paymentMethod === "cod") {
+      mobilePaymentEnabled = true;
+    }
+    if (requiresMfsConfiguration && selectedMfs && ["bkash", "nagad", "rocket"].includes(selectedMfs)) {
       const paymentEnvKeys = {
         bkash: "PAYMENT_BKASH_NUMBER",
         nagad: "PAYMENT_NAGAD_NUMBER",
@@ -525,6 +532,10 @@ export async function POST(request: Request) {
           "কুপন কোডটি অকার্যকর, মেয়াদোত্তীর্ণ, ব্যবহারের সীমা শেষ অথবা ন্যূনতম অর্ডার মূল্য পূরণ হয়নি।",
           400
         );
+      }
+
+      if (errorMessage.includes("delivery_fee_mfs_required") || errorMessage.includes("delivery_fee_payment_details_incomplete")) {
+        return errorResponse("এই অর্ডারের ডেলিভারি চার্জ আগে bKash, Nagad অথবা Rocket দিয়ে পরিশোধ করে Transaction ID দিন।", 400);
       }
 
       if (
