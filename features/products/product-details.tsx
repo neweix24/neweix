@@ -28,7 +28,7 @@ function getYouTubeEmbedUrl(rawUrl?: string | null): string | null {
 
   try {
     const url = new URL(rawUrl.trim());
-    const host = url.hostname.toLowerCase().replace(/^www\\./, "").replace(/^m\\./, "");
+    const host = url.hostname.toLowerCase().replace(/^www[.]/, "").replace(/^m[.]/, "");
     let videoId: string | null = null;
 
     if (host === "youtu.be") {
