@@ -84,40 +84,6 @@ export async function POST(request: Request) {
   }
 
   const now = Date.now();
-  const dayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
-
-  const [userRecent, phoneRecent] = await Promise.all([
-    supabase
-      .from("phone_verification_challenges")
-      .select("id, created_at, sent_at")
-      .eq("user_id", user.id)
-      .gte("created_at", dayAgo),
-    supabase
-      .from("phone_verification_challenges")
-      .select("id, created_at, sent_at")
-      .eq("phone", phone)
-      .gte("created_at", dayAgo),
-  ]);
-
-  if (userRecent.error || phoneRecent.error) {
-    return fail("OTP পরিষেবা সাময়িকভাবে ব্যস্ত।", 503);
-  }
-
-  const sentByUser = (userRecent.data ?? []).filter((row) => row.sent_at);
-  const sentToPhone = (phoneRecent.data ?? []).filter((row) => row.sent_at);
-
-  if (sentByUser.length >= 5 || sentToPhone.length >= 10) {
-    return fail("OTP পাঠানোর দৈনিক সীমা শেষ। ২৪ ঘণ্টা পরে আবার চেষ্টা করুন।", 429);
-  }
-
-  const latestSentAt = sentToPhone
-    .map((row) => Date.parse(row.sent_at as string))
-    .filter(Number.isFinite)
-    .sort((a, b) => b - a)[0];
-
-  if (latestSentAt && now - latestSentAt < 60_000) {
-    return fail("নতুন OTP পাঠানোর আগে ৬০ সেকেন্ড অপেক্ষা করুন।", 429);
-  }
 
   // Keep the challenge table small; expired historical records are not needed.
   await supabase
@@ -143,18 +109,32 @@ export async function POST(request: Request) {
     return fail("OTP নিরাপত্তা কনফিগারেশন পাওয়া যায়নি।", 503);
   }
 
-  const { error: insertError } = await supabase
-    .from("phone_verification_challenges")
-    .insert({
-      id: challengeId,
-      user_id: user.id,
-      phone,
-      otp_hash: otpHash,
-      expires_at: expiresAt,
-    });
+  const { data: reservation, error: reserveError } = await supabase.rpc(
+    "reserve_phone_verification_challenge",
+    {
+      p_challenge_id: challengeId,
+      p_user_id: user.id,
+      p_phone: phone,
+      p_otp_hash: otpHash,
+      p_expires_at: expiresAt,
+    }
+  );
 
-  if (insertError) {
-    return fail("OTP অনুরোধ তৈরি করা যায়নি।", 503);
+  if (reserveError) {
+    console.error("Atomic OTP reservation failed:", reserveError.message);
+    return fail("OTP পরিষেবা সাময়িকভাবে ব্যস্ত।", 503);
+  }
+
+  switch (reservation) {
+    case "reserved":
+      break;
+    case "cooldown":
+      return fail("নতুন OTP পাঠানোর আগে ৬০ সেকেন্ড অপেক্ষা করুন।", 429);
+    case "user_daily_limit":
+    case "phone_daily_limit":
+      return fail("OTP পাঠানোর দৈনিক সীমা শেষ। ২৪ ঘণ্টা পরে আবার চেষ্টা করুন।", 429);
+    default:
+      return fail("OTP অনুরোধটি গ্রহণ করা যায়নি।", 400);
   }
 
   const form = new FormData();
