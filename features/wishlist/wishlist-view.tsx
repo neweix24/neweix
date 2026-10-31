@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Icon from "@/components/ui/icon";
 import { useEffect, useMemo, useState } from "react";
 
 type Product = { id: string; name: string; slug: string; description: string | null; price: number; image_urls: string[] | null; stock: number };
@@ -58,7 +59,7 @@ export default function WishlistView() {
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {saved.map((product) => <article key={product.id} className="overflow-hidden rounded-2xl border" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
             <Link href={`/products/${encodeURIComponent(product.slug)}`} className="flex aspect-[4/3] items-center justify-center overflow-hidden" style={{ background: "var(--bg)" }}>{product.image_urls?.[0] ? <img src={product.image_urls[0]} alt={product.name} loading="lazy" className="h-full w-full object-cover" /> : <span>NEWEIX</span>}</Link>
-            <div className="p-4"><Link href={`/products/${encodeURIComponent(product.slug)}`} className="font-bold">{product.name}</Link><p className="mt-2 font-semibold" style={{ color: "var(--primary)" }}>{money(Number(product.price))}</p><p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>{product.stock > 0 ? `স্টকে আছে · ${product.stock}` : "স্টক শেষ"}</p><button type="button" onClick={() => remove(product.id)} className="mt-4 rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--border)" }}>পছন্দের তালিকা থেকে সরান</button></div>
+            <div className="p-4"><Link href={`/products/${encodeURIComponent(product.slug)}`} className="font-bold">{product.name}</Link><p className="mt-2 font-semibold" style={{ color: "var(--primary)" }}>{money(Number(product.price))}</p><p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>{product.stock > 0 ? `স্টকে আছে · ${product.stock}` : "স্টক শেষ"}</p><button type="button" onClick={() => remove(product.id)} className="mt-4 rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--border)" }}><Icon name="trash" size={16} /> পছন্দের তালিকা থেকে সরান</button></div>
           </article>)}
         </section>
       </div>
