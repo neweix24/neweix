@@ -246,7 +246,7 @@ export default function CustomerThemePage() {
               <p className="contrast-help">
                 লেখা ও বাটন স্পষ্ট রাখতে WCAG AA অনুযায়ী কনট্রাস্ট যাচাই করা হয়।
               </p>
-              <p className={contrastIssues.length ? "contrast-warning" : "contrast-ok"} role="status">
+              <p id="theme-contrast-note" className={contrastIssues.length ? "contrast-warning" : "contrast-ok"} role="status">
                 {contrastIssues.length
                   ? `যে জায়গায় কনট্রাস্ট বাড়াতে হবে: ${contrastIssues.join(", ")}।`
                   : "রঙের কনট্রাস্ট ঠিক আছে — থিম সংরক্ষণ করা যাবে।"}
