@@ -19,7 +19,7 @@ type ChannelResponse = {
 };
 
 export async function GET(request: NextRequest) {
-  await requireStaff(["supreme", "admin"]);
+  const staff = await requireStaff(["supreme", "admin"]);
   const siteUrl = (await getYouTubeEnv()).NEXT_PUBLIC_SITE_URL || "https://neweix.com";
   const redirectBack = (key: string) => NextResponse.redirect(new URL(`/admin/social-media?youtube=${encodeURIComponent(key)}`, siteUrl));
   const returnedState = request.nextUrl.searchParams.get("state");
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
       token_expires_at: new Date(Date.now() + (tokens.expires_in ?? 3600) * 1000).toISOString(),
       scopes: (tokens.scope || "").split(" ").filter(Boolean),
       connection_status: "connected",
-      connected_by: (await requireStaff(["supreme", "admin"])).user.id,
+      connected_by: staff.user.id,
       connected_at: new Date().toISOString(),
       last_error: null,
       metadata: { channel_title: channel.snippet?.title ?? null, custom_url: channel.snippet?.customUrl ?? null },
