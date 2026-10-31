@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
     pathname === "/api/eixpay" || pathname.startsWith("/api/eixpay/") ||
     pathname === "/api/orders";
   const isCustomerPage =
-    pathname === "/account" || pathname.startsWith("/account/") ||
+    pathname.startsWith("/account/") ||
     pathname === "/orders" || pathname.startsWith("/orders/") ||
     pathname === "/wishlist" || pathname.startsWith("/wishlist/");
   const isCustomerProtected = isCustomerPage || isCustomerApi;
@@ -51,17 +51,12 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Refresh/rotate Supabase cookies on public storefront requests as well.
+  // Validate the session only for protected customer and workspace routes.
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;
   response.headers.set("Cache-Control", "private, no-store");
 
-  // Require verified customer phone numbers before account features are accessible.
-  const isPhoneVerificationApi =
-    pathname === "/api/account/phone/send-otp" ||
-    pathname === "/api/account/phone/status" ||
-    pathname === "/api/account/phone/verify-otp" ||
-    pathname === "/api/account/security/register-device";
+  // Require verified customer phone numbers before protected account features are accessible.
   if (isCustomerProtected) {
     if (claimsError || typeof userId !== "string" || !userId) {
       const destination = request.nextUrl.clone();
