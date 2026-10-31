@@ -14,7 +14,7 @@ export default function EixPayProgramControl() {
   const [data, setData] = useState<Dashboard | null>(null);
   const [program, setProgram] = useState({ walletEnabled: true, earningEnabled: false, redemptionEnabled: false, transferEnabled: false });
   const [transferLimits, setTransferLimits] = useState({ minAmount: "1", maxAmount: "5000", dailyMaxAmount: "10000", maxRequestsPerDay: "5" });
-  const [rules, setRules] = useState<Record<string, { enabled: boolean; amount: string; max: string }>>({});
+  const [rules, setRules] = useState<Record<string, { enabled: boolean; amount: string; max: string; delay: string }>>({});
   const [tiers, setTiers] = useState<Record<string, { enabled: boolean; spend: string; orders: string; days: string; benefits: string }>>({});
   const [search, setSearch] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -41,7 +41,7 @@ export default function EixPayProgramControl() {
         dailyMaxAmount: String(d.program.max_transfer_daily_amount),
         maxRequestsPerDay: String(d.program.max_transfer_requests_per_day),
       });
-      setRules(Object.fromEntries(d.reward_rules.map((r) => [r.event_code, { enabled: r.enabled, amount: String(r.reward_amount), max: String(r.max_per_user_per_day) }])));
+      setRules(Object.fromEntries(d.reward_rules.map((r) => [r.event_code, { enabled: r.enabled, amount: String(r.reward_amount), max: String(r.max_per_user_per_day), delay: String(r.settlement_delay_hours) }])));
       setTiers(Object.fromEntries(d.membership_tiers.map((t) => [t.tier_code, { enabled: t.is_enabled, spend: t.min_qualified_spend_bdt === null ? "" : String(t.min_qualified_spend_bdt), orders: t.min_qualified_orders === null ? "" : String(t.min_qualified_orders), days: String(t.qualification_period_days ?? 30), benefits: t.benefits.join("\n") }])));
     } catch (e) { setError(e instanceof Error ? e.message : "কন্ট্রোল ডেটা লোড করা যায়নি।"); }
     finally { setBusy(""); }
@@ -133,18 +133,19 @@ export default function EixPayProgramControl() {
         <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-200">Reward engine</p><h2 className="mt-1 text-xl font-bold">Eixon রিওয়ার্ড নিয়ম</h2><p className="mt-1 text-xs text-white/45">সব নিয়ম শুরুতে বন্ধ। যোগ্যতার প্রমাণ ছাড়া কোনো রিওয়ার্ড ইস্যু হবে না।</p></div>
         <div className="grid gap-4 lg:grid-cols-2">
           {data.reward_rules.map((r) => {
-            const d = rules[r.event_code] ?? { enabled: false, amount: "0", max: "0" };
+            const d = rules[r.event_code] ?? { enabled: false, amount: "0", max: "0", delay: "0" };
             return <article key={r.event_code} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-bold">{r.display_name}</h3><p className="mt-1 text-xs text-white/45">{r.description}</p></div><label className="flex items-center gap-2 text-xs text-white/65"><input type="checkbox" checked={d.enabled} onChange={(e) => setRules((s) => ({ ...s, [r.event_code]: { ...d, enabled: e.target.checked } }))} />চালু</label></div>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <label className="text-xs text-white/50">প্রতি রিওয়ার্ড<input type="number" min="0" step="1" value={d.amount} onChange={(e) => setRules((s) => ({ ...s, [r.event_code]: { ...d, amount: e.target.value } }))} className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white" /></label>
                 <label className="text-xs text-white/50">দৈনিক সর্বোচ্চ বার<input type="number" min="0" max="1000" step="1" value={d.max} onChange={(e) => setRules((s) => ({ ...s, [r.event_code]: { ...d, max: e.target.value } }))} className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white" /></label>
               </div>
-              <p className="mt-3 text-[11px] text-white/35">Settling delay: {r.event_code === "delivered_order" ? "৭ দিন" : String(r.settlement_delay_hours) + " ঘণ্টা"} · {r.requires_verified_phone ? "ফোন যাচাই বাধ্যতামূলক" : "ফোন যাচাই ঐচ্ছিক"}</p>
+              <label className="mt-3 block text-xs text-white/50">রিওয়ার্ড নিষ্পত্তির সময় (ঘণ্টা)<input type="number" min="0" max="2160" step="1" value={d.delay} onChange={(e) => setRules((s) => ({ ...s, [r.event_code]: { ...d, delay: e.target.value } }))} className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white" /></label>
+              <p className="mt-2 text-[11px] text-white/35">{r.requires_verified_phone ? "ফোন যাচাই বাধ্যতামূলক" : "ফোন যাচাই ঐচ্ছিক"} · অর্ডার রিটার্ন/রিফান্ড হলে রিওয়ার্ড ফিরিয়ে নেওয়া হয়।</p>
               <button type="button" disabled={Boolean(busy)} onClick={() => {
-                const rewardAmount = Number(d.amount); const maxPerDay = Number(d.max);
-                if (!Number.isSafeInteger(rewardAmount) || rewardAmount < 0 || !Number.isSafeInteger(maxPerDay) || maxPerDay < 0 || maxPerDay > 1000) { setError("রিওয়ার্ডের পরিমাণ ও দৈনিক সীমা সঠিক পূর্ণসংখ্যা হতে হবে।"); return; }
-                void save("/api/supreme/eixpay", { action: "reward_rule", eventCode: r.event_code, enabled: d.enabled, rewardAmount, maxPerDay });
+                const rewardAmount = Number(d.amount); const maxPerDay = Number(d.max); const settlementDelayHours = Number(d.delay);
+                if (!Number.isSafeInteger(rewardAmount) || rewardAmount < 0 || !Number.isSafeInteger(maxPerDay) || maxPerDay < 0 || maxPerDay > 1000 || !Number.isSafeInteger(settlementDelayHours) || settlementDelayHours < 0 || settlementDelayHours > 2160) { setError("রিওয়ার্ডের পরিমাণ, দৈনিক সীমা ও নিষ্পত্তির সময় সঠিক পূর্ণসংখ্যা হতে হবে।"); return; }
+                void save("/api/supreme/eixpay", { action: "reward_rule", eventCode: r.event_code, enabled: d.enabled, rewardAmount, maxPerDay, settlementDelayHours });
               }} className="mt-4 rounded-full border border-white/15 px-4 py-2 text-xs font-bold hover:bg-white/10 disabled:opacity-50">{busy === r.event_code ? "সংরক্ষণ হচ্ছে…" : "নিয়ম সংরক্ষণ"}</button>
             </article>;
           })}
