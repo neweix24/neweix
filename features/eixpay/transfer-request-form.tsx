@@ -1,5 +1,6 @@
 "use client";
 import { useState, type FormEvent } from "react";
+import Icon from "@/components/ui/icon";
 
 export default function EixPayTransferForm({ onSubmitted }: { onSubmitted: () => void }) {
   const [recipient, setRecipient] = useState("");
