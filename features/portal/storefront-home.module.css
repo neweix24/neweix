@@ -57,3 +57,8 @@
 }
 .page .bottomNav { background: color-mix(in srgb,var(--panel) 96%,transparent); border-color:var(--line); }
 .page .bottomNav>a,.page .bottomNav>button { color:var(--muted); }
+
+
+/* Search navigation is a link, not a button. */
+.headerSearch .searchLink{display:grid;width:56px;min-width:56px;place-items:center;border:0;background:var(--lime);color:var(--accent-ink);text-decoration:none;cursor:pointer}
+@media(max-width:600px){.headerSearch .searchLink{width:44px;min-width:44px}}
