@@ -1165,6 +1165,8 @@ end;
 $function$;
 
 alter table public.orders add column if not exists delivered_at timestamptz;
+alter table public.orders
+  add column if not exists delivery_fee_payment_status text not null default 'not_required';
 
 create or replace function private.neweix_plus_capture_delivery_time()
 returns trigger
