@@ -134,6 +134,11 @@ export default function AccountView() {
     setMessage("");
     setErrorMessage("");
 
+    if (!phoneVerified) {
+      setErrorMessage("তথ্য সংরক্ষণের আগে ফোন নম্বর যাচাই করুন।");
+      return;
+    }
+
     const cleanName = name.trim();
     const cleanDateOfBirth = dateOfBirth || null;
     const today = new Date().toISOString().slice(0, 10);
@@ -323,28 +328,38 @@ export default function AccountView() {
             </div>
 
             <form className="account-form" onSubmit={handleSave}>
-              <label htmlFor="customer-name">আপনার নাম</label>
-              <input
-                id="customer-name"
-                type="text"
-                autoComplete="name"
-                minLength={2}
-                maxLength={100}
-                required
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
+              {!phoneVerified && (
+                <p className="phone-required" role="status">
+                  অ্যাকাউন্টের অন্যান্য সুবিধা ব্যবহারের আগে আপনার বাংলাদেশি মোবাইল নম্বর OTP দিয়ে যাচাই করুন।
+                </p>
+              )}
 
-              <label htmlFor="customer-date-of-birth">জন্মতারিখ (ঐচ্ছিক)</label>
-              <input
-                id="customer-date-of-birth"
-                type="date"
-                autoComplete="bday"
-                min="1900-01-01"
-                max={new Date().toISOString().slice(0, 10)}
-                value={dateOfBirth}
-                onChange={(event) => setDateOfBirth(event.target.value)}
-              />
+              {phoneVerified && (
+                <>
+                  <label htmlFor="customer-name">আপনার নাম</label>
+                  <input
+                    id="customer-name"
+                    type="text"
+                    autoComplete="name"
+                    minLength={2}
+                    maxLength={100}
+                    required
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                  />
+
+                  <label htmlFor="customer-date-of-birth">জন্মতারিখ (ঐচ্ছিক)</label>
+                  <input
+                    id="customer-date-of-birth"
+                    type="date"
+                    autoComplete="bday"
+                    min="1900-01-01"
+                    max={new Date().toISOString().slice(0, 10)}
+                    value={dateOfBirth}
+                    onChange={(event) => setDateOfBirth(event.target.value)}
+                  />
+                </>
+              )}
 
               <div className="phone-verification">
                 <strong>ফোন নম্বর</strong>
@@ -419,7 +434,7 @@ export default function AccountView() {
                 {phoneError && <p className="error" role="alert">{phoneError}</p>}
               </div>
 
-              {message && (
+              {phoneVerified && message && (
                 <p className="success" role="status">
                   {message}
                 </p>
@@ -431,23 +446,27 @@ export default function AccountView() {
                 </p>
               )}
 
-              <button type="submit" disabled={saving}>
-                <><Icon name={saving ? "refresh" : "check"} size={16} /> {saving ? "সংরক্ষণ হচ্ছে…" : "তথ্য সংরক্ষণ করুন"}</>
-              </button>
+              {phoneVerified && (
+                <button type="submit" disabled={saving}>
+                  <><Icon name={saving ? "refresh" : "check"} size={16} /> {saving ? "সংরক্ষণ হচ্ছে…" : "তথ্য সংরক্ষণ করুন"}</>
+                </button>
+              )}
             </form>
 
-            <nav className="account-links" aria-label="অ্যাকাউন্টের লিংক">
-              <Link href="/account/eixpay">EixPay Wallet · Eixon</Link>
-              <Link href="/account/neweix-plus">Neweix+ Membership</Link>
-              <Link href="/eixverse">EixVerse</Link>
-              <Link href="/orders">আমার অর্ডার</Link>
-              <Link href="/wishlist">পছন্দের তালিকা</Link>
-              <Link href="/cart">শপিং কার্ট</Link>
-              <Link href="/account/theme">🎨 নিজের থিম সাজাও</Link>
-              <Link href="/account/addresses">আমার ঠিকানা</Link>
-              <Link href="/account/privacy">গোপনীয়তা ও পছন্দ</Link>
-              <Link href="/account/data-requests">আমার তথ্য ও গোপনীয়তা</Link>
-            </nav>
+            {phoneVerified && (
+              <nav className="account-links" aria-label="অ্যাকাউন্টের লিংক">
+                <Link href="/account/eixpay">EixPay Wallet · Eixon</Link>
+                <Link href="/account/neweix-plus">Neweix+ Membership</Link>
+                <Link href="/eixverse">EixVerse</Link>
+                <Link href="/orders">আমার অর্ডার</Link>
+                <Link href="/wishlist">পছন্দের তালিকা</Link>
+                <Link href="/cart">শপিং কার্ট</Link>
+                <Link href="/account/theme">🎨 নিজের থিম সাজাও</Link>
+                <Link href="/account/addresses">আমার ঠিকানা</Link>
+                <Link href="/account/privacy">গোপনীয়তা ও পছন্দ</Link>
+                <Link href="/account/data-requests">আমার তথ্য ও গোপনীয়তা</Link>
+              </nav>
+            )}
 
             <button
               className="logout"
@@ -610,6 +629,16 @@ export default function AccountView() {
         button:disabled {
           opacity: 0.6;
           cursor: wait;
+        }
+
+        .phone-required {
+          padding: 12px;
+          border: 1px solid var(--border);
+          border-radius: 9px;
+          background: var(--bg);
+          color: var(--muted);
+          font-size: 14px;
+          line-height: 1.6;
         }
 
         .phone-verification {
