@@ -17,15 +17,15 @@ type DataRequest = {
 };
 
 const requestNames: Record<DataRequest["request_type"], string> = {
-  export: "তথ্যের কপি",
-  correction: "তথ্য সংশোধন",
-  delete: "অ্যাকাউন্ট মুছে ফেলার অনুরোধ",
+  export: "Data export",
+  correction: "Data correction",
+  delete: "Account deletion request",
 };
 const statusNames: Record<DataRequest["status"], string> = {
-  pending: "অপেক্ষমাণ",
-  processing: "প্রক্রিয়াধীন",
-  completed: "সম্পন্ন",
-  rejected: "গ্রহণ করা হয়নি",
+  pending: "Pending",
+  processing: "Processing",
+  completed: "Completed",
+  rejected: "Rejected",
 };
 
 export default function CustomerDataRequests() {
@@ -44,10 +44,10 @@ export default function CustomerDataRequests() {
         router.replace("/auth/customer-login?next=/account/data-requests");
         return;
       }
-      if (!response.ok) throw new Error(result.error || "অনুরোধ লোড করা যায়নি।");
+      if (!response.ok) throw new Error(result.error || "Could not load requests.");
       setRequests(Array.isArray(result.requests) ? result.requests : []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "অনুরোধ লোড করা যায়নি।");
+      setError(err instanceof Error ? err.message : "Could not load requests.");
     } finally {
       setLoading(false);
     }
@@ -58,13 +58,13 @@ export default function CustomerDataRequests() {
   async function submitRequest(requestType: "correction" | "delete") {
     if (requestType === "delete") {
       const confirmed = window.confirm(
-        "আপনি কি অ্যাকাউন্ট মুছে ফেলার অনুরোধ জমা দিতে চান? এটি সঙ্গে সঙ্গে অ্যাকাউন্ট মুছবে না। পরিচয় যাচাই ও আইনগত/হিসাব সংক্রান্ত রেকর্ড পর্যালোচনার পর NEWEIX টিম অনুরোধটি প্রক্রিয়া করবে।"
+        "আপনি কি Account deletion request জমা দিতে চান? এটি সঙ্গে সঙ্গে অ্যাকাউন্ট মুছবে না। পরিচয় যাচাই ও আইনগত/হিসাব সংক্রান্ত রেকর্ড পর্যালোচনার পর NEWEIX টিম অনুরোধটি প্রক্রিয়া করবে।"
       );
       if (!confirmed) return;
     }
     const customerMessage = requestType === "correction"
-      ? window.prompt("কোন তথ্য সংশোধন করতে চান? (ঐচ্ছিক)", "") ?? ""
-      : window.prompt("অ্যাকাউন্ট মুছে ফেলার কারণ (ঐচ্ছিক)", "") ?? "";
+      ? window.prompt("কোন Data correction করতে চান? (ঐচ্ছিক)", "") ?? ""
+      : window.prompt("Reason for requesting account deletion (optional)", "") ?? "";
     setBusy(true); setError(""); setMessage("");
     try {
       const response = await fetch("/api/account/data-requests", {
@@ -73,11 +73,11 @@ export default function CustomerDataRequests() {
         body: JSON.stringify({ request_type: requestType, customer_message: customerMessage }),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "অনুরোধ জমা দেওয়া যায়নি।");
-      setMessage("আপনার অনুরোধ জমা হয়েছে। অ্যাকাউন্টে এর অগ্রগতি দেখতে পারবেন।");
+      if (!response.ok) throw new Error(result.error || "Could not submit the request.");
+      setMessage("Your request has been submitted. You can track its progress in your account.");
       await loadRequests();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "অনুরোধ জমা দেওয়া যায়নি।");
+      setError(err instanceof Error ? err.message : "Could not submit the request.");
     } finally { setBusy(false); }
   }
 
@@ -85,42 +85,42 @@ export default function CustomerDataRequests() {
     <main className="page">
       <header className="header">
         <Link href="/" className="brand">NEWEIX</Link>
-        <Link href="/account" className="back">← অ্যাকাউন্টে ফিরুন</Link>
+        <Link href="/account" className="back">← Back to account</Link>
       </header>
       <section className="content">
         <p className="eyebrow">YOUR DATA & PRIVACY</p>
-        <h1>আপনার তথ্য ও গোপনীয়তা</h1>
-        <p className="intro">আপনার অ্যাকাউন্টের সঙ্গে যুক্ত তথ্যের কপি নিতে, তথ্য সংশোধন করতে অথবা অ্যাকাউন্ট মুছে ফেলার অনুরোধ জমা দিতে পারবেন।</p>
+        <h1>Your data and privacy</h1>
+        <p className="intro">আপনার অ্যাকাউন্টের সঙ্গে যুক্ত Data export নিতে, Data correction করতে অথবা Account deletion request জমা দিতে পারবেন।</p>
 
         <article className="card">
-          <h2>নিজের তথ্যের কপি নিন</h2>
-          <p>প্রোফাইল, সংরক্ষিত ঠিকানা, কেনাকাটার পছন্দ, সম্মতির ইতিহাস এবং আপনার অ্যাকাউন্টের সঙ্গে যুক্ত অর্ডারের তথ্য JSON ফাইলে পাবেন।</p>
-          <a className="primary" href="/api/account/export">আমার তথ্য ডাউনলোড করুন</a>
+          <h2>নিজের Data export নিন</h2>
+          <p>Receive a JSON file containing your profile, saved addresses, shopping preferences, consent history, and orders linked to your account.</p>
+          <a className="primary" href="/api/account/export">Download my data</a>
         </article>
 
         <article className="card">
-          <h2>তথ্য সংশোধনের অনুরোধ</h2>
-          <p>প্রোফাইল বা অন্য কোনো ব্যক্তিগত তথ্য সংশোধনে সহায়তা চাইতে পারেন।</p>
-          <button type="button" disabled={busy} onClick={() => void submitRequest("correction")}><Icon name="settings" size={16} /> সংশোধনের অনুরোধ</button>
+          <h2>Data correctionের অনুরোধ</h2>
+          <p>প্রোফাইল বা অন্য কোনো ব্যক্তিগত Data correctionে সহায়তা চাইতে পারেন।</p>
+          <button type="button" disabled={busy} onClick={() => void submitRequest("correction")}><Icon name="settings" size={16} /> Request correction</button>
         </article>
 
         <article className="card danger-card">
-          <h2>অ্যাকাউন্ট মুছে ফেলার অনুরোধ</h2>
-          <p>এটি তাৎক্ষণিক মুছে ফেলা নয়। পরিচয় যাচাই, অর্ডার/হিসাবের বাধ্যবাধকতা এবং প্রযোজ্য সংরক্ষণনীতি পর্যালোচনা করে অনুরোধ নিষ্পত্তি করা হবে।</p>
-          <button className="danger" type="button" disabled={busy} onClick={() => void submitRequest("delete")}><Icon name="trash" size={16} /> অ্যাকাউন্ট মুছে ফেলার অনুরোধ</button>
+          <h2>Account deletion request</h2>
+          <p>This does not delete your account immediately. The request will be reviewed against identity verification, order and accounting obligations, and applicable retention policies.</p>
+          <button className="danger" type="button" disabled={busy} onClick={() => void submitRequest("delete")}><Icon name="trash" size={16} /> Account deletion request</button>
         </article>
 
         {message && <p className="success" role="status">{message}</p>}
         {error && <p className="error" role="alert">{error}</p>}
 
         <section className="history">
-          <h2>আমার অনুরোধের অবস্থা</h2>
-          {loading ? <p role="status">লোড হচ্ছে…</p> : requests.length === 0 ? <p>এখনো কোনো অনুরোধ জমা দেননি।</p> : requests.map((item) => (
+          <h2>My request status</h2>
+          {loading ? <p role="status">Loading…</p> : requests.length === 0 ? <p>You have not submitted any requests yet.</p> : requests.map((item) => (
             <article className="request" key={item.id}>
               <div><strong>{requestNames[item.request_type]}</strong><span className={`status ${item.status}`}>{statusNames[item.status]}</span></div>
               <small>{new Date(item.created_at).toLocaleString("bn-BD")}</small>
               {item.customer_message && <p>{item.customer_message}</p>}
-              {item.resolution_note && <p className="resolution">NEWEIX-এর উত্তর: {item.resolution_note}</p>}
+              {item.resolution_note && <p className="resolution">NEWEIX response: {item.resolution_note}</p>}
             </article>
           ))}
         </section>
