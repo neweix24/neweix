@@ -6,7 +6,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ALLOWED_ROLES = ["admin", "staff"] as const;
+const ALLOWED_ROLES = ["admin", "manager", "employee", "staff"] as const;
 const MAX_BODY_BYTES = 4096;
 
 function errorResponse(message: string, status: number) {
@@ -141,7 +141,7 @@ export async function POST(request: Request) {
       )
     ) {
       return errorResponse(
-        "Role admin অথবা staff হতে হবে।",
+        "Role admin, manager অথবা employee হতে হবে।",
         400
       );
     }
