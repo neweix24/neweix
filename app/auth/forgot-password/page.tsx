@@ -134,7 +134,7 @@ export default function ForgotPasswordPage() {
         <p className="eyebrow">NEWEIX · ACCOUNT RECOVERY</p>
         <h1>Reset password</h1>
         <p className="hero-copy">
-          আপনার অ্যাকাউন্টের Email দিন। Reset passwordের নির্দেশনা
+          Enter your account email address. We will send password reset instructions
           if password sign-in is enabled.
         </p>
 
