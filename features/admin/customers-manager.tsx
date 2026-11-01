@@ -108,8 +108,8 @@ export default function CustomersManager() {
                 <strong>{new Intl.NumberFormat("en-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(customer.order_summary?.total ?? 0)}</strong>
               </div>
               <div className="rounded-xl p-3 col-span-2 sm:col-span-1" style={{ background: "var(--bg)" }}>
-                <p className="text-xs" style={{ color: "var(--muted)" }}>সর্বশেষ Orders</p>
-                <strong className="text-sm">{customer.order_summary?.lastOrder ? new Date(customer.order_summary.lastOrder).toLocaleDateString("en-BD") : "নেই"}</strong>
+                <p className="text-xs" style={{ color: "var(--muted)" }}>Latest Orders</p>
+                <strong className="text-sm">{customer.order_summary?.lastOrder ? new Date(customer.order_summary.lastOrder).toLocaleDateString("en-BD") : "None"}</strong>
               </div>
             </div>
             {customer.addresses && customer.addresses.length > 0 && (
