@@ -8,7 +8,7 @@ export async function GET() {
   const supabase = await createServerSupabaseClient();
   const { data: authData, error: authError } = await supabase.auth.getUser();
   if (authError || !authData.user) {
-    return NextResponse.json({ error: "লগইন প্রয়োজন।" }, { status: 401 });
+    return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
   }
 
   const { data, error } = await supabase
@@ -20,7 +20,7 @@ export async function GET() {
 
   if (error) {
     console.error("Customer data request list failed:", error.message);
-    return NextResponse.json({ error: "অনুরোধের তালিকা লোড করা যায়নি।" }, { status: 500 });
+    return NextResponse.json({ error: "Unable to load data requests." }, { status: 500 });
   }
 
   return NextResponse.json({ requests: data ?? [] }, {
@@ -32,20 +32,20 @@ export async function POST(request: Request) {
   const supabase = await createServerSupabaseClient();
   const { data: authData, error: authError } = await supabase.auth.getUser();
   if (authError || !authData.user) {
-    return NextResponse.json({ error: "লগইন প্রয়োজন।" }, { status: 401 });
+    return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
   }
 
   const raw = await request.text();
   if (new TextEncoder().encode(raw).byteLength > 4096) {
-    return NextResponse.json({ error: "অনুরোধটি অতিরিক্ত বড়।" }, { status: 413 });
+    return NextResponse.json({ error: "The request payload is too large." }, { status: 413 });
   }
 
   let body: unknown;
   try { body = JSON.parse(raw); }
-  catch { return NextResponse.json({ error: "অবৈধ JSON।" }, { status: 400 }); }
+  catch { return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 }); }
 
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return NextResponse.json({ error: "সঠিক অনুরোধ পাঠান।" }, { status: 400 });
+    return NextResponse.json({ error: "Submit a valid request." }, { status: 400 });
   }
 
   const input = body as Record<string, unknown>;
@@ -53,10 +53,10 @@ export async function POST(request: Request) {
   const message = typeof input.customer_message === "string" ? input.customer_message.trim() : "";
 
   if (requestType !== "correction" && requestType !== "delete") {
-    return NextResponse.json({ error: "অনুরোধের ধরন সঠিক নয়।" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid request type." }, { status: 400 });
   }
   if (message.length > 1000) {
-    return NextResponse.json({ error: "বার্তা সর্বোচ্চ ১০০০ অক্ষরের হতে পারবে।" }, { status: 400 });
+    return NextResponse.json({ error: "The message must be 1,000 characters or fewer." }, { status: 400 });
   }
 
   const { data, error } = await supabase
@@ -71,10 +71,10 @@ export async function POST(request: Request) {
 
   if (error) {
     if (error.code === "23505") {
-      return NextResponse.json({ error: "এই ধরনের একটি অনুরোধ ইতিমধ্যে অপেক্ষমাণ বা প্রক্রিয়াধীন আছে।" }, { status: 409 });
+      return NextResponse.json({ error: "A request of this type is already pending or in progress." }, { status: 409 });
     }
     console.error("Customer data request create failed:", error.message);
-    return NextResponse.json({ error: "অনুরোধ জমা দেওয়া যায়নি।" }, { status: 500 });
+    return NextResponse.json({ error: "Unable to submit the request." }, { status: 500 });
   }
 
   return NextResponse.json({ success: true, request: data }, {
