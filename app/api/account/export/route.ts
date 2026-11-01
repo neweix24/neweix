@@ -9,7 +9,7 @@ export async function GET() {
   const sessionClient = await createServerSupabaseClient();
   const { data: authData, error: authError } = await sessionClient.auth.getUser();
   if (authError || !authData.user) {
-    return NextResponse.json({ error: "লগইন প্রয়োজন।" }, { status: 401 });
+    return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
   }
 
   try {
@@ -37,7 +37,7 @@ export async function GET() {
     const failures = [profileResult.error, addressesResult.error, preferencesResult.error, consentsResult.error, ordersResult.error].filter(Boolean);
     if (failures.length) {
       console.error("Customer data export query failed:", failures.map((item) => item?.message));
-      return NextResponse.json({ error: "তথ্য রপ্তানি করা যায়নি। পরে আবার চেষ্টা করুন।" }, { status: 500 });
+      return NextResponse.json({ error: "Unable to export your data. Please try again later." }, { status: 500 });
     }
 
     const orderIds = (ordersResult.data ?? []).map((order) => order.id);
@@ -48,7 +48,7 @@ export async function GET() {
         .in("order_id", orderIds);
       if (error) {
         console.error("Customer export order items failed:", error.message);
-        return NextResponse.json({ error: "অর্ডারের পণ্যের তথ্য রপ্তানি করা যায়নি।" }, { status: 500 });
+        return NextResponse.json({ error: "Unable to export order item details." }, { status: 500 });
       }
       orderItems = data ?? [];
     }
@@ -108,6 +108,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Customer data export failed:", error);
-    return NextResponse.json({ error: "সার্ভারে সমস্যা হয়েছে।" }, { status: 500 });
+    return NextResponse.json({ error: "An unexpected server error occurred." }, { status: 500 });
   }
 }
