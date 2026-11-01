@@ -92,3 +92,28 @@
 .bottom button{background:#000;color:#fff}
 .notice{color:#000;background:#f5f5f5;border-color:#d6d6d6}
 @media(max-width:640px){.searchForm{gap:8px}.searchSubmit{min-width:94px;padding-inline:12px}}
+
+
+/* Premium catalog refinement */
+.intro{position:relative;isolation:isolate;padding-top:clamp(48px,6vw,76px);padding-bottom:34px;background:radial-gradient(ellipse at 88% 4%,rgba(137,190,83,.18),transparent 31rem),linear-gradient(180deg,var(--surface),var(--bg))}
+.intro h1{max-width:760px;font-size:clamp(36px,5.2vw,58px);line-height:1.08;letter-spacing:-2px}
+.intro>p{max-width:620px;margin-top:12px;line-height:1.8}
+.filterPanel{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:14px;margin-top:20px;padding:16px;border:1px solid var(--border);border-radius:18px;background:var(--surface-raised);box-shadow:0 12px 34px rgba(0,0,0,.045)}
+.filterHeading{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--ink);font-size:12px}
+.filterHeading span{color:var(--muted);font-weight:650}
+.filterPanel .filterRow{margin:0;align-items:end}
+.sortControl{display:block;min-width:190px}
+.sortControl select{width:100%;min-height:42px;padding:9px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-size:12px}
+.resultSummary{margin-top:14px!important;color:var(--muted)!important;font-size:12px;font-weight:700}
+.catalog{padding-top:26px}
+.grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.card{border-radius:19px;box-shadow:0 6px 22px rgba(0,0,0,.035)}
+.image{aspect-ratio:4/4.3;background:linear-gradient(145deg,#f7f8f5,#ecefe8)}
+.image img{object-fit:contain;padding:10px}
+.details{padding:16px}
+.name{min-height:42px;line-height:1.45}
+.details p{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;min-height:40px}
+.bottom{align-items:flex-end}
+@media(max-width:1000px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.filterPanel{grid-template-columns:1fr}.sortControl{min-width:0}.filterPanel .filterRow{gap:10px}.filterPanel .priceField{flex:1;min-width:110px}.filterPanel .priceField input{width:100%}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.details{padding:12px}.bottom{align-items:stretch}}
+@media(max-width:420px){.intro h1{font-size:36px}.filterPanel{padding:12px}.filterPanel .filterRow{display:grid;grid-template-columns:1fr 1fr}.filterPanel .stockFilter,.filterPanel .clearFilters{grid-column:1/-1}.categoryChips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:5px}.categoryChips button{flex:none}}

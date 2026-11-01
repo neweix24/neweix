@@ -62,7 +62,7 @@ export default function ProductDetails({ product }: { product: ProductDetailsDat
         <section className={styles.gallery} aria-label={t("productImages")}>
           {images.length ? images.map((src, index) => (
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={src + index} src={src} alt={`${product.name} — image ${index + 1}`} />
+            <img className={index === 0 ? styles.heroImage : styles.galleryImage} key={src + index} src={src} alt={`${product.name} — image ${index + 1}`} loading={index === 0 ? "eager" : "lazy"} decoding="async" />
           )) : <div className={styles.placeholder}>NEWEIX</div>}
           {videoEmbedUrl && (
             <div className={styles.productVideo}>
