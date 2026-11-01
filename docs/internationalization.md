@@ -18,7 +18,7 @@
 
 ## Current coverage
 
-The English-first language foundation and Bengali/English dictionaries currently cover the storefront home, product catalog, product purchase actions, cart, checkout, and Bangladesh address selectors. Other legacy account, information, authentication, and administration screens still require migration to translation keys before the entire application can be described as fully localized.
+The English-first language foundation and Bengali/English dictionaries currently cover the storefront home, product catalog, product purchase actions, product details, reviews, cart, checkout, and Bangladesh address selectors. Customer account, authentication, order tracking/history, wishlist, comparison, privacy, data-request, theme, and information screens now use English copy by default, but their strings still need migration to translation keys before Bengali selection can switch those screens too. Administration screens and API error messages also need a separate localization pass.
 
 ## Important distinction
 
