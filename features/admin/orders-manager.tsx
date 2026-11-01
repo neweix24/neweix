@@ -45,30 +45,30 @@ type Order = {
 };
 
 const paymentNames: Record<string, string> = {
-  cod: "ক্যাশ অন ডেলিভারি",
+  cod: "Cash on Delivery",
   bkash: "bKash",
   nagad: "Nagad",
   rocket: "Rocket",
 };
 
 const paymentStatusNames: Record<string, string> = {
-  pending: "অপেক্ষমাণ",
-  verification_pending: "পেমেন্ট যাচাই বাকি",
-  paid: "পেমেন্ট সম্পন্ন",
-  failed: "ব্যর্থ",
-  refunded: "ফেরত দেওয়া হয়েছে",
-  not_required: "প্রযোজ্য নয়",
+  pending: "Pending",
+  verification_pending: "Payment Verification Pending",
+  paid: "Payment Completed",
+  failed: "Failed",
+  refunded: "Refunded",
+  not_required: "Not Required",
 };
 
 const orderStatusNames: Record<string, string> = {
-  pending: "অপেক্ষমাণ",
-  confirmed: "নিশ্চিত",
-  processing: "প্রসেসিং",
-  packed: "প্যাক করা হয়েছে",
-  shipped: "পাঠানো হয়েছে",
-  delivered: "ডেলিভারি সম্পন্ন",
-  cancelled: "বাতিল",
-  returned: "ফেরত এসেছে",
+  pending: "Pending",
+  confirmed: "Confirmed",
+  processing: "Processing",
+  packed: "Packed",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+  returned: "Returned",
 };
 
 const orderStatuses = [
@@ -104,13 +104,13 @@ export default function OrdersManager() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "অর্ডার লোড করা যায়নি।");
+        throw new Error(result.error || "Could not load orders.");
       }
 
       setOrders(Array.isArray(result.orders) ? result.orders : []);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "অজানা সমস্যা হয়েছে।"
+        err instanceof Error ? err.message : "An unknown error occurred."
       );
     } finally {
       setLoading(false);
@@ -125,15 +125,15 @@ export default function OrdersManager() {
     const transactionId = order.payment_transaction_id?.trim();
 
     if (!transactionId) {
-      setError("Transaction ID নেই। এই অর্ডার যাচাই করা যাবে না।");
+      setError("Transaction ID is missing. This order cannot be verified.");
       return;
     }
 
     const confirmed = window.confirm(
       `অর্ডার ${order.order_number}\n` +
-        `পেমেন্ট: ${paymentNames[order.payment_method] || order.payment_method}\n` +
+        `Payment: ${paymentNames[order.payment_method] || order.payment_method}\n` +
         `Transaction ID: ${transactionId}\n\n` +
-        "পেমেন্ট প্রদানকারীর রেকর্ডে লেনদেন যাচাই করেছেন কি? নিশ্চিত হলেই Paid করুন।"
+        "পেমেন্ট প্রদানকারীর রেকর্ডে লেনদেন যাচাই করেছেন কি? Confirmed হলেই Paid করুন।"
     );
 
     if (!confirmed) return;
@@ -152,17 +152,17 @@ export default function OrdersManager() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "পেমেন্ট যাচাই করা যায়নি।");
+        throw new Error(result.error || "Could not verify the payment.");
       }
 
       setNotice(
-        `${order.order_number}: পেমেন্ট Paid হয়েছে; অডিট লগ সংরক্ষিত হয়েছে।`
+        `${order.order_number}: Payment marked as Paid; audit log saved.`
       );
 
       await loadOrders();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "অজানা সমস্যা হয়েছে।"
+        err instanceof Error ? err.message : "An unknown error occurred."
       );
     } finally {
       setBusyId("");
@@ -172,11 +172,11 @@ export default function OrdersManager() {
   async function verifyDeliveryFee(order: Order) {
     const transactionId = order.delivery_fee_payment_transaction_id?.trim();
     if (!transactionId) {
-      setError("ডেলিভারি চার্জের Transaction ID নেই।");
+      setError("Delivery fee transaction ID is missing.");
       return;
     }
     const confirmed = window.confirm(
-      `অর্ডার ${order.order_number}\nডেলিভারি চার্জ: ৳${Number(order.delivery_fee).toLocaleString("bn-BD")}\nMFS: ${paymentNames[order.delivery_fee_payment_method || ""] || order.delivery_fee_payment_method}\nTransaction ID: ${transactionId}\n\nপেমেন্ট প্রদানকারীর রেকর্ডে ডেলিভারি চার্জের টাকা পেয়েছেন কি?`
+      `অর্ডার ${order.order_number}\nডেলিভারি চার্জ: ৳${Number(order.delivery_fee).toLocaleString("en-BD")}\nMFS: ${paymentNames[order.delivery_fee_payment_method || ""] || order.delivery_fee_payment_method}\nTransaction ID: ${transactionId}\n\nপেমেন্ট প্রদানকারীর রেকর্ডে ডেলিভারি চার্জের টাকা পেয়েছেন কি?`
     );
     if (!confirmed) return;
     setBusyId(order.id);
@@ -189,11 +189,11 @@ export default function OrdersManager() {
         body: JSON.stringify({ orderId: order.id, action: "verify_delivery_fee" }),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "ডেলিভারি চার্জ যাচাই করা যায়নি।");
-      setNotice(`${order.order_number}: ডেলিভারি চার্জ Paid হয়েছে।`);
+      if (!response.ok) throw new Error(result.error || "Could not verify the delivery fee.");
+      setNotice(`${order.order_number}: Delivery fee marked as Paid.`);
       await loadOrders();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "ডেলিভারি চার্জ যাচাইয়ে সমস্যা হয়েছে।");
+      setError(err instanceof Error ? err.message : "Could not verify the delivery fee.");
     } finally {
       setBusyId("");
     }
@@ -205,10 +205,10 @@ export default function OrdersManager() {
     const statusName = orderStatusNames[newStatus] || newStatus;
 
     const confirmed = window.confirm(
-      `অর্ডার: ${order.order_number}\n` +
-        `বর্তমান Status: ${orderStatusNames[order.status] || order.status}\n` +
-        `নতুন Status: ${statusName}\n\n` +
-        "আপনি কি এই পরিবর্তনটি সংরক্ষণ করতে চান?"
+      `Order: ${order.order_number}\n` +
+        `Current Status: ${orderStatusNames[order.status] || order.status}\n` +
+        `New Status: ${statusName}\n\n` +
+        "Do you want to save this change?"
     );
 
     if (!confirmed) return;
@@ -231,12 +231,12 @@ export default function OrdersManager() {
 
       if (!response.ok) {
         throw new Error(
-          result.error || "অর্ডারের Status পরিবর্তন করা যায়নি।"
+          result.error || "Could not update the order status."
         );
       }
 
       setNotice(
-        `${order.order_number}: Status "${statusName}" সংরক্ষণ হয়েছে।`
+        `${order.order_number}: Status "${statusName}" saved.`
       );
 
       await loadOrders();
@@ -244,7 +244,7 @@ export default function OrdersManager() {
       setError(
         err instanceof Error
           ? err.message
-          : "অর্ডারের Status পরিবর্তনে সমস্যা হয়েছে।"
+          : "Could not change the order status."
       );
     } finally {
       setStatusBusyId("");
@@ -281,7 +281,7 @@ export default function OrdersManager() {
   return (
     <section className="neweix-panel rounded-xl p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold">অর্ডার তালিকা</h2>
+        <h2 className="text-xl font-semibold">Order List</h2>
 
         <button
           type="button"
@@ -289,36 +289,36 @@ export default function OrdersManager() {
           disabled={loading}
           className="neweix-button-secondary text-sm disabled:opacity-50"
         >
-          {loading ? "লোড হচ্ছে..." : "রিফ্রেশ"}
+          {loading ? "Loading..." : "Refresh"}
         </button>
       </div>
 
       <p className="mt-2 text-sm">
-        সর্বশেষ ১০০টি অর্ডার দেখানো হবে। মোবাইল পেমেন্ট Paid করার আগে
-        সংশ্লিষ্ট পেমেন্ট প্রদানকারীর রেকর্ডে Transaction ID, পরিমাণ ও
-        প্রাপকের তথ্য মিলিয়ে নিন।
+        The latest 100 orders are shown. Before marking a mobile payment as Paid,
+        verify the transaction ID, amount, and
+        recipient details in the payment provider's records.
       </p>
 
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <label className="block text-sm font-medium sm:col-span-2 lg:col-span-3">
-          অর্ডার খুঁজুন
+          Search Orders
           <input
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="অর্ডার নম্বর, গ্রাহকের নাম বা ফোন নম্বর"
+            placeholder="Order number, customer name, or phone number"
             className="mt-1 block w-full rounded-lg border p-2"
           />
         </label>
 
         <label className="block text-sm font-medium">
-          অর্ডারের Status
+          Order Status
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
             className="mt-1 block w-full rounded-lg border p-2"
           >
-            <option value="all">সব Status</option>
+            <option value="all">All Statuses</option>
             {orderStatuses.map((status) => (
               <option key={status} value={status}>
                 {orderStatusNames[status]}
@@ -328,25 +328,25 @@ export default function OrdersManager() {
         </label>
 
         <label className="block text-sm font-medium">
-          পেমেন্ট ফিল্টার
+          Payment Filter
           <select
             value={paymentFilter}
             onChange={(event) => setPaymentFilter(event.target.value)}
             className="mt-1 block w-full rounded-lg border p-2"
           >
-            <option value="all">সব পেমেন্ট</option>
-            <option value="mobile">মোবাইল পেমেন্ট</option>
-            <option value="verification_pending">পেমেন্ট যাচাই বাকি</option>
-            <option value="paid">পেমেন্ট সম্পন্ন</option>
-            <option value="pending">পেমেন্ট অপেক্ষমাণ</option>
-            <option value="failed">পেমেন্ট ব্যর্থ</option>
-            <option value="refunded">পেমেন্ট ফেরত দেওয়া হয়েছে</option>
+            <option value="all">All Payments</option>
+            <option value="mobile">Mobile Payments</option>
+            <option value="verification_pending">Payment Verification Pending</option>
+            <option value="paid">Payment Completed</option>
+            <option value="pending">পেমেন্ট Pending</option>
+            <option value="failed">পেমেন্ট Failed</option>
+            <option value="refunded">পেমেন্ট Refunded</option>
           </select>
         </label>
       </div>
 
       <p className="mt-3 text-sm">
-        {visibleOrders.length}টি অর্ডার পাওয়া গেছে।
+        {visibleOrders.length} orders found.
       </p>
 
       {error && (
@@ -368,10 +368,10 @@ export default function OrdersManager() {
       )}
 
       {loading ? (
-        <p className="py-8">অর্ডার লোড হচ্ছে...</p>
+        <p className="py-8">অর্ডার Loading...</p>
       ) : visibleOrders.length === 0 ? (
         <p className="py-8">
-          এই সার্চ বা ফিল্টারে কোনো অর্ডার পাওয়া যায়নি।
+          No orders match this search or filter.
         </p>
       ) : (
         <div className="mt-5 space-y-4">
@@ -385,27 +385,27 @@ export default function OrdersManager() {
                   <h3 className="font-bold">{order.order_number}</h3>
                   <p className="mt-1 text-sm">
                     {order.customer_name} ·{" "}
-                    {order.customer_phone || order.phone || "ফোন নেই"}
+                    {order.customer_phone || order.phone || "No phone number"}
                   </p>
                   <p className="mt-1 text-xs">
-                    {new Date(order.created_at).toLocaleString("bn-BD")}
+                    {new Date(order.created_at).toLocaleString("en-BD")}
                   </p>
                 </div>
 
                 <div className="text-left sm:text-right">
                   <p className="font-bold">
-                    ৳{Number(order.total).toLocaleString("bn-BD")}
+                    ৳{Number(order.total).toLocaleString("en-BD")}
                   </p>
                   <p className="mt-1 text-sm">
                     {paymentNames[order.payment_method] || order.payment_method}
                   </p>
                   <p className="mt-1 text-sm font-medium">
-                    পেমেন্ট:{" "}
+                    Payment:{" "}
                     {paymentStatusNames[order.payment_status] ||
                       order.payment_status}
                   </p>
                   <p className="mt-1 text-sm font-medium">
-                    অর্ডার:{" "}
+                    Order:{" "}
                     {orderStatusNames[order.status] || order.status}
                   </p>
                 </div>
@@ -413,7 +413,7 @@ export default function OrdersManager() {
 
               <div className="mt-4 rounded-lg border p-3">
                 <label className="block text-sm font-medium">
-                  অর্ডারের Status পরিবর্তন
+                  Order Status পরিবর্তন
                   <select
                     value={order.status}
                     onChange={(event) =>
@@ -436,14 +436,14 @@ export default function OrdersManager() {
 
                 {statusBusyId === order.id && (
                   <p className="mt-2 text-sm">
-                    Status সংরক্ষণ হচ্ছে...
+                    Saving status...
                   </p>
                 )}
               </div>
 
               <p className="mt-3 break-words text-sm">
-                ঠিকানা:{" "}
-                {order.shipping_address || order.address || "ঠিকানা নেই"}
+                Address:{" "}
+                {order.shipping_address || order.address || "No address"}
                 {[
                   order.shipping_village,
                   order.shipping_union_other || order.shipping_union,
@@ -462,11 +462,11 @@ export default function OrdersManager() {
 
               {order.payment_method === "cod" && Number(order.delivery_fee) > 0 && (
                 <div className="mt-3 rounded-lg border p-3">
-                  <p className="text-sm font-semibold">ডেলিভারি চার্জের অগ্রিম পেমেন্ট</p>
-                  <p className="mt-1 text-sm">পরিমাণ: ৳{Number(order.delivery_fee).toLocaleString("bn-BD")}</p>
-                  <p className="mt-1 text-sm">MFS: {paymentNames[order.delivery_fee_payment_method || ""] || order.delivery_fee_payment_method || "নির্বাচিত নয়"}</p>
+                  <p className="text-sm font-semibold">Delivery Fee Prepayment</p>
+                  <p className="mt-1 text-sm">Amount: ৳{Number(order.delivery_fee).toLocaleString("en-BD")}</p>
+                  <p className="mt-1 text-sm">MFS: {paymentNames[order.delivery_fee_payment_method || ""] || order.delivery_fee_payment_method || "Not selected"}</p>
                   <p className="mt-1 break-all text-sm">TrxID: {order.delivery_fee_payment_transaction_id || "নেই"}</p>
-                  <p className="mt-1 text-sm">অবস্থা: {paymentStatusNames[order.delivery_fee_payment_status] || order.delivery_fee_payment_status}</p>
+                  <p className="mt-1 text-sm">Status: {paymentStatusNames[order.delivery_fee_payment_status] || order.delivery_fee_payment_status}</p>
                   {order.delivery_fee_payment_status === "verification_pending" && (
                     <button
                       type="button"
@@ -474,7 +474,7 @@ export default function OrdersManager() {
                       disabled={busyId !== "" || statusBusyId !== ""}
                       className="neweix-button-primary mt-3 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {busyId === order.id ? "সংরক্ষণ হচ্ছে..." : "ডেলিভারি চার্জ যাচাই করে Paid করুন"}
+                      {busyId === order.id ? "Saving..." : "Verify Delivery Fee and Mark as Paid"}
                     </button>
                   )}
                 </div>
@@ -487,7 +487,7 @@ export default function OrdersManager() {
                     {item.product_name} × {item.quantity} — ৳
                     {(
                       Number(item.unit_price) * Number(item.quantity)
-                    ).toLocaleString("bn-BD")}
+                    ).toLocaleString("en-BD")}
                   </p>
                 ))}
               </div>
@@ -495,7 +495,7 @@ export default function OrdersManager() {
               {order.payment_verified_at && (
                 <p className="mt-3 text-xs">
                   যাচাই হয়েছে:{" "}
-                  {new Date(order.payment_verified_at).toLocaleString("bn-BD")}
+                  {new Date(order.payment_verified_at).toLocaleString("en-BD")}
                 </p>
               )}
 
@@ -510,7 +510,7 @@ export default function OrdersManager() {
                     className="neweix-button-primary mt-4 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {busyId === order.id
-                      ? "সংরক্ষণ হচ্ছে..."
+                      ? "Saving..."
                       : "যাচাই করে Paid করুন"}
                   </button>
                 )}
