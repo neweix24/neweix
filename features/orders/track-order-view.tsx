@@ -22,33 +22,33 @@ type ApiResponse = {
 };
 
 const statusLabels: Record<string, string> = {
-  pending: "অর্ডার গ্রহণের অপেক্ষায়",
-  confirmed: "অর্ডার নিশ্চিত হয়েছে",
-  processing: "অর্ডার প্রস্তুত হচ্ছে",
-  shipped: "অর্ডার পাঠানো হয়েছে",
-  delivered: "অর্ডার পৌঁছে গেছে",
-  cancelled: "অর্ডার বাতিল হয়েছে",
-  paid: "পেমেন্ট সম্পন্ন",
-  unpaid: "পেমেন্ট বাকি",
-  failed: "পেমেন্ট ব্যর্থ",
-  refunded: "টাকা ফেরত দেওয়া হয়েছে",
+  pending: "Pending confirmation",
+  confirmed: "Order confirmed",
+  processing: "Processing",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+  paid: "Paid",
+  unpaid: "Payment pending",
+  failed: "Payment failed",
+  refunded: "Refunded",
 };
 
 function getStatusLabel(status: string | null | undefined) {
-  if (!status) return "তথ্য পাওয়া যায়নি";
+  if (!status) return "Information unavailable";
   return statusLabels[status.toLowerCase()] ?? status;
 }
 
 function formatDate(date: string | null) {
-  if (!date) return "তথ্য পাওয়া যায়নি";
+  if (!date) return "Information unavailable";
 
   const parsedDate = new Date(date);
 
   if (Number.isNaN(parsedDate.getTime())) {
-    return "তথ্য পাওয়া যায়নি";
+    return "Information unavailable";
   }
 
-  return new Intl.DateTimeFormat("bn-BD", {
+  return new Intl.DateTimeFormat("en-BD", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(parsedDate);
@@ -71,7 +71,7 @@ export default function TrackOrderView() {
     const cleanPhone = phone.trim();
 
     if (!cleanOrderNumber || !cleanPhone) {
-      setError("অর্ডার নম্বর ও ফোন নম্বর—দুটিই লিখুন।");
+      setError("Enter both your order number and phone number.");
       return;
     }
 
@@ -95,7 +95,7 @@ export default function TrackOrderView() {
       if (!response.ok || !result.success || !result.order) {
         setError(
           result.error ||
-            "অর্ডারের তথ্য পাওয়া যায়নি। আবার চেষ্টা করুন।"
+            "অর্ডারের Information unavailable। আবার চেষ্টা করুন।"
         );
         return;
       }
@@ -103,7 +103,7 @@ export default function TrackOrderView() {
       setOrder(result.order);
     } catch {
       setError(
-        "সার্ভারের সঙ্গে যোগাযোগ করা যায়নি। ইন্টারনেট সংযোগ পরীক্ষা করুন।"
+        "Could not connect to the server. Check your internet connection."
       );
     } finally {
       setLoading(false);
@@ -114,16 +114,16 @@ export default function TrackOrderView() {
     <main className="min-h-screen px-4 py-12" style={{ background: "var(--bg)", color: "var(--ink)" }}>
       <section className="mx-auto w-full max-w-2xl">
         <nav className="mb-8 flex flex-wrap justify-between gap-4 text-sm font-semibold">
-          <Link href="/" style={{ color: "var(--primary)" }}>← NEWEIX হোম</Link>
-          <Link href="/products" style={{ color: "var(--muted)" }}>পণ্য দেখুন</Link>
+          <Link href="/" style={{ color: "var(--primary)" }}>← NEWEIX Home</Link>
+          <Link href="/products" style={{ color: "var(--muted)" }}>Browse products</Link>
         </nav>
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold tracking-tight">
-            অর্ডার ট্র্যাক করুন
+            Track your order
           </h1>
 
           <p className="mt-3" style={{ color: "var(--muted)" }}>
-            আপনার অর্ডারের বর্তমান অবস্থা জানতে নিচের তথ্য দিন।
+            Enter the details below to check your order status.
           </p>
         </div>
 
@@ -134,7 +134,7 @@ export default function TrackOrderView() {
                 htmlFor="orderNumber"
                 className="mb-2 block text-sm font-medium"
               >
-                অর্ডার নম্বর
+                Order number
               </label>
 
               <input
@@ -146,7 +146,7 @@ export default function TrackOrderView() {
                 onChange={(event) =>
                   setOrderNumber(event.target.value)
                 }
-                placeholder="যেমন: NWX-10001"
+                placeholder="Example: NWX-10001"
                 maxLength={60}
                 required
                 className="w-full rounded-lg border px-4 py-3 outline-none transition" style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--ink)" }}
@@ -158,7 +158,7 @@ export default function TrackOrderView() {
                 htmlFor="phone"
                 className="mb-2 block text-sm font-medium"
               >
-                অর্ডার করার সময় ব্যবহৃত ফোন নম্বর
+                Phone number used when placing the order
               </label>
 
               <input
@@ -169,7 +169,7 @@ export default function TrackOrderView() {
                 inputMode="tel"
                 value={phone}
                 onChange={(event) => setPhone(event.target.value)}
-                placeholder="আপনার ফোন নম্বর"
+                placeholder="Your phone number"
                 maxLength={30}
                 required
                 className="w-full rounded-lg border px-4 py-3 outline-none transition focus-visible:ring-2" style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--ink)" }}
@@ -190,7 +190,7 @@ export default function TrackOrderView() {
               disabled={loading}
               className="w-full rounded-lg px-5 py-3 font-semibold transition disabled:cursor-not-allowed disabled:opacity-60" style={{ background: "var(--primary)", color: "#080b09" }}
             >
-              <><Icon name={loading ? "refresh" : "search"} size={17} /> {loading ? "অর্ডার খোঁজা হচ্ছে..." : "অর্ডার খুঁজুন"}</>
+              <><Icon name={loading ? "refresh" : "search"} size={17} /> {loading ? "Searching for your order..." : "Find order"}</>
             </button>
           </form>
         </div>
@@ -203,7 +203,7 @@ export default function TrackOrderView() {
             <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-sm" style={{ color: "var(--muted)" }}>
-                  অর্ডার নম্বর
+                  Order number
                 </p>
 
                 <h2 className="mt-1 text-xl font-bold">
@@ -218,37 +218,36 @@ export default function TrackOrderView() {
 
             <div className="divide-y" style={{ borderColor: "var(--border)" }}>
               <InfoRow
-                label="অর্ডারের তারিখ"
+                label="Order date"
                 value={formatDate(order.created_at)}
               />
 
               <InfoRow
-                label="পেমেন্ট পদ্ধতি"
-                value={order.payment_method || "তথ্য পাওয়া যায়নি"}
+                label="Payment method"
+                value={order.payment_method || "Information unavailable"}
               />
 
               <InfoRow
-                label="পেমেন্টের অবস্থা"
+                label="Payment status"
                 value={getStatusLabel(order.payment_status)}
               />
 
               <InfoRow
-                label="ডেলিভারির অবস্থা"
+                label="Delivery status"
                 value={getStatusLabel(order.delivery_status)}
               />
 
               <InfoRow
-                label="কুরিয়ার ট্র্যাকিং নম্বর"
+                label="Courier tracking number"
                 value={
                   order.delivery_tracking_code ||
-                  "এখনো দেওয়া হয়নি"
+                  "Not available yet"
                 }
               />
             </div>
 
             <p className="mt-5 rounded-lg p-3 text-sm" style={{ background: "var(--surface-raised)", color: "var(--muted)" }}>
-              ডেলিভারি সংক্রান্ত আরও তথ্যের জন্য আমাদের
-              কাস্টমার সাপোর্টের সঙ্গে যোগাযোগ করুন।
+              For more information about your delivery, please contact customer support.
             </p>
           </section>
         )}
