@@ -17,7 +17,7 @@ export const infoPages: Record<string, InfoPageData> = {
     description: "If you need help with an order, product, or the website, have your order number ready.",
     sections: [
       { title: "Order support", body: ["First, check your order status on the order tracking page using your order number and phone number.", "Keep your order number, phone number used for the order, and a brief description of the issue together."] },
-      { title: "Contact information", body: ["এই সংস্করণে যাচাইকৃত ফোন নম্বর, ইমেইল ঠিকানা বা অফিসের ঠিকানা প্রকাশ করা হয়নি। ভুল Contact information দেখানোর পরিবর্তে সেগুলো নিশ্চিত হওয়ার পর যুক্ত করা হবে."] }
+      { title: "Contact information", body: ["Verified phone numbers, email addresses, and office addresses have not yet been published in this version. We will add them after verification rather than display inaccurate contact information."] }
     ]
   },
   faq: {
