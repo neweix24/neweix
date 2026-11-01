@@ -3,7 +3,8 @@ import WishlistView from "@/features/wishlist/wishlist-view";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "পছন্দের তালিকা",
+  title: "My Wishlist | NEWEIX",
+  description: "Your saved NEWEIX products.",
   robots: { index: false, follow: false },
 };
 
