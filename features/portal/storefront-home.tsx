@@ -8,7 +8,6 @@ import Icon from "@/components/ui/icon";
 import styles from "./storefront-home.module.css";
 import HomepageYouTubeVideos from "@/features/portal/homepage-youtube-videos";
 import ProductCardActions from "@/features/products/product-card-actions";
-import LanguageSwitcher from "@/components/language-switcher";
 import { useLanguage } from "@/components/language-provider";
 
 type Product = {
@@ -179,7 +178,6 @@ export default function StorefrontHome() {
           <Link href="/wishlist">{t("wishlist")}</Link>
           <Link href="/cart" className={styles.cartLink}>{t("cart")} <span>{cartCount}</span></Link>
         </nav>
-        <LanguageSwitcher />
       </header>
 
       <main className={styles.main}>
