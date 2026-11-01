@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { normalizeBangladeshPhone } from "@/lib/phone-verification";
+import { resolveBangladeshAddress } from "@/lib/bangladesh-admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -125,10 +126,38 @@ export async function POST(request: Request) {
       ? null
       : cleanString(rawBody.customer_email);
 
-  const shippingCity =
-    rawBody.shipping_city == null
-      ? null
-      : cleanString(rawBody.shipping_city);
+  const shippingDivisionCode = cleanString(rawBody.shipping_division_code);
+  const shippingDistrictCode = cleanString(rawBody.shipping_district_code);
+  const shippingUpazilaCode = cleanString(rawBody.shipping_upazila_code);
+  const shippingUpazilaOther = cleanString(rawBody.shipping_upazila_other);
+  const shippingUnionCode = cleanString(rawBody.shipping_union_code);
+  const shippingUnionOther = cleanString(rawBody.shipping_union_other);
+  const shippingVillage = cleanString(rawBody.shipping_village);
+
+  if (!shippingDivisionCode || !shippingDistrictCode || !shippingUpazilaCode
+      || !shippingUnionCode || !shippingVillage) {
+    return errorResponse("বিভাগ, জেলা, উপজেলা, ইউনিয়ন/এলাকা এবং গ্রাম/ওয়ার্ড নির্বাচন বা লিখুন।", 400);
+  }
+
+  const resolvedAddress = resolveBangladeshAddress(
+    shippingDivisionCode,
+    shippingDistrictCode,
+    shippingUpazilaCode,
+    shippingUnionCode
+  );
+  if (!resolvedAddress) {
+    return errorResponse("নির্বাচিত বিভাগ, জেলা, উপজেলা ও ইউনিয়নের সম্পর্ক সঠিক নয়। আবার নির্বাচন করুন।", 400);
+  }
+  if (shippingUpazilaCode === "other" && (!shippingUpazilaOther || shippingUpazilaOther.length < 2 || shippingUpazilaOther.length > 120)) {
+    return errorResponse("তালিকায় না থাকা উপজেলার নাম লিখুন।", 400);
+  }
+  if (shippingUnionCode === "other" && (!shippingUnionOther || shippingUnionOther.length < 2 || shippingUnionOther.length > 120)) {
+    return errorResponse("তালিকায় না থাকা ইউনিয়ন বা এলাকার নাম লিখুন।", 400);
+  }
+  if (shippingVillage.length < 2 || shippingVillage.length > 160) {
+    return errorResponse("গ্রাম, ওয়ার্ড বা মহল্লার নাম ২–১৬০ অক্ষরের মধ্যে লিখুন।", 400);
+  }
+  const shippingCity = resolvedAddress.district.bn_name;
 
   if (
     !customerName ||
@@ -491,6 +520,16 @@ export async function POST(request: Request) {
           p_customer_id: linkedCustomerId,
           p_delivery_fee_payment_method: paymentMethod === "cod" ? deliveryFeePaymentMethod : null,
           p_delivery_fee_payment_transaction_id: paymentMethod === "cod" ? deliveryFeeTransactionId : null,
+          p_shipping_division_code: resolvedAddress.division.code,
+          p_shipping_division: resolvedAddress.division.bn_name,
+          p_shipping_district_code: resolvedAddress.district.code,
+          p_shipping_district: resolvedAddress.district.bn_name,
+          p_shipping_upazila_code: shippingUpazilaCode,
+          p_shipping_upazila: resolvedAddress.upazila?.bn_name ?? shippingUpazilaOther,
+          p_shipping_union_code: shippingUnionCode,
+          p_shipping_union: resolvedAddress.union?.bn_name ?? (shippingUnionCode === "other" ? shippingUnionOther : null),
+          p_shipping_union_other: shippingUnionCode === "other" ? shippingUnionOther : null,
+          p_shipping_village: shippingVillage,
         }
       );
 
