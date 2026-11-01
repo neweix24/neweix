@@ -465,7 +465,7 @@ export default function OrdersManager() {
                   <p className="text-sm font-semibold">Delivery Fee Prepayment</p>
                   <p className="mt-1 text-sm">Amount: ৳{Number(order.delivery_fee).toLocaleString("en-BD")}</p>
                   <p className="mt-1 text-sm">MFS: {paymentNames[order.delivery_fee_payment_method || ""] || order.delivery_fee_payment_method || "Not selected"}</p>
-                  <p className="mt-1 break-all text-sm">TrxID: {order.delivery_fee_payment_transaction_id || "নেই"}</p>
+                  <p className="mt-1 break-all text-sm">TrxID: {order.delivery_fee_payment_transaction_id || "Not available"}</p>
                   <p className="mt-1 text-sm">Status: {paymentStatusNames[order.delivery_fee_payment_status] || order.delivery_fee_payment_status}</p>
                   {order.delivery_fee_payment_status === "verification_pending" && (
                     <button
