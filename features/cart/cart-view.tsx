@@ -135,7 +135,7 @@ export default function CartView() {\n  const { t } = useLanguage();
 
         {!loading && !error && items.length > 0 && (
           <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-            <section className="space-y-3" aria-label="কার্টের পণ্য">
+            <section className="space-y-3" aria-label={t("cartProducts")}>
               {items.map(({ product, quantity }) => (
                 <article key={product.id} className="flex flex-wrap items-center gap-4 rounded-2xl border p-4" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
                   {product.image_urls?.[0] ? (
@@ -147,9 +147,9 @@ export default function CartView() {\n  const { t } = useLanguage();
                     <p className="mt-1">{formatPrice(Number(product.price))} · {t("stock")} {product.stock}</p>
                     {quantity > product.stock && <p role="alert" style={{ color: "var(--danger)" }}>{t("tooManyInCart")}</p>}
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <button type="button" aria-label={product.name + " পরিমাণ কমান"} onClick={() => changeQuantity(product, -1)} className="h-9 w-9 rounded-lg border" style={{ borderColor: "var(--border)" }}><Icon name="minus" size={16} /></button>
+                      <button type="button" aria-label={product.name + " " + t("decreaseQuantity")} onClick={() => changeQuantity(product, -1)} className="h-9 w-9 rounded-lg border" style={{ borderColor: "var(--border)" }}><Icon name="minus" size={16} /></button>
                       <span className="min-w-8 text-center font-bold">{quantity}</span>
-                      <button type="button" aria-label={product.name + " পরিমাণ বাড়ান"} disabled={quantity >= product.stock} onClick={() => changeQuantity(product, 1)} className="h-9 w-9 rounded-lg border" style={{ borderColor: "var(--border)" }}><Icon name="plus" size={16} /></button>
+                      <button type="button" aria-label={product.name + " " + t("increaseQuantity")} disabled={quantity >= product.stock} onClick={() => changeQuantity(product, 1)} className="h-9 w-9 rounded-lg border" style={{ borderColor: "var(--border)" }}><Icon name="plus" size={16} /></button>
                       <button type="button" onClick={() => saveCart(cart.filter((entry) => entry.product_id !== product.id))} className="ml-2 text-sm underline underline-offset-4" style={{ color: "var(--danger)" }}><Icon name="trash" size={15} /> {t("remove")}</button>
                     </div>
                   </div>
@@ -160,7 +160,7 @@ export default function CartView() {\n  const { t } = useLanguage();
 
             <aside className="h-fit rounded-2xl border p-5 lg:sticky lg:top-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
               <h2 className="text-xl font-bold">{t("orderSummary")}</h2>
-              <div className="mt-5 flex justify-between gap-3"><span>পণ্য ({items.length}টি)</span><strong>{formatPrice(total)}</strong></div>
+              <div className="mt-5 flex justify-between gap-3"><span>{t("products")} ({items.length} {t("itemCount")})</span><strong>{formatPrice(total)}</strong></div>
               <div className="mt-3 flex justify-between gap-3"><span>{t("delivery")}</span><span>{t("confirmedAtCheckout")}</span></div>
               <hr className="my-5" />
               <div className="flex justify-between gap-3 text-lg font-black"><span>{t("total")}</span><strong style={{ color: "var(--primary)" }}>{formatPrice(total)}</strong></div>
