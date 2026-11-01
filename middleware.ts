@@ -27,14 +27,6 @@ export async function middleware(request: NextRequest) {
     pathname === "/wishlist" || pathname.startsWith("/wishlist/");
   const isCustomerProtected = isCustomerPage || isCustomerApi;
 
-  // Do not refresh auth cookies on anonymous storefront navigation, assets,
-  // or unrelated API requests. Each authenticated browser client maintains
-  // its own session; refreshing on every public request creates avoidable
-  // concurrent refresh-token rotations and stale-cookie races.
-  if (!isAdminPath && !isSupremePath && !isCustomerProtected) {
-    return response;
-  }
-
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -54,11 +46,17 @@ export async function middleware(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet, headers) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
+        });
+        // Supabase supplies cache headers when auth cookies are refreshed.
+        // Preserve them so Cloudflare/CDNs cannot cache a response containing
+        // one user's refreshed session and serve it to another visitor.
+        Object.entries(headers).forEach(([name, value]) => {
+          response.headers.set(name, value);
         });
       },
     },
@@ -67,6 +65,14 @@ export async function middleware(request: NextRequest) {
   // Validate the session only for protected customer and workspace routes.
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;
+
+  // Public storefront routes also pass through getClaims() so an expired
+  // access token can be refreshed and its cookies returned to the browser.
+  // Authorization redirects and profile checks remain limited to protected routes.
+  if (!isAdminPath && !isSupremePath && !isCustomerProtected) {
+    return response;
+  }
+
   response.headers.set("Cache-Control", "private, no-store");
 
   // Require verified customer phone numbers before protected account features are accessible.
