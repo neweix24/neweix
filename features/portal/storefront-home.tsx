@@ -18,8 +18,8 @@ type Product = {
 type Customer = { name: string; email: string };
 type Category = { id: string; name: string; slug: string };
 
-function money(value: number) {
-  return new Intl.NumberFormat("en-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(value);
+function money(value: number, locale: string) {
+  return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(value);
 }
 function readCount(key: string) {
   try {
@@ -39,7 +39,7 @@ function readCartCount() {
 }
 
 export default function StorefrontHome() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -200,7 +200,7 @@ export default function StorefrontHome() {
                   {product.image_urls?.[0] ? <img src={product.image_urls[0]} alt={product.name} loading="lazy"/> : <Icon name="package" size={42} />}
                   {product.is_featured && <small>{t("featured")}</small>}
                 </Link>
-                <div className={styles.productInfo}><Link href={`/products/${encodeURIComponent(product.slug)}`}>{product.name}</Link><strong>{money(Number(product.price))}</strong>{product.compare_at_price != null && product.compare_at_price > product.price && <del>{money(Number(product.compare_at_price))}</del>}<span className={product.stock > 0 ? styles.inStock : styles.outStock}>{product.stock > 0 ? t("inStock") : t("outOfStock")}</span><ProductCardActions productId={product.id} stock={product.stock} onNotice={setCartNotice} /></div>
+                <div className={styles.productInfo}><Link href={`/products/${encodeURIComponent(product.slug)}`}>{product.name}</Link><strong>{money(Number(product.price), locale)}</strong>{product.compare_at_price != null && product.compare_at_price > product.price && <del>{money(Number(product.compare_at_price), locale)}</del>}<span className={product.stock > 0 ? styles.inStock : styles.outStock}>{product.stock > 0 ? t("inStock") : t("outOfStock")}</span><ProductCardActions productId={product.id} stock={product.stock} onNotice={setCartNotice} /></div>
               </article>
             ))}</div>
           ) : <div className={styles.emptyProducts}>{t("noProducts")} <Link href="/products">{t("viewCatalog")}</Link></div>}
