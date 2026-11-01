@@ -336,7 +336,7 @@ export async function POST(request: Request) {
     if (saveError) {
       console.error("Pathao consignment created but local save failed:", saveError.message);
       return errorResponse(
-        `Pathao-তে বুকিং হয়েছে (Consignment ID: ${result.consignment_id}), কিন্তু NEWEIX-এ সংরক্ষণ হয়নি। এই ID দিয়ে Pathao panel-এ খুঁজে নিন।`,
+        `Booking was created in Pathao (Consignment ID: ${result.consignment_id}), but could not be saved in NEWEIX. Look it up in the Pathao panel using this ID.`,
         503
       );
     }
