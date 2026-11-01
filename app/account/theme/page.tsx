@@ -29,9 +29,9 @@ const FIELDS: { key: keyof ThemeSettings; label: string }[] = [
   { key: "background", label: "Page background" },
   { key: "surface", label: "Card and panel colour" },
   { key: "text", label: "Text colour" },
-  { key: "muted", label: "সহায়ক Text colour" },
+  { key: "muted", label: "Muted text colour" },
   { key: "button", label: "Button colour" },
-  { key: "buttonText", label: "বাটনের Text colour" },
+  { key: "buttonText", label: "Button text colour" },
   { key: "border", label: "Border colour" },
 ];
 
@@ -127,7 +127,7 @@ export default function CustomerThemePage() {
       } catch (error) {
         if (active) {
           setErrorMessage(
-            error instanceof Error ? error.message : "থিম লোড করা যায়নি।"
+            error instanceof Error ? error.message : "Could not load the theme."
           );
         }
       } finally {
