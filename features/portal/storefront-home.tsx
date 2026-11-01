@@ -153,34 +153,6 @@ export default function StorefrontHome() {
     router.push(term ? `/products?search=${encodeURIComponent(term)}` : "/products");
   }
 
-  function addToCart(product: Product) {
-    if (!Number.isSafeInteger(Number(product.stock)) || Number(product.stock) < 1) {
-      setCartNotice("পণ্যটি বর্তমানে স্টকে নেই।");
-      return;
-    }
-    try {
-      const parsed: unknown = JSON.parse(localStorage.getItem("neweix_cart") ?? "[]");
-      if (!Array.isArray(parsed)) throw new Error("Invalid cart");
-      const quantities = new Map<string, number>();
-      for (const value of parsed) {
-        if (!value || typeof value !== "object") continue;
-        const item = value as Record<string, unknown>;
-        if (typeof item.product_id !== "string" || !Number.isSafeInteger(item.quantity) || Number(item.quantity) < 1) continue;
-        quantities.set(item.product_id, Math.min(100, (quantities.get(item.product_id) ?? 0) + Number(item.quantity)));
-      }
-      const current = quantities.get(product.id) ?? 0;
-      if (current >= Math.min(100, Number(product.stock))) {
-        setCartNotice("স্টকে থাকা সর্বোচ্চ পরিমাণ ইতিমধ্যে কার্টে আছে।");
-        return;
-      }
-      quantities.set(product.id, current + 1);
-      localStorage.setItem("neweix_cart", JSON.stringify(Array.from(quantities, ([product_id, quantity]) => ({ product_id, quantity }))));
-      window.dispatchEvent(new Event("neweix-cart-change"));
-      setCartNotice("পণ্যটি কার্টে যোগ হয়েছে।");
-    } catch {
-      setCartNotice("কার্ট আপডেট করা যায়নি। আবার চেষ্টা করুন।");
-    }
-  }
 
   async function logout() {
     const supabase = createBrowserSupabaseClient();
