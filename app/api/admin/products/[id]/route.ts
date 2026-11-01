@@ -174,13 +174,13 @@ export async function PATCH(
       (!/^\d+$/.test(contentLength) ||
         Number(contentLength) > MAX_BODY_BYTES)
     ) {
-      return jsonError("অনুরোধটি অনেক বড় বা সঠিক নয়।", 413);
+      return jsonError("Request is too large or invalid.", 413);
     }
 
     const raw = await request.text();
 
     if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) {
-      return jsonError("অনুরোধটি অনেক বড়।", 413);
+      return jsonError("Request is too large.", 413);
     }
 
     let body: unknown;
@@ -295,7 +295,7 @@ export async function PATCH(
           value < min ||
           value > 1000000
         ) {
-          return jsonError(`${key} সঠিক নয়।`, 400);
+          return jsonError(`${key} is invalid.`, 400);
         }
 
         update[key] = value;
@@ -317,7 +317,7 @@ export async function PATCH(
         key === "is_featured"
       ) {
         if (typeof value !== "boolean") {
-          return jsonError(`${key} সঠিক নয়।`, 400);
+          return jsonError(`${key} is invalid.`, 400);
         }
 
         update[key] = value;
@@ -474,7 +474,7 @@ export async function PATCH(
   } catch (error) {
     console.error("Product PATCH error:", error);
 
-    return jsonError("সার্ভারে সমস্যা হয়েছে।", 500);
+    return jsonError("A server error occurred.", 500);
   }
 }
 
