@@ -13,7 +13,7 @@ export async function GET() {
     const key = runtimeEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!url || !key) {
-      return NextResponse.json({ error: "সার্ভার কনফিগারেশন অসম্পূর্ণ।" }, { status: 503 });
+      return NextResponse.json({ error: "Server configuration is incomplete." }, { status: 503 });
     }
 
     const supabase = createClient(url, key);
@@ -27,7 +27,7 @@ export async function GET() {
 
     if (error) {
       console.error("Public categories API failed:", error.message);
-      return NextResponse.json({ error: "ক্যাটাগরি লোড করা যায়নি।" }, { status: 500 });
+      return NextResponse.json({ error: "Unable to load categories." }, { status: 500 });
     }
 
     return NextResponse.json(
@@ -36,6 +36,6 @@ export async function GET() {
     );
   } catch (error) {
     console.error("Public categories API error:", error);
-    return NextResponse.json({ error: "সার্ভারে সমস্যা হয়েছে।" }, { status: 500 });
+    return NextResponse.json({ error: "An unexpected server error occurred." }, { status: 500 });
   }
 }
