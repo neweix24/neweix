@@ -247,7 +247,7 @@ export default function LoginPage() {
         <button
           type="button"
           className="password-visibility-button"
-          aria-label={showPassword ? "Password লুকান" : "Password দেখান"}
+          aria-label={showPassword ? "Hide password" : "Show password"}
           aria-pressed={showPassword}
           onClick={() => setShowPassword((visible) => !visible)}
         >
@@ -265,7 +265,7 @@ export default function LoginPage() {
 
         <p>
           <Link href="/auth/forgot-password">
-            Password ভুলে গেছেন?
+            Forgot password?
           </Link>
         </p>
 
