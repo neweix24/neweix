@@ -4,78 +4,78 @@ export type InfoPageData = { eyebrow: string; title: string; description: string
 export const infoPages: Record<string, InfoPageData> = {
   about: {
     eyebrow: "ABOUT NEWEIX",
-    title: "সহজ, স্বচ্ছ ও নির্ভরযোগ্য অনলাইন কেনাকাটা",
-    description: "NEWEIX একটি আধুনিক ডিজিটাল কমার্স অভিজ্ঞতা গড়ে তোলার উদ্যোগ।",
+    title: "Simple, transparent, and reliable online shopping",
+    description: "NEWEIX is building a modern digital commerce experience.",
     sections: [
-      { title: "আমাদের লক্ষ্য", body: ["পণ্য খোঁজা থেকে অর্ডার ট্র্যাকিং পর্যন্ত প্রয়োজনীয় ধাপগুলো সহজ ও পরিষ্কার রাখা।", "মোবাইল ও ডেস্কটপ—দুই জায়গাতেই ব্যবহারবান্ধব অভিজ্ঞতা নিশ্চিত করাই আমাদের অগ্রাধিকার।"] },
-      { title: "আমাদের অঙ্গীকার", body: ["পণ্যের তথ্য, মূল্য, স্টক ও অর্ডারের অবস্থা যথাসম্ভব স্পষ্টভাবে দেখানো।", "গ্রাহকের তথ্য সুরক্ষিত রাখা এবং প্রয়োজনীয় সহায়তার পথ সহজ রাখা।"] }
+      { title: "Our mission", body: ["To make every step—from discovering products to tracking orders—simple and clear.", "Our priority is to deliver a user-friendly experience on both mobile and desktop."] },
+      { title: "Our commitment", body: ["To present product information, pricing, stock, and order status as clearly as possible.", "To protect customer information and make support easy to access."] }
     ]
   },
   contact: {
     eyebrow: "CONTACT",
-    title: "NEWEIX-এর সঙ্গে যোগাযোগ",
-    description: "অর্ডার, পণ্য বা ওয়েবসাইট ব্যবহার নিয়ে সহায়তা প্রয়োজন হলে অর্ডার নম্বরসহ যোগাযোগের প্রস্তুতি নিন।",
+    title: "Contact NEWEIX",
+    description: "If you need help with an order, product, or the website, have your order number ready.",
     sections: [
-      { title: "অর্ডার-সংক্রান্ত সহায়তা", body: ["প্রথমে অর্ডার ট্র্যাকিং পেজে অর্ডার নম্বর ও ফোন নম্বর দিয়ে বর্তমান অবস্থা দেখুন।", "অর্ডার নম্বর, ব্যবহৃত ফোন নম্বর এবং সমস্যার সংক্ষিপ্ত বিবরণ একসঙ্গে রাখুন।"] },
-      { title: "যোগাযোগের তথ্য", body: ["এই সংস্করণে যাচাইকৃত ফোন নম্বর, ইমেইল ঠিকানা বা অফিসের ঠিকানা প্রকাশ করা হয়নি। ভুল যোগাযোগের তথ্য দেখানোর পরিবর্তে সেগুলো নিশ্চিত হওয়ার পর যুক্ত করা হবে."] }
+      { title: "Order support", body: ["First, check your order status on the order tracking page using your order number and phone number.", "Keep your order number, phone number used for the order, and a brief description of the issue together."] },
+      { title: "Contact information", body: ["এই সংস্করণে যাচাইকৃত ফোন নম্বর, ইমেইল ঠিকানা বা অফিসের ঠিকানা প্রকাশ করা হয়নি। ভুল Contact information দেখানোর পরিবর্তে সেগুলো নিশ্চিত হওয়ার পর যুক্ত করা হবে."] }
     ]
   },
   faq: {
     eyebrow: "HELP CENTER",
-    title: "সাধারণ জিজ্ঞাসা",
-    description: "NEWEIX-এ কেনাকাটা ও অর্ডার ব্যবস্থাপনা নিয়ে প্রাথমিক সহায়তা।",
+    title: "Frequently asked questions",
+    description: "Basic help with shopping and order management on NEWEIX.",
     sections: [
-      { title: "কীভাবে অর্ডার করব?", body: ["পণ্য ক্যাটালগ থেকে পণ্য নির্বাচন করে কার্টে যোগ করুন। এরপর চেকআউটে প্রয়োজনীয় তথ্য দিয়ে অর্ডার জমা দিন।"] },
-      { title: "কীভাবে অর্ডার ট্র্যাক করব?", body: ["অর্ডার নম্বর ও অর্ডারের সময় ব্যবহৃত ফোন নম্বর দিয়ে অর্ডার ট্র্যাকিং পেজে অনুসন্ধান করুন।"] },
-      { title: "কোন পেমেন্ট পদ্ধতি আছে?", body: ["চেকআউটে বর্তমানে সক্রিয় দেখানো Cash on Delivery, bKash, Nagad বা Rocket পদ্ধতি নির্বাচন করুন। মোবাইল পেমেন্টের Transaction ID যাচাই না হওয়া পর্যন্ত পেমেন্ট নিশ্চিত হয় না।"] },
-      { title: "কার্টে পণ্য থাকলেই কি স্টক নিশ্চিত?", body: ["না। অর্ডার জমা দেওয়ার সময় সার্ভার পণ্যের বর্তমান মূল্য ও স্টক পুনরায় যাচাই করে।"] }
+      { title: "How do I place an order?", body: ["Select a product from the catalog and add it to your cart, or use Buy Now. Then enter the required details at checkout and submit your order."] },
+      { title: "How do I track my order?", body: ["Search on the order tracking page using your order number and the phone number used when placing the order."] },
+      { title: "Which payment methods are available?", body: ["Choose an enabled payment method shown at checkout: Cash on Delivery, bKash, Nagad, or Rocket. Mobile payments are not confirmed until the transaction ID has been verified."] },
+      { title: "Does adding a product to the cart reserve stock?", body: ["No. The server rechecks the current price and available stock when you submit an order."] }
     ]
   },
   privacy: {
     eyebrow: "PRIVACY",
-    title: "গোপনীয়তা নীতি",
-    description: "NEWEIX অর্ডার সম্পন্ন, গ্রাহকসেবা ও অ্যাকাউন্ট পরিচালনার প্রয়োজনেই ব্যক্তিগত তথ্য ব্যবহার করে। ঐচ্ছিক পছন্দ ও মার্কেটিংয়ের তথ্য গ্রাহক নিজে নিয়ন্ত্রণ করতে পারেন।",
+    title: "Privacy policy",
+    description: "NEWEIX uses personal information to fulfil orders, provide customer support, and manage accounts. Customers can control optional preferences and marketing communications.",
     sections: [
-      { title: "আমরা কোন তথ্য সংগ্রহ করি", body: [
-        "অর্ডারের সময় নাম, মোবাইল নম্বর, ডেলিভারি ঠিকানা, অর্ডার করা পণ্য, পরিমাণ, পেমেন্ট পদ্ধতি এবং প্রযোজ্য ক্ষেত্রে পেমেন্ট Transaction ID নেওয়া হতে পারে।",
-        "অ্যাকাউন্ট ব্যবহার করলে লগইন ইমেইল, প্রোফাইলের নাম ও ফোন নম্বর এবং গ্রাহকের সংরক্ষিত ডেলিভারি ঠিকানা প্রক্রিয়াকৃত হয়।",
-        "গ্রাহক চাইলে পছন্দের পোশাকের সাইজ ও রং সংরক্ষণ করতে পারেন। এই পছন্দ দেওয়া বাধ্যতামূলক নয়।",
-        "মার্কেটিং ইমেইল বা SMS পেতে সম্মতি দিলে সেই সম্মতি, পরিবর্তন ও প্রত্যাহারের সময় রেকর্ড করা হয়।"
+      { title: "Information we collect", body: [
+        "When you place an order, we may collect your name, mobile number, delivery address, ordered products, quantities, payment method, and, where applicable, payment transaction ID.",
+        "When you use an account, we process your login email, profile name and phone number, and saved delivery addresses.",
+        "Customers may optionally save preferred clothing sizes and colours. Providing these preferences is not required.",
+        "If you consent to marketing emails or SMS, we record the consent and any changes or withdrawal."
       ] },
-      { title: "তথ্য কেন ব্যবহার করি", body: [
-        "অর্ডার গ্রহণ ও পরিচালনা, পেমেন্ট যাচাই, ডেলিভারি, রিটার্ন/রিফান্ড ব্যবস্থাপনা, গ্রাহক সহায়তা, অ্যাকাউন্ট পরিচালনা এবং জালিয়াতি বা নিরাপত্তা ঝুঁকি প্রতিরোধে প্রয়োজনীয় তথ্য ব্যবহার করা হয়।",
-        "সংরক্ষিত সাইজ ও রং ভবিষ্যতে প্রাসঙ্গিক পণ্য সাজেস্ট করতে ব্যবহার করা যেতে পারে।",
-        "প্রচারমূলক ইমেইল বা SMS কেবল সংশ্লিষ্ট মাধ্যমের আলাদা সম্মতি থাকলেই পাঠানো উচিত। অর্ডার ও ডেলিভারির জরুরি বার্তা মার্কেটিং সম্মতি থেকে আলাদা।"
+      { title: "How we use information", body: [
+        "We use necessary information to process orders, verify payments, arrange delivery, manage returns and refunds, provide support, manage accounts, and prevent fraud or security risks.",
+        "Saved sizes and colours may be used to recommend relevant products.",
+        "Promotional emails or SMS should only be sent with separate consent for that channel. Essential order and delivery messages are separate from marketing consent."
       ] },
-      { title: "পেমেন্ট ও নিরাপত্তা", body: [
-        "NEWEIX কখনো বিকাশ/নগদ PIN, OTP, কার্ডের CVV বা ব্যাংক পাসওয়ার্ড চাইবে না। মোবাইল পেমেন্ট যাচাইয়ের জন্য প্রয়োজন হলে শুধু Transaction ID নেওয়া হয়।",
-        "গ্রাহকের অ্যাকাউন্টের ঠিকানা, পছন্দ ও সম্মতির রেকর্ডে মালিক-ভিত্তিক ডেটাবেস অ্যাক্সেস নিয়ন্ত্রণ প্রয়োগ করা হয়।"
+      { title: "Payments and security", body: [
+        "NEWEIX will never ask for your bKash or Nagad PIN, OTP, card CVV, or bank password. For mobile payment verification, we may request only the transaction ID.",
+        "Owner-based database access controls are applied to customer addresses, preferences, and consent records."
       ] },
-      { title: "সেবা প্রদানকারী ও তথ্য ভাগাভাগি", body: [
-        "হোস্টিং, ডেটাবেস, অ্যাকাউন্ট নিরাপত্তা, পেমেন্ট যাচাই এবং কুরিয়ার ডেলিভারি সম্পন্ন করতে প্রয়োজনীয় সীমার মধ্যে সংশ্লিষ্ট সেবা প্রদানকারীর সঙ্গে তথ্য প্রক্রিয়াকৃত বা ভাগ করা হতে পারে।",
-        "NEWEIX ব্যক্তিগত তথ্য বিক্রি করার উদ্দেশ্যে সংগ্রহ করে না। প্রতিটি সেবা প্রদানকারীর প্রকৃত ভূমিকা ও তথ্য-অবস্থান ব্যবসার কনফিগারেশন অনুযায়ী যাচাই করতে হবে।"
+      { title: "Service providers and data sharing", body: [
+        "Information may be processed or shared with relevant service providers, only as necessary for hosting, databases, account security, payment verification, and courier delivery.",
+        "NEWEIX does not collect personal information for sale. The actual role and data location of each service provider should be verified against the business configuration."
       ] },
-      { title: "গ্রাহকের নিয়ন্ত্রণ ও অধিকার", body: [
-        "লগইন করা গ্রাহক অ্যাকাউন্ট থেকে নিজের প্রোফাইল, সংরক্ষিত ঠিকানা ও পছন্দ দেখতে এবং আপডেট করতে পারেন।",
-        "গোপনীয়তা ও পছন্দ পৃষ্ঠা থেকে মার্কেটিং ইমেইল/SMS-এর সম্মতি বন্ধ বা চালু করা যায়।",
-        "তথ্য দেখা, সংশোধন, সম্মতি প্রত্যাহার বা মুছে ফেলার অনুরোধ করা যেতে পারে। তবে অর্ডার, হিসাব বা আইনগত বাধ্যবাধকতার জন্য প্রয়োজনীয় রেকর্ড প্রযোজ্য সময় পর্যন্ত রাখতে হতে পারে।"
+      { title: "Your controls and rights", body: [
+        "Signed-in customers can view and update their profile, saved addresses, and preferences from their account.",
+        "You can enable or withdraw marketing email/SMS consent from the Privacy & Preferences page.",
+        "You may request access, correction, withdrawal of consent, or deletion. Records required for orders, accounting, or legal obligations may need to be retained for the applicable period."
       ] },
-      { title: "সংরক্ষণ, কুকি ও নীতির হালনাগাদ", body: [
-        "অর্ডার ও লেনদেন-সংক্রান্ত রেকর্ড প্রযোজ্য আইন ও ব্যবসায়িক বাধ্যবাধকতা অনুযায়ী সংরক্ষণ করা হয়। অন্যান্য অ্যাকাউন্ট তথ্য প্রয়োজনের অতিরিক্ত সময় রাখা উচিত নয়।",
-        "লগইন ও নিরাপত্তার জন্য প্রয়োজনীয় প্রযুক্তিগত ডেটা ব্যবহৃত হতে পারে। ঐচ্ছিক অ্যানালিটিক্স বা বিজ্ঞাপন ট্র্যাকিং চালু করার আগে আলাদা নোটিশ ও প্রয়োজনীয় সম্মতি ব্যবস্থা যুক্ত করতে হবে।",
-        "এই নীতিটি প্রাথমিক প্রকাশযোগ্য খসড়া। কার্যকর করার আগে NEWEIX-এর প্রকৃত যোগাযোগের ঠিকানা, সেবা প্রদানকারীর তালিকা, তথ্য সংরক্ষণের সময়সীমা ও প্রযোজ্য আইনি শর্ত স্থানীয় আইনজীবীর মাধ্যমে যাচাই করতে হবে।"
+      { title: "Retention, cookies, and policy updates", body: [
+        "Order and transaction records are retained according to applicable law and business obligations. Other account information should not be kept longer than necessary.",
+        "Technical data may be used for login and security. Optional analytics or advertising tracking should only be enabled with appropriate notices and consent mechanisms.",
+        "This policy is an initial publication draft. Before it takes effect, NEWEIX's actual contact details, service-provider list, data-retention periods, and applicable legal requirements should be reviewed by local counsel."
       ] }
     ]
   },
   terms: {
     eyebrow: "TERMS OF SERVICE",
-    title: "ব্যবহারের শর্তাবলি",
-    description: "NEWEIX ব্যবহার ও অর্ডার করার ক্ষেত্রে প্রযোজ্য প্রাথমিক শর্ত।",
+    title: "Terms of service",
+    description: "The initial terms that apply when using NEWEIX and placing orders.",
     sections: [
-      { title: "পণ্যের তথ্য ও মূল্য", body: ["পণ্যের মূল্য, ছবি, বিবরণ ও স্টক পরিবর্তিত হতে পারে। অর্ডার গ্রহণের সময় সার্ভারে সংরক্ষিত তথ্য চূড়ান্ত যাচাইয়ের ভিত্তি।"] },
-      { title: "অর্ডার ও পেমেন্ট", body: ["অর্ডার জমা দেওয়া মানেই মোবাইল পেমেন্ট যাচাই সম্পন্ন নয়। Transaction ID সংশ্লিষ্ট পেমেন্ট রেকর্ডের সঙ্গে যাচাই করা প্রয়োজন।"] },
-      { title: "ডেলিভারি ও ফেরত", body: ["ডেলিভারি চার্জ, সময়, বাতিল, রিটার্ন ও রিফান্ডের বিস্তারিত ব্যবসার অনুমোদিত নীতিমালা নিশ্চিত হওয়ার পর এখানে প্রকাশ করতে হবে।"] },
-      { title: "আইনি পর্যালোচনা", body: ["এই পৃষ্ঠাটি প্রাথমিক খসড়া; প্রকাশের আগে বাংলাদেশে প্রযোজ্য ভোক্তা অধিকার ও ই-কমার্স আইন অনুযায়ী পর্যালোচনা প্রয়োজন।"] }
+      { title: "Product information and pricing", body: ["Product prices, images, descriptions, and stock may change. The information stored on the server when an order is accepted is used for final verification."] },
+      { title: "Orders and payments", body: ["Submitting an order does not mean a mobile payment has been verified. The transaction ID must be checked against the relevant payment record."] },
+      { title: "Delivery and returns", body: ["Details about delivery fees, timelines, cancellations, returns, and refunds will be published here once the business policies have been approved."] },
+      { title: "Legal review", body: ["This page is an initial draft and must be reviewed against applicable consumer-protection and e-commerce laws in Bangladesh before publication."] }
     ]
   }
 };
