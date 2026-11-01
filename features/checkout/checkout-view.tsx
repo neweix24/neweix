@@ -482,7 +482,7 @@ export default function CheckoutView() {
 
         <p><strong>Product subtotal: {formatPrice(total)}</strong></p>
         <p>Delivery: Pathao Courier</p>
-        <p>ডেলিভারি চার্জ: {deliveryQuoteLoading ? "Calculating..." : deliveryFeeQuote === null ? "Select your district above to calculate the fee." : formatPrice(deliveryFeeQuote)}</p>
+        <p>Delivery fee: {deliveryQuoteLoading ? "Calculating..." : deliveryFeeQuote === null ? "Select your district above to calculate the fee." : formatPrice(deliveryFeeQuote)}</p>
 
         {missingProducts && <p role="alert">Some product details are unavailable.</p>}
         {stockIssues.length > 0 && <p role="alert">Some products have insufficient stock.</p>}
@@ -633,7 +633,7 @@ export default function CheckoutView() {
         </fieldset>
 
         <p><strong>Product subtotal: {formatPrice(total)}</strong></p>
-        <p><strong>ডেলিভারি চার্জ: {deliveryFeeQuote === null ? "Calculate using your address" : formatPrice(deliveryFeeQuote)}</strong></p>
+        <p><strong>Delivery fee: {deliveryFeeQuote === null ? "Calculate using your address" : formatPrice(deliveryFeeQuote)}</strong></p>
         <p>{paymentMethod === "cod" ? "Cash on Delivery selected: pay only the delivery fee in advance via MFS; pay for the products upon delivery." : "MFS selected: the full product total and delivery fee must be paid in advance."}</p>
         <p>The server determines the delivery fee. Submitting a transaction ID does not confirm payment; an administrator must verify it.</p>
 
