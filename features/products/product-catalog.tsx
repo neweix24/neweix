@@ -146,17 +146,17 @@ export default function ProductCatalog() {\n  const { t } = useLanguage();
       localStorage.setItem("neweix_wishlist", JSON.stringify(next));
       window.dispatchEvent(new Event("neweix-wishlist-change"));
       setWishlist(next);
-      setNotice(next.includes(product.id) ? "পণ্যটি পছন্দের তালিকায় যোগ হয়েছে।" : "পণ্যটি পছন্দের তালিকা থেকে সরানো হয়েছে।");
+      setNotice(next.includes(product.id) ? t("savedToWishlist") : t("removedFromWishlist"));
     } catch {
-      setNotice("পছন্দের তালিকা সংরক্ষণ করা যায়নি।");
+      setNotice(t("wishlistSaveFailed"));
     }
   }
 
   function toggleCompare(product: Product) {
     const next = compareIds.includes(product.id) ? compareIds.filter((id) => id !== product.id) : compareIds.length < 4 ? [...compareIds, product.id] : null;
-    if (!next) { setNotice("একসঙ্গে সর্বোচ্চ ৪টি পণ্য তুলনা করা যাবে।"); return; }
-    try { localStorage.setItem("neweix_compare", JSON.stringify(next)); setCompareIds(next); setNotice(next.includes(product.id) ? "পণ্যটি তুলনার তালিকায় যোগ হয়েছে।" : "পণ্যটি তুলনা থেকে সরানো হয়েছে।"); window.dispatchEvent(new Event("neweix-compare-change")); }
-    catch { setNotice("তুলনার তালিকা সংরক্ষণ করা যায়নি।"); }
+    if (!next) { setNotice(t("compareLimit")); return; }
+    try { localStorage.setItem("neweix_compare", JSON.stringify(next)); setCompareIds(next); setNotice(next.includes(product.id) ? t("addedToCompare") : t("removedFromCompare")); window.dispatchEvent(new Event("neweix-compare-change")); }
+    catch { setNotice(t("compareSaveFailed")); }
   }
 
 
@@ -166,11 +166,11 @@ export default function ProductCatalog() {\n  const { t } = useLanguage();
         <Link href="/" className={styles.brand}>NEWEIX</Link>
         <LanguageSwitcher />
         <nav aria-label="Main navigation">
-          <Link href="/track-order"><Icon name="truck" size={16} /> অর্ডার ট্র্যাক</Link>
-          <Link href="/account"><Icon name="user" size={16} /> অ্যাকাউন্ট</Link>
-          <Link href="/wishlist"><Icon name="heart" size={16} /> পছন্দের তালিকা ({wishlist.length})</Link>
-          <Link href="/compare"><Icon name="compare" size={16} /> তুলনা ({compareIds.length})</Link>
-          <Link href="/cart"><Icon name="cart" size={16} /> কার্ট</Link>
+          <Link href="/track-order"><Icon name="truck" size={16} /> {t("trackOrder")}</Link>
+          <Link href="/account"><Icon name="user" size={16} /> {t("myAccount")}</Link>
+          <Link href="/wishlist"><Icon name="heart" size={16} /> {t("wishlist")} ({wishlist.length})</Link>
+          <Link href="/compare"><Icon name="compare" size={16} /> {t("compare")} ({compareIds.length})</Link>
+          <Link href="/cart"><Icon name="cart" size={16} /> {t("cart")}</Link>
         </nav>
       </header>
 
@@ -256,7 +256,7 @@ export default function ProductCatalog() {\n  const { t } = useLanguage();
                 ) : (
                   <span>NEWEIX</span>
                 )}
-                {product.is_featured && <small>বিশেষ পণ্য</small>}
+                {product.is_featured && <small>{t("featured")}</small>}
               </Link>
               <div className={styles.details}>
                 <div className="mb-2 flex flex-wrap gap-2">
