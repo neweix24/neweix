@@ -90,7 +90,7 @@ export default function ProductReviewPanel({ productId, returnTo }: { productId:
         <div>
           <p className="mb-2 text-[10px] font-extrabold tracking-[.18em]" style={{ color: "var(--primary)" }}>VERIFIED CUSTOMER FEEDBACK</p>
           <h2 id="review-heading" className="text-2xl font-black">যাচাইকৃত ক্রেতাদের রিভিউ</h2>
-          <p className="mt-2 text-sm leading-7" style={{ color: "var(--muted)" }}>শুধু Paid ও Delivered অর্ডারের ক্রেতারা ৭ দিনের রিটার্ন-উইন্ডো পার হওয়ার পর রিভিউ দিতে পারবেন। প্রতিটি রিভিউ প্রকাশের আগে যাচাই করা হয়।</p>
+          <p className="mt-2 text-sm leading-7" style={{ color: "var(--muted)" }}>রিভিউ পড়তে লগইন প্রয়োজন নেই। শুধু Paid ও Delivered অর্ডারের ক্রেতারা ৭ দিনের রিটার্ন-উইন্ডো পার হওয়ার পর রিভিউ দিতে পারবেন। প্রতিটি রিভিউ প্রকাশের আগে যাচাই করা হয়।</p>
         </div>
         <div className="rounded-xl border px-4 py-3 text-right" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
           <p className="text-2xl font-black">{reviews.length ? average.toFixed(1) : "—"} <span className="text-amber-500">★</span></p>
