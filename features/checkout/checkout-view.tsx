@@ -7,7 +7,6 @@ import styles from "./checkout-view.module.css";
 import { useEffect, useState, type FormEvent } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import BangladeshAddressFields from "@/features/checkout/bangladesh-address-fields";
-import LanguageSwitcher from "@/components/language-switcher";
 
 type CartItem = {
   product_id: string;
@@ -416,7 +415,7 @@ export default function CheckoutView() {
   if (orderNumber) {
     return (
       <main className={styles.page}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}><p className="eyebrow">ORDER RECEIVED</p><LanguageSwitcher /></div>
+        <p className="eyebrow">ORDER RECEIVED</p>
         <h1>Your order has been received!</h1>
         <p>Your order number:</p>
         <h2 className={styles.orderNumber}>{orderNumber}</h2>
@@ -450,7 +449,7 @@ export default function CheckoutView() {
 
   return (
     <main className={styles.page}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}><p className="eyebrow">CHECKOUT</p><LanguageSwitcher /></div>
+      <p className="eyebrow">CHECKOUT</p>
       <h1>Complete your order</h1>
       <p>Enter your delivery details and choose a payment method.</p>
 
