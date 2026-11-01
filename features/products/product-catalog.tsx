@@ -32,7 +32,8 @@ function money(value: number) {
   }).format(value);
 }
 
-export default function ProductCatalog() {\n  const { t } = useLanguage();
+export default function ProductCatalog() {
+  const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"featured" | "price-asc" | "price-desc">("featured");
