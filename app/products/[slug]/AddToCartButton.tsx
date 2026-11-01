@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Icon from "@/components/ui/icon";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type CartItem = { product_id: string; quantity: number };
 
@@ -26,6 +27,7 @@ export default function AddToCartButton({
   maxQuantity: number;
 }) {
   const [message, setMessage] = useState("");
+  const router = useRouter();
 
   function add() {
     if (disabled || !Number.isSafeInteger(maxQuantity) || maxQuantity < 1) {
@@ -58,11 +60,27 @@ export default function AddToCartButton({
     }
   }
 
+  function buyNow() {
+    if (disabled || !Number.isSafeInteger(maxQuantity) || maxQuantity < 1) {
+      setMessage("পণ্যটি বর্তমানে স্টকে নেই।");
+      return;
+    }
+    try {
+      localStorage.setItem("neweix_buy_now", JSON.stringify([{ product_id: productId, quantity: 1 }]));
+      router.push("/checkout?buyNow=1");
+    } catch {
+      setMessage("এখনই অর্ডার শুরু করা যায়নি। আবার চেষ্টা করুন।");
+    }
+  }
+
   return (
-    <div style={{ marginTop: 16 }}>
+    <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
       <button type="button" className="primary-button" onClick={add} disabled={disabled}>
         {disabled ? "স্টক শেষ" : <><Icon name="cart" size={18} /> কার্টে যোগ করুন</>}
-      </button>{" "}
+      </button>
+      <button type="button" className="primary-button" onClick={buyNow} disabled={disabled} style={{ background: "transparent", color: "var(--primary)", marginTop: 0 }}>
+        <Icon name="sparkles" size={18} /> এখনই কিনুন (Buy Now)
+      </button>
       <Link href="/cart"><Icon name="cart" size={16} /> কার্ট দেখুন</Link>
       {message && <p role="status" aria-live="polite">{message}</p>}
     </div>
