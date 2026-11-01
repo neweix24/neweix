@@ -1,18 +1,19 @@
-.page{width:min(100%,1080px);min-height:70vh;margin:0 auto;padding:clamp(28px,5vw,66px) clamp(16px,4vw,32px);color:var(--ink)}
-.page>.eyebrow{margin:0 0 8px;color:#368c61;font-size:11px;font-weight:900;letter-spacing:2px}
-.page h1{margin:8px 0 12px;color:#132017;font-size:clamp(30px,5vw,46px);font-weight:950;letter-spacing:-1.4px}
-.page h2{color:#17251a;font-size:21px;font-weight:900}
-.page>p{color:#647166;line-height:1.65}
-.panel,.form{width:min(100%,760px);margin:24px auto;padding:clamp(18px,3vw,30px);text-align:left;border:1px solid #e0eae0;border-radius:22px;background:linear-gradient(145deg,#fff 0%,#f8fff5 55%,#f3fff9 100%);box-shadow:0 14px 38px rgba(45,110,65,.07)}
-.panel h2{margin:0 0 14px}
+.page{width:min(100%,1240px);min-height:70vh;margin:0 auto;padding:clamp(26px,4vw,58px) clamp(14px,3vw,28px) 76px;color:var(--ink);display:grid;grid-template-columns:minmax(280px,.82fr) minmax(0,1.18fr);grid-template-areas:"eyebrow eyebrow" "title title" "intro intro" "summary form" "footer footer";column-gap:26px;align-items:start}
+.page>.eyebrow{grid-area:eyebrow;margin:0 0 7px;color:#368c61;font-size:11px;font-weight:900;letter-spacing:2px}
+.page>h1{grid-area:title;margin:4px 0 8px;color:#132017;font-size:clamp(30px,4.8vw,46px);font-weight:950;letter-spacing:-1.4px;line-height:1.08}
+.page>p:not(.eyebrow){color:#647166;line-height:1.65}
+.page>h1+p{grid-area:intro;margin:0 0 12px}
+.panel{grid-area:summary;position:sticky;top:20px;width:100%;margin:18px 0 0;padding:clamp(18px,2.5vw,26px);text-align:left;border:1px solid #e0eae0;border-radius:22px;background:linear-gradient(145deg,#fff 0%,#f8fff5 55%,#f3fff9 100%);box-shadow:0 14px 38px rgba(45,110,65,.07)}
+.panel h2{margin:0 0 14px;color:#17251a;font-size:21px;font-weight:900}
 .panel>div{border-color:#e8eee6!important}
 .panel>p{color:#536356;line-height:1.8}
-.form{background:#fff;box-shadow:0 14px 38px rgba(45,110,65,.06);padding:clamp(18px,3vw,30px)}
+.form{grid-area:form;width:100%;margin:18px 0 0;padding:clamp(18px,2.5vw,28px);text-align:left;border:1px solid #e0eae0;border-radius:22px;background:#fff;box-shadow:0 14px 38px rgba(45,110,65,.06)}
 .form>p[role=status]{padding:12px 14px;border:1px solid #d8edcf;border-radius:12px;background:#f4ffed;color:#315a37;font-size:13px}
-.form label{display:block;margin:16px 0 6px;color:#233326;font-size:13px;font-weight:800}
+.form label{display:block;margin:15px 0 6px;color:#233326;font-size:13px;font-weight:800}
 .form input:not([type=radio]),.form textarea{outline-offset:2px;transition:border-color .18s ease,box-shadow .18s ease}
 .form input:focus,.form textarea:focus{border-color:#55b77b!important;box-shadow:0 0 0 3px rgba(85,183,123,.13);outline:none}
-.paymentOptions{margin:24px 0;padding:18px;border:1px solid #e0eae0;border-radius:17px;background:#fbfef9}
+.form input:not([type=radio]),.form textarea{min-height:46px;border-radius:11px!important}
+.paymentOptions{margin:22px 0;padding:17px;border:1px solid #e0eae0;border-radius:17px;background:#fbfef9}
 .paymentOptions legend{padding:0 8px;color:#17251a;font-weight:900}
 .paymentOptions label{display:flex!important;align-items:center;gap:10px;flex-wrap:wrap;margin:0;padding:12px 0;border-bottom:1px solid #eaf0e8}
 .paymentOptions label:last-child{border-bottom:0}
@@ -25,5 +26,9 @@
 .error{padding:13px;border:1px solid #efcaca;border-radius:12px;color:#a13d3d!important;background:#fff7f6}
 .orderNumber{overflow-wrap:anywhere;margin:16px 0;padding:18px;border:1px dashed #6ab77a;border-radius:14px;color:#246d43;background:#f5fff0;font-size:clamp(22px,4vw,32px);font-weight:950}
 .secondaryLink{display:inline-flex;align-items:center;gap:7px;margin:18px 0 0 12px;color:#34734b;font-weight:800}
-@media(max-width:700px){.page{padding:24px 13px}.panel,.form{padding:17px;border-radius:17px}.paymentOptions{padding:13px}.secondaryLink{margin-left:0;display:flex}}
-@media(prefers-reduced-motion:reduce){.submit{transition:none}}
+.page>p:last-child{grid-area:footer;margin-top:20px}
+.page:has(.orderNumber),.page:not(:has(form)):not(:has(.panel)){display:block;max-width:760px;padding-top:clamp(34px,7vw,84px)}
+.page:has(.orderNumber) .orderNumber{display:inline-block;min-width:min(100%,320px)}
+@media(max-width:820px){.page{grid-template-columns:minmax(0,1fr);grid-template-areas:"eyebrow" "title" "intro" "summary" "form" "footer";padding:24px 14px 54px;gap:0}.panel,.form{margin-top:16px}.panel{position:static}.page>h1{font-size:clamp(29px,7vw,40px)}}
+@media(max-width:520px){.panel,.form{padding:16px;border-radius:17px}.paymentOptions{padding:12px}.secondaryLink{margin-left:0;display:flex}.submit{position:sticky;bottom:12px;z-index:2;box-shadow:0 8px 24px rgba(45,110,65,.2)}}
+@media(prefers-reduced-motion:reduce){.submit,.form input,.form textarea{transition:none}}
