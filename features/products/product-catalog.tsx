@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import Link from "next/link";
 import Icon from "@/components/ui/icon";
 import styles from "./product-catalog.module.css";
+import ProductCardActions from "@/features/products/product-card-actions";
+import LanguageSwitcher from "@/components/language-switcher";
+import { useLanguage } from "@/components/language-provider";
 
 type Product = {
   id: string;
@@ -22,14 +25,14 @@ type Category = { id: string; name: string; slug: string };
 type ApiResponse = { data?: Product[] };
 
 function money(value: number) {
-  return new Intl.NumberFormat("bn-BD", {
+  return new Intl.NumberFormat("en-BD", {
     style: "currency",
     currency: "BDT",
     maximumFractionDigits: 0,
   }).format(value);
 }
 
-export default function ProductCatalog() {
+export default function ProductCatalog() {\n  const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"featured" | "price-asc" | "price-desc">("featured");
@@ -191,8 +194,8 @@ export default function ProductCatalog() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Link href="/" className={styles.brand}>NEWEIX</Link>
-        <nav aria-label="প্রধান নেভিগেশন">
+        <Link href="/" className={styles.brand}>NEWEIX</Link>\n        <LanguageSwitcher />
+        <nav aria-label="Main navigation">
           <Link href="/track-order"><Icon name="truck" size={16} /> অর্ডার ট্র্যাক</Link>
           <Link href="/account"><Icon name="user" size={16} /> অ্যাকাউন্ট</Link>
           <Link href="/wishlist"><Icon name="heart" size={16} /> পছন্দের তালিকা ({wishlist.length})</Link>
@@ -203,76 +206,76 @@ export default function ProductCatalog() {
 
       <section className={styles.intro}>
         <span className={styles.eyebrow}>NEWEIX COLLECTION</span>
-        <h1>পণ্য আবিষ্কার করুন</h1>
-        <p>আপনার পছন্দের পণ্য খুঁজুন এবং সহজেই অর্ডার করুন।</p>
+        <h1>{t("discoverProducts")}</h1>
+        <p>{t("findFavorites")}</p>
         <form className={styles.searchForm} role="search" onSubmit={submitSearch}>
           <label className={styles.search} htmlFor="catalog-product-search">
             <Icon name="search" size={18} />
-            <span className={styles.srOnly}>পণ্য খুঁজুন</span>
+            <span className={styles.srOnly}>{t("searchProducts")}</span>
             <input
               id="catalog-product-search"
               type="search"
               value={query}
               maxLength={160}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="পণ্যের নাম, SKU বা পণ্যের বিবরণ লিখুন..."
+              placeholder={t("productNameSku")}
             />
           </label>
           <button className={styles.searchSubmit} type="submit" disabled={!query.trim()}>
-            <Icon name="search" size={17} /> খুঁজুন
+            <Icon name="search" size={17} /> {t("search")}
           </button>
         </form>
         {visibleCategories.length > 0 && <label className={styles.search} style={{ marginTop: 12 }}>
-          <span className={styles.srOnly}>ক্যাটাগরি নির্বাচন করুন</span>
-          <select aria-label="ক্যাটাগরি নির্বাচন করুন" value={categorySlug} onChange={(event) => setCategorySlug(event.target.value)}>
-            <option value="">সব ক্যাটাগরি</option>
+          <span className={styles.srOnly}>{t("allCategories")}</span>
+          <select aria-label={t("allCategories")} value={categorySlug} onChange={(event) => setCategorySlug(event.target.value)}>
+            <option value="">{t("allCategories")}</option>
             {visibleCategories.map((category) => <option key={category.id} value={category.slug}>{category.name}</option>)}
           </select>
         </label>}
-        {visibleCategories.length > 0 && <div className={styles.categoryChips} aria-label="দ্রুত ক্যাটাগরি">
-          <button type="button" aria-pressed={!categorySlug} className={!categorySlug ? styles.activeChip : ""} onClick={() => setCategorySlug("")}><Icon name="grid" size={14} /> সব পণ্য</button>
+        {visibleCategories.length > 0 && <div className={styles.categoryChips} aria-label="Quick categories">
+          <button type="button" aria-pressed={!categorySlug} className={!categorySlug ? styles.activeChip : ""} onClick={() => setCategorySlug("")}><Icon name="grid" size={14} /> {t("allProducts")}</button>
           {visibleCategories.map((category) => <button key={category.id} type="button" aria-pressed={categorySlug === category.slug} className={categorySlug === category.slug ? styles.activeChip : ""} onClick={() => setCategorySlug(category.slug)}><Icon name="tag" size={14} /> {category.name}</button>)}
         </div>}
         <div className={styles.filterRow}>
-          <label className={styles.priceField}>সর্বনিম্ন দাম
-            <input aria-label="সর্বনিম্ন দাম" type="number" min="0" inputMode="numeric" placeholder="৳ ০" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} />
+          <label className={styles.priceField}>{t("minPrice")}
+            <input aria-label={t("minPrice")} type="number" min="0" inputMode="numeric" placeholder="0" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} />
           </label>
-          <label className={styles.priceField}>সর্বোচ্চ দাম
-            <input aria-label="সর্বোচ্চ দাম" type="number" min="0" inputMode="numeric" placeholder="৳ ১০,০০০" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} />
+          <label className={styles.priceField}>{t("maxPrice")}
+            <input aria-label={t("maxPrice")} type="number" min="0" inputMode="numeric" placeholder="10,000" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} />
           </label>
-          <label className={styles.stockFilter}><input type="checkbox" checked={inStockOnly} onChange={(event) => setInStockOnly(event.target.checked)} /> শুধু স্টকে থাকা পণ্য</label>
-          <button type="button" className={styles.clearFilters} onClick={() => { setQuery(""); setCategorySlug(""); setMinPrice(""); setMaxPrice(""); setInStockOnly(false); setSort("featured"); window.history.replaceState(null, "", "/products"); }}><Icon name="close" size={15} /> ফিল্টার মুছুন</button>
+          <label className={styles.stockFilter}><input type="checkbox" checked={inStockOnly} onChange={(event) => setInStockOnly(event.target.checked)} /> {t("onlyInStock")}</label>
+          <button type="button" className={styles.clearFilters} onClick={() => { setQuery(""); setCategorySlug(""); setMinPrice(""); setMaxPrice(""); setInStockOnly(false); setSort("featured"); window.history.replaceState(null, "", "/products"); }}><Icon name="close" size={15} /> {t("clearFilters")}</button>
         </div>
         <label className={styles.search} style={{ marginTop: 12 }}>
-          <span className={styles.srOnly}>পণ্যের সাজানোর ধরন</span>
-          <select aria-label="পণ্য সাজান" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
-            <option value="featured">বিশেষ পণ্য আগে</option>
-            <option value="price-asc">দাম: কম থেকে বেশি</option>
-            <option value="price-desc">দাম: বেশি থেকে কম</option>
+          <span className={styles.srOnly}>{t("sortProducts")}</span>
+          <select aria-label={t("sortProducts")} value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
+            <option value="featured">{t("featuredFirst")}</option>
+            <option value="price-asc">{t("priceLowHigh")}</option>
+            <option value="price-desc">{t("priceHighLow")}</option>
           </select>
         </label>
-        <p aria-live="polite" style={{ marginTop: 12 }}>{categories.find((category) => category.slug === categorySlug)?.name ? `${categories.find((category) => category.slug === categorySlug)?.name} · ` : ""}{filtered.length}টি পণ্য পাওয়া গেছে</p>
+        <p aria-live="polite" style={{ marginTop: 12 }}>{categories.find((category) => category.slug === categorySlug)?.name ? `${categories.find((category) => category.slug === categorySlug)?.name} · ` : ""}{filtered.length}{t("resultsFound")}</p>
       </section>
 
-      <section className={styles.catalog} aria-label="পণ্যের তালিকা">
+      <section className={styles.catalog} aria-label="Product list">
         {notice && (
           <div className={styles.notice} role="status">
             {notice}
-            <button type="button" onClick={() => setNotice("")} aria-label="বার্তা বন্ধ করুন" title="বন্ধ করুন"><Icon name="close" size={17} /></button>
+            <button type="button" onClick={() => setNotice("")} aria-label={t("closeMessage")} title={t("closeMessage")}><Icon name="close" size={17} /></button>
           </div>
         )}
-        {loading && <p className={styles.state}>পণ্য লোড হচ্ছে...</p>}
+        {loading && <p className={styles.state}>{t("loadingProducts")}</p>}
         {!loading && error && (
           <div className={styles.state}>
-            <p>পণ্য লোড করা যায়নি। আবার চেষ্টা করুন।</p>
-            <button type="button" onClick={() => void loadProducts()}><Icon name="refresh" size={16} /> আবার চেষ্টা করুন</button>
+            <p>{t("productLoadError")}</p>
+            <button type="button" onClick={() => void loadProducts()}><Icon name="refresh" size={16} /> {t("retry")}</button>
           </div>
         )}
         {!loading && !error && products.length === 0 && (
-          <p className={styles.state}>এখনো কোনো সক্রিয় পণ্য পাওয়া যায়নি।</p>
+          <p className={styles.state}>{t("noProducts")}</p>
         )}
         {!loading && !error && products.length > 0 && filtered.length === 0 && (
-          <p className={styles.state}>আপনার অনুসন্ধানের সঙ্গে মেলে এমন পণ্য পাওয়া যায়নি।</p>
+          <p className={styles.state}>{t("noMatchingProducts")}</p>
         )}
         <div className={styles.grid}>
           {filtered.map((product) => (
@@ -287,11 +290,11 @@ export default function ProductCatalog() {
               </Link>
               <div className={styles.details}>
                 <div className="mb-2 flex flex-wrap gap-2">
-                  <button type="button" aria-pressed={wishlist.includes(product.id)} aria-label={wishlist.includes(product.id) ? "পছন্দের তালিকা থেকে সরান" : "পছন্দের তালিকায় যোগ করুন"} title={wishlist.includes(product.id) ? "পছন্দে আছে" : "পছন্দে রাখুন"} onClick={() => toggleWishlist(product)} className={styles.iconButton} style={{ borderColor: "var(--border)" }}><Icon name="heart" size={17} /></button>
-                  <button type="button" aria-pressed={compareIds.includes(product.id)} aria-label={compareIds.includes(product.id) ? "তুলনা থেকে সরান" : "তুলনায় যোগ করুন"} title={compareIds.includes(product.id) ? "তুলনায় আছে" : "তুলনা করুন"} onClick={() => toggleCompare(product)} className={styles.iconButton} style={{ borderColor: "var(--border)" }}><Icon name="compare" size={17} /></button>
+                  <button type="button" aria-pressed={wishlist.includes(product.id)} aria-label={wishlist.includes(product.id) ? t("removeFromWishlist") : t("addToWishlist")} title={wishlist.includes(product.id) ? t("removeFromWishlist") : t("addToWishlist")} onClick={() => toggleWishlist(product)} className={styles.iconButton} style={{ borderColor: "var(--border)" }}><Icon name="heart" size={17} /></button>
+                  <button type="button" aria-pressed={compareIds.includes(product.id)} aria-label={compareIds.includes(product.id) ? t("removedFromCompare") : t("compare")} title={compareIds.includes(product.id) ? t("removedFromCompare") : t("compare")} onClick={() => toggleCompare(product)} className={styles.iconButton} style={{ borderColor: "var(--border)" }}><Icon name="compare" size={17} /></button>
                 </div>
                 <span className={product.stock > 0 ? styles.inStock : styles.outOfStock}>
-                  {product.stock > 0 ? "স্টকে আছে" : "স্টক শেষ"}
+                  {product.stock > 0 ? t("inStock") : t("outOfStock")}
                 </span>
                 <Link href={`/products/${encodeURIComponent(product.slug)}`} className={styles.name}>
                   {product.name}
@@ -305,7 +308,7 @@ export default function ProductCatalog() {
                     )}
                   </div>
                   <button type="button" disabled={product.stock < 1} onClick={() => addToCart(product)} className={styles.addButton} aria-label={product.name + " কার্টে যোগ করুন"} title="কার্টে যোগ করুন">
-                    <Icon name="plus" size={18} /> কার্টে যোগ
+                    <Icon name="plus" size={18} /> {t("addedToCart")}
                   </button>
                 </div>
               </div>
