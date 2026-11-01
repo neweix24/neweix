@@ -5,6 +5,7 @@ import {
   BANGLADESH_ADMIN_AREAS,
   findAddressCodesByNames,
 } from "@/lib/bangladesh-admin";
+import { useLanguage } from "@/components/language-provider";
 
 type Props = {
   initialDivision?: string | null;
@@ -37,6 +38,7 @@ export default function BangladeshAddressFields({
   onDistrictChange,
   disabled = false,
 }: Props) {
+  const { locale, t } = useLanguage();
   const initial = useMemo(() => findAddressCodesByNames({
     division: initialDivision,
     district: initialDistrict,
@@ -81,63 +83,63 @@ export default function BangladeshAddressFields({
 
   return (
     <section aria-labelledby="address-area-heading">
-      <h2 id="address-area-heading">ডেলিভারির এলাকা নির্বাচন করুন</h2>
-      <p>প্রথমে বিভাগ, তারপর জেলা, উপজেলা এবং ইউনিয়ন নির্বাচন করুন।</p>
+      <h2 id="address-area-heading">{t("selectDeliveryArea")}</h2>
+      <p>{t("chooseDivisionDistrict")}</p>
 
-      <label htmlFor="shipping_division_code">বিভাগ *</label>
+      <label htmlFor="shipping_division_code">{t("division")} *</label>
       <select id="shipping_division_code" name="shipping_division_code" required
         value={divisionCode} onChange={(event) => changeDivision(event.target.value)}
         disabled={disabled} style={selectStyle}>
-        <option value="">বিভাগ নির্বাচন করুন</option>
-        {BANGLADESH_ADMIN_AREAS.map((item) => <option key={item.code} value={item.code}>{item.bn_name}</option>)}
+        <option value="">{t("selectDivision")}</option>
+        {BANGLADESH_ADMIN_AREAS.map((item) => <option key={item.code} value={item.code}>{locale === "bn" ? item.bn_name : item.name}</option>)}
       </select>
 
-      <label htmlFor="shipping_district_code">জেলা *</label>
+      <label htmlFor="shipping_district_code">{t("district")} *</label>
       <select id="shipping_district_code" name="shipping_district_code" required
         value={districtCode} onChange={(event) => changeDistrict(event.target.value)}
         disabled={disabled || !divisionCode} style={selectStyle}>
-        <option value="">জেলা নির্বাচন করুন</option>
-        {districts.map((item) => <option key={item.code} value={item.code}>{item.bn_name}</option>)}
+        <option value="">{t("selectDistrict")}</option>
+        {districts.map((item) => <option key={item.code} value={item.code}>{locale === "bn" ? item.bn_name : item.name}</option>)}
       </select>
 
-      <label htmlFor="shipping_upazila_code">উপজেলা *</label>
+      <label htmlFor="shipping_upazila_code">{t("upazila")} *</label>
       <select id="shipping_upazila_code" name="shipping_upazila_code" required
         value={upazilaCode} onChange={(event) => changeUpazila(event.target.value)}
         disabled={disabled || !districtCode} style={selectStyle}>
-        <option value="">উপজেলা নির্বাচন করুন</option>
-        {upazilas.map((item) => <option key={item.code} value={item.code}>{item.bn_name}</option>)}
-        <option value="other">তালিকায় নেই / নতুন উপজেলা</option>
+        <option value="">{t("selectUpazila")}</option>
+        {upazilas.map((item) => <option key={item.code} value={item.code}>{locale === "bn" ? item.bn_name : item.name}</option>)}
+        <option value="other">{t("notListedUpazila")}</option>
       </select>
 
       {upazilaCode === "other" && <>
-        <label htmlFor="shipping_upazila_other">উপজেলার নাম *</label>
+        <label htmlFor="shipping_upazila_other">{t("upazilaName")} *</label>
         <input id="shipping_upazila_other" name="shipping_upazila_other" required minLength={2} maxLength={120}
           value={upazilaOther} onChange={(event) => setUpazilaOther(event.target.value)}
-          disabled={disabled} style={selectStyle} placeholder="উপজেলার নাম লিখুন" />
+          disabled={disabled} style={selectStyle} placeholder={t("enterUpazila")} />
       </>}
 
-      <label htmlFor="shipping_union_code">ইউনিয়ন / পৌরসভা / সিটি কর্পোরেশন *</label>
+      <label htmlFor="shipping_union_code">{t("unionMunicipality")} *</label>
       <select id="shipping_union_code" name="shipping_union_code" required
         value={unionCode} onChange={(event) => setUnionCode(event.target.value)}
         disabled={disabled || !upazilaCode} style={selectStyle}>
-        <option value="">ইউনিয়ন নির্বাচন করুন</option>
-        {unions.map((item) => <option key={item.code} value={item.code}>{item.bn_name}</option>)}
-        <option value="not_applicable">পৌরসভা / সিটি কর্পোরেশন (ইউনিয়ন প্রযোজ্য নয়)</option>
-        <option value="other">তালিকায় নেই / অন্য এলাকা</option>
+        <option value="">{t("selectUnion")}</option>
+        {unions.map((item) => <option key={item.code} value={item.code}>{locale === "bn" ? item.bn_name : item.name}</option>)}
+        <option value="not_applicable">{t("notApplicableUnion")}</option>
+        <option value="other">{t("otherArea")}</option>
       </select>
 
       {unionCode === "other" && <>
-        <label htmlFor="shipping_union_other">ইউনিয়ন / এলাকার নাম *</label>
+        <label htmlFor="shipping_union_other">{t("unionAreaName")} *</label>
         <input id="shipping_union_other" name="shipping_union_other" required minLength={2} maxLength={120}
           value={unionOther} onChange={(event) => setUnionOther(event.target.value)}
-          disabled={disabled} style={selectStyle} placeholder="এলাকার নাম লিখুন" />
+          disabled={disabled} style={selectStyle} placeholder={t("enterArea")} />
       </>}
 
-      <label htmlFor="shipping_village">গ্রাম / ওয়ার্ড / মহল্লা *</label>
+      <label htmlFor="shipping_village">{t("villageWard")} *</label>
       <input id="shipping_village" name="shipping_village" required minLength={2} maxLength={160}
-        defaultValue={initialVillage ?? ""} disabled={disabled} style={selectStyle} placeholder="গ্রাম, ওয়ার্ড বা মহল্লার নাম লিখুন" />
+        defaultValue={initialVillage ?? ""} disabled={disabled} style={selectStyle} placeholder={t("enterVillage")} />
 
-      <input type="hidden" name="shipping_city" value={district?.bn_name ?? ""} />
+      <input type="hidden" name="shipping_city" value={district ? (locale === "bn" ? district.bn_name : district.name) : ""} />
     </section>
   );
 }

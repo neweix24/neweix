@@ -16,38 +16,38 @@ function fail(message: string, status: number) {
 
 export async function POST(request: Request) {
   const user = await getAuthenticatedCustomer();
-  if (!user) return fail("ফোন নম্বর যাচাই করতে আগে লগইন করুন।", 401);
+  if (!user) return fail("Sign in before verifying your phone number.", 401);
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return fail("সঠিক তথ্য পাঠান।", 400);
+    return fail("Submit valid information.", 400);
   }
 
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return fail("সঠিক তথ্য পাঠান।", 400);
+    return fail("Submit valid information.", 400);
   }
 
   const input = (body as Record<string, unknown>).phone;
-  if (typeof input !== "string") return fail("মোবাইল নম্বর দিন।", 400);
+  if (typeof input !== "string") return fail("Enter a mobile number.", 400);
 
   const phone = normalizeBangladeshPhone(input);
   if (!phone) {
-    return fail("সঠিক বাংলাদেশি মোবাইল নম্বর দিন (01XXXXXXXXX)।", 400);
+    return fail("Enter a valid Bangladesh mobile number (01XXXXXXXXX).", 400);
   }
 
   const apiKey = getServerSetting("BULKSMSBD_API_KEY");
   const senderId = getServerSetting("BULKSMSBD_SENDER_ID");
   if (!apiKey || !senderId) {
-    return fail("SMS পরিষেবা এখনো কনফিগার করা হয়নি। পরে আবার চেষ্টা করুন।", 503);
+    return fail("The SMS service is not configured yet. Please try again later.", 503);
   }
 
   let supabase;
   try {
     supabase = createAdminSupabaseClient();
   } catch {
-    return fail("সার্ভার কনফিগারেশন অসম্পূর্ণ।", 503);
+    return fail("Server configuration is incomplete.", 503);
   }
 
   const { data: profile, error: profileError } = await supabase
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (profileError) return fail("অ্যাকাউন্ট যাচাই করা যাচ্ছে না।", 503);
+  if (profileError) return fail("Unable to verify the account.", 503);
 
   if (
     profile?.phone_verified_at &&
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       alreadyVerified: true,
-      message: "এই নম্বরটি ইতিমধ্যে যাচাই করা আছে।",
+      message: "This phone number is already verified.",
     });
   }
 
@@ -78,9 +78,9 @@ export async function POST(request: Request) {
     .limit(1)
     .maybeSingle();
 
-  if (ownerError) return fail("নম্বর যাচাই করা যাচ্ছে না।", 503);
+  if (ownerError) return fail("Unable to verify the phone number.", 503);
   if (phoneOwner) {
-    return fail("এই নম্বরটি অন্য একটি যাচাইকৃত অ্যাকাউন্টে যুক্ত আছে।", 409);
+    return fail("This number is already linked to another verified account.", 409);
   }
 
   const now = Date.now();
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
   try {
     otpHash = await hashPhoneOtp(challengeId, user.id, phone, otp);
   } catch {
-    return fail("OTP নিরাপত্তা কনফিগারেশন পাওয়া যায়নি।", 503);
+    return fail("OTP security configuration was not found.", 503);
   }
 
   const { data: reservation, error: reserveError } = await supabase.rpc(
@@ -122,19 +122,19 @@ export async function POST(request: Request) {
 
   if (reserveError) {
     console.error("Atomic OTP reservation failed:", reserveError.message);
-    return fail("OTP পরিষেবা সাময়িকভাবে ব্যস্ত।", 503);
+    return fail("The OTP service is temporarily busy.", 503);
   }
 
   switch (reservation) {
     case "reserved":
       break;
     case "cooldown":
-      return fail("নতুন OTP পাঠানোর আগে ৬০ সেকেন্ড অপেক্ষা করুন।", 429);
+      return fail("Wait 60 seconds before requesting another OTP.", 429);
     case "user_daily_limit":
     case "phone_daily_limit":
-      return fail("OTP পাঠানোর দৈনিক সীমা শেষ। ২৪ ঘণ্টা পরে আবার চেষ্টা করুন।", 429);
+      return fail("The daily OTP limit has been reached. Please try again in 24 hours.", 429);
     default:
-      return fail("OTP অনুরোধটি গ্রহণ করা যায়নি।", 400);
+      return fail("The OTP request could not be accepted.", 400);
   }
 
   const form = new FormData();
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
   form.set("senderid", senderId);
   form.set(
     "message",
-    `নিউইক্স যাচাই কোড: ${otp}। ৫ মিনিটে ব্যবহার করুন। কাউকে বলবেন না।`
+    `NEWEIX verification code: ${otp}. Use it within 5 minutes. Do not share it.`
   );
 
   try {
@@ -192,8 +192,8 @@ export async function POST(request: Request) {
       });
       return fail(
         responseCode === 1032
-          ? "SMS provider-এর Source IP অনুমোদিত নয়। BulkSMSBD সেটিংস যাচাই করুন।"
-          : "SMS পাঠানো যায়নি। Sender ID, API Key ও SMS balance যাচাই করুন।",
+          ? "The SMS provider did not authorize this source IP. Check your BulkSMSBD settings."
+          : "Unable to send SMS. Check your Sender ID, API key, and SMS balance.",
         502
       );
     }
@@ -208,7 +208,7 @@ export async function POST(request: Request) {
         .from("phone_verification_challenges")
         .delete()
         .eq("id", challengeId);
-      return fail("SMS পাঠানো হয়েছে, তবে OTP সেশন সংরক্ষণ হয়নি। নতুন করে চেষ্টা করুন।", 503);
+      return fail("The SMS was sent, but the OTP session could not be saved. Please try again.", 503);
     }
 
     return NextResponse.json({
@@ -216,7 +216,7 @@ export async function POST(request: Request) {
       challengeId,
       expiresIn: 300,
       resendAfter: 60,
-      message: "আপনার নম্বরে OTP পাঠানো হয়েছে।",
+      message: "An OTP has been sent to your phone number.",
     });
   } catch (error) {
     await supabase
@@ -227,6 +227,6 @@ export async function POST(request: Request) {
       "BulkSMSBD request failed:",
       error instanceof Error ? error.message : "unknown error"
     );
-    return fail("SMS পরিষেবার সঙ্গে সংযোগ করা যায়নি। পরে আবার চেষ্টা করুন।", 502);
+    return fail("Unable to connect to the SMS service. Please try again later.", 502);
   }
 }

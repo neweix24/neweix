@@ -46,7 +46,7 @@ export default function CustomerAddresses() {
     void (async () => {
       try { await loadAddresses(); }
       catch (err) {
-        if (active) setErrorMessage(err instanceof Error ? err.message : "ঠিকানা লোড করা যায়নি।");
+        if (active) setErrorMessage(err instanceof Error ? err.message : "Could not load addresses.");
       } finally { if (active) setLoading(false); }
     })();
     return () => { active = false; };
@@ -81,7 +81,7 @@ export default function CustomerAddresses() {
     if (payload.label.length < 1 || payload.recipient_name.length < 2 ||
         payload.phone.length < 6 || payload.address_line.length < 5 ||
         payload.district.length < 2 || payload.division.length < 2) {
-      setErrorMessage("নাম, ফোন ও সম্পূর্ণ ঠিকানার তথ্য সঠিকভাবে দিন।");
+      setErrorMessage("Enter a valid name, phone number, and complete address.");
       setSaving(false); return;
     }
     try {
@@ -100,14 +100,14 @@ export default function CustomerAddresses() {
             .eq("id", editingId).eq("user_id", authData.user.id)
         : await supabase.from("customer_addresses").insert({ ...payload, user_id: authData.user.id });
       if (result.error) throw result.error;
-      await loadAddresses(); resetForm(); setMessage("ঠিকানা সংরক্ষণ করা হয়েছে।");
+      await loadAddresses(); resetForm(); setMessage("Address saved.");
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "ঠিকানা সংরক্ষণ করা যায়নি।");
+      setErrorMessage(err instanceof Error ? err.message : "Could not save the address.");
     } finally { setSaving(false); }
   }
 
   async function deleteAddress(id: string) {
-    if (!window.confirm("এই ঠিকানাটি মুছে ফেলতে চান?")) return;
+    if (!window.confirm("Are you sure you want to delete this address?")) return;
     setErrorMessage(""); setMessage("");
     try {
       const supabase = createBrowserSupabaseClient();
@@ -119,9 +119,9 @@ export default function CustomerAddresses() {
         .eq("id", id).eq("user_id", authData.user.id);
       if (error) throw error;
       await loadAddresses(); if (editingId === id) resetForm();
-      setMessage("ঠিকানাটি মুছে ফেলা হয়েছে।");
+      setMessage("Address deleted.");
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "ঠিকানা মুছতে সমস্যা হয়েছে।");
+      setErrorMessage(err instanceof Error ? err.message : "Could not delete the address.");
     }
   }
 
@@ -129,59 +129,59 @@ export default function CustomerAddresses() {
     <main className="addresses-page">
       <header className="header">
         <Link href="/" className="brand">NEWEIX</Link>
-        <Link href="/account" className="back">← অ্যাকাউন্টে ফিরুন</Link>
+        <Link href="/account" className="back">← Back to account</Link>
       </header>
       <section className="content">
         <p className="eyebrow">DELIVERY ADDRESSES</p>
-        <h1>আমার ঠিকানা</h1>
-        <p className="intro">আপনার ডেলিভারি ঠিকানা সংরক্ষণ ও পরিচালনা করুন। ঠিকানাগুলো শুধু আপনার অ্যাকাউন্ট থেকেই দেখা যাবে।</p>
+        <h1>My addresses</h1>
+        <p className="intro">Save and manage your delivery addresses. Only you can view addresses saved to your account.</p>
         {message && <p className="success" role="status">{message}</p>}
         {errorMessage && <p className="error" role="alert">{errorMessage}</p>}
-        {loading ? <p role="status">ঠিকানা লোড হচ্ছে…</p> : (
+        {loading ? <p role="status">Loading addresses…</p> : (
           <>
             <div className="address-list">
               {addresses.map((address) => (
                 <article className="address-card" key={address.id}>
-                  <div className="card-title"><strong>{address.label}</strong>{address.is_default && <span>ডিফল্ট</span>}</div>
+                  <div className="card-title"><strong>{address.label}</strong>{address.is_default && <span>Default</span>}</div>
                   <p>{address.recipient_name} · {address.phone}</p>
                   <p>{address.address_line}{address.area ? ", " + address.area : ""}{address.upazila ? ", " + address.upazila : ""}, {address.district}, {address.division}{address.postal_code ? " - " + address.postal_code : ""}</p>
                   <div className="actions">
-                    <button type="button" className="text-button" onClick={() => beginEdit(address)}><Icon name="settings" size={15} /> সম্পাদনা</button>
-                    <button type="button" className="delete" onClick={() => void deleteAddress(address.id)}><Icon name="trash" size={15} /> মুছুন</button>
+                    <button type="button" className="text-button" onClick={() => beginEdit(address)}><Icon name="settings" size={15} /> Edit</button>
+                    <button type="button" className="delete" onClick={() => void deleteAddress(address.id)}><Icon name="trash" size={15} /> Delete</button>
                   </div>
                 </article>
               ))}
-              {addresses.length === 0 && <p className="empty">এখনো কোনো ঠিকানা সংরক্ষণ করা হয়নি।</p>}
+              {addresses.length === 0 && <p className="empty">You have not saved any addresses yet.</p>}
             </div>
             <form className="form" onSubmit={saveAddress}>
-              <h2>{editingId ? "ঠিকানা সম্পাদনা" : "নতুন ঠিকানা যোগ করুন"}</h2>
-              <label htmlFor="address-label">ঠিকানার নাম</label>
+              <h2>{editingId ? "Edit address" : "Add a new address"}</h2>
+              <label htmlFor="address-label">Address label</label>
               <select id="address-label" value={form.label} onChange={(event) => updateField("label", event.target.value)}>
-                <option value="Home">বাসা</option><option value="Office">অফিস</option><option value="Other">অন্যান্য</option>
+                <option value="Home">Home</option><option value="Office">Office</option><option value="Other">Other</option>
               </select>
-              <label htmlFor="recipient-name">যার নামে ডেলিভারি হবে</label>
+              <label htmlFor="recipient-name">Recipient name</label>
               <input id="recipient-name" required minLength={2} maxLength={100} autoComplete="name" value={form.recipient_name} onChange={(event) => updateField("recipient_name", event.target.value)} />
-              <label htmlFor="address-phone">মোবাইল নম্বর</label>
+              <label htmlFor="address-phone">Mobile number</label>
               <input id="address-phone" required type="tel" minLength={6} maxLength={30} autoComplete="tel" value={form.phone} onChange={(event) => updateField("phone", event.target.value)} />
-              <label htmlFor="address-line">বাড়ি/রোড/গ্রামসহ সম্পূর্ণ ঠিকানা</label>
+              <label htmlFor="address-line">Full address, including house, road, and village</label>
               <textarea id="address-line" required minLength={5} maxLength={500} autoComplete="street-address" value={form.address_line} onChange={(event) => updateField("address_line", event.target.value)} />
-              <label htmlFor="address-area">এলাকা (ঐচ্ছিক)</label>
+              <label htmlFor="address-area">Area (optional)</label>
               <input id="address-area" maxLength={120} value={form.area} onChange={(event) => updateField("area", event.target.value)} />
-              <label htmlFor="address-upazila">উপজেলা/থানা</label>
+              <label htmlFor="address-upazila">Upazila / police station</label>
               <input id="address-upazila" maxLength={120} value={form.upazila} onChange={(event) => updateField("upazila", event.target.value)} />
-              <label htmlFor="address-district">জেলা</label>
+              <label htmlFor="address-district">District</label>
               <input id="address-district" required minLength={2} maxLength={120} value={form.district} onChange={(event) => updateField("district", event.target.value)} />
-              <label htmlFor="address-division">বিভাগ</label>
+              <label htmlFor="address-division">Division</label>
               <input id="address-division" required minLength={2} maxLength={120} value={form.division} onChange={(event) => updateField("division", event.target.value)} />
-              <label htmlFor="address-postal">পোস্ট কোড (ঐচ্ছিক)</label>
+              <label htmlFor="address-postal">Postal code (optional)</label>
               <input id="address-postal" maxLength={20} autoComplete="postal-code" value={form.postal_code} onChange={(event) => updateField("postal_code", event.target.value)} />
               <label className="default-row">
                 <input type="checkbox" checked={form.is_default} onChange={(event) => updateField("is_default", event.target.checked)} />
-                <span>ডিফল্ট ডেলিভারি ঠিকানা হিসেবে রাখুন</span>
+                <span>Set as default delivery address</span>
               </label>
               <div className="form-actions">
-                <button type="submit" disabled={saving}><><Icon name={saving ? "refresh" : "check"} size={16} /> {saving ? "সংরক্ষণ হচ্ছে…" : editingId ? "পরিবর্তন সংরক্ষণ" : "ঠিকানা সংরক্ষণ করুন"}</></button>
-                {editingId && <button type="button" className="cancel" onClick={resetForm}><Icon name="close" size={15} /> বাতিল</button>}
+                <button type="submit" disabled={saving}><><Icon name={saving ? "refresh" : "check"} size={16} /> {saving ? "Saving…" : editingId ? "Save changes" : "Save address"}</></button>
+                {editingId && <button type="button" className="cancel" onClick={resetForm}><Icon name="close" size={15} /> Cancel</button>}
               </div>
             </form>
           </>

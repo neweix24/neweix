@@ -63,7 +63,7 @@ export default function LoginPage() {
           "expired-callback": () => setCaptchaToken(""),
           "error-callback": () => {
             setCaptchaToken("");
-            setMessage("নিরাপত্তা যাচাই লোড হয়নি। পেজ রিফ্রেশ করে আবার চেষ্টা করুন।");
+            setMessage("Security verification did not load. Refresh the page and try again.");
           },
         }
       );
@@ -105,7 +105,7 @@ export default function LoginPage() {
     if (busy) return;
 
     if (!captchaToken) {
-      setMessage("লগইনের আগে নিরাপত্তা যাচাই সম্পন্ন করুন।");
+      setMessage("Complete security verification before signing in.");
       return;
     }
 
@@ -127,9 +127,9 @@ export default function LoginPage() {
           turnstile.reset(captchaWidgetId.current);
         }
         if (error?.message.toLowerCase().includes("captcha")) {
-          setMessage("নিরাপত্তা যাচাই ব্যর্থ হয়েছে। আবার CAPTCHA সম্পন্ন করে চেষ্টা করুন।");
+          setMessage("Security verification failed. Complete the CAPTCHA again and retry.");
         } else {
-          setMessage("ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।");
+          setMessage("The email address or password is incorrect.");
         }
         return;
       }
@@ -143,7 +143,7 @@ export default function LoginPage() {
         !data.session?.refresh_token ||
         data.session.user.id !== data.user.id
       ) {
-        setMessage("লগইন সেশন তৈরি হয়নি। CAPTCHA সম্পন্ন করে আবার চেষ্টা করুন।");
+        setMessage("A sign-in session could not be created. Complete the CAPTCHA and try again.");
         return;
       }
 
@@ -154,7 +154,7 @@ export default function LoginPage() {
         .maybeSingle();
 
       if (profileError) {
-        setMessage("স্টাফ অ্যাকাউন্ট যাচাই করা যায়নি। ডেটাবেস অনুমতি ও সংযোগ পরীক্ষা করুন।");
+        setMessage("Could not verify the staff account. Check database permissions and connectivity.");
         return;
       }
 
@@ -164,7 +164,7 @@ export default function LoginPage() {
         !["supreme", "admin", "staff"].includes(profile.role)
       ) {
         await supabase.auth.signOut();
-        setMessage("এই অ্যাকাউন্টের স্টাফ প্যানেলে প্রবেশের অনুমতি নেই।");
+        setMessage("This account is not authorized to access the staff panel.");
         return;
       }
 
@@ -173,7 +173,7 @@ export default function LoginPage() {
           await supabase.auth.mfa.listFactors();
 
         if (factorsError) {
-          setMessage("MFA তথ্য যাচাই করা যায়নি। আবার চেষ্টা করুন।");
+          setMessage("Could not verify MFA information. Please try again.");
           return;
         }
 
@@ -190,7 +190,7 @@ export default function LoginPage() {
           await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
         if (assuranceError) {
-          setMessage("নিরাপত্তা যাচাই করা যায়নি। আবার চেষ্টা করুন।");
+          setMessage("Could not complete security verification. Please try again.");
           return;
         }
 
@@ -205,7 +205,7 @@ export default function LoginPage() {
 
       navigateAfterAuth("/admin");
     } catch {
-      setMessage("লগইন করা যায়নি। Supabase পরিবেশ ভেরিয়েবল ও নেটওয়ার্ক সংযোগ পরীক্ষা করুন।");
+      setMessage("Could not sign in. Check Supabase environment variables and network connectivity.");
     } finally {
       setBusy(false);
     }
@@ -214,13 +214,13 @@ export default function LoginPage() {
   return (
     <main className="hero auth-page">
       <p className="eyebrow">NEWEIX · STAFF ACCESS</p>
-      <h1>নিরাপদ লগইন</h1>
+      <h1>Secure staff sign-in</h1>
       <p className="hero-copy">
-        শুধু সক্রিয় ও অনুমোদিত স্টাফ অ্যাকাউন্ট প্রবেশ করতে পারবে।
+        Only active and authorized staff accounts can sign in here.
       </p>
 
       <form className="track-form" onSubmit={handleSubmit}>
-        <label htmlFor="email">ইমেইল</label>
+        <label htmlFor="email">Email</label>
         <input
           id="email"
           type="email"
@@ -231,7 +231,7 @@ export default function LoginPage() {
           onChange={(event) => setEmail(event.target.value)}
         />
 
-        <label htmlFor="password">পাসওয়ার্ড</label>
+        <label htmlFor="password">Password</label>
         <input
           id="password"
           type={showPassword ? "text" : "password"}
@@ -247,7 +247,7 @@ export default function LoginPage() {
         <button
           type="button"
           className="password-visibility-button"
-          aria-label={showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"}
+          aria-label={showPassword ? "Hide password" : "Show password"}
           aria-pressed={showPassword}
           onClick={() => setShowPassword((visible) => !visible)}
         >
@@ -260,12 +260,12 @@ export default function LoginPage() {
           className="my-4"
         />
         {!captchaReady && (
-          <p className="hero-copy">নিরাপত্তা যাচাই লোড হচ্ছে…</p>
+          <p className="hero-copy">Loading security verification…</p>
         )}
 
         <p>
           <Link href="/auth/forgot-password">
-            পাসওয়ার্ড ভুলে গেছেন?
+            Forgot password?
           </Link>
         </p>
 
@@ -276,12 +276,12 @@ export default function LoginPage() {
           type="submit"
           disabled={busy || !captchaToken}
         >
-          <><Icon name={busy ? "refresh" : "user"} size={17} /> {busy ? "লগইন হচ্ছে…" : "লগইন করুন"}</>
+          <><Icon name={busy ? "refresh" : "user"} size={17} /> {busy ? "Signing in…" : "Sign in"}</>
         </button>
       </form>
 
       <p className="hero-copy">
-        <Link href="/">← হোম পেজে ফিরুন</Link>
+        <Link href="/">← Return to home</Link>
       </p>
     </main>
   );

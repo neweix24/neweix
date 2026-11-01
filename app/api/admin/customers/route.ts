@@ -19,7 +19,7 @@ export async function GET() {
 
     if (error) {
       console.error("Customer CRM query failed:", error.message);
-      return NextResponse.json({ error: "কাস্টমার তালিকা লোড করা যায়নি।" }, { status: 500 });
+      return NextResponse.json({ error: "Could not load the customer list." }, { status: 500 });
     }
 
     const ids = (data ?? []).map((profile) => profile.user_id);
@@ -51,12 +51,12 @@ export async function GET() {
 
     if (addressError) {
       console.error("Customer addresses query failed:", addressError.message);
-      return NextResponse.json({ error: "কাস্টমারের ঠিকানা লোড করা যায়নি।" }, { status: 500 });
+      return NextResponse.json({ error: "Could not load customer addresses." }, { status: 500 });
     }
 
     if (orderError) {
       console.error("Customer order summary failed:", orderError.message);
-      return NextResponse.json({ error: "অর্ডার সারাংশ লোড করা যায়নি।" }, { status: 500 });
+      return NextResponse.json({ error: "Could not load order summaries." }, { status: 500 });
     }
 
     const summary = new Map<string, { count: number; total: number; lastOrder: string | null; lastStatus: string | null }>();
@@ -90,6 +90,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Customer CRM request failed:", error);
-    return NextResponse.json({ error: "সার্ভারে সমস্যা হয়েছে।" }, { status: 500 });
+    return NextResponse.json({ error: "A server error occurred." }, { status: 500 });
   }
 }

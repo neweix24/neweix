@@ -4,9 +4,9 @@ export default function NotFound() {
   return (
     <main className="hero">
       <p className="eyebrow">404</p>
-      <h1>পেজটি পাওয়া যায়নি।</h1>
-      <p className="hero-copy">ঠিকানা পরীক্ষা করে আবার চেষ্টা করুন।</p>
-      <Link className="primary-button" href="/">হোম পেজে ফিরুন ↗</Link>
+      <h1>Page not found.</h1>
+      <p className="hero-copy">Check the URL and try again.</p>
+      <Link className="primary-button" href="/">Return home ↗</Link>
     </main>
   );
 }

@@ -19,7 +19,7 @@ export async function GET() {
 
     if (error) {
       console.error("Admin data request list failed:", error.message);
-      return NextResponse.json({ error: "গ্রাহকের অনুরোধ লোড করা যায়নি।" }, { status: 500 });
+      return NextResponse.json({ error: "Could not load customer requests." }, { status: 500 });
     }
     const userIds = [...new Set((data ?? []).map((item) => item.user_id))];
     const { data: profiles, error: profileError } = userIds.length
@@ -27,7 +27,7 @@ export async function GET() {
       : { data: [], error: null };
     if (profileError) {
       console.error("Admin request customer details failed:", profileError.message);
-      return NextResponse.json({ error: "কাস্টমারের পরিচিতি লোড করা যায়নি।" }, { status: 500 });
+      return NextResponse.json({ error: "Could not load customer profiles." }, { status: 500 });
     }
     const profileMap = new Map((profiles ?? []).map((profile) => [profile.user_id, profile]));
     const requests = (data ?? []).map((item) => ({
@@ -40,7 +40,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Admin data request API failed:", error);
-    return NextResponse.json({ error: "সার্ভারে সমস্যা হয়েছে।" }, { status: 500 });
+    return NextResponse.json({ error: "A server error occurred." }, { status: 500 });
   }
 }
 
@@ -50,15 +50,15 @@ export async function PATCH(request: Request) {
 
   const raw = await request.text();
   if (new TextEncoder().encode(raw).byteLength > 4096) {
-    return NextResponse.json({ error: "অনুরোধটি অতিরিক্ত বড়।" }, { status: 413 });
+    return NextResponse.json({ error: "Request is too large." }, { status: 413 });
   }
 
   let body: unknown;
   try { body = JSON.parse(raw); }
-  catch { return NextResponse.json({ error: "অবৈধ JSON।" }, { status: 400 }); }
+  catch { return NextResponse.json({ error: "Invalid JSON." }, { status: 400 }); }
 
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return NextResponse.json({ error: "সঠিক অনুরোধ পাঠান।" }, { status: 400 });
+    return NextResponse.json({ error: "Provide a valid request." }, { status: 400 });
   }
   const input = body as Record<string, unknown>;
   const id = input.id;
@@ -66,13 +66,13 @@ export async function PATCH(request: Request) {
   const note = typeof input.resolution_note === "string" ? input.resolution_note.trim() : "";
 
   if (typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id)) {
-    return NextResponse.json({ error: "সঠিক Request ID দিন।" }, { status: 400 });
+    return NextResponse.json({ error: "Provide a valid Request ID." }, { status: 400 });
   }
   if (!["processing", "completed", "rejected"].includes(String(status))) {
-    return NextResponse.json({ error: "অনুরোধের নতুন অবস্থা সঠিক নয়।" }, { status: 400 });
+    return NextResponse.json({ error: "The new request status is invalid." }, { status: 400 });
   }
   if (note.length > 1000) {
-    return NextResponse.json({ error: "নোট সর্বোচ্চ ১০০০ অক্ষরের হতে পারবে।" }, { status: 400 });
+    return NextResponse.json({ error: "Note must be 1,000 characters or fewer." }, { status: 400 });
   }
 
   try {
@@ -83,10 +83,10 @@ export async function PATCH(request: Request) {
       .eq("id", id)
       .maybeSingle();
     if (currentError) throw currentError;
-    if (!current) return NextResponse.json({ error: "অনুরোধটি পাওয়া যায়নি।" }, { status: 404 });
+    if (!current) return NextResponse.json({ error: "Request not found." }, { status: 404 });
 
     if (current.status === "completed" || current.status === "rejected") {
-      return NextResponse.json({ error: "চূড়ান্ত হওয়া অনুরোধ আর পরিবর্তন করা যাবে না।" }, { status: 409 });
+      return NextResponse.json({ error: "A finalized request cannot be changed." }, { status: 409 });
     }
 
     const { data, error } = await admin
@@ -116,6 +116,6 @@ export async function PATCH(request: Request) {
     });
   } catch (error) {
     console.error("Admin data request update failed:", error);
-    return NextResponse.json({ error: "অনুরোধের অবস্থা আপডেট করা যায়নি।" }, { status: 500 });
+    return NextResponse.json({ error: "Could not update the request status." }, { status: 500 });
   }
 }

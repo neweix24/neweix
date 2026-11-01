@@ -20,12 +20,12 @@ export default function ResetPasswordPage() {
     setSuccess(false);
 
     if (password.length < 8) {
-      setMessage("পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।");
+      setMessage("The password must be at least 8 characters long.");
       return;
     }
 
     if (password !== confirmPassword) {
-      setMessage("দুটি পাসওয়ার্ড মিলছে না।");
+      setMessage("The passwords do not match.");
       return;
     }
 
@@ -39,7 +39,7 @@ export default function ResetPasswordPage() {
 
       if (sessionError || !data.session) {
         setMessage(
-          "রিসেট লিংকটি মেয়াদোত্তীর্ণ বা অবৈধ। নতুন রিসেট লিংক নাও।"
+          "This reset link has expired or is invalid. Request a new reset link."
         );
         return;
       }
@@ -48,14 +48,14 @@ export default function ResetPasswordPage() {
 
       if (error) {
         console.error("Password update failed:", error.message);
-        setMessage("পাসওয়ার্ড পরিবর্তন হয়নি: " + error.message);
+        setMessage("Password was not changed: " + error.message);
         return;
       }
 
       setSuccess(true);
-      setMessage("পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে। এখন লগইন করো।");
+      setMessage("Your password has been changed successfully. You can now sign in.");
     } catch {
-      setMessage("সমস্যা হয়েছে। নতুন রিসেট লিংক নিয়ে আবার চেষ্টা করো।");
+      setMessage("Something went wrong. Request a new reset link and try again.");
     } finally {
       setBusy(false);
     }
@@ -64,13 +64,13 @@ export default function ResetPasswordPage() {
   return (
     <main className="hero auth-page">
       <p className="eyebrow">NEWEIX · ACCOUNT RECOVERY</p>
-      <h1>নতুন পাসওয়ার্ড সেট করো</h1>
+      <h1>Set a new password</h1>
       <p className="hero-copy">
-        নতুন পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।
+        Your new password must be at least 8 characters long.
       </p>
 
       <form className="track-form" onSubmit={handleSubmit}>
-        <label htmlFor="password">নতুন পাসওয়ার্ড</label>
+        <label htmlFor="password">New password</label>
         <input
           id="password"
           type="password"
@@ -81,7 +81,7 @@ export default function ResetPasswordPage() {
           onChange={(event) => setPassword(event.target.value)}
         />
 
-        <label htmlFor="confirmPassword">আবার পাসওয়ার্ড লেখো</label>
+        <label htmlFor="confirmPassword">Confirm password</label>
         <input
           id="confirmPassword"
           type="password"
@@ -98,17 +98,17 @@ export default function ResetPasswordPage() {
 
         {success ? (
           <Link className="primary-button" href="/auth/login">
-            লগইন পেজে যাও
+            Go to sign-in
           </Link>
         ) : (
           <button className="primary-button" type="submit" disabled={busy}>
-            {busy ? "পরিবর্তন হচ্ছে..." : "পাসওয়ার্ড পরিবর্তন করো"}
+            {busy ? "Updating..." : "Change password"}
           </button>
         )}
       </form>
 
       <p className="hero-copy">
-        <Link href="/auth/login">লগইন পেজে ফিরে যাও</Link>
+        <Link href="/auth/login">Return to sign-in</Link>
       </p>
     </main>
   );

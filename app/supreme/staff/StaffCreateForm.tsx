@@ -29,7 +29,7 @@ export default function StaffCreateForm() {
 
     if (password.length < 12 || password.length > 128) {
       setIsError(true);
-      setMessage("পাসওয়ার্ড ১২ থেকে ১২৮ অক্ষরের হতে হবে।");
+      setMessage("Password must be between 12 and 128 characters.");
       return;
     }
 
@@ -52,13 +52,13 @@ export default function StaffCreateForm() {
 
       if (!response.ok) {
         throw new Error(
-          result.error || "অ্যাকাউন্ট তৈরি করা যায়নি।"
+          result.error || "Could not create the account."
         );
       }
 
       setMessage(
         result.message ||
-          `অনুরোধ সফল হয়েছে। ইমেইল: ${result.user?.email || email.trim()}`
+          `Request completed. Email: ${result.user?.email || email.trim()}`
       );
 
       setEmail("");
@@ -69,7 +69,7 @@ export default function StaffCreateForm() {
       setMessage(
         error instanceof Error
           ? error.message
-          : "একটি অপ্রত্যাশিত সমস্যা হয়েছে।"
+          : "An unexpected error occurred."
       );
     } finally {
       setLoading(false);
@@ -79,7 +79,7 @@ export default function StaffCreateForm() {
   return (
     <form onSubmit={handleSubmit}>
       <div>
-        <label htmlFor="staff-email">ইমেইল ঠিকানা</label>
+        <label htmlFor="staff-email">Email Address</label>
         <input
           id="staff-email"
           type="email"
@@ -93,7 +93,7 @@ export default function StaffCreateForm() {
       </div>
 
       <div>
-        <label htmlFor="staff-password">অস্থায়ী পাসওয়ার্ড</label>
+        <label htmlFor="staff-password">Temporary Password</label>
         <input
           id="staff-password"
           type="password"
@@ -105,11 +105,11 @@ export default function StaffCreateForm() {
           maxLength={128}
           disabled={loading}
         />
-        <p>কমপক্ষে ১২ অক্ষর ব্যবহার করুন।</p>
+        <p>Use at least 12 characters.</p>
       </div>
 
       <div>
-        <label htmlFor="staff-role">অ্যাকাউন্টের ধরন</label>
+        <label htmlFor="staff-role">Account Role</label>
         <select
           id="staff-role"
           value={role}
@@ -124,12 +124,12 @@ export default function StaffCreateForm() {
       </div>
 
       <button type="submit" disabled={loading}>
-        <><Icon name={loading ? "refresh" : "user"} size={16} /> {loading ? "তৈরি হচ্ছে..." : "অ্যাকাউন্ট তৈরি করুন"}</>
+        <><Icon name={loading ? "refresh" : "user"} size={16} /> {loading ? "Creating..." : "Create Account"}</>
       </button>
 
       {message && (
         <p role="status" aria-live="polite">
-          {isError ? "সমস্যা: " : ""}
+          {isError ? "Error: " : ""}
           {message}
         </p>
       )}

@@ -1,26 +1,28 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import CustomerThemeProvider from "@/components/customer-theme-provider";
+import { LanguageProvider } from "@/components/language-provider";
+import GlobalLanguageControl from "@/components/global-language-control";
 
 const siteUrl = "https://neweix.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "NEWEIX — স্মার্ট অনলাইন শপিং",
+    default: "NEWEIX — Smart Online Shopping",
     template: "%s | NEWEIX",
   },
   description:
-    "NEWEIX-এ পণ্য আবিষ্কার করুন, নিরাপদে অর্ডার করুন এবং আপনার অর্ডারের অগ্রগতি ট্র্যাক করুন।",
+    "Discover products, place secure orders, and track your deliveries with NEWEIX.",
   applicationName: "NEWEIX",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
-    locale: "bn_BD",
+    locale: "en_BD",
     url: siteUrl,
     siteName: "NEWEIX",
-    title: "NEWEIX — স্মার্ট অনলাইন শপিং",
-    description: "সহজ অনলাইন কেনাকাটা ও অর্ডার ট্র্যাকিং।",
+    title: "NEWEIX — Smart Online Shopping",
+    description: "A smarter way to shop online and track your orders.",
   },
   robots: {
     index: true,
@@ -39,10 +41,10 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="bn">
+    <html lang="en">
       <body>
-        <CustomerThemeProvider />
-        {children}
+        <LanguageProvider><GlobalLanguageControl /><CustomerThemeProvider />
+        {children}</LanguageProvider>
       </body>
     </html>
   );

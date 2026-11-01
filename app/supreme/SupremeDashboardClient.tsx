@@ -28,7 +28,7 @@ export default function SupremeDashboardClient() {
 
       if (!response.ok) {
         throw new Error(
-          data.error || "পণ্যের তথ্য লোড করা যায়নি।"
+          data.error || "Could not load product information."
         );
       }
 
@@ -39,7 +39,7 @@ export default function SupremeDashboardClient() {
       setError(
         err instanceof Error
           ? err.message
-          : "সার্ভারের সঙ্গে সংযোগ করা যায়নি।"
+          : "Could not connect to the server."
       );
     } finally {
       setLoading(false);
@@ -68,7 +68,7 @@ export default function SupremeDashboardClient() {
           </h1>
 
           <p className="mt-2 text-gray-600">
-            পণ্য ও স্টকের বর্তমান তথ্য
+            Current Product & Stock Information
           </p>
 
           <button
@@ -77,7 +77,7 @@ export default function SupremeDashboardClient() {
             disabled={loading}
             className="mt-5 rounded-lg bg-lime-300 px-5 py-3 font-medium text-white disabled:opacity-50"
           >
-            {loading ? "লোড হচ্ছে..." : "তথ্য রিফ্রেশ করুন"}
+            {loading ? "Loading..." : "Refresh Data"}
           </button>
         </header>
 
@@ -93,7 +93,7 @@ export default function SupremeDashboardClient() {
         <section className="grid gap-4 sm:grid-cols-2">
           <article className="rounded-xl border bg-white p-5 shadow-sm">
             <p className="text-sm text-gray-600">
-              মোট পণ্য
+              Total Products
             </p>
 
             <p className="mt-2 text-3xl font-bold">
@@ -103,7 +103,7 @@ export default function SupremeDashboardClient() {
 
           <article className="rounded-xl border bg-white p-5 shadow-sm">
             <p className="text-sm text-gray-600">
-              কম স্টকের পণ্য
+              Low-Stock Products
             </p>
 
             <p className="mt-2 text-3xl font-bold text-red-700">
@@ -114,20 +114,20 @@ export default function SupremeDashboardClient() {
 
         <section className="rounded-xl border bg-white p-5 shadow-sm">
           <h2 className="text-xl font-bold">
-            কম স্টকের পণ্য
+            Low-Stock Products
           </h2>
 
           {loading ? (
             <p className="mt-4 text-gray-600">
-              ডেটাবেস থেকে তথ্য আনা হচ্ছে...
+              Loading data from the database...
             </p>
           ) : error ? (
             <p className="mt-4 text-gray-600">
-              তথ্য পাওয়া যায়নি। উপরের বার্তাটি দেখুন।
+              No data available. See the message above.
             </p>
           ) : lowStockProducts.length === 0 ? (
             <p className="mt-4 text-gray-600">
-              বর্তমানে কম স্টকের কোনো পণ্য নেই।
+              There are currently no low-stock products.
             </p>
           ) : (
             <div className="mt-4 space-y-3">
@@ -141,7 +141,7 @@ export default function SupremeDashboardClient() {
                   </span>
 
                   <span className="shrink-0 font-semibold text-red-700">
-                    স্টক: {product.stock}
+                    Stock: {product.stock}
                   </span>
                 </div>
               ))}
@@ -152,7 +152,7 @@ export default function SupremeDashboardClient() {
             href="/admin/products"
             className="mt-5 inline-block rounded-lg border border-lime-300 px-4 py-3 font-medium text-lime-300"
           >
-            সব পণ্য ও স্টক দেখুন →
+            View All Products & Stock →
           </a>
         </section>
       </div>

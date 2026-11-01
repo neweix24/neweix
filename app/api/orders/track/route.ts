@@ -87,11 +87,11 @@ export async function POST(request: Request) {
     const size = Number(contentLength);
 
     if (!Number.isSafeInteger(size) || size < 0) {
-      return respond("অনুরোধের তথ্য সঠিক নয়।", 400);
+      return respond("Invalid request payload.", 400);
     }
 
     if (size > MAX_BODY_BYTES) {
-      return respond("অনুরোধের তথ্য অনেক বড়।", 413);
+      return respond("The request payload is too large.", 413);
     }
   }
 
@@ -102,16 +102,16 @@ export async function POST(request: Request) {
     const bodySize = new TextEncoder().encode(raw).byteLength;
 
     if (bodySize > MAX_BODY_BYTES) {
-      return respond("অনুরোধের তথ্য অনেক বড়।", 413);
+      return respond("The request payload is too large.", 413);
     }
 
     body = JSON.parse(raw);
   } catch {
-    return respond("সঠিক তথ্য পাঠান।", 400);
+    return respond("Submit valid information.", 400);
   }
 
   if (!isRecord(body)) {
-    return respond("অর্ডারের তথ্য সঠিক নয়।", 400);
+    return respond("Invalid order details.", 400);
   }
 
   const orderNumber =
@@ -129,7 +129,7 @@ export async function POST(request: Request) {
     !PHONE_PATTERN.test(phone) ||
     !/[0-9]/.test(phone)
   ) {
-    return respond("সঠিক অর্ডার নম্বর ও ফোন নম্বর দিন।", 400);
+    return respond("Enter a valid order number and phone number.", 400);
   }
 
   const supabaseUrl = readServerEnv("NEXT_PUBLIC_SUPABASE_URL");
@@ -140,7 +140,7 @@ export async function POST(request: Request) {
       "Order tracking: Required Supabase environment variables are missing."
     );
 
-    return respond("অর্ডার ট্র্যাকিং সাময়িকভাবে চালু নেই।", 503);
+    return respond("Order tracking is temporarily unavailable.", 503);
   }
 
   try {
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
 
     if (!clientKey) {
       return respond(
-        "অনুরোধ যাচাই করা যাচ্ছে না। আবার চেষ্টা করুন।",
+        "Unable to verify the request. Please try again.",
         400
       );
     }
@@ -176,14 +176,14 @@ export async function POST(request: Request) {
       );
 
       return respond(
-        "ট্র্যাকিং সাময়িকভাবে চালু নেই। পরে আবার চেষ্টা করুন।",
+        "Tracking is temporarily unavailable. Please try again later.",
         503
       );
     }
 
     if (!allowed) {
       return respond(
-        "অনেকবার চেষ্টা করা হয়েছে। ১০ মিনিট পরে আবার চেষ্টা করুন।",
+        "Too many attempts. Please try again in 10 minutes.",
         429
       );
     }
@@ -212,14 +212,14 @@ export async function POST(request: Request) {
       );
 
       return respond(
-        "অর্ডারের তথ্য যাচাই করা যায়নি। পরে আবার চেষ্টা করুন।",
+        "Unable to verify the order details. Please try again later.",
         500
       );
     }
 
     if (!data) {
       return respond(
-        "অর্ডার খুঁজে পাওয়া যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।",
+        "Order not found. Check your details and try again.",
         404
       );
     }
@@ -249,7 +249,7 @@ export async function POST(request: Request) {
     console.error("Unexpected order tracking error:", error);
 
     return respond(
-      "সার্ভারে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।",
+      "A server error occurred. Please try again later.",
       500
     );
   }

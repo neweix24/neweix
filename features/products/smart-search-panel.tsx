@@ -85,14 +85,14 @@ export default function SmartSearchPanel() {
         signal: controller.signal,
       });
       const result = (await response.json()) as SearchResponse;
-      if (!response.ok) throw new Error(result.error || "সার্চ করা যায়নি।");
+      if (!response.ok) throw new Error(result.error || "Search failed.");
       const rows = Array.isArray(result.data) ? result.data : [];
       setHasMore(rows.length > PAGE_SIZE);
       setProducts(rows.slice(0, PAGE_SIZE));
       setAiUsed(Boolean(result.ai?.used));
     } catch (reason) {
       if (reason instanceof Error && reason.name === "AbortError") return;
-      setError(reason instanceof Error ? reason.message : "সার্চ করা যায়নি।");
+      setError(reason instanceof Error ? reason.message : "Search failed.");
       setProducts([]);
       setHasMore(false);
     } finally {
@@ -188,22 +188,22 @@ export default function SmartSearchPanel() {
           NEWEIX SMART SEARCH
         </p>
         <h2 id="smart-search-title" className="neweix-page-title">
-          AI দিয়ে পণ্য খুঁজুন
+          Find products with AI
         </h2>
         <p style={{ margin: 0, opacity: 0.75 }}>
-          পণ্যের নাম, SKU অথবা নিজের প্রয়োজন বাংলায়, ইংরেজিতে বা Banglish-এ লিখুন।
+          Enter a product name, SKU, or describe what you need in Bengali, English, or Banglish.
         </p>
       </div>
 
       <form onSubmit={runSearch} role="search">
-        <label htmlFor="neweix-ai-search" className="sr-only">পণ্য খুঁজুন</label>
+        <label htmlFor="neweix-ai-search" className="sr-only">Search products</label>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <input
             id="neweix-ai-search"
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="যেমন: কালো টি-শার্ট, T shirt বা SKU"
+            placeholder="e.g. black T-shirt, T shirt, or SKU"
             maxLength={160}
             role="combobox"
             aria-autocomplete="list"
@@ -229,58 +229,58 @@ export default function SmartSearchPanel() {
               color: "#080b09",
             }}
           >
-            <><Icon name={loading ? "refresh" : "search"} size={17} /> {loading ? "খুঁজছে…" : "খুঁজুন"}</>
+            <><Icon name={loading ? "refresh" : "search"} size={17} /> {loading ? "Searching…" : "Search"}</>
           </button>
         </div>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 12 }}>
           <select
-            aria-label="ক্যাটাগরি নির্বাচন করুন"
+            aria-label="Select category"
             value={categoryId}
             onChange={(event) => setCategoryId(event.target.value)}
             style={{ minHeight: 38, padding: 7, border: "1px solid var(--border, #cbd5cb)", borderRadius: 8 }}
           >
-            <option value="">সব ক্যাটাগরি</option>
+            <option value="">All categories</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>{category.name}</option>
             ))}
           </select>
           <input
-            aria-label="সর্বনিম্ন দাম"
+            aria-label="Minimum price"
             type="number"
             min="0"
             max="1000000000"
             value={minPrice}
             onChange={(event) => setMinPrice(event.target.value)}
-            placeholder="সর্বনিম্ন দাম"
+            placeholder="Minimum price"
             style={{ width: 130, minHeight: 38, padding: 8, border: "1px solid var(--border, #cbd5cb)", borderRadius: 8 }}
           />
           <input
-            aria-label="সর্বোচ্চ দাম"
+            aria-label="Maximum price"
             type="number"
             min="0"
             max="1000000000"
             value={maxPrice}
             onChange={(event) => setMaxPrice(event.target.value)}
-            placeholder="সর্বোচ্চ দাম"
+            placeholder="Maximum price"
             style={{ width: 130, minHeight: 38, padding: 8, border: "1px solid var(--border, #cbd5cb)", borderRadius: 8 }}
           />
           <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <input type="checkbox" checked={inStock} onChange={(event) => setInStock(event.target.checked)} />
-            শুধু স্টকে আছে
+            In stock only
           </label>
           <select
-            aria-label="ফলাফল সাজান"
+            aria-label="Sort results"
             value={sort}
             onChange={(event) => setSort(event.target.value)}
             style={{ minHeight: 38, padding: 7, border: "1px solid var(--border, #cbd5cb)", borderRadius: 8 }}
           >
-            <option value="relevance">প্রাসঙ্গিকতা</option>
-            <option value="price_asc">দাম: কম থেকে বেশি</option>
-            <option value="price_desc">দাম: বেশি থেকে কম</option>
-            <option value="newest">নতুন পণ্য</option>
+            <option value="relevance">Relevance</option>
+            <option value="price_asc">Price: low to high</option>
+            <option value="price_desc">Price: high to low</option>
+            <option value="newest">Newest</option>
           </select>
-          <button type="button" onClick={clearFilters}><Icon name="close" size={15} /> ফিল্টার রিসেট</button>
+          <button type="button" onClick={clearFilters}><Icon name="close" size={15} /> Reset filters</button>
         </div>
       </form>
 
@@ -288,7 +288,7 @@ export default function SmartSearchPanel() {
         <ul
           id="neweix-search-suggestions"
           role="listbox"
-          aria-label="পণ্যের সাজেশন"
+          aria-label="Product suggestions"
           style={{ listStyle: "none", padding: 8, margin: "8px 0", border: "1px solid var(--border, #d8dfd8)", borderRadius: 10 }}
         >
           {suggestions.map((suggestion) => (
@@ -311,13 +311,13 @@ export default function SmartSearchPanel() {
 
       {submitted && (
         <p role="status" aria-live="polite" style={{ margin: "14px 0 8px", fontSize: 13 }}>
-          {loading ? "পণ্য খোঁজা হচ্ছে…" : error || products.length + "টি পণ্য পাওয়া গেছে"}
-          {!loading && !error && aiUsed ? " · AI Semantic Search সক্রিয়" : ""}
+          {loading ? "Searching products…" : error || products.length + " products found"}
+          {!loading && !error && aiUsed ? " · AI semantic search is active" : ""}
         </p>
       )}
       {error && <p role="alert">{error}</p>}
       {submitted && !loading && !error && products.length === 0 && (
-        <p>পণ্য পাওয়া যায়নি। অন্য শব্দ, বানান বা ফিল্টার দিয়ে চেষ্টা করুন।</p>
+        <p>No products found. Try another keyword, spelling, or filter.</p>
       )}
 
       {products.length > 0 && (
@@ -341,28 +341,28 @@ export default function SmartSearchPanel() {
                   </Link>
                   <p style={{ margin: "7px 0", fontWeight: 800 }}>{money(Number(product.price))}</p>
                   <small>
-                    {product.stock > 0 ? "স্টকে আছে" : "স্টক শেষ"}
+                    {product.stock > 0 ? "In stock" : "Out of stock"}
                     {product.sku ? " · SKU: " + product.sku : ""}
                   </small>
                 </div>
               </article>
             ))}
           </div>
-          <nav aria-label="সার্চ ফলাফলের পৃষ্ঠা" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 20 }}>
+          <nav aria-label="Search results pages" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 20 }}>
             <button
               type="button"
               disabled={loading || page <= 1}
               onClick={() => void executeSearch(query, page - 1)}
             >
-              আগের পৃষ্ঠা
+              Previous page
             </button>
-            <span aria-live="polite">পৃষ্ঠা {page}</span>
+            <span aria-live="polite">Page {page}</span>
             <button
               type="button"
               disabled={loading || !hasMore}
               onClick={() => void executeSearch(query, page + 1)}
             >
-              পরের পৃষ্ঠা
+              Next page
             </button>
           </nav>
         </>

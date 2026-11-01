@@ -55,7 +55,7 @@ export default function AccountView() {
 
         if (error) {
           throw new Error(
-            "প্রোফাইল লোড হয়নি। ডাটাবেসের অনুমতি যাচাই করতে হবে।"
+            "Profile could not be loaded. Check database permissions."
           );
         }
 
@@ -114,7 +114,7 @@ export default function AccountView() {
           setErrorMessage(
             error instanceof Error
               ? error.message
-              : "অ্যাকাউন্ট লোড করা যায়নি।"
+              : "Could not load the account."
           );
         }
       } finally {
@@ -135,7 +135,7 @@ export default function AccountView() {
     setErrorMessage("");
 
     if (!phoneVerified) {
-      setErrorMessage("তথ্য সংরক্ষণের আগে ফোন নম্বর যাচাই করুন।");
+      setErrorMessage("Verify your phone number before saving your information.");
       return;
     }
 
@@ -144,12 +144,12 @@ export default function AccountView() {
     const today = new Date().toISOString().slice(0, 10);
 
     if (cleanDateOfBirth && (cleanDateOfBirth < "1900-01-01" || cleanDateOfBirth > today)) {
-      setErrorMessage("জন্মতারিখ সঠিকভাবে দিন।");
+      setErrorMessage("Enter a valid date of birth.");
       return;
     }
 
     if (cleanName.length < 2 || cleanName.length > 100) {
-      setErrorMessage("নাম ২ থেকে ১০০ অক্ষরের মধ্যে লিখুন।");
+      setErrorMessage("Enter a name between 2 and 100 characters.");
       return;
     }
 
@@ -182,17 +182,17 @@ export default function AccountView() {
 
       if (error) {
         throw new Error(
-          "তথ্য সংরক্ষণ হয়নি। ডাটাবেসের অনুমতি যাচাই করতে হবে।"
+          "Information was not saved. Check database permissions."
         );
       }
 
       setName(cleanName);
-      setMessage("আপনার নাম সফলভাবে সংরক্ষণ হয়েছে।");
+      setMessage("Your name has been saved successfully.");
     } catch (error) {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "তথ্য সংরক্ষণ করা যায়নি।"
+          : "Could not save your information."
       );
     } finally {
       setSaving(false);
@@ -207,7 +207,7 @@ export default function AccountView() {
 
     const cleanPhone = phone.trim();
     if (!cleanPhone) {
-      setPhoneError("যাচাই করার জন্য মোবাইল নম্বর লিখুন।");
+      setPhoneError("Enter a mobile number to verify.");
       return;
     }
 
@@ -219,21 +219,21 @@ export default function AccountView() {
         body: JSON.stringify({ phone: cleanPhone }),
       });
       const result = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(result?.error || "OTP পাঠানো যায়নি।");
+      if (!response.ok) throw new Error(result?.error || "Could not send the OTP.");
 
       if (result?.alreadyVerified) {
         setPhoneVerified(true);
         setVerifiedPhone(cleanPhone);
         setPhone("");
-        setPhoneMessage("এই নম্বরটি ইতিমধ্যে যাচাই করা আছে।");
+        setPhoneMessage("This number has already been verified.");
       } else if (typeof result?.challengeId === "string") {
         setChallengeId(result.challengeId);
-        setPhoneMessage("OTP পাঠানো হয়েছে। ৫ মিনিটের মধ্যে কোডটি লিখুন।");
+        setPhoneMessage("OTP sent. Enter the code within 5 minutes.");
       } else {
-        throw new Error("OTP অনুরোধের ফলাফল সঠিক নয়।");
+        throw new Error("The OTP request returned an invalid result.");
       }
     } catch (error) {
-      setPhoneError(error instanceof Error ? error.message : "OTP পাঠানো যায়নি।");
+      setPhoneError(error instanceof Error ? error.message : "Could not send the OTP.");
     } finally {
       setSendingOtp(false);
     }
@@ -243,7 +243,7 @@ export default function AccountView() {
     setPhoneMessage("");
     setPhoneError("");
     if (!challengeId || !/^\d{6}$/.test(otp)) {
-      setPhoneError("৬ সংখ্যার সঠিক OTP লিখুন।");
+      setPhoneError("Enter a valid 6-digit OTP.");
       return;
     }
 
@@ -255,7 +255,7 @@ export default function AccountView() {
         body: JSON.stringify({ challengeId, otp }),
       });
       const result = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(result?.error || "OTP যাচাই করা যায়নি।");
+      if (!response.ok) throw new Error(result?.error || "Could not verify the OTP.");
 
       setPhoneVerified(true);
       setEditingPhone(false);
@@ -263,9 +263,9 @@ export default function AccountView() {
       setPhone("");
       setOtp("");
       setChallengeId("");
-      setPhoneMessage("আপনার ফোন নম্বর সফলভাবে যাচাই হয়েছে।");
+      setPhoneMessage("Your phone number has been verified successfully.");
     } catch (error) {
-      setPhoneError(error instanceof Error ? error.message : "OTP যাচাই করা যায়নি।");
+      setPhoneError(error instanceof Error ? error.message : "Could not verify the OTP.");
     } finally {
       setVerifyingOtp(false);
     }
@@ -280,14 +280,14 @@ export default function AccountView() {
       const { error } = await supabase.auth.signOut();
 
       if (error) {
-        throw new Error("লগআউট করা যায়নি। আবার চেষ্টা করুন।");
+        throw new Error("Could not sign out. Please try again.");
       }
 
       router.replace("/");
       router.refresh();
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "লগআউট করা যায়নি।"
+        error instanceof Error ? error.message : "Could not sign out."
       );
       setLoggingOut(false);
     }
@@ -300,43 +300,43 @@ export default function AccountView() {
           NEWEIX
         </Link>
         <Link href="/" className="account-home">
-          ← শপিং চালিয়ে যান
+          ← Continue shopping
         </Link>
       </header>
 
       <section className="account-content">
-        <h1>আমার অ্যাকাউন্ট</h1>
+        <h1>My account</h1>
         <p className="account-description">
-          আপনার ব্যক্তিগত তথ্য দেখুন ও আপডেট করুন।
+          View and update your personal information.
         </p>
 
         {loading ? (
-          <p role="status">অ্যাকাউন্ট লোড হচ্ছে…</p>
+          <p role="status">Loading account…</p>
         ) : (
           <>
             <div className="account-email">
               {avatarUrl && (
-                <img src={avatarUrl} alt="প্রোফাইল ছবি" width={64} height={64}
+                <img src={avatarUrl} alt="Profile picture" width={64} height={64}
                   referrerPolicy="no-referrer"
                   style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover" }} />
               )}
-              <span>লগইন ইমেইল</span>
+              <span>Sign-in email</span>
               <div className="account-email-value">
-                <strong>{email || "ইমেইল দেওয়া নেই"}</strong>
-                {emailVerified && <span className="verified-badge" aria-label="ইমেইল যাচাইকৃত"><Icon name="check" size={13} /> Verified</span>}
+                <strong>{email || "No email provided"}</strong>
+                {emailVerified && <span className="verified-badge" aria-label="Email verified"><Icon name="check" size={13} /> Verified</span>}
               </div>
             </div>
 
             <form className="account-form" onSubmit={handleSave}>
               {!phoneVerified && (
                 <p className="phone-required" role="status">
-                  অ্যাকাউন্টের অন্যান্য সুবিধা ব্যবহারের আগে আপনার বাংলাদেশি মোবাইল নম্বর OTP দিয়ে যাচাই করুন।
+                  Verify your Bangladesh mobile number by OTP to access additional account features.
                 </p>
               )}
 
               {phoneVerified && (
                 <>
-                  <label htmlFor="customer-name">আপনার নাম</label>
+                  <label htmlFor="customer-name">Your name</label>
                   <input
                     id="customer-name"
                     type="text"
@@ -348,7 +348,7 @@ export default function AccountView() {
                     onChange={(event) => setName(event.target.value)}
                   />
 
-                  <label htmlFor="customer-date-of-birth">জন্মতারিখ (ঐচ্ছিক)</label>
+                  <label htmlFor="customer-date-of-birth">Date of birth (optional)</label>
                   <input
                     id="customer-date-of-birth"
                     type="date"
@@ -362,15 +362,15 @@ export default function AccountView() {
               )}
 
               <div className="phone-verification">
-                <strong>ফোন নম্বর</strong>
+                <strong>Phone number</strong>
                 {phoneVerified && !editingPhone ? (
                   <div className="verified-phone-row">
                     <span>{verifiedPhone}</span>
                     <button
                       className="phone-edit-button"
                       type="button"
-                      aria-label="ফোন নম্বর পরিবর্তন করুন"
-                      title="ফোন নম্বর পরিবর্তন করুন"
+                      aria-label="Change phone number"
+                      title="Change phone number"
                       onClick={() => {
                         setEditingPhone(true);
                         setPhone("");
@@ -380,7 +380,7 @@ export default function AccountView() {
                     >
                       <Icon name="edit" size={17} />
                     </button>
-                    <span className="verified-badge" aria-label="ফোন নম্বর যাচাইকৃত"><Icon name="check" size={13} /> Verified</span>
+                    <span className="verified-badge" aria-label="Phone number verified"><Icon name="check" size={13} /> Verified</span>
                   </div>
                 ) : (
                   <>
@@ -392,26 +392,26 @@ export default function AccountView() {
                         setChallengeId("");
                         setPhoneMessage("");
                         setPhoneError("");
-                      }}>বাতিল</button>
+                      }}>Cancel</button>
                     )}
-                    <label htmlFor="customer-phone">মোবাইল নম্বর</label>
+                    <label htmlFor="customer-phone">Mobile number</label>
                     <input
                       id="customer-phone"
                       type="tel"
                       autoComplete="tel"
                       maxLength={20}
-                      placeholder="যেমন: 01XXXXXXXXX"
+                      placeholder="Example: 01XXXXXXXXX"
                       value={phone}
                       onChange={(event) => setPhone(event.target.value)}
                       disabled={sendingOtp || verifyingOtp}
                     />
                     <button type="button" onClick={() => void handleSendOtp()}
                       disabled={sendingOtp || verifyingOtp || !phone.trim()}>
-                      <><Icon name={sendingOtp ? "refresh" : "send"} size={16} /> {sendingOtp ? "OTP পাঠানো হচ্ছে…" : "OTP পাঠান"}</>
+                      <><Icon name={sendingOtp ? "refresh" : "send"} size={16} /> {sendingOtp ? "Sending OTP…" : "Send OTP"}</>
                     </button>
                     {challengeId && (
                       <>
-                        <label htmlFor="customer-phone-otp">৬ সংখ্যার OTP</label>
+                        <label htmlFor="customer-phone-otp">6-digit OTP</label>
                         <input
                           id="customer-phone-otp"
                           type="text"
@@ -424,7 +424,7 @@ export default function AccountView() {
                         />
                         <button type="button" onClick={() => void handleVerifyOtp()}
                           disabled={verifyingOtp || otp.length !== 6}>
-                          <><Icon name={verifyingOtp ? "refresh" : "shield"} size={16} /> {verifyingOtp ? "যাচাই হচ্ছে…" : "OTP যাচাই করুন"}</>
+                          <><Icon name={verifyingOtp ? "refresh" : "shield"} size={16} /> {verifyingOtp ? "Verifying…" : "Verify OTP"}</>
                         </button>
                       </>
                     )}
@@ -448,23 +448,23 @@ export default function AccountView() {
 
               {phoneVerified && (
                 <button type="submit" disabled={saving}>
-                  <><Icon name={saving ? "refresh" : "check"} size={16} /> {saving ? "সংরক্ষণ হচ্ছে…" : "তথ্য সংরক্ষণ করুন"}</>
+                  <><Icon name={saving ? "refresh" : "check"} size={16} /> {saving ? "Saving…" : "Save information"}</>
                 </button>
               )}
             </form>
 
             {phoneVerified && (
-              <nav className="account-links" aria-label="অ্যাকাউন্টের লিংক">
+              <nav className="account-links" aria-label="Account links">
                 <Link href="/account/eixpay">EixPay Wallet · Eixon</Link>
                 <Link href="/account/neweix-plus">Neweix+ Membership</Link>
                 <Link href="/eixverse">EixVerse</Link>
-                <Link href="/orders">আমার অর্ডার</Link>
-                <Link href="/wishlist">পছন্দের তালিকা</Link>
-                <Link href="/cart">শপিং কার্ট</Link>
-                <Link href="/account/theme">🎨 নিজের থিম সাজাও</Link>
-                <Link href="/account/addresses">আমার ঠিকানা</Link>
-                <Link href="/account/privacy">গোপনীয়তা ও পছন্দ</Link>
-                <Link href="/account/data-requests">আমার তথ্য ও গোপনীয়তা</Link>
+                <Link href="/orders">My orders</Link>
+                <Link href="/wishlist">Wishlist</Link>
+                <Link href="/cart">Shopping cart</Link>
+                <Link href="/account/theme">🎨 Customize your theme</Link>
+                <Link href="/account/addresses">My addresses</Link>
+                <Link href="/account/privacy">Privacy & preferences</Link>
+                <Link href="/account/data-requests">My data and privacy</Link>
               </nav>
             )}
 
@@ -474,7 +474,7 @@ export default function AccountView() {
               onClick={handleLogout}
               disabled={loggingOut}
             >
-              <><Icon name={loggingOut ? "refresh" : "logout"} size={16} /> {loggingOut ? "লগআউট হচ্ছে…" : "লগআউট"}</>
+              <><Icon name={loggingOut ? "refresh" : "logout"} size={16} /> {loggingOut ? "Signing out…" : "Sign out"}</>
             </button>
           </>
         )}

@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const user = await getAuthenticatedCustomer();
   if (!user) {
-    return NextResponse.json({ error: "লগইন প্রয়োজন।" }, { status: 401 });
+    return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
   }
 
   try {
@@ -42,7 +42,7 @@ export async function GET() {
       error instanceof Error ? error.message : "unknown error"
     );
     return NextResponse.json(
-      { error: "ফোন যাচাইয়ের অবস্থা লোড করা যায়নি।" },
+      { error: "Unable to load phone verification status." },
       { status: 503 }
     );
   }

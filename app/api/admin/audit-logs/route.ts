@@ -22,7 +22,7 @@ async function getSupremeContext(): Promise<SupremeContext> {
   const { data: { user }, error: authError } = await session.auth.getUser();
 
   if (authError || !user) {
-    return { ok: false, error: "লগইন আবশ্যক।", status: 401 };
+    return { ok: false, error: "Authentication required.", status: 401 };
   }
 
   const { data: profile, error: profileError } = await session
@@ -32,14 +32,14 @@ async function getSupremeContext(): Promise<SupremeContext> {
     .maybeSingle();
 
   if (profileError || !profile || profile.is_active !== true || profile.role !== "supreme") {
-    return { ok: false, error: "শুধু সক্রিয় Supreme অ্যাকাউন্ট এই তথ্য দেখতে পারবে।", status: 403 };
+    return { ok: false, error: "Only an active Supreme account can view this information.", status: 403 };
   }
 
   const { data: assurance, error: mfaError } =
     await session.auth.mfa.getAuthenticatorAssuranceLevel();
 
   if (mfaError || assurance?.currentLevel !== "aal2") {
-    return { ok: false, error: "Supreme অ্যাকাউন্টের MFA যাচাই সম্পন্ন করুন।", status: 403 };
+    return { ok: false, error: "Complete MFA verification for the Supreme account.", status: 403 };
   }
 
   return { ok: true, userId: user.id };
@@ -76,20 +76,20 @@ export async function GET(request: Request) {
     const to = url.searchParams.get("to");
 
     if (!/^\d+$/.test(rawLimit) || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
-      return fail("limit 1 থেকে 100-এর মধ্যে হতে হবে।", 400);
+      return fail("Limit must be between 1 and 100.", 400);
     }
     if (cursor !== null && (!/^\d+$/.test(cursor) || !Number.isSafeInteger(Number(cursor)) || Number(cursor) < 1)) {
-      return fail("সঠিক pagination cursor দিন।", 400);
+      return fail("Provide a valid pagination cursor.", 400);
     }
     if (actorId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(actorId)) {
-      return fail("সঠিক actor ID দিন।", 400);
+      return fail("Provide a valid actor ID.", 400);
     }
     if ((action && action.length > 100) || (targetType && targetType.length > 100)) {
-      return fail("Filter 100 অক্ষরের মধ্যে রাখুন।", 400);
+      return fail("Filter must be 100 characters or fewer.", 400);
     }
-    if (from && !Number.isFinite(Date.parse(from))) return fail("শুরুর তারিখ সঠিক নয়।", 400);
-    if (to && !Number.isFinite(Date.parse(to))) return fail("শেষের তারিখ সঠিক নয়।", 400);
-    if (from && to && Date.parse(from) > Date.parse(to)) return fail("তারিখের সীমা সঠিক নয়।", 400);
+    if (from && !Number.isFinite(Date.parse(from))) return fail("Start date is invalid.", 400);
+    if (to && !Number.isFinite(Date.parse(to))) return fail("End date is invalid.", 400);
+    if (from && to && Date.parse(from) > Date.parse(to)) return fail("Date range is invalid.", 400);
 
     const admin = await getAdminClient();
     let query = admin
@@ -108,7 +108,7 @@ export async function GET(request: Request) {
     const { data, error } = await query;
     if (error) {
       console.error("Audit log query failed:", { code: error.code, message: error.message });
-      return fail("অডিট লগ লোড করা যায়নি।", 500);
+      return fail("Could not load audit logs.", 500);
     }
 
     const logs = data ?? [];
@@ -120,6 +120,6 @@ export async function GET(request: Request) {
     );
   } catch (error) {
     console.error("Audit logs GET failed:", error);
-    return fail("সার্ভারে সমস্যা হয়েছে।", 500);
+    return fail("A server error occurred.", 500);
   }
 }

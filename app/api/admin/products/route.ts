@@ -73,7 +73,7 @@ async function getStaffContext(): Promise<StaffContext> {
   } = await session.auth.getUser();
 
   if (userError || !user) {
-    return { error: "লগইন আবশ্যক।", status: 401 };
+    return { error: "Authentication required.", status: 401 };
   }
 
   const { data: profile, error } = await session
@@ -88,7 +88,7 @@ async function getStaffContext(): Promise<StaffContext> {
     profile.is_active !== true ||
     !["supreme", "admin", "staff"].includes(profile.role)
   ) {
-    return { error: "এই কাজের অনুমতি নেই।", status: 403 };
+    return { error: "You are not authorized to perform this action.", status: 403 };
   }
 
   if (profile.role === "supreme") {
@@ -97,7 +97,7 @@ async function getStaffContext(): Promise<StaffContext> {
 
     if (mfaError || assurance?.currentLevel !== "aal2") {
       return {
-        error: "Supreme অ্যাকাউন্টের MFA যাচাই সম্পন্ন করুন।",
+        error: "Complete MFA verification for the Supreme account.",
         status: 403,
       };
     }
@@ -168,7 +168,7 @@ export async function GET() {
 
     if (error) {
       console.error("Admin products GET failed:", error.message);
-      return errorResponse("পণ্যের তালিকা লোড করা যায়নি।", 500);
+      return errorResponse("Could not load the product list.", 500);
     }
 
     return NextResponse.json(
@@ -177,7 +177,7 @@ export async function GET() {
     );
   } catch (error) {
     console.error("Admin products GET error:", error);
-    return errorResponse("সার্ভারে সমস্যা হয়েছে।", 500);
+    return errorResponse("A server error occurred.", 500);
   }
 }
 
@@ -190,7 +190,7 @@ export async function POST(request: Request) {
     }
 
     if (!["supreme", "admin"].includes(staff.role)) {
-      return errorResponse("পণ্য যোগ করার অনুমতি নেই।", 403);
+      return errorResponse("You are not authorized to add products.", 403);
     }
 
     const contentLength = request.headers.get("content-length");
@@ -199,18 +199,18 @@ export async function POST(request: Request) {
       const size = Number(contentLength);
 
       if (!Number.isSafeInteger(size) || size < 0) {
-        return errorResponse("অনুরোধের আকার সঠিক নয়।", 400);
+        return errorResponse("Request size is invalid.", 400);
       }
 
       if (size > MAX_BODY_BYTES) {
-        return errorResponse("অনুরোধটি অনেক বড়।", 413);
+        return errorResponse("Request is too large.", 413);
       }
     }
 
     const raw = await request.text();
 
     if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) {
-      return errorResponse("অনুরোধটি অনেক বড়।", 413);
+      return errorResponse("Request is too large.", 413);
     }
 
     let body: unknown;
@@ -218,11 +218,11 @@ export async function POST(request: Request) {
     try {
       body = JSON.parse(raw);
     } catch {
-      return errorResponse("সঠিক JSON তথ্য পাঠান।", 400);
+      return errorResponse("Provide valid JSON data.", 400);
     }
 
     if (!isRecord(body)) {
-      return errorResponse("পণ্যের তথ্য সঠিক নয়।", 400);
+      return errorResponse("Product information is invalid.", 400);
     }
 
     const name = typeof body.name === "string" ? body.name.trim() : "";
@@ -237,7 +237,7 @@ export async function POST(request: Request) {
     const lowStockThreshold = body.low_stock_threshold ?? 5;
 
     if (!name || name.length > 200) {
-      return errorResponse("পণ্যের নাম দিন (সর্বোচ্চ ২০০ অক্ষর)।", 400);
+      return errorResponse("Provide a product name (maximum 200 characters).", 400);
     }
 
     if (
@@ -245,7 +245,7 @@ export async function POST(request: Request) {
       slug.length > 200
     ) {
       return errorResponse(
-        "Slug ইংরেজি ছোট অক্ষর, সংখ্যা ও হাইফেন দিয়ে লিখুন।",
+        "Slug must use lowercase English letters, numbers, and hyphens.",
         400
       );
     }
@@ -257,7 +257,7 @@ export async function POST(request: Request) {
       price > MAX_PRICE
     ) {
       return errorResponse(
-        "পণ্যমূল্য ০ থেকে ১০০০০০০০০০-এর মধ্যে দিন।",
+        "Product price must be between 0 and 1,000,000,000.",
         400
       );
     }
@@ -269,7 +269,7 @@ export async function POST(request: Request) {
       stock > 1_000_000
     ) {
       return errorResponse(
-        "স্টকের পরিমাণ ০ থেকে ১০০০০০০-এর মধ্যে হতে হবে।",
+        "Stock quantity must be between 0 and 1,000,000.",
         400
       );
     }
@@ -290,7 +290,7 @@ export async function POST(request: Request) {
       lowStockThreshold < 0 ||
       lowStockThreshold > 1_000_000
     ) {
-      return errorResponse("পণ্যের অতিরিক্ত তথ্য সঠিক নয়।", 400);
+      return errorResponse("Additional product information is invalid.", 400);
     }
 
     const imageUrls = body.image_urls ?? [];
@@ -301,7 +301,7 @@ export async function POST(request: Request) {
       !imageUrls.every(isHttpsUrl)
     ) {
       return errorResponse(
-        "সর্বোচ্চ ১০টি বৈধ HTTPS ছবির লিংক দিন।",
+        "Provide up to 10 valid HTTPS image URLs.",
         400
       );
     }
@@ -313,7 +313,7 @@ export async function POST(request: Request) {
       variants.length > MAX_ITEMS ||
       !variants.every(isRecord)
     ) {
-      return errorResponse("ভ্যারিয়েন্টের তথ্য সঠিক নয়।", 400);
+      return errorResponse("Variant information is invalid.", 400);
     }
 
     const isActive = body.is_active ?? false;
@@ -323,13 +323,13 @@ export async function POST(request: Request) {
       typeof isActive !== "boolean" ||
       typeof isFeatured !== "boolean"
     ) {
-      return errorResponse("পণ্যের সক্রিয় অবস্থা সঠিক নয়।", 400);
+      return errorResponse("Product active status is invalid.", 400);
     }
 
     const categoryId = body.category_id ?? null;
 
     if (categoryId !== null && !isUuid(categoryId)) {
-      return errorResponse("ক্যাটাগরির ID সঠিক নয়।", 400);
+      return errorResponse("Category ID is invalid.", 400);
     }
 
     const sku =
@@ -353,7 +353,7 @@ export async function POST(request: Request) {
       videoUrl === undefined ||
       (videoUrl !== null && !isHttpsUrl(videoUrl))
     ) {
-      return errorResponse("SKU অথবা ভিডিও লিংক সঠিক নয়।", 400);
+      return errorResponse("SKU or video URL is invalid.", 400);
     }
 
     const supabase = await getAdminClient();
@@ -385,19 +385,19 @@ export async function POST(request: Request) {
 
       if (error.code === "23505") {
         return errorResponse(
-          "এই Slug বা SKU আগে থেকেই ব্যবহার করা হয়েছে।",
+          "This slug or SKU is already in use.",
           409
         );
       }
 
       if (error.code === "23503") {
         return errorResponse(
-          "নির্বাচিত ক্যাটাগরি ডেটাবেসে পাওয়া যায়নি।",
+          "Selected category was not found in the database.",
           400
         );
       }
 
-      return errorResponse("পণ্য তৈরি করা যায়নি।", 500);
+      return errorResponse("Could not create the product.", 500);
     }
 
     try {
@@ -428,6 +428,6 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error("Admin product POST error:", error);
-    return errorResponse("সার্ভারে সমস্যা হয়েছে।", 500);
+    return errorResponse("A server error occurred.", 500);
   }
 }

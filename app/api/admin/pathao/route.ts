@@ -25,7 +25,7 @@ async function authorizeAdmin(): Promise<AdminAuthResult> {
   const claimSubject = data?.claims?.sub;
   const userId = typeof claimSubject === "string" ? claimSubject : null;
   if (authError || !userId) {
-    return { ok: false, error: "লগইন প্রয়োজন।", status: 401 };
+    return { ok: false, error: "Authentication required.", status: 401 };
   }
 
   const { data: profile, error } = await supabase
@@ -36,14 +36,14 @@ async function authorizeAdmin(): Promise<AdminAuthResult> {
 
   if (error || !profile || profile.is_active !== true ||
       !["supreme", "admin"].includes(profile.role)) {
-    return { ok: false, error: "এই কাজের অনুমতি নেই।", status: 403 };
+    return { ok: false, error: "You are not authorized to perform this action.", status: 403 };
   }
 
   if (profile.role === "supreme") {
     const { data: assurance, error: mfaError } =
       await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     if (mfaError || assurance.currentLevel !== "aal2") {
-      return { ok: false, error: "Supreme অ্যাকাউন্টে MFA সম্পন্ন করুন।", status: 403 };
+      return { ok: false, error: "Complete MFA for the Supreme account.", status: 403 };
     }
   }
 
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
       return NextResponse.json({
         connected: true,
         environment: connection.environment,
-        message: "Pathao authentication সফল হয়েছে।",
+        message: "Pathao authentication succeeded.",
       }, { headers: { "Cache-Control": "no-store" } });
     }
 
@@ -97,7 +97,7 @@ export async function GET(request: Request) {
     if (action === "track") {
       const consignmentId = params.get("consignmentId") || "";
       if (!/^[A-Za-z0-9-]{3,80}$/.test(consignmentId)) {
-        return errorResponse("সঠিক Pathao Consignment ID দিন।", 400);
+        return errorResponse("Provide a valid Pathao Consignment ID.", 400);
       }
       const tracking = await getPathaoOrderInfo(consignmentId);
       const trackingRecord = tracking && typeof tracking === "object"
@@ -140,9 +140,9 @@ export async function GET(request: Request) {
       });
     }
 
-    return errorResponse("অজানা Pathao action।", 400);
+    return errorResponse("Unknown Pathao action.", 400);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Pathao সংযোগ ব্যর্থ।";
+    const message = error instanceof Error ? error.message : "Pathao connection failed.";
     console.error("Pathao admin GET failed:", message);
     const status = message.includes("not configured") ? 503 : 502;
     return errorResponse(message, status);
@@ -157,15 +157,15 @@ export async function POST(request: Request) {
   try {
     const raw = await request.text();
     if (new TextEncoder().encode(raw).byteLength > 8192) {
-      return errorResponse("অনুরোধটি অতিরিক্ত বড়।", 413);
+      return errorResponse("Request is too large.", 413);
     }
     body = JSON.parse(raw);
   } catch {
-    return errorResponse("সঠিক JSON তথ্য পাঠান।", 400);
+    return errorResponse("Provide valid JSON data.", 400);
   }
 
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return errorResponse("সঠিক তথ্য পাঠান।", 400);
+    return errorResponse("Provide valid data.", 400);
   }
 
   const input = body as Record<string, unknown>;
@@ -179,7 +179,7 @@ export async function POST(request: Request) {
         (typeof input.specialInstruction !== "string" || input.specialInstruction.length > 500)) ||
       (input.recipientAddress != null &&
         (typeof input.recipientAddress !== "string" || input.recipientAddress.trim().length < 10 || input.recipientAddress.trim().length > 220))) {
-    return errorResponse("অর্ডার, Store ID অথবা নির্দেশনা সঠিক নয়।", 400);
+    return errorResponse("Order, Store ID, or instructions are invalid.", 400);
   }
 
   const orderId = input.orderId;
@@ -207,8 +207,8 @@ export async function POST(request: Request) {
     const conflict = knownConflicts.some((code) => message.includes(code));
     return errorResponse(
       conflict
-        ? "এই অর্ডারটি এখন Pathao-তে পাঠানো যাবে। পেমেন্ট, অর্ডার Status অথবা আগের বুকিং যাচাই করুন।"
-        : "Pathao বুকিং শুরু করা যায়নি।",
+        ? "This order cannot be sent to Pathao yet. Check payment, order status, or an existing booking."
+        : "Could not start the Pathao booking.",
       conflict ? 409 : 503
     );
   }
@@ -233,7 +233,7 @@ export async function POST(request: Request) {
       delivery_status: "failed",
       delivery_error: "Customer name must be between 3 and 100 characters for Pathao.",
     }).eq("id", orderId).eq("delivery_status", "booking");
-    return errorResponse("Pathao-এর জন্য গ্রাহকের নাম ৩–১০০ অক্ষরের মধ্যে হতে হবে।", 400);
+    return errorResponse("Customer name for Pathao must be between 3 and 100 characters.", 400);
   }
 
   const recipientPhone = normalizePathaoPhone(order.customer_phone);
@@ -242,7 +242,7 @@ export async function POST(request: Request) {
       delivery_status: "failed",
       delivery_error: "Customer phone number is not a valid Bangladesh mobile number.",
     }).eq("id", orderId).eq("delivery_status", "booking");
-    return errorResponse("গ্রাহকের ফোন নম্বরটি Pathao-এর জন্য সঠিক বাংলাদেশি মোবাইল নম্বর নয়।", 400);
+    return errorResponse("Customer phone number is not a valid Bangladesh mobile number for Pathao.", 400);
   }
 
   const { data: items, error: itemsError } = await admin
@@ -255,7 +255,7 @@ export async function POST(request: Request) {
       delivery_status: "failed",
       delivery_error: "Order items could not be loaded.",
     }).eq("id", orderId).eq("delivery_status", "booking");
-    return errorResponse("অর্ডারের পণ্যতালিকা পাওয়া যায়নি।", 503);
+    return errorResponse("Order items could not be found.", 503);
   }
 
   const productIds = [...new Set(items.map((item) => item.product_id).filter(Boolean))];
@@ -269,7 +269,7 @@ export async function POST(request: Request) {
       delivery_status: "failed",
       delivery_error: "Product weight lookup failed.",
     }).eq("id", orderId).eq("delivery_status", "booking");
-    return errorResponse("পণ্যের ওজন যাচাই করা যায়নি।", 503);
+    return errorResponse("Could not verify product weight.", 503);
   }
 
   const weightById = new Map((products ?? []).map((product) => [
@@ -286,7 +286,7 @@ export async function POST(request: Request) {
       delivery_status: "failed",
       delivery_error: "Parcel weight exceeds Pathao's 10 kg API limit.",
     }).eq("id", orderId).eq("delivery_status", "booking");
-    return errorResponse("Pathao API-তে সর্বোচ্চ ১০ কেজি ওজনের পার্সেল পাঠানো যাবে।", 400);
+    return errorResponse("Pathao API supports parcels up to 10 kg.", 400);
   }
 
   const amountToCollect = order.payment_method === "cod"
@@ -302,7 +302,7 @@ export async function POST(request: Request) {
       delivery_status: "failed",
       delivery_error: "Full Pathao address must be between 10 and 220 characters.",
     }).eq("id", orderId).eq("delivery_status", "booking");
-    return errorResponse("Pathao-এর জন্য পূর্ণ ঠিকানা ১০–২২০ অক্ষরের মধ্যে দিন। রাস্তা/এলাকা, থানা/উপজেলা ও জেলা উল্লেখ করুন।", 400);
+    return errorResponse("Provide a complete Pathao address between 10 and 220 characters, including street/area, police station/upazila, and district.", 400);
   }
   const itemDescription = items
     .map((item) => `${item.product_name} × ${item.quantity}`)
@@ -336,7 +336,7 @@ export async function POST(request: Request) {
     if (saveError) {
       console.error("Pathao consignment created but local save failed:", saveError.message);
       return errorResponse(
-        `Pathao-তে বুকিং হয়েছে (Consignment ID: ${result.consignment_id}), কিন্তু NEWEIX-এ সংরক্ষণ হয়নি। এই ID দিয়ে Pathao panel-এ খুঁজে নিন।`,
+        `Booking was created in Pathao (Consignment ID: ${result.consignment_id}), but could not be saved in NEWEIX. Look it up in the Pathao panel using this ID.`,
         503
       );
     }
@@ -346,7 +346,7 @@ export async function POST(request: Request) {
       consignmentId: result.consignment_id,
       orderStatus: result.order_status ?? null,
       deliveryFee: result.delivery_fee ?? null,
-      message: "Pathao consignment সফলভাবে তৈরি হয়েছে।",
+      message: "Pathao consignment created successfully.",
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Pathao booking failed.";
@@ -365,8 +365,8 @@ export async function POST(request: Request) {
     console.error("Pathao order booking failed:", message);
     return errorResponse(
       uncertain
-        ? "Pathao উত্তর দেয়নি; বুকিং হয়েছে কি না নিশ্চিত নয়। একই অর্ডার আবার পাঠানোর আগে Pathao Merchant Panel-এ যাচাই করুন।"
-        : "Pathao বুকিং ব্যর্থ হয়েছে। তথ্য ও Pathao সংযোগ যাচাই করুন।",
+        ? "Pathao did not respond; booking status is unknown. Check the Pathao Merchant Panel before submitting the same order again."
+        : "Pathao booking failed. Verify the information and Pathao connection.",
       uncertain ? 504 : 502
     );
   }

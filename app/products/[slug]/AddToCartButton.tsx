@@ -4,6 +4,7 @@ import Link from "next/link";
 import Icon from "@/components/ui/icon";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/components/language-provider";
 
 type CartItem = { product_id: string; quantity: number };
 
@@ -27,11 +28,12 @@ export default function AddToCartButton({
   maxQuantity: number;
 }) {
   const [message, setMessage] = useState("");
+  const { t } = useLanguage();
   const router = useRouter();
 
   function add() {
     if (disabled || !Number.isSafeInteger(maxQuantity) || maxQuantity < 1) {
-      setMessage("পণ্যটি বর্তমানে স্টকে নেই।");
+      setMessage(t("unavailable"));
       return;
     }
 
@@ -47,41 +49,41 @@ export default function AddToCartButton({
 
       const current = merged.get(productId) ?? 0;
       if (current >= Math.min(maxQuantity, 100)) {
-        setMessage("স্টকে থাকা সর্বোচ্চ পরিমাণ ইতিমধ্যে কার্টে আছে।");
+        setMessage(t("maxStock"));
         return;
       }
 
       merged.set(productId, current + 1);
       const cart = Array.from(merged, ([product_id, quantity]) => ({ product_id, quantity }));
       localStorage.setItem("neweix_cart", JSON.stringify(cart));
-      setMessage("কার্টে যোগ হয়েছে।");
+      setMessage(t("cartAdded"));
     } catch {
-      setMessage("কার্টে যোগ করা যায়নি। আবার চেষ্টা করুন।");
+      setMessage(t("addToCartError"));
     }
   }
 
   function buyNow() {
     if (disabled || !Number.isSafeInteger(maxQuantity) || maxQuantity < 1) {
-      setMessage("পণ্যটি বর্তমানে স্টকে নেই।");
+      setMessage(t("unavailable"));
       return;
     }
     try {
       localStorage.setItem("neweix_buy_now", JSON.stringify([{ product_id: productId, quantity: 1 }]));
       router.push("/checkout?buyNow=1");
     } catch {
-      setMessage("এখনই অর্ডার শুরু করা যায়নি। আবার চেষ্টা করুন।");
+      setMessage(t("buyNowError"));
     }
   }
 
   return (
     <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
       <button type="button" className="primary-button" onClick={add} disabled={disabled}>
-        {disabled ? "স্টক শেষ" : <><Icon name="cart" size={18} /> কার্টে যোগ করুন</>}
+        {disabled ? t("outOfStock") : <><Icon name="cart" size={18} /> {t("addToCart")}</> }
       </button>
       <button type="button" className="primary-button" onClick={buyNow} disabled={disabled} style={{ background: "transparent", color: "var(--primary)", marginTop: 0 }}>
-        <Icon name="sparkles" size={18} /> এখনই কিনুন (Buy Now)
+        <Icon name="sparkles" size={18} /> {t("buyNow")}
       </button>
-      <Link href="/cart"><Icon name="cart" size={16} /> কার্ট দেখুন</Link>
+      <Link href="/cart"><Icon name="cart" size={16} /> {t("cart")} </Link>
       {message && <p role="status" aria-live="polite">{message}</p>}
     </div>
   );

@@ -64,14 +64,14 @@ export async function POST(request: Request) {
 
     if (!Number.isSafeInteger(size) || size < 0) {
       return errorResponse(
-        "অনুরোধের আকার সঠিক নয়।",
+        "Invalid request size.",
         400
       );
     }
 
     if (size > MAX_BODY_BYTES) {
       return errorResponse(
-        "অনুরোধের আকার অনেক বড়।",
+        "The request payload is too large.",
         413
       );
     }
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
       MAX_BODY_BYTES
     ) {
       return errorResponse(
-        "অনুরোধের আকার অনেক বড়।",
+        "The request payload is too large.",
         413
       );
     }
@@ -96,14 +96,14 @@ export async function POST(request: Request) {
     rawBody = JSON.parse(text);
   } catch {
     return errorResponse(
-      "সঠিক JSON তথ্য পাঠান।",
+      "Submit valid JSON.",
       400
     );
   }
 
   if (!isRecord(rawBody)) {
     return errorResponse(
-      "অর্ডারের তথ্য সঠিক নয়।",
+      "Invalid order details.",
       400
     );
   }
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
 
   if (!shippingDivisionCode || !shippingDistrictCode || !shippingUpazilaCode
       || !shippingUnionCode || !shippingVillage) {
-    return errorResponse("বিভাগ, জেলা, উপজেলা, ইউনিয়ন/এলাকা এবং গ্রাম/ওয়ার্ড নির্বাচন বা লিখুন।", 400);
+    return errorResponse("Select or enter your division, district, upazila, union/area, and village/ward.", 400);
   }
 
   const resolvedAddress = resolveBangladeshAddress(
@@ -146,16 +146,16 @@ export async function POST(request: Request) {
     shippingUnionCode
   );
   if (!resolvedAddress) {
-    return errorResponse("নির্বাচিত বিভাগ, জেলা, উপজেলা ও ইউনিয়নের সম্পর্ক সঠিক নয়। আবার নির্বাচন করুন।", 400);
+    return errorResponse("The selected division, district, upazila, and union do not match. Please select them again.", 400);
   }
   if (shippingUpazilaCode === "other" && (!shippingUpazilaOther || shippingUpazilaOther.length < 2 || shippingUpazilaOther.length > 120)) {
-    return errorResponse("তালিকায় না থাকা উপজেলার নাম লিখুন।", 400);
+    return errorResponse("Enter the upazila name if it is not listed.", 400);
   }
   if (shippingUnionCode === "other" && (!shippingUnionOther || shippingUnionOther.length < 2 || shippingUnionOther.length > 120)) {
-    return errorResponse("তালিকায় না থাকা ইউনিয়ন বা এলাকার নাম লিখুন।", 400);
+    return errorResponse("Enter the union or area name if it is not listed.", 400);
   }
   if (shippingVillage.length < 2 || shippingVillage.length > 160) {
-    return errorResponse("গ্রাম, ওয়ার্ড বা মহল্লার নাম ২–১৬০ অক্ষরের মধ্যে লিখুন।", 400);
+    return errorResponse("Enter a village, ward, or neighborhood name between 2 and 160 characters.", 400);
   }
   const shippingCity = resolvedAddress.district.bn_name;
 
@@ -165,7 +165,7 @@ export async function POST(request: Request) {
     !shippingAddress
   ) {
     return errorResponse(
-      "নাম, ফোন নম্বর ও ঠিকানা দিন।",
+      "Enter your name, phone number, and address.",
       400
     );
   }
@@ -175,7 +175,7 @@ export async function POST(request: Request) {
     customerName.length > 120
   ) {
     return errorResponse(
-      "নাম ২ থেকে ১২০ অক্ষরের মধ্যে হতে হবে।",
+      "Name must be between 2 and 120 characters.",
       400
     );
   }
@@ -187,7 +187,7 @@ export async function POST(request: Request) {
     customerPhone.replace(/\D/g, "").length < 7
   ) {
     return errorResponse(
-      "সঠিক ফোন নম্বর দিন।",
+      "Enter a valid phone number.",
       400
     );
   }
@@ -197,7 +197,7 @@ export async function POST(request: Request) {
     shippingAddress.length > 1000
   ) {
     return errorResponse(
-      "ঠিকানা ৫ থেকে ১০০০ অক্ষরের মধ্যে হতে হবে।",
+      "Address must be between 5 and 1,000 characters.",
       400
     );
   }
@@ -210,7 +210,7 @@ export async function POST(request: Request) {
       )
     ) {
       return errorResponse(
-        "সঠিক ইমেইল ঠিকানা দিন।",
+        "Enter a valid email address.",
         400
       );
     }
@@ -221,7 +221,7 @@ export async function POST(request: Request) {
     shippingCity.length > 120
   ) {
     return errorResponse(
-      "শহর বা জেলার নাম অনেক বড়।",
+      "City or district name is too long.",
       400
     );
   }
@@ -230,11 +230,11 @@ export async function POST(request: Request) {
   let couponCode: string | null = null;
   if (rawBody.coupon_code != null && rawBody.coupon_code !== "") {
     if (typeof rawBody.coupon_code !== "string") {
-      return errorResponse("কুপন কোড সঠিক নয়।", 400);
+      return errorResponse("Invalid coupon code.", 400);
     }
     couponCode = rawBody.coupon_code.trim().toUpperCase();
     if (!/^[A-Z0-9_-]{3,40}$/.test(couponCode)) {
-      return errorResponse("কুপন কোড ৩–৪০ অক্ষরের ইংরেজি অক্ষর, সংখ্যা, হাইফেন বা আন্ডারস্কোর হতে হবে।", 400);
+      return errorResponse("Coupon codes must be 3–40 characters and may contain English letters, numbers, hyphens, or underscores.", 400);
     }
   }
 
@@ -251,7 +251,7 @@ export async function POST(request: Request) {
     )
   ) {
     return errorResponse(
-      "সঠিক পেমেন্ট পদ্ধতি নির্বাচন করুন।",
+      "Select a valid payment method.",
       400
     );
   }
@@ -265,19 +265,19 @@ export async function POST(request: Request) {
 
   if (paymentMethod === "cod") {
     if (transactionId) {
-      return errorResponse("COD পণ্যের পেমেন্টের Transaction ID গ্রহণযোগ্য নয়।", 400);
+      return errorResponse("A transaction ID is not accepted for cash-on-delivery product payments.", 400);
     }
     if (Boolean(deliveryFeePaymentMethod) !== Boolean(deliveryFeeTransactionId)) {
-      return errorResponse("ডেলিভারি চার্জের পেমেন্ট পদ্ধতি ও Transaction ID দুটোই দিন, অথবা দুটোই ফাঁকা রাখুন।", 400);
+      return errorResponse("Provide both the delivery-fee payment method and transaction ID, or leave both empty.", 400);
     }
     if (deliveryFeePaymentMethod && !["bkash", "nagad", "rocket"].includes(deliveryFeePaymentMethod)) {
-      return errorResponse("ডেলিভারি চার্জের জন্য bKash, Nagad অথবা Rocket নির্বাচন করুন।", 400);
+      return errorResponse("Select bKash, Nagad, or Rocket to pay the delivery fee.", 400);
     }
     if (deliveryFeeTransactionId && (deliveryFeeTransactionId.length > 120 || !/^[A-Za-z0-9-]+$/.test(deliveryFeeTransactionId))) {
-      return errorResponse("ডেলিভারি চার্জের সঠিক Transaction ID দিন।", 400);
+      return errorResponse("Enter a valid delivery-fee transaction ID.", 400);
     }
   } else if (deliveryFeePaymentMethod || deliveryFeeTransactionId) {
-    return errorResponse("MFS অর্ডারে ডেলিভারি চার্জ আলাদা করে জমা দেবেন না; মোট বিল একবারে পরিশোধ করুন।", 400);
+    return errorResponse("For MFS orders, do not pay the delivery fee separately; pay the total amount in one transaction.", 400);
   }
 
   if (paymentMethod !== "cod") {
@@ -287,7 +287,7 @@ export async function POST(request: Request) {
       !/^[A-Za-z0-9-]+$/.test(transactionId)
     ) {
       return errorResponse(
-        "সঠিক Transaction ID দিন। ইংরেজি অক্ষর, সংখ্যা ও হাইফেন ব্যবহার করুন।",
+        "Enter a valid transaction ID using English letters, numbers, and hyphens.",
         400
       );
     }
@@ -300,7 +300,7 @@ export async function POST(request: Request) {
     rawBody.items.length > MAX_ITEMS
   ) {
     return errorResponse(
-      "কার্টের পণ্যের তথ্য সঠিক নয়।",
+      "Invalid cart item details.",
       400
     );
   }
@@ -311,7 +311,7 @@ export async function POST(request: Request) {
   for (const item of rawBody.items) {
     if (!isRecord(item)) {
       return errorResponse(
-        "পণ্যের তথ্য সঠিক নয়।",
+        "Invalid product details.",
         400
       );
     }
@@ -328,7 +328,7 @@ export async function POST(request: Request) {
       quantity > MAX_QUANTITY
     ) {
       return errorResponse(
-        "পণ্যের ID অথবা পরিমাণ সঠিক নয়।",
+        "Invalid product ID or quantity.",
         400
       );
     }
@@ -337,7 +337,7 @@ export async function POST(request: Request) {
 
     if (seen.has(normalizedId)) {
       return errorResponse(
-        "একই পণ্য একাধিকবার পাঠানো যাবে না।",
+        "The same product cannot be submitted more than once.",
         400
       );
     }
@@ -408,7 +408,7 @@ export async function POST(request: Request) {
 
   if (!mobilePaymentEnabled) {
     return errorResponse(
-      "এই পেমেন্ট পদ্ধতি বর্তমানে চালু নেই। অন্য পদ্ধতি নির্বাচন করুন।",
+      "This payment method is currently unavailable. Select another method.",
       400
     );
   }
@@ -424,7 +424,7 @@ export async function POST(request: Request) {
     );
 
     return errorResponse(
-      "অর্ডার সার্ভার কনফিগার করা নেই।",
+      "The order service is not configured.",
       503
     );
   }
@@ -455,7 +455,7 @@ export async function POST(request: Request) {
       );
 
       return errorResponse(
-        "অর্ডার সিস্টেম সাময়িকভাবে ব্যস্ত। একটু পরে আবার চেষ্টা করুন।",
+        "The order system is temporarily busy. Please try again shortly.",
         503
       );
     }
@@ -467,7 +467,7 @@ export async function POST(request: Request) {
     const claimSubject = authData?.claims?.sub;
     if (authError) {
       console.error("Customer session verification failed:", authError.message);
-      return errorResponse("লগইন সেশন যাচাই করা যাচ্ছে না। আবার লগইন করুন।", 401);
+      return errorResponse("Unable to verify your login session. Please sign in again.", 401);
     }
     const signedInCustomerId = typeof claimSubject === "string" ? claimSubject : null;
     let linkedCustomerId: string | null = null;
@@ -481,7 +481,7 @@ export async function POST(request: Request) {
 
       if (profileError) {
         console.error("Customer phone verification lookup failed:", profileError.message);
-        return errorResponse("ফোন নম্বর যাচাই করা যাচ্ছে না। পরে আবার চেষ্টা করুন।", 503);
+        return errorResponse("Unable to verify the phone number. Please try again later.", 503);
       }
 
       const verifiedPhone =
@@ -494,7 +494,7 @@ export async function POST(request: Request) {
       if (verifiedPhone) {
         const submittedPhone = normalizeBangladeshPhone(customerPhone);
         if (!submittedPhone || submittedPhone !== verifiedPhone) {
-          return errorResponse("চেকআউটের ফোন নম্বর আপনার যাচাইকৃত অ্যাকাউন্ট নম্বরের সঙ্গে মিলছে না।", 400);
+          return errorResponse("The checkout phone number does not match your verified account phone number.", 400);
         }
         customerPhone = verifiedPhone;
         linkedCustomerId = signedInCustomerId;
@@ -563,7 +563,7 @@ export async function POST(request: Request) {
         )
       ) {
         return errorResponse(
-          "এই Transaction ID আগে ব্যবহার করা হয়েছে। পেমেন্টের তথ্য যাচাই করে সঠিক Transaction ID দিন।",
+          "This transaction ID has already been used. Verify the payment details and enter the correct transaction ID.",
           409
         );
       }
@@ -573,13 +573,13 @@ export async function POST(request: Request) {
         errorMessage.includes("discount")
       ) {
         return errorResponse(
-          "কুপন কোডটি অকার্যকর, মেয়াদোত্তীর্ণ, ব্যবহারের সীমা শেষ অথবা ন্যূনতম অর্ডার মূল্য পূরণ হয়নি।",
+          "The coupon is invalid, expired, has reached its usage limit, or the minimum order value has not been met.",
           400
         );
       }
 
       if (errorMessage.includes("delivery_fee_mfs_required") || errorMessage.includes("delivery_fee_payment_details_incomplete")) {
-        return errorResponse("এই অর্ডারের ডেলিভারি চার্জ আগে bKash, Nagad অথবা Rocket দিয়ে পরিশোধ করে Transaction ID দিন।", 400);
+        return errorResponse("Pay this order's delivery fee using bKash, Nagad, or Rocket first, then provide the transaction ID.", 400);
       }
 
       if (
@@ -587,7 +587,7 @@ export async function POST(request: Request) {
         errorMessage.includes("payment")
       ) {
         return errorResponse(
-          "পেমেন্টের তথ্য গ্রহণ করা যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।",
+          "Payment details could not be accepted. Verify the information and try again.",
           400
         );
       }
@@ -600,13 +600,13 @@ export async function POST(request: Request) {
         errorMessage.includes("insufficient")
       ) {
         return errorResponse(
-          "পণ্যটি এখন পর্যাপ্ত মজুতে নেই অথবা অর্ডার করা যাচ্ছে না। কার্ট আপডেট করে আবার চেষ্টা করুন।",
+          "This product is out of stock or unavailable. Update your cart and try again.",
           409
         );
       }
 
       return errorResponse(
-        "অর্ডার তৈরি করা যায়নি। তথ্য ও পণ্যের মজুত যাচাই করে আবার চেষ্টা করুন।",
+        "Unable to create the order. Verify your details and product availability, then try again.",
         400
       );
     }
@@ -620,7 +620,7 @@ export async function POST(request: Request) {
       );
 
       return errorResponse(
-        "অর্ডারের ফলাফল নিশ্চিত করা যায়নি।",
+        "The order result could not be confirmed.",
         500
       );
     }
@@ -628,7 +628,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         message:
-          "অর্ডার গ্রহণ করা হয়েছে। পেমেন্ট যাচাই বাকি আছে।",
+          "Your order has been received. Payment verification is pending.",
         order: data,
       },
       {
@@ -645,7 +645,7 @@ export async function POST(request: Request) {
     );
 
     return errorResponse(
-      "সার্ভারে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।",
+      "A server error occurred. Please try again later.",
       500
     );
   }

@@ -7,10 +7,10 @@ export const dynamic = "force-dynamic";
 const MAX_BODY_BYTES = 4 * 1024;
 
 function response() {
-  // একই বার্তা রাখি, যাতে অ্যাকাউন্টের ধরন প্রকাশ না পায়।
+  // Use the same response to avoid revealing the account type.
   return NextResponse.json({
     message:
-      "যদি এই ইমেইলে পাসওয়ার্ড লগইন চালু থাকে, তাহলে রিসেটের নির্দেশনা পাঠানো হবে।",
+      "If password sign-in is enabled for this email, password reset instructions will be sent.",
   });
 }
 
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
     if (contentLength > MAX_BODY_BYTES) {
       return NextResponse.json(
-        { error: "অনুরোধটি অনেক বড়।" },
+        { error: "The request payload is too large." },
         { status: 413 }
       );
     }
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
     if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
       return NextResponse.json(
-        { error: "অনুরোধটি অনেক বড়।" },
+        { error: "The request payload is too large." },
         { status: 413 }
       );
     }
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       body = JSON.parse(rawBody);
     } catch {
       return NextResponse.json(
-        { error: "অনুরোধটি সঠিক নয়।" },
+        { error: "Invalid request." },
         { status: 400 }
       );
     }
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       body.captchaToken.length > 4096
     ) {
       return NextResponse.json(
-        { error: "সঠিক ইমেইল দিন।" },
+        { error: "Enter a valid email address." },
         { status: 400 }
       );
     }
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
     ) {
       return NextResponse.json(
-        { error: "সঠিক ইমেইল দিন।" },
+        { error: "Enter a valid email address." },
         { status: 400 }
       );
     }
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     if (!supabaseUrl || !anonKey || !serviceRoleKey) {
       console.error("Password reset API environment variables are missing.");
       return NextResponse.json(
-        { error: "সার্ভারে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।" },
+        { error: "A server error occurred. Please try again later." },
         { status: 500 }
       );
     }
@@ -103,12 +103,12 @@ export async function POST(request: Request) {
     if (checkError) {
       console.error("Password account check failed:", checkError.message);
       return NextResponse.json(
-        { error: "সার্ভারে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।" },
+        { error: "A server error occurred. Please try again later." },
         { status: 500 }
       );
     }
 
-    // OAuth-only অথবা পাসওয়ার্ডবিহীন অ্যাকাউন্টে ইমেইল পাঠাব না।
+    // Do not send reset email for OAuth-only or passwordless accounts.
     if (hasPassword !== true) {
       return response();
     }
@@ -131,14 +131,14 @@ export async function POST(request: Request) {
 
     if (resetError) {
       console.error("Password reset request failed:", resetError.message);
-      // অ্যাকাউন্টের অস্তিত্ব বা ধরন প্রকাশ করব না।
+      // Do not reveal whether the account exists or its type.
     }
 
     return response();
   } catch (error) {
     console.error("Password reset API failed:", error);
     return NextResponse.json(
-      { error: "সার্ভারে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।" },
+      { error: "A server error occurred. Please try again later." },
       { status: 500 }
     );
   }

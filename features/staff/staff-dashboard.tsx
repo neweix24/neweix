@@ -9,23 +9,23 @@ export default function StaffDashboard() {
       <div className="mx-auto max-w-5xl">
         <header className="mb-8">
           <p className="eyebrow">NEWEIX · STAFF WORKSPACE</p>
-          <h1 className="text-3xl font-bold">স্টাফ ড্যাশবোর্ড</h1>
-          <p>আপনার অনুমতি অনুযায়ী পণ্য ও স্টকের তথ্য দেখুন।</p>
+          <h1 className="text-3xl font-bold">Staff Dashboard</h1>
+          <p>View product and stock information according to your permissions.</p>
         </header>
         <section className="grid gap-4 sm:grid-cols-2">
           <Link href="/admin/products" className="rounded-2xl border p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
             <span className="eyebrow">PRODUCTS & INVENTORY</span>
-            <h2 className="mt-2 flex items-center gap-2 text-xl font-bold"><Icon name="package" size={20} /> পণ্য ও স্টক দেখুন <Icon name="arrow-right" size={17} /></h2>
-            <p>পণ্যের তালিকা, বর্তমান মজুত ও কম স্টকের অবস্থা দেখুন।</p>
+            <h2 className="mt-2 flex items-center gap-2 text-xl font-bold"><Icon name="package" size={20} /> View Products & Stock <Icon name="arrow-right" size={17} /></h2>
+            <p>View the product list, current inventory, and low-stock status.</p>
           </Link>
-          <Link href="/admin/submissions" className="rounded-2xl border p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}><span className="eyebrow">PRODUCT SUBMISSIONS</span><h2 className="mt-2 flex items-center gap-2 text-xl font-bold"><Icon name="tag" size={20} /> পণ্য অনুমোদনের জন্য জমা দিন <Icon name="arrow-right" size={17} /></h2><p>নতুন পণ্যের প্রস্তাব পাঠান এবং অনুমোদনের অবস্থা দেখুন।</p></Link>
+          <Link href="/admin/submissions" className="rounded-2xl border p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}><span className="eyebrow">PRODUCT SUBMISSIONS</span><h2 className="mt-2 flex items-center gap-2 text-xl font-bold"><Icon name="tag" size={20} /> Submit Products for Approval <Icon name="arrow-right" size={17} /></h2><p>Submit new product proposals and check their approval status.</p></Link>
           <Link href="/" className="rounded-2xl border p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
             <span className="eyebrow">STOREFRONT</span>
-            <h2 className="mt-2 flex items-center gap-2 text-xl font-bold"><Icon name="globe" size={20} /> ওয়েবসাইট দেখুন <Icon name="arrow-right" size={17} /></h2>
-            <p>NEWEIX-এর মূল ওয়েবসাইটে ফিরে যান।</p>
+            <h2 className="mt-2 flex items-center gap-2 text-xl font-bold"><Icon name="globe" size={20} /> View Website <Icon name="arrow-right" size={17} /></h2>
+            <p>Return to the NEWEIX storefront.</p>
           </Link>
         </section>
-        <p className="mt-6 text-sm">স্টাফ অ্যাকাউন্ট থেকে পণ্য তৈরি, সম্পাদনা, মুছে ফেলা বা অর্ডার পরিচালনার সুবিধা দেওয়া হয়নি।</p>
+        <p className="mt-6 text-sm">Staff accounts cannot create, edit, or delete products, or manage orders.</p>
       </div>
     </main>
   );

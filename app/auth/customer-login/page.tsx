@@ -53,7 +53,7 @@ function CustomerLoginForm() {
       "expired-callback": () => setCaptchaToken(""),
       "error-callback": () => {
         setCaptchaToken("");
-        setMessage("নিরাপত্তা যাচাই সম্পন্ন হয়নি। আবার চেষ্টা করুন।");
+        setMessage("Security verification was not completed. Please try again.");
       },
     });
     return () => {
@@ -106,13 +106,13 @@ function CustomerLoginForm() {
       if (error) {
         setMessage(
           provider === "google"
-            ? "Google লগইন শুরু করা যায়নি। OAuth সেটিংস পরীক্ষা করুন।"
-            : "Facebook লগইন শুরু করা যায়নি। OAuth সেটিংস পরীক্ষা করুন।"
+            ? "Could not start Google sign-in. Check the OAuth settings."
+            : "Could not start Facebook sign-in. Check the OAuth settings."
         );
         setBusy(false);
       }
     } catch {
-      setMessage("লগইন পরিষেবা পাওয়া যাচ্ছে না। Supabase সেটিংস পরীক্ষা করুন।");
+      setMessage("The sign-in service is unavailable. Check the Supabase settings.");
       setBusy(false);
     }
   }
@@ -121,7 +121,7 @@ function CustomerLoginForm() {
     event.preventDefault();
     setMessage("");
     if (!captchaToken) {
-      setMessage("অ্যাকাউন্টের নিরাপত্তা যাচাই সম্পন্ন করুন।");
+      setMessage("Complete the account security verification.");
       return;
     }
     setBusy(true);
@@ -131,7 +131,7 @@ function CustomerLoginForm() {
 
       if (isSignUp) {
         if (fullName.trim().length < 2 || fullName.trim().length > 100) {
-          setMessage("নাম ২ থেকে ১০০ অক্ষরের মধ্যে লিখুন।");
+          setMessage("Enter a name between 2 and 100 characters.");
           return;
         }
 
@@ -149,7 +149,7 @@ function CustomerLoginForm() {
 
         resetCaptcha();
         if (error) {
-          setMessage("সাইনআপ করা যায়নি। ইমেইলটি আগে ব্যবহার করা হয়েছে কি না যাচাই করুন।");
+          setMessage("Could not create the account. Check whether this email address is already in use.");
           return;
         }
 
@@ -159,7 +159,7 @@ function CustomerLoginForm() {
           router.replace("/account");
           router.refresh();
         } else {
-          setMessage("সাইনআপ সফল হয়েছে। ইমেইলে পাঠানো লিংক নিশ্চিত করুন। এরপর অ্যাকাউন্টে গিয়ে ফোন নম্বর OTP দিয়ে যাচাই করুন।");
+          setMessage("Sign-up successful. Confirm the link sent to your email, then verify your phone number with an OTP in your account.");
         }
         return;
       }
@@ -172,7 +172,7 @@ function CustomerLoginForm() {
       resetCaptcha();
 
       if (error || !data.user) {
-        setMessage("ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।");
+        setMessage("The email address or password is incorrect.");
         return;
       }
 
@@ -181,7 +181,7 @@ function CustomerLoginForm() {
       router.refresh();
     } catch {
       resetCaptcha();
-      setMessage("লগইন করা যায়নি। আবার চেষ্টা করুন।");
+      setMessage("Could not sign in. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -193,7 +193,7 @@ function CustomerLoginForm() {
       src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
       strategy="afterInteractive"
       onLoad={() => setTurnstileReady(true)}
-      onError={() => setMessage("নিরাপত্তা যাচাই লোড করা যায়নি। পেজটি রিফ্রেশ করুন।")}
+      onError={() => setMessage("Could not load security verification. Refresh the page.")}
     />
     <main className="customer-auth">
       <section className="auth-brand-panel">
@@ -203,14 +203,14 @@ function CustomerLoginForm() {
 
         <div className="auth-brand-copy">
           <p className="auth-eyebrow">SMART SHOPPING, MADE SIMPLE</p>
-          <h1>আপনার পছন্দের কেনাকাটা, এক জায়গায়।</h1>
+          <h1>Your shopping, all in one place.</h1>
           <p>
-            অ্যাকাউন্টে প্রবেশ করে অর্ডার, ডেলিভারি, ঠিকানা ও পছন্দগুলো
-            সহজে পরিচালনা করুন।
+            Sign in to manage your orders, deliveries, addresses, and preferences
+            with ease.
           </p>
         </div>
 
-        <p className="auth-brand-footer">Neweix · আপনার বিশ্বস্ত অনলাইন শপ</p>
+        <p className="auth-brand-footer">NEWEIX · Your trusted online store</p>
       </section>
 
       <section className="auth-form-panel">
@@ -220,13 +220,13 @@ function CustomerLoginForm() {
           </Link>
 
           <p className="auth-eyebrow">WELCOME TO NEWEIX</p>
-          <h2>{isSignUp ? "NEWEIX অ্যাকাউন্ট তৈরি করুন" : "আপনার অ্যাকাউন্টে প্রবেশ করুন"}</h2>
+          <h2>{isSignUp ? "Create your NEWEIX account" : "Sign in to your account"}</h2>
           <p className="auth-subtitle">
-            Google বা Facebook দিয়ে সাইনআপ/লগইন করুন, অথবা ইমেইল ব্যবহার করুন।
+            Sign up or sign in with Google or Facebook, or use your email.
           </p>
           {searchParams.get("referral") === "1" && (
             <p role="status" className="mb-4 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3 text-sm leading-6" style={{ color: "var(--primary)" }}>
-              বন্ধুর আমন্ত্রণে NEWEIX-এ স্বাগতম। নতুন অ্যাকাউন্ট তৈরি করে ফোন নম্বর যাচাই ও প্রথম যোগ্য অর্ডার সম্পন্ন করলে Eixon referral reward পাওয়ার সুযোগ থাকবে।
+              Welcome to NEWEIX through a friend&apos;s invitation. Create an account, verify your phone number, and complete your first eligible order for a chance to receive an Eixon referral reward.
             </p>
           )}
 
@@ -237,7 +237,7 @@ function CustomerLoginForm() {
             onClick={() => void signInWithProvider("google")}
           >
             <span className="auth-google-mark" aria-hidden="true">G</span>
-            Google দিয়ে চালিয়ে যান
+            Continue with Google
           </button>
 
           <button
@@ -247,21 +247,21 @@ function CustomerLoginForm() {
             onClick={() => void signInWithProvider("facebook")}
           >
             <span className="auth-facebook-mark" aria-hidden="true">f</span>
-            Facebook দিয়ে চালিয়ে যান
+            Continue with Facebook
           </button>
 
           <div className="auth-divider">
-            <span>অথবা ইমেইল ব্যবহার করুন</span>
+            <span>Or continue with email</span>
           </div>
 
           <form className="auth-email-form" onSubmit={handleEmailAuth}>
             {isSignUp && (
               <>
-                <label htmlFor="customer-full-name">আপনার নাম</label>
+                <label htmlFor="customer-full-name">Your name</label>
                 <input id="customer-full-name" type="text" autoComplete="name" minLength={2} maxLength={100} required value={fullName} onChange={(event) => setFullName(event.target.value)} />
               </>
             )}
-            <label htmlFor="customer-email">ইমেইল ঠিকানা</label>
+            <label htmlFor="customer-email">Email address</label>
             <input
               id="customer-email"
               type="email"
@@ -273,8 +273,8 @@ function CustomerLoginForm() {
             />
 
             <div className="auth-password-label">
-              <label htmlFor="customer-password">{isSignUp ? "পাসওয়ার্ড তৈরি করুন" : "পাসওয়ার্ড"}</label>
-              <Link href="/auth/forgot-password">পাসওয়ার্ড ভুলে গেছেন?</Link>
+              <label htmlFor="customer-password">{isSignUp ? "Create a password" : "Password"}</label>
+              <Link href="/auth/forgot-password">Forgot password?</Link>
             </div>
 
             <input
@@ -282,7 +282,7 @@ function CustomerLoginForm() {
               type="password"
               autoComplete={isSignUp ? "new-password" : "current-password"}
               minLength={isSignUp ? 8 : undefined}
-              placeholder={isSignUp ? "কমপক্ষে ৮ অক্ষর" : "আপনার পাসওয়ার্ড"}
+              placeholder={isSignUp ? "At least 8 characters" : "Your password"}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
@@ -301,27 +301,27 @@ function CustomerLoginForm() {
               type="submit"
               disabled={busy}
             >
-              <><Icon name={busy ? "refresh" : "user"} size={17} /> {busy ? "অপেক্ষা করুন..." : isSignUp ? "অ্যাকাউন্ট তৈরি করুন" : "লগইন করুন"}</>
+              <><Icon name={busy ? "refresh" : "user"} size={17} /> {busy ? "Please wait..." : isSignUp ? "Create account" : "Sign in"}</>
             </button>
           </form>
 
           <p className="auth-privacy-note">
-            {isSignUp ? "সাইনআপের পর অ্যাকাউন্টের অতিরিক্ত সুবিধা চালু করতে ফোন নম্বর OTP দিয়ে যাচাই করুন।" : "নতুন গ্রাহক? ইমেইল দিয়ে অ্যাকাউন্ট তৈরি করতে নিচের অপশন ব্যবহার করুন।"}
+            {isSignUp ? "After signing up, verify your phone number with an OTP to enable additional account features." : "New customer? Use the option below to create an account with your email."}
           </p>
 
           <p className="auth-staff-note">
-            {isSignUp ? "আগে থেকেই অ্যাকাউন্ট আছে?" : "নতুন অ্যাকাউন্ট তৈরি করবেন?"}{" "}
+            {isSignUp ? "Already have an account?" : "Need to create an account?"}{" "}
             <button type="button" onClick={() => { setIsSignUp((value) => !value); setMessage(""); }} style={{ border: 0, padding: 0, background: "transparent", color: "var(--primary)", font: "inherit", fontWeight: 700, cursor: "pointer" }}>
-              <><Icon name="user" size={15} /> {isSignUp ? "লগইন করুন" : "সাইনআপ করুন"}</>
+              <><Icon name="user" size={15} /> {isSignUp ? "Sign in" : "Sign up"}</>
             </button>
           </p>
 
           <p className="auth-guest-note">
-            অ্যাকাউন্ট ছাড়াই অর্ডার করতে পারবেন। সাইনআপ করে ফোন নম্বর OTP যাচাই করলে অর্ডার অ্যাকাউন্টে সংরক্ষণসহ অতিরিক্ত সুবিধা পাবেন।
+            You can place an order without an account. Sign up and verify your phone number by OTP to save orders to your account and access additional features.
           </p>
 
           <p className="auth-staff-note">
-            স্টাফ বা অ্যাডমিন? <Link href="/auth/login">স্টাফ লগইন</Link>
+            Staff or administrator? <Link href="/auth/login">Staff sign-in</Link>
           </p>
         </div>
       </section>
@@ -607,7 +607,7 @@ export default function CustomerLoginPage() {
     <Suspense
       fallback={
         <main style={{ padding: 32, fontFamily: "Arial, sans-serif" }}>
-          লগইন পেজ লোড হচ্ছে...
+          Loading sign-in page...
         </main>
       }
     >

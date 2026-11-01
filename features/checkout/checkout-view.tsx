@@ -7,6 +7,7 @@ import styles from "./checkout-view.module.css";
 import { useEffect, useState, type FormEvent } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import BangladeshAddressFields from "@/features/checkout/bangladesh-address-fields";
+import { useLanguage } from "@/components/language-provider";
 
 type CartItem = {
   product_id: string;
@@ -41,8 +42,8 @@ type PaymentConfig = {
   };
 };
 
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("bn-BD", {
+function formatPrice(price: number, locale: string): string {
+  return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", {
     style: "currency",
     currency: "BDT",
     maximumFractionDigits: 0,
@@ -64,6 +65,7 @@ function isValidCartItem(item: unknown): item is CartItem {
 }
 
 export default function CheckoutView() {
+  const { locale } = useLanguage();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerPhone, setCustomerPhone] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
@@ -111,7 +113,7 @@ export default function CheckoutView() {
         const parsed: unknown = saved ? JSON.parse(saved) : [];
 
         if (!Array.isArray(parsed)) {
-          throw new Error("কার্টের তথ্য সঠিক নয়।");
+          throw new Error("Invalid cart data.");
         }
 
         const merged = new Map<string, number>();
@@ -120,7 +122,7 @@ export default function CheckoutView() {
           const quantity = (merged.get(item.product_id) ?? 0) + item.quantity;
 
           if (quantity > 100) {
-            throw new Error("একটি পণ্যের সর্বোচ্চ পরিমাণ ১০০টি।");
+            throw new Error("The maximum quantity per product is 100.");
           }
 
           merged.set(item.product_id, quantity);
@@ -139,7 +141,7 @@ export default function CheckoutView() {
           .then(async (response) => {
             const data = await response.json().catch(() => null);
             if (!response.ok || !data?.success) {
-              throw new Error("পেমেন্ট নম্বর লোড করা যায়নি।");
+              throw new Error("Could not load payment details.");
             }
             return data as PaymentConfig;
           })
@@ -148,7 +150,7 @@ export default function CheckoutView() {
               setPaymentConfigError(
                 err instanceof Error
                   ? err.message
-                  : "পেমেন্ট নম্বর লোড করা যায়নি।"
+                  : "Could not load payment details."
               );
             }
             return null;
@@ -161,7 +163,7 @@ export default function CheckoutView() {
                 async (response) => {
                   const data = await response.json().catch(() => null);
                   if (!response.ok || !Array.isArray(data?.data)) {
-                    throw new Error("পণ্যের তথ্য লোড করা যায়নি।");
+                    throw new Error("Could not load product information.");
                   }
                   return data.data as Product[];
                 }
@@ -204,7 +206,7 @@ export default function CheckoutView() {
       } catch (err) {
         if (!cancelled) {
           setError(
-            err instanceof Error ? err.message : "চেকআউট লোড করা যায়নি।"
+            err instanceof Error ? err.message : "Could not load checkout."
           );
         }
       } finally {
@@ -263,14 +265,14 @@ export default function CheckoutView() {
       );
       const result = await response.json().catch(() => null);
       if (!response.ok || !Number.isFinite(Number(result?.delivery_fee))) {
-        throw new Error(result?.error || "ডেলিভারি চার্জ হিসাব করা যায়নি।");
+        throw new Error(result?.error || "Could not calculate the delivery fee.");
       }
       const fee = Number(result.delivery_fee);
       setDeliveryFeeQuote(fee);
       return fee;
     } catch (err) {
       setDeliveryFeeQuote(null);
-      setError(err instanceof Error ? err.message : "ডেলিভারি চার্জ হিসাব করা যায়নি।");
+      setError(err instanceof Error ? err.message : "Could not calculate the delivery fee.");
       return null;
     } finally {
       setDeliveryQuoteLoading(false);
@@ -284,22 +286,22 @@ export default function CheckoutView() {
     setError("");
 
     if (!cart.length) {
-      setError("আপনার কার্ট খালি। আগে পণ্য যোগ করুন।");
+      setError("Your cart is empty. Add a product before checkout.");
       return;
     }
 
     if (missingProducts) {
-      setError("কার্টের কিছু পণ্যের তথ্য পাওয়া যায়নি। আবার যাচাই করুন।");
+      setError("Some cart products could not be found. Please review your cart.");
       return;
     }
 
     if (stockIssues.length) {
-      setError("কিছু পণ্যের মজুত পর্যাপ্ত নয়। পরিমাণ কমিয়ে আবার চেষ্টা করুন।");
+      setError("Some products do not have enough stock. Reduce the quantity and try again.");
       return;
     }
 
     if (paymentMethod !== "cod" && !selectedMobilePayment?.enabled) {
-      setError("এই পেমেন্ট পদ্ধতির নম্বর লোড হয়নি। পরে আবার চেষ্টা করুন।");
+      setError("Payment details for this method are unavailable. Please try again later.");
       return;
     }
 
@@ -311,7 +313,7 @@ export default function CheckoutView() {
     const quote = await loadDeliveryQuote(String(formData.get("shipping_city") ?? ""));
     if (quote === null) {
       setSubmitting(false);
-      setError("ডেলিভারি চার্জ নিশ্চিত করা যায়নি। শহর/জেলা যাচাই করে আবার চেষ্টা করুন।");
+      setError("Could not confirm the delivery fee. Check the city or district and try again.");
       return;
     }
 
@@ -320,13 +322,13 @@ export default function CheckoutView() {
 
     if (paymentMethod === "cod" &&
       (!deliveryFeeTransactionId || deliveryFeeTransactionId.length > 120 || !/^[A-Za-z0-9-]+$/.test(deliveryFeeTransactionId))) {
-      setError("ডেলিভারি চার্জের সঠিক Transaction ID দিন।");
+      setError("Enter a valid delivery-fee transaction ID.");
       setSubmitting(false);
       return;
     }
     if (paymentMethod !== "cod" &&
       (!transactionId || transactionId.length > 120 || !/^[A-Za-z0-9-]+$/.test(transactionId))) {
-      setError("সঠিক Transaction ID দিন (ইংরেজি অক্ষর, সংখ্যা ও হাইফেন)।");
+      setError("Enter a valid transaction ID using letters, numbers, and hyphens.");
       setSubmitting(false);
       return;
     }
@@ -363,7 +365,7 @@ export default function CheckoutView() {
 
       if (!response.ok) {
         throw new Error(
-          result?.error || result?.message || "অর্ডার তৈরি করা যায়নি।"
+          result?.error || result?.message || "Could not create the order."
         );
       }
 
@@ -371,7 +373,7 @@ export default function CheckoutView() {
 
       if (typeof createdOrderNumber !== "string" || !createdOrderNumber) {
         throw new Error(
-          "অর্ডারের নম্বর নিশ্চিত করা যায়নি। অর্ডারটি তৈরি হয়েছে কি না যাচাই করুন।"
+          "Could not confirm the order number. Please verify whether the order was created."
         );
       }
 
@@ -385,7 +387,7 @@ export default function CheckoutView() {
       setOrderNumber(createdOrderNumber);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "সংযোগে সমস্যা হয়েছে। আবার চেষ্টা করুন।"
+        err instanceof Error ? err.message : "A connection error occurred. Please try again."
       );
     } finally {
       setSubmitting(false);
@@ -407,7 +409,7 @@ export default function CheckoutView() {
   if (loading) {
     return (
       <main className={styles.page} aria-live="polite">
-        <p>চেকআউট লোড হচ্ছে...</p>
+        <p>Loading checkout...</p>
       </main>
     );
   }
@@ -416,23 +418,23 @@ export default function CheckoutView() {
     return (
       <main className={styles.page}>
         <p className="eyebrow">ORDER RECEIVED</p>
-        <h1>অর্ডার গ্রহণ করা হয়েছে!</h1>
-        <p>আপনার অর্ডার নম্বর:</p>
+        <h1>Your order has been received!</h1>
+        <p>Your order number:</p>
         <h2 className={styles.orderNumber}>{orderNumber}</h2>
 
         {submittedPaymentMethod === "cod" ? (
-          <p>পণ্যের মূল্য COD-এ পরিশোধ করবেন। ডেলিভারি চার্জের MFS পেমেন্ট যাচাই অপেক্ষমাণ।</p>
+          <p>Pay for the products on delivery. The mobile payment for the delivery fee is pending verification.</p>
         ) : (
           <p role="status">
-            পেমেন্টের Transaction ID জমা হয়েছে। পেমেন্ট যাচাই না হওয়া পর্যন্ত
-            অর্ডারটি অপেক্ষমাণ থাকবে। টাকা পাঠানোর রসিদ সংরক্ষণ করুন।
+            Your payment transaction ID has been submitted. Until the payment is verified,
+            your order will remain pending. Keep your payment receipt.
           </p>
         )}
 
-        <p>ডেলিভারি: Pathao Courier। বুকিংয়ের আগে অ্যাডমিন অনুমোদন করবেন।</p>
-        <p>ডেলিভারি চার্জ অর্ডারের বিবরণে দেখানো হয়েছে।</p>
-        <Link className="primary-button" href="/"><Icon name="home" size={17} /> হোমপেজে ফিরুন</Link>
-        <Link className={styles.secondaryLink} href="/track-order"><Icon name="truck" size={17} /> অর্ডার ট্র্যাক করুন</Link>
+        <p>Delivery: Pathao Courier. An administrator must approve the booking.</p>
+        <p>The delivery fee is shown in your order details.</p>
+        <Link className="primary-button" href="/"><Icon name="home" size={17} /> Return to homepage</Link>
+        <Link className={styles.secondaryLink} href="/track-order"><Icon name="truck" size={17} /> Track your order</Link>
       </main>
     );
   }
@@ -440,9 +442,9 @@ export default function CheckoutView() {
   if (cart.length === 0) {
     return (
       <main className={styles.page}>
-        <h1>আপনার কার্ট খালি</h1>
+        <h1>Your cart is empty</h1>
         {error && <p role="alert">{error}</p>}
-        <Link className="primary-button" href="/"><Icon name="grid" size={17} /> পণ্য দেখুন</Link>
+        <Link className="primary-button" href="/"><Icon name="grid" size={17} /> Browse products</Link>
       </main>
     );
   }
@@ -450,11 +452,11 @@ export default function CheckoutView() {
   return (
     <main className={styles.page}>
       <p className="eyebrow">CHECKOUT</p>
-      <h1>অর্ডার সম্পন্ন করুন</h1>
-      <p>আপনার ডেলিভারি তথ্য ও পেমেন্ট পদ্ধতি নির্বাচন করুন।</p>
+      <h1>Complete your order</h1>
+      <p>Enter your delivery details and choose a payment method.</p>
 
       <section aria-labelledby="summary-heading" className={styles.panel}>
-        <h2 id="summary-heading">অর্ডারের বিবরণ</h2>
+        <h2 id="summary-heading">Order details</h2>
 
         {cartDetails.map((item) => (
           <div
@@ -468,52 +470,52 @@ export default function CheckoutView() {
             }}
           >
             <div>
-              <p style={{ margin: 0 }}>{item.product?.name ?? "অজানা পণ্য"}</p>
+              <p style={{ margin: 0 }}>{item.product?.name ?? "Unknown product"}</p>
               <small>
-                {formatPrice(Number(item.product?.price ?? 0))} × {item.quantity}
+                {formatPrice(Number(item.product?.price ?? 0), locale)} × {item.quantity}
               </small>
             </div>
             <strong style={{ whiteSpace: "nowrap" }}>
-              {formatPrice(item.lineTotal)}
+              {formatPrice(item.lineTotal, locale)}
             </strong>
           </div>
         ))}
 
-        <p><strong>পণ্যের মোট মূল্য: {formatPrice(total)}</strong></p>
-        <p>ডেলিভারি: Pathao Courier</p>
-        <p>ডেলিভারি চার্জ: {deliveryQuoteLoading ? "হিসাব হচ্ছে..." : deliveryFeeQuote === null ? "শহর/জেলা লিখে ফিল্ড থেকে বের হলে হিসাব দেখাবে।" : formatPrice(deliveryFeeQuote)}</p>
+        <p><strong>Product subtotal: {formatPrice(total, locale)}</strong></p>
+        <p>Delivery: Pathao Courier</p>
+        <p>Delivery fee: {deliveryQuoteLoading ? "Calculating..." : deliveryFeeQuote === null ? "Select your district above to calculate the fee." : formatPrice(deliveryFeeQuote, locale)}</p>
 
-        {missingProducts && <p role="alert">কিছু পণ্যের তথ্য পাওয়া যায়নি।</p>}
-        {stockIssues.length > 0 && <p role="alert">কিছু পণ্যের মজুত পর্যাপ্ত নয়।</p>}
+        {missingProducts && <p role="alert">Some product details are unavailable.</p>}
+        {stockIssues.length > 0 && <p role="alert">Some products have insufficient stock.</p>}
       </section>
 
       <form onSubmit={submitOrder} className={styles.form}>
         {defaultAddress && (
-          <p role="status">আপনার সংরক্ষিত ঠিকানা থেকে তথ্য পূরণ করা হয়েছে। প্রয়োজন হলে পরিবর্তন করুন।</p>
+          <p role="status">Your saved address has been prefilled. Edit it if needed.</p>
         )}
-        <label htmlFor="customer_name">আপনার নাম *</label>
+        <label htmlFor="customer_name">Full name *</label>
         <input id="customer_name" name="customer_name" required minLength={2}
           maxLength={120} autoComplete="name" defaultValue={defaultAddress?.recipient_name ?? ""} disabled={submitting} style={fieldStyle} />
 
-        <label htmlFor="customer_phone">মোবাইল নম্বর *</label>
+        <label htmlFor="customer_phone">Mobile number *</label>
         <input id="customer_phone" name="customer_phone" type="tel" required
           autoComplete="tel" value={customerPhone}
           onChange={(event) => setCustomerPhone(event.target.value)}
           readOnly={phoneVerified} disabled={submitting}
           placeholder="01XXXXXXXXX" style={fieldStyle} />
-        {phoneVerified && <small>আপনার যাচাইকৃত অ্যাকাউন্ট নম্বর ব্যবহার করা হচ্ছে।</small>}
-        {!phoneVerified && <small>অ্যাকাউন্ট ছাড়া অর্ডার করতে পারবেন। সঠিক যোগাযোগ নম্বর দিন।</small>}
+        {phoneVerified && <small>Your verified account phone number is being used.</small>}
+        {!phoneVerified && <small>You can order without an account. Enter a valid contact number.</small>}
 
-        <label htmlFor="customer_email">ইমেইল (ঐচ্ছিক)</label>
+        <label htmlFor="customer_email">Email (optional)</label>
         <input id="customer_email" name="customer_email" type="email"
           maxLength={254} autoComplete="email" disabled={submitting} style={fieldStyle} />
 
-        <label htmlFor="shipping_address">বাড়ি / রোড / বিস্তারিত ঠিকানা *</label>
+        <label htmlFor="shipping_address">House / road / detailed address *</label>
         <textarea id="shipping_address" name="shipping_address" required
           minLength={5} maxLength={1000} autoComplete="street-address" rows={3}
           defaultValue={defaultAddress?.address_line ?? ""}
           disabled={submitting} style={{ ...fieldStyle, resize: "vertical" }}
-          placeholder="বাড়ি নম্বর, রোড, ফ্ল্যাট বা পরিচিত ল্যান্ডমার্ক লিখুন" />
+          placeholder="Enter your house number, road, flat, or a nearby landmark" />
 
         <BangladeshAddressFields
           initialDivision={defaultAddress?.division}
@@ -527,22 +529,22 @@ export default function CheckoutView() {
           }}
         />
 
-        <label htmlFor="coupon_code">কুপন কোড (ঐচ্ছিক)</label>
+        <label htmlFor="coupon_code">Coupon code (optional)</label>
         <input id="coupon_code" name="coupon_code" type="text" maxLength={40}
-          pattern="[A-Za-z0-9_-]{3,40}" title="৩–৪০ অক্ষরের ইংরেজি অক্ষর, সংখ্যা, হাইফেন বা আন্ডারস্কোর"
-          autoComplete="off" disabled={submitting} placeholder="যেমন: SAVE10" style={fieldStyle} />
+          pattern="[A-Za-z0-9_-]{3,40}" title="Use 3–40 letters, numbers, hyphens, or underscores"
+          autoComplete="off" disabled={submitting} placeholder="Example: SAVE10" style={fieldStyle} />
 
         <section className={styles.paymentOptions} aria-labelledby="delivery-heading">
-          <h2 id="delivery-heading">ডেলিভারি পদ্ধতি</h2>
+          <h2 id="delivery-heading">Delivery method</h2>
           <label style={{ display: "flex", gap: 10, alignItems: "center", margin: "12px 0" }}>
             <input type="radio" name="delivery_method" value="pathao" checked readOnly />
-            <span><strong>Pathao Courier</strong> — কুরিয়ারে হোম ডেলিভারি</span>
+            <span><strong>Pathao Courier</strong> — Home delivery by courier</span>
           </label>
-          <p>ডেলিভারি চার্জ গন্তব্য অনুযায়ী অর্ডারে হিসাব হবে। Pathao-তে পার্সেল বুকিংয়ের আগে অ্যাডমিন পর্যালোচনা ও অনুমোদন করবেন।</p>
+          <p>The delivery fee is calculated based on the destination. An administrator will review and approve the parcel before booking with Pathao.</p>
         </section>
 
         <fieldset className={styles.paymentOptions}>
-          <legend>পেমেন্ট পদ্ধতি নির্বাচন করুন *</legend>
+          <legend>Choose a payment method *</legend>
 
           <label style={{ display: "flex", gap: 10, alignItems: "center", margin: "12px 0" }}>
             <input
@@ -553,7 +555,7 @@ export default function CheckoutView() {
               onChange={() => setPaymentMethod("cod")}
               disabled={submitting}
             />
-            <span><strong>১. Cash on Delivery (COD)</strong> — পণ্য হাতে পেয়ে টাকা দিন</span>
+            <span><strong>1. Cash on Delivery (COD)</strong> — Pay when you receive your products</span>
           </label>
 
           <label style={{ display: "flex", gap: 10, alignItems: "center", margin: "12px 0" }}>
@@ -567,11 +569,11 @@ export default function CheckoutView() {
               }}
               disabled={submitting}
             />
-            <span><strong>২. Mobile Financial Service (MFS)</strong></span>
+            <span><strong>2. Mobile Financial Service (MFS)</strong></span>
           </label>
 
           <div style={{ margin: "8px 0 16px", padding: 12, border: "1px solid var(--border)", borderRadius: 10 }}>
-              <p style={{ marginTop: 0 }}>{paymentMethod === "cod" ? "ডেলিভারি চার্জ অগ্রিম দেওয়ার MFS নির্বাচন করুন:" : "MFS প্রদানকারী নির্বাচন করুন:"}</p>
+              <p style={{ marginTop: 0 }}>{paymentMethod === "cod" ? "Choose an MFS provider to pay the delivery fee in advance:" : "Choose an MFS provider:"}</p>
               {([
                 ["bkash", "bKash"],
                 ["nagad", "Nagad"],
@@ -591,27 +593,27 @@ export default function CheckoutView() {
                       disabled={submitting || !methodConfig?.enabled}
                     />
                     <span>{label}</span>
-                    {!methodConfig?.enabled && <small>(নম্বর এখনো সেট করা হয়নি)</small>}
+                    {!methodConfig?.enabled && <small>(Payment number not configured)</small>}
                   </label>
                 );
               })}
           </div>
 
           {paymentConfigError && (
-            <p role="alert">{paymentConfigError} আপাতত COD নির্বাচন করে অর্ডার দিতে পারবেন।</p>
+            <p role="alert">{paymentConfigError} You can choose Cash on Delivery for now.</p>
           )}
 
           {selectedMobilePayment?.enabled && (
             <div className={styles.paymentDetails}>
-              <h3>{selectedMobilePayment.label} পেমেন্ট</h3>
-              <p>নিচের নম্বরে Send Money করুন:</p>
+              <h3>{selectedMobilePayment.label} Payment</h3>
+              <p>Send money to the number below:</p>
               <p style={{ fontSize: 20, fontWeight: 700, overflowWrap: "anywhere" }}>
                 {selectedMobilePayment.number}
               </p>
               <p>
                 {paymentMethod === "cod"
-                  ? `শুধু ডেলিভারি চার্জ ${deliveryFeeQuote === null ? "উপরের ঠিকানা থেকে হিসাব করুন" : formatPrice(deliveryFeeQuote)} অগ্রিম পাঠান। পণ্যের মূল্য COD-এ দেবেন। TrxID অ্যাডমিন যাচাই করবেন।`
-                  : "পণ্য ও ডেলিভারি চার্জসহ অর্ডারের সম্পূর্ণ মোট টাকা পাঠান। TrxID অ্যাডমিন যাচাই করবেন।"}
+                  ? `Only the delivery fee ${deliveryFeeQuote === null ? "calculate using the address above" : formatPrice(deliveryFeeQuote, locale)} must be paid in advance. Pay for the products on delivery. An administrator will verify the transaction ID.`
+                  : "Send the full order total, including products and delivery. An administrator will verify the transaction ID."}
               </p>
               <label htmlFor={paymentMethod === "cod" ? "delivery_fee_payment_transaction_id" : "payment_transaction_id"}>Transaction ID *</label>
               <input
@@ -621,20 +623,20 @@ export default function CheckoutView() {
                 minLength={1}
                 maxLength={120}
                 pattern="[A-Za-z0-9-]+"
-                title="ইংরেজি অক্ষর, সংখ্যা ও হাইফেন ব্যবহার করুন"
+                title="Use letters, numbers, and hyphens."
                 autoComplete="off"
                 disabled={submitting}
-                placeholder="যেমন: TXN123ABC"
+                placeholder="Example: TXN123ABC"
                 style={fieldStyle}
               />
             </div>
           )}
         </fieldset>
 
-        <p><strong>পণ্যের মোট মূল্য: {formatPrice(total)}</strong></p>
-        <p><strong>ডেলিভারি চার্জ: {deliveryFeeQuote === null ? "ঠিকানা দিয়ে হিসাব করুন" : formatPrice(deliveryFeeQuote)}</strong></p>
-        <p>{paymentMethod === "cod" ? "COD নির্বাচন করেছেন: শুধু ডেলিভারি চার্জ MFS-এ অগ্রিম দিতে হবে; পণ্যের মূল্য ডেলিভারির সময় দেবেন।" : "MFS নির্বাচন করেছেন: পণ্য ও ডেলিভারি চার্জের সম্পূর্ণ মূল্য অগ্রিম দিতে হবে।"}</p>
-        <p>ডেলিভারি চার্জ সার্ভার নির্ধারণ করবে। TrxID জমা দিলেই পেমেন্ট নিশ্চিত হবে না; অ্যাডমিন যাচাই করবেন।</p>
+        <p><strong>Product subtotal: {formatPrice(total, locale)}</strong></p>
+        <p><strong>Delivery fee: {deliveryFeeQuote === null ? "Calculate using your address" : formatPrice(deliveryFeeQuote, locale)}</strong></p>
+        <p>{paymentMethod === "cod" ? "Cash on Delivery selected: pay only the delivery fee in advance via MFS; pay for the products upon delivery." : "MFS selected: the full product total and delivery fee must be paid in advance."}</p>
+        <p>The server determines the delivery fee. Submitting a transaction ID does not confirm payment; an administrator must verify it.</p>
 
         {error && (
           <p role="alert" className={styles.error}>
@@ -647,11 +649,11 @@ export default function CheckoutView() {
           disabled={submitting || missingProducts || stockIssues.length > 0}
           className={styles.submit}
         >
-          <><Icon name={submitting ? "refresh" : "check"} size={18} /> {submitting ? "অর্ডার জমা হচ্ছে..." : "অর্ডার নিশ্চিত করুন"}</>
+          <><Icon name={submitting ? "refresh" : "check"} size={18} /> {submitting ? "Submitting order..." : "Place order"}</>
         </button>
       </form>
 
-      <p><Link href="/cart"><Icon name="cart" size={16} /> কার্টে ফিরে যান</Link></p>
+      <p><Link href="/cart"><Icon name="cart" size={16} /> Return to cart</Link></p>
     </main>
   );
 }
