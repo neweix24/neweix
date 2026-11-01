@@ -58,12 +58,12 @@ export default function CustomerDataRequests() {
   async function submitRequest(requestType: "correction" | "delete") {
     if (requestType === "delete") {
       const confirmed = window.confirm(
-        "আপনি কি Account deletion request জমা দিতে চান? এটি সঙ্গে সঙ্গে অ্যাকাউন্ট মুছবে না। পরিচয় যাচাই ও আইনগত/হিসাব সংক্রান্ত রেকর্ড পর্যালোচনার পর NEWEIX টিম অনুরোধটি প্রক্রিয়া করবে।"
+        "Do you want to submit an account deletion request? This will not delete your account immediately. The NEWEIX team will review your identity and any legal or accounting record-retention requirements before processing the request."
       );
       if (!confirmed) return;
     }
     const customerMessage = requestType === "correction"
-      ? window.prompt("কোন Data correction করতে চান? (ঐচ্ছিক)", "") ?? ""
+      ? window.prompt("Which information would you like to correct? (Optional)", "") ?? ""
       : window.prompt("Reason for requesting account deletion (optional)", "") ?? "";
     setBusy(true); setError(""); setMessage("");
     try {
@@ -90,17 +90,17 @@ export default function CustomerDataRequests() {
       <section className="content">
         <p className="eyebrow">YOUR DATA & PRIVACY</p>
         <h1>Your data and privacy</h1>
-        <p className="intro">আপনার অ্যাকাউন্টের সঙ্গে যুক্ত Data export নিতে, Data correction করতে অথবা Account deletion request জমা দিতে পারবেন।</p>
+        <p className="intro">You can request a copy of information linked to your account, request corrections, or submit an account deletion request.</p>
 
         <article className="card">
-          <h2>নিজের Data export নিন</h2>
+          <h2>Download a copy of your data</h2>
           <p>Receive a JSON file containing your profile, saved addresses, shopping preferences, consent history, and orders linked to your account.</p>
           <a className="primary" href="/api/account/export">Download my data</a>
         </article>
 
         <article className="card">
-          <h2>Data correctionের অনুরোধ</h2>
-          <p>প্রোফাইল বা অন্য কোনো ব্যক্তিগত Data correctionে সহায়তা চাইতে পারেন।</p>
+          <h2>Request a data correction</h2>
+          <p>You can request help correcting your profile or other personal information.</p>
           <button type="button" disabled={busy} onClick={() => void submitRequest("correction")}><Icon name="settings" size={16} /> Request correction</button>
         </article>
 
