@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     const context = await getWorkforceContext();
     if (!context) return jsonError("Sign-in or Supreme MFA verification required.", 401);
     const { actor, db } = context;
-    if (!isExecutive(actor.role) && actor.role !== "manager") return jsonError("Only Admin, Manager or Supreme can assign employees.", 403);
+    if (!isExecutive(actor.role)) return jsonError("Only Admin or Supreme can assign employees to departments.", 403);
 
     const body = await readJson(request, 4096);
     if (!body) return jsonError("Invalid or oversized request.", 400);
