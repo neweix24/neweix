@@ -31,7 +31,7 @@ begin
   end if;
 
   loop
-    v_bytes := public.gen_random_bytes(12);
+    v_bytes := extensions.gen_random_bytes(12);
     v_suffix := '';
 
     for i in 0..11 loop
