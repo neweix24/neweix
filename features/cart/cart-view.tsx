@@ -178,7 +178,7 @@ export default function CartView() {
               {stockIssues.length > 0 && <p role="alert" className={styles.stockError}>{t("fixQuantity")}</p>}
               {unavailable.length > 0 && <p className={styles.stockError}>{t("removeUnavailableFirst")}</p>}
               {stockIssues.length === 0 && unavailable.length === 0 ? (
-                <Link href="/checkout" className={styles.checkout}><Icon name="lock" size={17} /> {t("proceedCheckout")} <Icon name="arrow-right" size={17} /></Link>
+                <Link href="/checkout" className={styles.checkout}><Icon name="shield" size={17} /> {t("proceedCheckout")} <Icon name="arrow-right" size={17} /></Link>
               ) : <button type="button" disabled className={styles.checkoutDisabled}><Icon name="shield" size={17} /> {t("fixCartFirst")}</button>}
               <Link href="/products" className={styles.backLink}>{t("continueShopping")}</Link>
               <div className={styles.secureNote}><Icon name="shield" size={16} /><span>Your order is rechecked for current price and stock before it is placed.</span></div>
