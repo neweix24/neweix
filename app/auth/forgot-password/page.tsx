@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
         "expired-callback": () => setCaptchaToken(""),
         "error-callback": () => {
           setCaptchaToken("");
-          setMessage("নিরাপত্তা যাচাই সম্পন্ন হয়নি। আবার চেষ্টা করুন।");
+          setMessage("Security verification was not completed. Please try again.");
         },
       }
     );
@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
     setMessage("");
 
     if (!captchaToken) {
-      setMessage("আগে নিরাপত্তা যাচাই সম্পন্ন করুন।");
+      setMessage("Complete security verification first.");
       return;
     }
 
@@ -103,7 +103,7 @@ export default function ForgotPasswordPage() {
 
       if (!response.ok) {
         setMessage(
-          data.error ?? "সমস্যা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।"
+          data.error ?? "Something went wrong. Please try again in a moment."
         );
         resetCaptcha();
         return;
@@ -111,11 +111,11 @@ export default function ForgotPasswordPage() {
 
       setMessage(
         data.message ??
-          "যদি এই ইমেইলে পাসওয়ার্ড লগইন চালু থাকে, তাহলে রিসেটের নির্দেশনা পাঠানো হবে।"
+          "If password sign-in is enabled for this email address, password reset instructions will be sent."
       );
       resetCaptcha();
     } catch {
-      setMessage("সংযোগে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+      setMessage("A connection error occurred. Please try again.");
       resetCaptcha();
     } finally {
       setBusy(false);
@@ -128,18 +128,18 @@ export default function ForgotPasswordPage() {
         src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
         strategy="afterInteractive"
         onLoad={() => setTurnstileReady(true)}
-        onError={() => setMessage("নিরাপত্তা যাচাই লোড করা যায়নি। পেজটি রিফ্রেশ করুন।")}
+        onError={() => setMessage("Could not load security verification. Refresh the page.")}
       />
       <main className="hero auth-page">
         <p className="eyebrow">NEWEIX · ACCOUNT RECOVERY</p>
-        <h1>পাসওয়ার্ড রিসেট</h1>
+        <h1>Reset password</h1>
         <p className="hero-copy">
-          আপনার অ্যাকাউন্টের ইমেইল দিন। পাসওয়ার্ড রিসেটের নির্দেশনা
-          পাঠানোর অনুরোধ করা হবে।
+          আপনার অ্যাকাউন্টের Email দিন। Reset passwordের নির্দেশনা
+          if password sign-in is enabled.
         </p>
 
         <form className="track-form" onSubmit={handleSubmit}>
-          <label htmlFor="email">ইমেইল</label>
+          <label htmlFor="email">Email</label>
           <input
             id="email"
             name="email"
@@ -164,12 +164,12 @@ export default function ForgotPasswordPage() {
           )}
 
           <button className="primary-button" type="submit" disabled={busy}>
-            <><Icon name={busy ? "refresh" : "mail"} size={17} /> {busy ? "যাচাই করা হচ্ছে…" : "রিসেট লিংক পাঠান"}</>
+            <><Icon name={busy ? "refresh" : "mail"} size={17} /> {busy ? "Verifying…" : "Send reset link"}</>
           </button>
         </form>
 
         <p className="hero-copy">
-          <Link href="/auth/customer-login">লগইন পেজে ফিরে যান</Link>
+          <Link href="/auth/customer-login">Return to sign-in</Link>
         </p>
       </main>
     </>
