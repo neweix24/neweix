@@ -26,7 +26,7 @@ alter table public.orders
   add constraint orders_shipping_district_code_format
     check (shipping_district_code is null or shipping_district_code ~ '^BD-D[0-9]{2}-Z[0-9]{2}$') not valid,
   add constraint orders_shipping_upazila_code_format
-    check (shipping_upazila_code is null or shipping_upazila_code = 'other' or shipping_upazila_code ~ '^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3},
+    check (shipping_upazila_code is null or shipping_upazila_code = 'other' or shipping_upazila_code ~ '^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$') not valid,
   add constraint orders_shipping_union_code_format
     check (shipping_union_code is null or shipping_union_code in ('not_applicable','other') or shipping_union_code ~ '^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}-N[0-9]{4}$') not valid;
 
