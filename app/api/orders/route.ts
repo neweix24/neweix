@@ -524,7 +524,7 @@ export async function POST(request: Request) {
           p_shipping_division: resolvedAddress.division.bn_name,
           p_shipping_district_code: resolvedAddress.district.code,
           p_shipping_district: resolvedAddress.district.bn_name,
-          p_shipping_upazila_code: resolvedAddress.upazila.code,
+          p_shipping_upazila_code: shippingUpazilaCode,
           p_shipping_upazila: resolvedAddress.upazila?.bn_name ?? shippingUpazilaOther,
           p_shipping_union_code: shippingUnionCode,
           p_shipping_union: resolvedAddress.union?.bn_name ?? (shippingUnionCode === "other" ? shippingUnionOther : null),
