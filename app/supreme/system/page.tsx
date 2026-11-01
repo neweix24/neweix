@@ -12,8 +12,8 @@ export default async function SupremeSystemPage() {
       <div className="mx-auto max-w-6xl">
         <header className="mb-8">
           <p className="eyebrow">NEWEIX · SUPREME CONTROL</p>
-          <h1 className="mt-2 text-3xl font-bold">সিস্টেম মনিটরিং</h1>
-          <p className="mt-2">লগইন করা Role: <strong>{staff.role}</strong></p>
+          <h1 className="mt-2 text-3xl font-bold">System Monitoring</h1>
+          <p className="mt-2">Signed-in role: <strong>{staff.role}</strong></p>
           <Link href="/supreme" className="mt-4 inline-flex text-sm font-semibold underline" style={{ color: "var(--primary)" }}>
             ← Supreme Dashboard
           </Link>
