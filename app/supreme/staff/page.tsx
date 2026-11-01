@@ -14,7 +14,7 @@ export default async function SupremeStaffPage() {
       <h1>Admin & Staff Management</h1>
 
       <p className="hero-copy">
-        Create a new Admin or Staff account here.
+        Create Admin, Manager and Employee accounts. Manager nominations from Admin must be reviewed before provisioning.
       </p>
 
       <section>
