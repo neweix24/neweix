@@ -226,7 +226,7 @@ function CustomerLoginForm() {
           </p>
           {searchParams.get("referral") === "1" && (
             <p role="status" className="mb-4 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3 text-sm leading-6" style={{ color: "var(--primary)" }}>
-              Welcome to NEWEIX through a friend's invitation. Create an account, verify your phone number, and complete your first eligible order for a chance to receive an Eixon referral reward.
+              Welcome to NEWEIX through a friend&apos;s invitation. Create an account, verify your phone number, and complete your first eligible order for a chance to receive an Eixon referral reward.
             </p>
           )}
 
