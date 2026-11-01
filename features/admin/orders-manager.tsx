@@ -296,7 +296,7 @@ export default function OrdersManager() {
       <p className="mt-2 text-sm">
         The latest 100 orders are shown. Before marking a mobile payment as Paid,
         verify the transaction ID, amount, and
-        recipient details in the payment provider's records.
+        recipient details in the payment provider&apos;s records.
       </p>
 
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
