@@ -11,6 +11,7 @@ type Props = {
   initialDistrict?: string | null;
   initialUpazila?: string | null;
   initialUnion?: string | null;
+  initialVillage?: string | null;
   onDistrictChange?: (districtName: string) => void;
   disabled?: boolean;
 };
@@ -32,6 +33,7 @@ export default function BangladeshAddressFields({
   initialDistrict,
   initialUpazila,
   initialUnion,
+  initialVillage,
   onDistrictChange,
   disabled = false,
 }: Props) {
@@ -124,7 +126,7 @@ export default function BangladeshAddressFields({
 
       <label htmlFor="shipping_village">গ্রাম / ওয়ার্ড / মহল্লা *</label>
       <input id="shipping_village" name="shipping_village" required minLength={2} maxLength={160}
-        disabled={disabled} style={selectStyle} placeholder="গ্রাম, ওয়ার্ড বা মহল্লার নাম লিখুন" />
+        defaultValue={initialVillage ?? ""} disabled={disabled} style={selectStyle} placeholder="গ্রাম, ওয়ার্ড বা মহল্লার নাম লিখুন" />
 
       <input type="hidden" name="shipping_city" value={district?.bn_name ?? ""} />
     </section>
