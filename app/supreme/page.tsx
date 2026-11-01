@@ -18,6 +18,7 @@ export default async function SupremePage() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link href="/supreme/staff" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="user" size={15} /> Staff Management</Link>
+            <Link href="/admin/workforce" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="grid" size={15} /> Department Management</Link>
             <Link href="/supreme/manager-nominations" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="check" size={15} /> Manager Nominations</Link>
             <Link href="/supreme/eixverse" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="gift" size={15} /> Campaigns & Missions</Link>
             <Link href="/supreme/eixpay" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="wallet" size={15} /> EixPay Control</Link>
