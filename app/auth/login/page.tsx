@@ -161,7 +161,7 @@ export default function LoginPage() {
       if (
         !profile ||
         profile.is_active !== true ||
-        !["supreme", "admin", "staff"].includes(profile.role)
+        !["supreme", "admin", "manager", "employee", "staff"].includes(profile.role)
       ) {
         await supabase.auth.signOut();
         setMessage("This account is not authorized to access the staff panel.");
