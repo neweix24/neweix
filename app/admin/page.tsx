@@ -64,6 +64,11 @@ export default async function AdminPage() {
               <span><strong className="block text-lg font-black">Integrations</strong><span className="mt-1 block text-sm" style={{ color: "var(--muted)" }}>Check Pathao Courier and BulkSMSBD connections.</span></span>
               <span className="text-xs font-extrabold" style={{ color: "#28764b" }}>Open workspace →</span>
             </Link>
+            <Link href="/admin/staff" className={cardClass} style={cardStyle}>
+              <span className="grid h-11 w-11 place-items-center rounded-xl" style={{ background: "#eff9e9", color: "#28764b" }}><Icon name="user" size={21} /></span>
+              <span><strong className="block text-lg font-black">Workforce Management</strong><span className="mt-1 block text-sm" style={{ color: "var(--muted)" }}>Create Employees and propose Manager appointments.</span></span>
+              <span className="text-xs font-extrabold" style={{ color: "#28764b" }}>Open workspace →</span>
+            </Link>
             <Link href="/admin/social-media" className={cardClass} style={cardStyle}>
               <span className="grid h-11 w-11 place-items-center rounded-xl" style={{ background: "#eff9e9", color: "#28764b" }}><Icon name="globe" size={21} /></span>
               <span><strong className="block text-lg font-black">Social Media Automation</strong><span className="mt-1 block text-sm" style={{ color: "var(--muted)" }}>Manage connected social publishing tools.</span></span>
