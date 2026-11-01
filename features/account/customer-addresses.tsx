@@ -154,7 +154,7 @@ export default function CustomerAddresses() {
               {addresses.length === 0 && <p className="empty">You have not saved any addresses yet.</p>}
             </div>
             <form className="form" onSubmit={saveAddress}>
-              <h2>{editingId ? "ঠিকানা Edit" : "Add a new address"}</h2>
+              <h2>{editingId ? "Edit address" : "Add a new address"}</h2>
               <label htmlFor="address-label">Address label</label>
               <select id="address-label" value={form.label} onChange={(event) => updateField("label", event.target.value)}>
                 <option value="Home">Home</option><option value="Office">Office</option><option value="Other">Other</option>
@@ -177,7 +177,7 @@ export default function CustomerAddresses() {
               <input id="address-postal" maxLength={20} autoComplete="postal-code" value={form.postal_code} onChange={(event) => updateField("postal_code", event.target.value)} />
               <label className="default-row">
                 <input type="checkbox" checked={form.is_default} onChange={(event) => updateField("is_default", event.target.checked)} />
-                <span>Default ডেলিভারি ঠিকানা হিসেবে রাখুন</span>
+                <span>Set as default delivery address</span>
               </label>
               <div className="form-actions">
                 <button type="submit" disabled={saving}><><Icon name={saving ? "refresh" : "check"} size={16} /> {saving ? "Saving…" : editingId ? "Save changes" : "Save address"}</></button>
