@@ -370,7 +370,7 @@ export default function AccountView() {
                       className="phone-edit-button"
                       type="button"
                       aria-label="Change phone number"
-                      title="Phone number পরিবর্তন করুন"
+                      title="Change phone number"
                       onClick={() => {
                         setEditingPhone(true);
                         setPhone("");
