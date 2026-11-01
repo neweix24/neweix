@@ -109,7 +109,7 @@ export default function SocialMediaPublisher() {
               <div className="flex items-center justify-between gap-2"><strong>{platform.label}</strong><span className="text-xs">{linked.length ? "Connected" : "Not Connected"}</span></div>
               <p className="mt-1 text-xs opacity-70">{platform.note}</p>
               {linked.length > 0 ? linked.map((account) => <p key={account.id} className="mt-2 text-sm">{account.account_name}</p>) : <p className="mt-2 text-sm opacity-70">Developer credentials and OAuth authorization are required.</p>}
-              {platform.id === "youtube" && <a href="/api/admin/social-media/youtube/connect" className="mt-3 inline-flex rounded-xl border px-4 py-2 text-sm font-semibold" style={{ borderColor: "var(--border)" }}>{linked.length ? "YouTube পুনরায় Connected করুন" : "Google দিয়ে YouTube Connected করুন"}</a>}
+              {platform.id === "youtube" && <a href="/api/admin/social-media/youtube/connect" className="mt-3 inline-flex rounded-xl border px-4 py-2 text-sm font-semibold" style={{ borderColor: "var(--border)" }}>{linked.length ? "Reconnect YouTube" : "Connect YouTube with Google"}</a>}
             </div>;
           })}
         </div>
