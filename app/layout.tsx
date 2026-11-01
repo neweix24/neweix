@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import CustomerThemeProvider from "@/components/customer-theme-provider";
 import { LanguageProvider } from "@/components/language-provider";
+import GlobalLanguageControl from "@/components/global-language-control";
 
 const siteUrl = "https://neweix.com";
 
@@ -42,7 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <LanguageProvider><CustomerThemeProvider />
+        <LanguageProvider><GlobalLanguageControl /><CustomerThemeProvider />
         {children}</LanguageProvider>
       </body>
     </html>
