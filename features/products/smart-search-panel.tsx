@@ -341,10 +341,11 @@ export default function SmartSearchPanel() {
                     {product.name}
                   </Link>
                   <p style={{ margin: "7px 0", fontWeight: 800 }}>{money(Number(product.price))}</p>
-                  <small>
+                  <small style={{ color: product.stock > 0 ? "#28764b" : "#a13e3e", fontWeight: 750 }}>
                     {product.stock > 0 ? "In stock" : "Out of stock"}
                     {product.sku ? " · SKU: " + product.sku : ""}
                   </small>
+                  <div style={{ marginTop: 13 }}><ProductCardActions productId={product.id} stock={product.stock} /></div>
                 </div>
               </article>
             ))}
