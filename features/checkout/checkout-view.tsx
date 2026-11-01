@@ -41,8 +41,8 @@ type PaymentConfig = {
   };
 };
 
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("en-BD", {
+function formatPrice(price: number, locale: string): string {
+  return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", {
     style: "currency",
     currency: "BDT",
     maximumFractionDigits: 0,
@@ -64,6 +64,7 @@ function isValidCartItem(item: unknown): item is CartItem {
 }
 
 export default function CheckoutView() {
+  const [locale, setLocale] = useState<"en" | "bn">("en");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerPhone, setCustomerPhone] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
@@ -83,6 +84,8 @@ export default function CheckoutView() {
     useState<PaymentMethod>("cod");
 
   useEffect(() => {
+    const savedLocale = localStorage.getItem("neweix_locale");
+    setLocale(savedLocale === "bn" ? "bn" : "en");
     let cancelled = false;
 
     async function loadCheckout() {
@@ -479,9 +482,9 @@ export default function CheckoutView() {
           </div>
         ))}
 
-        <p><strong>Product subtotal: {formatPrice(total)}</strong></p>
+        <p><strong>Product subtotal: {formatPrice(total, locale)}</strong></p>
         <p>Delivery: Pathao Courier</p>
-        <p>Delivery fee: {deliveryQuoteLoading ? "Calculating..." : deliveryFeeQuote === null ? "Select your district above to calculate the fee." : formatPrice(deliveryFeeQuote)}</p>
+        <p>Delivery fee: {deliveryQuoteLoading ? "Calculating..." : deliveryFeeQuote === null ? "Select your district above to calculate the fee." : formatPrice(deliveryFeeQuote, locale)}</p>
 
         {missingProducts && <p role="alert">Some product details are unavailable.</p>}
         {stockIssues.length > 0 && <p role="alert">Some products have insufficient stock.</p>}
@@ -610,7 +613,7 @@ export default function CheckoutView() {
               </p>
               <p>
                 {paymentMethod === "cod"
-                  ? `Only the delivery fee ${deliveryFeeQuote === null ? "calculate using the address above" : formatPrice(deliveryFeeQuote)} must be paid in advance. Pay for the products on delivery. An administrator will verify the transaction ID.`
+                  ? `Only the delivery fee ${deliveryFeeQuote === null ? "calculate using the address above" : formatPrice(deliveryFeeQuote, locale)} must be paid in advance. Pay for the products on delivery. An administrator will verify the transaction ID.`
                   : "Send the full order total, including products and delivery. An administrator will verify the transaction ID."}
               </p>
               <label htmlFor={paymentMethod === "cod" ? "delivery_fee_payment_transaction_id" : "payment_transaction_id"}>Transaction ID *</label>
@@ -631,8 +634,8 @@ export default function CheckoutView() {
           )}
         </fieldset>
 
-        <p><strong>Product subtotal: {formatPrice(total)}</strong></p>
-        <p><strong>Delivery fee: {deliveryFeeQuote === null ? "Calculate using your address" : formatPrice(deliveryFeeQuote)}</strong></p>
+        <p><strong>Product subtotal: {formatPrice(total, locale)}</strong></p>
+        <p><strong>Delivery fee: {deliveryFeeQuote === null ? "Calculate using your address" : formatPrice(deliveryFeeQuote, locale)}</strong></p>
         <p>{paymentMethod === "cod" ? "Cash on Delivery selected: pay only the delivery fee in advance via MFS; pay for the products upon delivery." : "MFS selected: the full product total and delivery fee must be paid in advance."}</p>
         <p>The server determines the delivery fee. Submitting a transaction ID does not confirm payment; an administrator must verify it.</p>
 
