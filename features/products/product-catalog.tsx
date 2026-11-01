@@ -5,7 +5,6 @@ import Link from "next/link";
 import Icon from "@/components/ui/icon";
 import styles from "./product-catalog.module.css";
 import ProductCardActions from "@/features/products/product-card-actions";
-import LanguageSwitcher from "@/components/language-switcher";
 import { useLanguage } from "@/components/language-provider";
 
 type Product = {
@@ -165,7 +164,6 @@ export default function ProductCatalog() {
     <main className={styles.page}>
       <header className={styles.header}>
         <Link href="/" className={styles.brand}>NEWEIX</Link>
-        <LanguageSwitcher />
         <nav aria-label="Main navigation">
           <Link href="/track-order"><Icon name="truck" size={16} /> {t("trackOrder")}</Link>
           <Link href="/account"><Icon name="user" size={16} /> {t("myAccount")}</Link>
