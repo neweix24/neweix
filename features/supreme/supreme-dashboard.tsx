@@ -8,6 +8,7 @@ type Product = { id: string; name: string; stock: number; low_stock_threshold?: 
 
 const shortcuts = [
   { href: "/admin/products", title: "Products & Stock", description: "Manage the product catalogue and stock visibility.", icon: "package" },
+  { href: "/admin/integrations", title: "Integrations", description: "Check Pathao Courier and BulkSMSBD provider connections.", icon: "settings" },
   { href: "/admin/orders", title: "Orders & Payments", description: "Review incoming orders and payment progress.", icon: "orders" },
   { href: "/admin/customers", title: "Customer CRM", description: "Review customer account information.", icon: "user" },
   { href: "/supreme/audit-logs", title: "Audit Logs", description: "Review recorded administrative activity.", icon: "shield" },
