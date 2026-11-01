@@ -101,11 +101,8 @@ set search_path = ''
 as $$
 begin
   if tg_op = 'INSERT' then
-    if new.public_id is null or btrim(new.public_id) = '' then
-      new.public_id := public.neweix_generate_public_id('eix:a');
-    elsif new.public_id !~ '^eix:a[a-z0-9]{12}$' then
-      raise exception 'Invalid NEWEIX customer public ID format';
-    end if;
+    -- Never accept a client-supplied public ID.
+    new.public_id := public.neweix_generate_public_id('eix:a');
   elsif new.public_id is distinct from old.public_id then
     raise exception 'NEWEIX public IDs are immutable';
   end if;
@@ -122,21 +119,22 @@ set search_path = ''
 as $$
 begin
   if tg_op = 'INSERT' then
+    -- Public IDs are always assigned by the database, never by the client.
     if new.role = 'supreme' then
-      if new.public_id is null or btrim(new.public_id) = '' then
-        new.public_id := 'supreme';
-      elsif new.public_id <> 'supreme' then
-        raise exception 'Supreme public ID must be supreme';
-      end if;
+      new.public_id := 'supreme';
     else
-      if new.public_id is null or btrim(new.public_id) = '' then
-        new.public_id := public.neweix_generate_public_id('eix:e');
-      elsif new.public_id !~ '^eix:e[a-z0-9]{12}$' then
-        raise exception 'Invalid NEWEIX staff public ID format';
-      end if;
+      new.public_id := public.neweix_generate_public_id('eix:e');
     end if;
-  elsif new.public_id is distinct from old.public_id then
-    raise exception 'NEWEIX public IDs are immutable';
+  else
+    if new.public_id is distinct from old.public_id then
+      raise exception 'NEWEIX public IDs are immutable';
+    end if;
+    if old.role = 'supreme' and new.role <> 'supreme' then
+      raise exception 'The Supreme position cannot be demoted';
+    end if;
+    if old.role <> 'supreme' and new.role = 'supreme' then
+      raise exception 'The Supreme position cannot be assigned through a role update';
+    end if;
   end if;
 
   return new;
@@ -152,7 +150,7 @@ for each row execute function public.neweix_customer_public_id_guard();
 drop trigger if exists staff_profiles_public_id_guard
   on public.staff_profiles;
 create trigger staff_profiles_public_id_guard
-before insert or update of public_id on public.staff_profiles
+before insert or update of public_id, role on public.staff_profiles
 for each row execute function public.neweix_staff_public_id_guard();
 
 comment on column public.customer_profiles.public_id is
