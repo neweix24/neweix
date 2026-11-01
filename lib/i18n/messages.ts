@@ -2,7 +2,7 @@ export type Locale = "en" | "bn";
 
 export const messages = {
   en: {
-    language: "Language", english: "English", bengali: "বাংলা",
+    decreaseQuantity: "Decrease quantity", increaseQuantity: "Increase quantity", cartProducts: "Cart products", itemCount: "items",\n    language: "Language", english: "English", bengali: "বাংলা",
     home: "Home", products: "All products", trackOrder: "Track order", wishlist: "Wishlist", cart: "Cart",
     searchProducts: "Search for products...", search: "Search", categories: "Shop by category", allCategories: "All categories",
     discover: "DISCOVER NEWEIX", picksForYou: "Products for you", chooseFromStore: "Choose from products currently available in our store.",
@@ -48,7 +48,7 @@ export const messages = {
     addToCartError: "Could not add to cart. Please try again.", buyNowError: "Could not start checkout. Please try again.",
   },
   bn: {
-    language: "ভাষা", english: "English", bengali: "বাংলা",
+    decreaseQuantity: "পরিমাণ কমান", increaseQuantity: "পরিমাণ বাড়ান", cartProducts: "কার্টের পণ্য", itemCount: "টি",\n    language: "ভাষা", english: "English", bengali: "বাংলা",
     home: "হোম", products: "সব পণ্য", trackOrder: "অর্ডার ট্র্যাক", wishlist: "পছন্দের তালিকা", cart: "কার্ট",
     searchProducts: "কোন পণ্য খুঁজছেন?", search: "খুঁজুন", categories: "ক্যাটাগরি অনুযায়ী পণ্য", allCategories: "সব ক্যাটাগরি",
     discover: "NEWEIX আবিষ্কার করুন", picksForYou: "আপনার জন্য পণ্য", chooseFromStore: "স্টোরে বর্তমানে থাকা পণ্য থেকে বেছে নিন।",
