@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const subtotal = Number(searchParams.get("subtotal") || 0);
 
   if (city.length < 2 || city.length > 120 || !Number.isSafeInteger(subtotal) || subtotal < 0) {
-    return NextResponse.json({ error: "সঠিক শহর/জেলা ও পণ্যের মূল্য দিন।" }, { status: 400 });
+    return NextResponse.json({ error: "Enter a valid city or district and product subtotal." }, { status: 400 });
   }
 
   try {
@@ -49,6 +49,6 @@ export async function GET(request: Request) {
     );
   } catch (error) {
     console.error("Delivery quote failed:", error);
-    return NextResponse.json({ error: "ডেলিভারি চার্জ হিসাব করা যায়নি।" }, { status: 503 });
+    return NextResponse.json({ error: "Unable to calculate the delivery fee." }, { status: 503 });
   }
 }
