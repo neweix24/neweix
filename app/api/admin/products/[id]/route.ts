@@ -75,7 +75,7 @@ async function authorizeAdmin() {
   } = await session.auth.getUser();
 
   if (authError || !user) {
-    return { response: jsonError("লগইন আবশ্যক।", 401) };
+    return { response: jsonError("Authentication required.", 401) };
   }
 
   const { data: profile, error } = await session
@@ -91,7 +91,7 @@ async function authorizeAdmin() {
     !["supreme", "admin"].includes(profile.role)
   ) {
     return {
-      response: jsonError("পণ্য বা স্টক পরিবর্তনের অনুমতি নেই।", 403),
+      response: jsonError("You are not authorized to change products or stock.", 403),
     };
   }
 
@@ -104,7 +104,7 @@ async function authorizeAdmin() {
     if (mfaError || assurance?.currentLevel !== "aal2") {
       return {
         response: jsonError(
-          "Supreme অ্যাকাউন্টের MFA যাচাই করুন।",
+          "Complete MFA verification for the Supreme account.",
           403
         ),
       };
@@ -164,7 +164,7 @@ export async function PATCH(
     const { id } = await context.params;
 
     if (!UUID_REGEX.test(id)) {
-      return jsonError("পণ্যের ID সঠিক নয়।", 400);
+      return jsonError("Product ID is invalid.", 400);
     }
 
     const contentLength = request.headers.get("content-length");
@@ -188,11 +188,11 @@ export async function PATCH(
     try {
       body = JSON.parse(raw);
     } catch {
-      return jsonError("সঠিক JSON পাঠান।", 400);
+      return jsonError("Provide valid JSON.", 400);
     }
 
     if (!isRecord(body)) {
-      return jsonError("পণ্যের তথ্য সঠিক নয়।", 400);
+      return jsonError("Product information is invalid.", 400);
     }
 
     const allowed = new Set([
@@ -220,7 +220,7 @@ export async function PATCH(
       keys.some((key) => !allowed.has(key))
     ) {
       return jsonError(
-        "ফাঁকা বা অনুমোদনহীন ফিল্ড পাঠানো হয়েছে।",
+        "An empty or unauthorized field was submitted.",
         400
       );
     }
@@ -236,7 +236,7 @@ export async function PATCH(
           !value.trim() ||
           value.trim().length > 180
         ) {
-          return jsonError("পণ্যের নাম সঠিক নয়।", 400);
+          return jsonError("Product name is invalid.", 400);
         }
 
         update.name = value.trim();
@@ -247,7 +247,7 @@ export async function PATCH(
           value.length > 200
         ) {
           return jsonError(
-            "Slug ইংরেজি ছোট হাতের অক্ষর, সংখ্যা ও হাইফেন দিয়ে লিখুন।",
+            "Slug must use lowercase English letters, numbers, and hyphens.",
             400
           );
         }
@@ -259,7 +259,7 @@ export async function PATCH(
           (typeof value !== "string" ||
             value.length > MAX_TEXT_LENGTH)
         ) {
-          return jsonError("বিবরণ সঠিক নয়।", 400);
+          return jsonError("Description is invalid.", 400);
         }
 
         update.description = value;
@@ -274,11 +274,11 @@ export async function PATCH(
             value < 0 ||
             value > 1000000000)
         ) {
-          return jsonError("মূল্য সঠিক নয়।", 400);
+          return jsonError("Price is invalid.", 400);
         }
 
         if (key === "price" && value === null) {
-          return jsonError("মূল্য দেওয়া আবশ্যক।", 400);
+          return jsonError("Price is required.", 400);
         }
 
         update[key] = value;
@@ -305,7 +305,7 @@ export async function PATCH(
           (typeof value !== "string" ||
             value.trim().length > 100)
         ) {
-          return jsonError("SKU সঠিক নয়।", 400);
+          return jsonError("SKU is invalid.", 400);
         }
 
         update.sku =
@@ -327,7 +327,7 @@ export async function PATCH(
           (typeof value !== "string" ||
             !UUID_REGEX.test(value))
         ) {
-          return jsonError("Category ID সঠিক নয়।", 400);
+          return jsonError("Category ID is invalid.", 400);
         }
 
         update.category_id = value;
@@ -342,7 +342,7 @@ export async function PATCH(
               isHttpsUrl(item)
           )
         ) {
-          return jsonError("ছবির URL তালিকা সঠিক নয়।", 400);
+          return jsonError("Image URL list is invalid.", 400);
         }
 
         update.image_urls = value;
@@ -353,7 +353,7 @@ export async function PATCH(
             value.length > 2048 ||
             !isHttpsUrl(value))
         ) {
-          return jsonError("ভিডিও URL সঠিক নয়।", 400);
+          return jsonError("Video URL is invalid.", 400);
         }
 
         update.video_url = value;
@@ -364,7 +364,7 @@ export async function PATCH(
           value.some((item) => !isRecord(item))
         ) {
           return jsonError(
-            "Variants অবশ্যই বৈধ JSON object-এর array হতে হবে।",
+            "Variants must be an array of valid JSON objects.",
             400
           );
         }
@@ -390,11 +390,11 @@ export async function PATCH(
         "Product lookup before update failed:",
         existingError.message
       );
-      return jsonError("পণ্যের বর্তমান তথ্য যাচাই করা যায়নি।", 500);
+      return jsonError("Could not verify the current product information.", 500);
     }
 
     if (!existing) {
-      return jsonError("পণ্যটি পাওয়া যায়নি।", 404);
+      return jsonError("Product not found.", 404);
     }
 
     const existingRecord =
@@ -428,23 +428,23 @@ export async function PATCH(
 
       if (error.code === "23505") {
         return jsonError(
-          "এই Slug বা SKU আগে থেকেই আছে।",
+          "This slug or SKU already exists.",
           409
         );
       }
 
       if (error.code === "23503") {
         return jsonError(
-          "নির্বাচিত Category ID পাওয়া যায়নি।",
+          "Selected Category ID was not found.",
           400
         );
       }
 
-      return jsonError("পণ্য আপডেট করা যায়নি।", 500);
+      return jsonError("Could not update the product.", 500);
     }
 
     if (!data) {
-      return jsonError("পণ্যটি পাওয়া যায়নি।", 404);
+      return jsonError("Product not found.", 404);
     }
 
     try {
