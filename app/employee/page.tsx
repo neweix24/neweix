@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/auth";
+import WorkforceDashboard from "@/components/workforce/WorkforceDashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +14,7 @@ export default async function EmployeePage() {
           <h1 className="text-3xl font-bold">Employee Dashboard</h1>
           <p>Signed in as Employee · {staff.user.email}</p>
         </header>
-        <section className="rounded-2xl border p-6">
-          <h2 className="text-xl font-semibold">Your work</h2>
-          <p className="mt-2">Your account is restricted to employee-level access. Task assignment, attendance submission and personal work history modules will be connected in the next implementation phase.</p>
-        </section>
+        <WorkforceDashboard role="employee" />
         <Link href="/" className="underline">Return to storefront</Link>
       </div>
     </main>
