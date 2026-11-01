@@ -471,11 +471,11 @@ export default function CheckoutView() {
             <div>
               <p style={{ margin: 0 }}>{item.product?.name ?? "Unknown product"}</p>
               <small>
-                {formatPrice(Number(item.product?.price ?? 0))} × {item.quantity}
+                {formatPrice(Number(item.product?.price ?? 0), locale)} × {item.quantity}
               </small>
             </div>
             <strong style={{ whiteSpace: "nowrap" }}>
-              {formatPrice(item.lineTotal)}
+              {formatPrice(item.lineTotal, locale)}
             </strong>
           </div>
         ))}
