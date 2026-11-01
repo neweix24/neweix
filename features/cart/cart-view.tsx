@@ -4,7 +4,6 @@ import Link from "next/link";
 import Icon from "@/components/ui/icon";
 import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "@/components/language-provider";
-import LanguageSwitcher from "@/components/language-switcher";
 
 type Product = {
   id: string;
@@ -108,7 +107,7 @@ export default function CartView() {
       <div className="mx-auto max-w-5xl">
         <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="flex items-center justify-between gap-3"><p className="eyebrow">NEWEIX · YOUR CART</p><LanguageSwitcher /></div>
+            <p className="eyebrow">NEWEIX · YOUR CART</p>
             <h1 className="mt-2 text-3xl font-black sm:text-4xl">{t("cartTitle")}</h1>
             <p className="mt-2">{t("reviewCart")}</p>
           </div>
