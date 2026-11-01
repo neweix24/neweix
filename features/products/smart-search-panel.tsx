@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import Icon from "@/components/ui/icon";
+import ProductCardActions from "@/features/products/product-card-actions";
 
 type Product = {
   id: string;
@@ -24,7 +25,7 @@ const PAGE_SIZE = 24;
 const FETCH_SIZE = PAGE_SIZE + 1;
 
 function money(value: number) {
-  return new Intl.NumberFormat("bn-BD", {
+  return new Intl.NumberFormat("en-BD", {
     style: "currency",
     currency: "BDT",
     maximumFractionDigits: 0,
@@ -183,14 +184,14 @@ export default function SmartSearchPanel() {
       className="neweix-shell neweix-panel"
       style={{ margin: "32px auto", padding: 20 }}
     >
-      <div style={{ marginBottom: 14 }}>
+      <div style={{ marginBottom: 20 }}>
         <p className="neweix-kicker" style={{ margin: 0 }}>
           NEWEIX SMART SEARCH
         </p>
         <h2 id="smart-search-title" className="neweix-page-title">
           Find products with AI
         </h2>
-        <p style={{ margin: 0, opacity: 0.75 }}>
+        <p style={{ margin: 0, opacity: 0.78, lineHeight: 1.7, maxWidth: 720 }}>
           Enter a product name, SKU, or describe what you need in Bengali, English, or Banglish.
         </p>
       </div>
@@ -238,7 +239,7 @@ export default function SmartSearchPanel() {
             aria-label="Select category"
             value={categoryId}
             onChange={(event) => setCategoryId(event.target.value)}
-            style={{ minHeight: 38, padding: 7, border: "1px solid var(--border, #cbd5cb)", borderRadius: 8 }}
+            style={{ minHeight: 38, padding: 7, border: "1px solid var(--border, #cbd5cb)", borderRadius: 10, background: "#fff" }}
           >
             <option value="">All categories</option>
             {categories.map((category) => (
@@ -253,7 +254,7 @@ export default function SmartSearchPanel() {
             value={minPrice}
             onChange={(event) => setMinPrice(event.target.value)}
             placeholder="Minimum price"
-            style={{ width: 130, minHeight: 38, padding: 8, border: "1px solid var(--border, #cbd5cb)", borderRadius: 8 }}
+            style={{ width: 130, minHeight: 38, padding: 8, border: "1px solid var(--border, #cbd5cb)", borderRadius: 10, background: "#fff" }}
           />
           <input
             aria-label="Maximum price"
@@ -289,7 +290,7 @@ export default function SmartSearchPanel() {
           id="neweix-search-suggestions"
           role="listbox"
           aria-label="Product suggestions"
-          style={{ listStyle: "none", padding: 8, margin: "8px 0", border: "1px solid var(--border, #d8dfd8)", borderRadius: 10 }}
+          style={{ listStyle: "none", padding: 8, margin: "10px 0", border: "1px solid #dfeade", borderRadius: 15, background: "#fff", boxShadow: "0 12px 26px rgba(45,110,65,.07)" }}
         >
           {suggestions.map((suggestion) => (
             <li key={suggestion.id}>
@@ -324,10 +325,10 @@ export default function SmartSearchPanel() {
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))", gap: 14, marginTop: 14 }}>
             {products.map((product) => (
-              <article key={product.id} style={{ overflow: "hidden", border: "1px solid var(--border, #d8dfd8)", borderRadius: 12 }}>
+              <article key={product.id} style={{ overflow: "hidden", border: "1px solid #e0eae0", borderRadius: 17, background: "#fff", boxShadow: "0 10px 24px rgba(45,110,65,.05)" }}>
                 <Link
                   href={"/products/" + encodeURIComponent(product.slug)}
-                  style={{ display: "block", aspectRatio: "1 / 1", background: "var(--surface, #f3f5f1)" }}
+                  style={{ display: "block", aspectRatio: "1 / 1", background: "linear-gradient(145deg,#f5faef,#f2faf7)" }}
                 >
                   {product.image_urls?.[0] ? (
                     <img src={product.image_urls[0]} alt={product.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -335,7 +336,7 @@ export default function SmartSearchPanel() {
                     <span style={{ display: "grid", height: "100%", placeItems: "center" }}>NEWEIX</span>
                   )}
                 </Link>
-                <div style={{ padding: 12 }}>
+                <div style={{ padding: 15 }}>
                   <Link href={"/products/" + encodeURIComponent(product.slug)} style={{ fontWeight: 750 }}>
                     {product.name}
                   </Link>

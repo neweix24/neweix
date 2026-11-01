@@ -165,6 +165,7 @@ export default function ProductCatalog() {
       <header className={styles.header}>
         <Link href="/" className={styles.brand}>NEWEIX</Link>
         <nav aria-label="Main navigation">
+          <Link href="/search"><Icon name="search" size={16} /> AI Search</Link>
           <Link href="/track-order"><Icon name="truck" size={16} /> {t("trackOrder")}</Link>
           <Link href="/account"><Icon name="user" size={16} /> {t("myAccount")}</Link>
           <Link href="/wishlist"><Icon name="heart" size={16} /> {t("wishlist")} ({wishlist.length})</Link>
