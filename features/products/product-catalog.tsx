@@ -23,8 +23,8 @@ type Product = {
 type Category = { id: string; name: string; slug: string };
 type ApiResponse = { data?: Product[] };
 
-function money(value: number) {
-  return new Intl.NumberFormat("en-BD", {
+function money(value: number, locale: string) {
+  return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", {
     style: "currency",
     currency: "BDT",
     maximumFractionDigits: 0,
@@ -32,7 +32,7 @@ function money(value: number) {
 }
 
 export default function ProductCatalog() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"featured" | "price-asc" | "price-desc">("featured");
@@ -271,9 +271,9 @@ export default function ProductCatalog() {
                 {product.description && <p>{product.description}</p>}
                 <div className={styles.bottom}>
                   <div>
-                    <strong>{money(Number(product.price))}</strong>
+                    <strong>{money(Number(product.price), locale)}</strong>
                     {product.compare_at_price != null && product.compare_at_price > product.price && (
-                      <del>{money(Number(product.compare_at_price))}</del>
+                      <del>{money(Number(product.compare_at_price), locale)}</del>
                     )}
                   </div>
                   <ProductCardActions productId={product.id} stock={product.stock} onNotice={setNotice} />
