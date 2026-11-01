@@ -31,6 +31,7 @@ export default function WorkforceDashboard({ role }: { role: Role }) {
   const [assignedTo, setAssignedTo] = useState("");
   const [priority, setPriority] = useState("normal");
   const [dueAt, setDueAt] = useState("");
+  const [attendanceReview, setAttendanceReview] = useState<Record<string, string>>({});
 
   const todayAttendance = useMemo(() => attendance.find((row) => row.attendance_date === localDate()), [attendance]);
 
@@ -97,6 +98,26 @@ export default function WorkforceDashboard({ role }: { role: Role }) {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not assign task.");
     } finally { setBusy(false); }
+  }
+
+  async function reviewAttendance(id: string, status: string) {
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/workforce/attendance", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      const result = (await response.json()) as Api<{ attendance?: Attendance }>;
+      if (!response.ok) throw new Error(result.error || "Could not review attendance.");
+      setMessage("Attendance review saved.");
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not review attendance.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function attendanceAction(action: "check_in" | "check_out") {
@@ -189,9 +210,14 @@ export default function WorkforceDashboard({ role }: { role: Role }) {
         <section className="rounded-2xl border p-5 space-y-3">
           <h2 className="text-xl font-semibold">Department attendance</h2>
           {attendance.length === 0 ? <p>No attendance records yet.</p> : attendance.map((record) => (
-            <article key={record.id} className="flex flex-wrap justify-between gap-2 border-b py-3 text-sm">
-              <div><p className="font-medium">{record.user_id}</p><p>{record.attendance_date} · In {time(record.check_in_at)} · Out {time(record.check_out_at)}</p></div>
-              <span>{record.status}</span>
+            <article key={record.id} className="flex flex-wrap items-center justify-between gap-3 border-b py-3 text-sm">
+              <div><p className="font-medium">{members.find((member) => member.user_id === record.user_id)?.display_name || record.user_id}</p><p>{record.attendance_date} · In {time(record.check_in_at)} · Out {time(record.check_out_at)}</p></div>
+              <div className="flex items-center gap-2">
+                <select className="rounded-lg border p-2" aria-label="Attendance status" value={attendanceReview[record.id] ?? record.status} onChange={(event) => setAttendanceReview((current) => ({ ...current, [record.id]: event.target.value }))}>
+                  <option value="present">Present</option><option value="late">Late</option><option value="half_day">Half day</option><option value="leave">Leave</option><option value="absent">Absent</option>
+                </select>
+                <button type="button" className="rounded-lg border px-3 py-2" disabled={busy || (attendanceReview[record.id] ?? record.status) === record.status} onClick={() => void reviewAttendance(record.id, attendanceReview[record.id] ?? record.status)}>Save</button>
+              </div>
             </article>
           ))}
         </section>
