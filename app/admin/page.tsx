@@ -64,7 +64,7 @@ export default async function AdminPage() {
               <span><strong className="block text-lg font-black">Integrations</strong><span className="mt-1 block text-sm" style={{ color: "var(--muted)" }}>Check Pathao Courier and BulkSMSBD connections.</span></span>
               <span className="text-xs font-extrabold" style={{ color: "#28764b" }}>Open workspace →</span>
             </Link>
-            <Link href="/admin/workforce" className={cardClass} style={cardStyle}>
+            <Link href="/admin/workforce" aria-label="Manage NEWEIX departments, managers and employee assignments" className={cardClass} style={cardStyle}>
               <span className="grid h-11 w-11 place-items-center rounded-xl" style={{ background: "#eff9e9", color: "#28764b" }}><Icon name="user" size={21} /></span>
               <span><strong className="block text-lg font-black">Departments & Teams</strong><span className="mt-1 block text-sm" style={{ color: "var(--muted)" }}>Create departments and assign Managers and Employees.</span></span>
               <span className="text-xs font-extrabold" style={{ color: "#28764b" }}>Open workspace →</span>
