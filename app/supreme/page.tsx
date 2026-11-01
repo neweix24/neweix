@@ -14,18 +14,18 @@ export default async function SupremePage() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
           <div>
             <p className="eyebrow">NEWEIX · SUPREME CONTROL</p>
-            <p className="mt-1 text-sm">লগইন করা Role: <strong style={{ color: "var(--primary)" }}>{staff.role}</strong></p>
+            <p className="mt-1 text-sm">Signed-in role: <strong style={{ color: "var(--primary)" }}>{staff.role}</strong></p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link href="/supreme/eixverse" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="gift" size={15} /> Campaigns & Missions</Link>
             <Link href="/supreme/eixpay" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="wallet" size={15} /> EixPay Control</Link>
-            <Link href="/supreme/reviews" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="check" size={15} /> রিভিউ অনুমোদন</Link>
-            <Link href="/supreme/audit-logs" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="orders" size={15} /> অডিট লগ</Link>
-            <Link href="/supreme/system" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="settings" size={15} /> সিস্টেম মনিটর</Link>
-            <Link href="/" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="globe" size={15} /> স্টোরফ্রন্ট</Link>
+            <Link href="/supreme/reviews" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="check" size={15} /> Review Moderation</Link>
+            <Link href="/supreme/audit-logs" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="orders" size={15} /> Audit Logs</Link>
+            <Link href="/supreme/system" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="settings" size={15} /> System Monitor</Link>
+            <Link href="/" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="globe" size={15} /> Storefront</Link>
             <form action="/auth/logout" method="post">
               <button type="submit" className="rounded-xl border px-4 py-2 text-sm font-semibold" style={{ borderColor: "var(--border)" }}>
-                <Icon name="logout" size={16} /> লগআউট
+                <Icon name="logout" size={16} /> Log Out
               </button>
             </form>
           </div>
