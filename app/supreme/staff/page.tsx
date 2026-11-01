@@ -14,18 +14,18 @@ export default async function SupremeStaffPage() {
       <h1>Admin & Staff Management</h1>
 
       <p className="hero-copy">
-        এখানে নতুন Admin অথবা Staff অ্যাকাউন্ট তৈরি করুন।
+        Create a new Admin or Staff account here.
       </p>
 
       <section>
-        <h2>নতুন অ্যাকাউন্ট তৈরি</h2>
+        <h2>Create New Account</h2>
 
         <StaffCreateForm />
       </section>
 
       <p>
         <Link href="/supreme">
-          ← Supreme Dashboard-এ ফিরে যান
+          ← Back to Supreme Dashboard
         </Link>
       </p>
     </main>
