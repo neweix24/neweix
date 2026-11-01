@@ -161,7 +161,7 @@ export async function POST(request: Request) {
         .select("id")
         .eq("status", "approved")
         .is("provisioned_user_id", null)
-        .ilike("candidate_email", email)
+        .eq("candidate_email", email)
         .maybeSingle();
       if (nominationError || !nomination) {
         return errorResponse("এই ইমেইলের জন্য Supreme-approved Manager nomination পাওয়া যায়নি।", 403);
