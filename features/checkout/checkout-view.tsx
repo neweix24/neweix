@@ -6,6 +6,7 @@ import styles from "./checkout-view.module.css";
 
 import { useEffect, useState, type FormEvent } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import BangladeshAddressFields from "@/features/checkout/bangladesh-address-fields";
 
 type CartItem = {
   product_id: string;
@@ -335,6 +336,12 @@ export default function CheckoutView() {
       customer_email: String(formData.get("customer_email") ?? "").trim(),
       shipping_address: String(formData.get("shipping_address") ?? "").trim(),
       shipping_city: String(formData.get("shipping_city") ?? "").trim(),
+      shipping_division_code: String(formData.get("shipping_division_code") ?? ""),
+      shipping_district_code: String(formData.get("shipping_district_code") ?? ""),
+      shipping_upazila_code: String(formData.get("shipping_upazila_code") ?? ""),
+      shipping_union_code: String(formData.get("shipping_union_code") ?? ""),
+      shipping_union_other: String(formData.get("shipping_union_other") ?? "").trim(),
+      shipping_village: String(formData.get("shipping_village") ?? "").trim(),
       coupon_code: String(formData.get("coupon_code") ?? "").trim().toUpperCase() || null,
       payment_method: paymentMethod,
       payment_transaction_id: paymentMethod === "cod" ? null : transactionId,
@@ -495,16 +502,24 @@ export default function CheckoutView() {
         <input id="customer_email" name="customer_email" type="email"
           maxLength={254} autoComplete="email" disabled={submitting} style={fieldStyle} />
 
-        <label htmlFor="shipping_address">সম্পূর্ণ ডেলিভারি ঠিকানা *</label>
+        <label htmlFor="shipping_address">বাড়ি / রোড / বিস্তারিত ঠিকানা *</label>
         <textarea id="shipping_address" name="shipping_address" required
-          minLength={5} maxLength={1000} autoComplete="street-address" rows={4}
-          defaultValue={defaultAddress ? [defaultAddress.address_line, defaultAddress.area, defaultAddress.upazila, defaultAddress.district, defaultAddress.division].filter(Boolean).join(", ") : ""}
-          disabled={submitting} style={{ ...fieldStyle, resize: "vertical" }} />
+          minLength={5} maxLength={1000} autoComplete="street-address" rows={3}
+          defaultValue={defaultAddress?.address_line ?? ""}
+          disabled={submitting} style={{ ...fieldStyle, resize: "vertical" }}
+          placeholder="বাড়ি নম্বর, রোড, ফ্ল্যাট বা পরিচিত ল্যান্ডমার্ক লিখুন" />
 
-        <label htmlFor="shipping_city">শহর / জেলা *</label>
-        <input id="shipping_city" name="shipping_city" required minLength={2}
-          maxLength={120} autoComplete="address-level2" disabled={submitting}
-          placeholder="যেমন: ঢাকা" defaultValue={defaultAddress?.district ?? ""} onBlur={(event) => { void loadDeliveryQuote(event.currentTarget.value); }} style={fieldStyle} />
+        <BangladeshAddressFields
+          initialDivision={defaultAddress?.division}
+          initialDistrict={defaultAddress?.district}
+          initialUpazila={defaultAddress?.upazila}
+          initialVillage={defaultAddress?.area}
+          disabled={submitting}
+          onDistrictChange={(districtName) => {
+            if (districtName) void loadDeliveryQuote(districtName);
+            else setDeliveryFeeQuote(null);
+          }}
+        />
 
         <label htmlFor="coupon_code">কুপন কোড (ঐচ্ছিক)</label>
         <input id="coupon_code" name="coupon_code" type="text" maxLength={40}
