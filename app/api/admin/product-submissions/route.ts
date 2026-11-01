@@ -55,7 +55,7 @@ async function getStaffContext(): Promise<StaffContext> {
   const { data: { user }, error: authError } = await session.auth.getUser();
 
   if (authError || !user) {
-    return { error: "লগইন আবশ্যক।", status: 401 };
+    return { error: "Authentication required.", status: 401 };
   }
 
   const { data: profile, error } = await session
@@ -70,7 +70,7 @@ async function getStaffContext(): Promise<StaffContext> {
     profile.is_active !== true ||
     !["supreme", "admin"].includes(profile.role)
   ) {
-    return { error: "এই কাজের অনুমতি নেই।", status: 403 };
+    return { error: "You are not authorized to perform this action.", status: 403 };
   }
 
   if (profile.role === "supreme") {
@@ -79,7 +79,7 @@ async function getStaffContext(): Promise<StaffContext> {
 
     if (mfaError || assurance?.currentLevel !== "aal2") {
       return {
-        error: "Supreme অ্যাকাউন্টের MFA যাচাই সম্পন্ন করুন।",
+        error: "Complete MFA verification for the Supreme account.",
         status: 403,
       };
     }
@@ -143,7 +143,7 @@ export async function GET() {
 
     if (error) {
       console.error("Product submissions GET failed:", error.message);
-      return jsonError("জমা দেওয়া পণ্যের তালিকা আনা যায়নি।", 500);
+      return jsonError("Could not load submitted products.", 500);
     }
 
     return NextResponse.json(
@@ -152,7 +152,7 @@ export async function GET() {
     );
   } catch (error) {
     console.error("Product submissions GET error:", error);
-    return jsonError("সার্ভারে সমস্যা হয়েছে।", 500);
+    return jsonError("A server error occurred.", 500);
   }
 }
 
@@ -170,18 +170,18 @@ export async function POST(request: Request) {
       const size = Number(contentLength);
 
       if (!Number.isSafeInteger(size) || size < 0) {
-        return jsonError("অনুরোধের আকার সঠিক নয়।", 400);
+        return jsonError("Request size is invalid.", 400);
       }
 
       if (size > MAX_BODY_BYTES) {
-        return jsonError("অনুরোধটি অনেক বড়।", 413);
+        return jsonError("Request is too large.", 413);
       }
     }
 
     const raw = await request.text();
 
     if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) {
-      return jsonError("অনুরোধটি অনেক বড়।", 413);
+      return jsonError("Request is too large.", 413);
     }
 
     let body: unknown;
@@ -189,11 +189,11 @@ export async function POST(request: Request) {
     try {
       body = JSON.parse(raw);
     } catch {
-      return jsonError("সঠিক JSON তথ্য পাঠান।", 400);
+      return jsonError("Provide valid JSON data.", 400);
     }
 
     if (!isRecord(body)) {
-      return jsonError("পণ্যের তথ্য সঠিক নয়।", 400);
+      return jsonError("Product information is invalid.", 400);
     }
 
     const name = typeof body.name === "string" ? body.name.trim() : "";
@@ -224,7 +224,7 @@ export async function POST(request: Request) {
     const isFeatured = body.is_featured ?? false;
 
     if (!name || name.length > 200) {
-      return jsonError("পণ্যের নাম দিন (সর্বোচ্চ ২০০ অক্ষর)।", 400);
+      return jsonError("Provide a product name (maximum 200 characters).", 400);
     }
 
     if (
@@ -232,7 +232,7 @@ export async function POST(request: Request) {
       slug.length > 200
     ) {
       return jsonError(
-        "Slug ইংরেজি ছোট অক্ষর, সংখ্যা ও হাইফেন দিয়ে লিখুন।",
+        "Slug must use lowercase English letters, numbers, and hyphens.",
         400
       );
     }
@@ -243,7 +243,7 @@ export async function POST(request: Request) {
       price < 0 ||
       price > MAX_PRICE
     ) {
-      return jsonError("পণ্যের মূল্য সঠিক নয়।", 400);
+      return jsonError("Product price is invalid.", 400);
     }
 
     if (
@@ -252,7 +252,7 @@ export async function POST(request: Request) {
       stock < 0 ||
       stock > 1_000_000
     ) {
-      return jsonError("স্টকের পরিমাণ সঠিক নয়।", 400);
+      return jsonError("Stock quantity is invalid.", 400);
     }
 
     if (
@@ -271,7 +271,7 @@ export async function POST(request: Request) {
       lowStockThreshold < 0 ||
       lowStockThreshold > 1_000_000
     ) {
-      return jsonError("পণ্যের অতিরিক্ত তথ্য সঠিক নয়।", 400);
+      return jsonError("Additional product information is invalid.", 400);
     }
 
     if (
@@ -279,7 +279,7 @@ export async function POST(request: Request) {
       imageUrls.length > MAX_IMAGES ||
       !imageUrls.every(isHttpsUrl)
     ) {
-      return jsonError("সর্বোচ্চ ১০টি বৈধ HTTPS ছবির লিংক দিন।", 400);
+      return jsonError("Provide up to 10 valid HTTPS image URLs.", 400);
     }
 
     if (
@@ -287,18 +287,18 @@ export async function POST(request: Request) {
       variants.length > MAX_ITEMS ||
       !variants.every(isRecord)
     ) {
-      return jsonError("Variants-এর তথ্য সঠিক নয়।", 400);
+      return jsonError("Variant information is invalid.", 400);
     }
 
     if (
       typeof isActive !== "boolean" ||
       typeof isFeatured !== "boolean"
     ) {
-      return jsonError("পণ্যের অবস্থা সঠিক নয়।", 400);
+      return jsonError("Product status is invalid.", 400);
     }
 
     if (categoryId !== null && !isUuid(categoryId)) {
-      return jsonError("Category ID সঠিক নয়।", 400);
+      return jsonError("Category ID is invalid.", 400);
     }
 
     if (
@@ -307,7 +307,7 @@ export async function POST(request: Request) {
       videoUrl === undefined ||
       (videoUrl !== null && !isHttpsUrl(videoUrl))
     ) {
-      return jsonError("SKU অথবা ভিডিও URL সঠিক নয়।", 400);
+      return jsonError("SKU or video URL is invalid.", 400);
     }
 
     const productData = {
@@ -345,7 +345,7 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error("Product submission create failed:", error.message);
-      return jsonError("পণ্য অনুমোদনের জন্য জমা দেওয়া যায়নি।", 500);
+      return jsonError("Could not submit the product for approval.", 500);
     }
 
     try {
@@ -371,7 +371,7 @@ export async function POST(request: Request) {
       {
         success: true,
         submission: data,
-        message: "পণ্যটি অনুমোদনের জন্য জমা হয়েছে।",
+        message: "Product submitted for approval.",
       },
       {
         status: 201,
@@ -380,33 +380,33 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error("Product submissions POST error:", error);
-    return jsonError("সার্ভারে সমস্যা হয়েছে।", 500);
+    return jsonError("A server error occurred.", 500);
   }
 }
 export async function PATCH(request: Request) {
   try {
     const staff = await getStaffContext();
     if ("error" in staff) return jsonError(staff.error, staff.status);
-    if (staff.role === "staff") return jsonError("পণ্য প্রস্তাব অনুমোদন বা প্রত্যাখ্যান করার অনুমতি নেই।", 403);
+    if (staff.role === "staff") return jsonError("You are not authorized to approve or reject product submissions.", 403);
 
     const contentLength = request.headers.get("content-length");
     if (contentLength && (!/^[0-9]+$/.test(contentLength) || Number(contentLength) > 4096)) {
-      return jsonError("অনুরোধটি অনেক বড়।", 413);
+      return jsonError("Request is too large.", 413);
     }
     const raw = await request.text();
-    if (new TextEncoder().encode(raw).byteLength > 4096) return jsonError("অনুরোধটি অনেক বড়।", 413);
+    if (new TextEncoder().encode(raw).byteLength > 4096) return jsonError("Request is too large.", 413);
 
     let body: unknown;
-    try { body = JSON.parse(raw); } catch { return jsonError("সঠিক JSON তথ্য পাঠান।", 400); }
+    try { body = JSON.parse(raw); } catch { return jsonError("Provide valid JSON data.", 400); }
     if (!isRecord(body)) return jsonError("সঠিক তথ্য পাঠান।", 400);
 
     const id = body.id;
     const decision = body.decision;
     const note = body.review_note == null ? null : typeof body.review_note === "string" ? body.review_note.trim() : undefined;
 
-    if (!isUuid(id)) return jsonError("সঠিক Submission ID দিন।", 400);
-    if (decision !== "approved" && decision !== "rejected") return jsonError("অনুমোদন অথবা প্রত্যাখ্যান নির্বাচন করুন।", 400);
-    if (note === undefined || (note !== null && note.length > 1000)) return jsonError("পর্যালোচনা নোট সর্বোচ্চ ১০০০ অক্ষরের হতে হবে।", 400);
+    if (!isUuid(id)) return jsonError("Provide a valid Submission ID.", 400);
+    if (decision !== "approved" && decision !== "rejected") return jsonError("Choose approve or reject.", 400);
+    if (note === undefined || (note !== null && note.length > 1000)) return jsonError("Review note must be 1,000 characters or fewer.", 400);
 
     const supabase = await getAdminClient();
     const { data, error } = await supabase.rpc("review_product_submission", {
@@ -418,19 +418,19 @@ export async function PATCH(request: Request) {
 
     if (error) {
       const message = error.message.toLowerCase();
-      if (message.includes("not found") || message.includes("submission_not_found")) return jsonError("পণ্য প্রস্তাব পাওয়া যায়নি।", 404);
-      if (message.includes("already been reviewed") || message.includes("submission_already_reviewed")) return jsonError("এই প্রস্তাব আগে পর্যালোচনা করা হয়েছে।", 409);
-      if (message.includes("reviewer_not_authorized")) return jsonError("শুধু সক্রিয় Admin বা Supreme এই প্রস্তাব পর্যালোচনা করতে পারবেন।", 403);
+      if (message.includes("not found") || message.includes("submission_not_found")) return jsonError("Product submission not found.", 404);
+      if (message.includes("already been reviewed") || message.includes("submission_already_reviewed")) return jsonError("This submission has already been reviewed.", 409);
+      if (message.includes("reviewer_not_authorized")) return jsonError("Only active Admin or Supreme accounts can review this submission.", 403);
       console.error("Product submission review RPC failed:", error.message);
-      return jsonError("পণ্য প্রস্তাব পর্যালোচনা করা যায়নি।", 500);
+      return jsonError("Could not review the product submission.", 500);
     }
 
     return NextResponse.json(
-      { success: true, result: data, message: decision === "approved" ? "পণ্য অনুমোদিত হয়েছে।" : "পণ্য প্রস্তাব প্রত্যাখ্যান করা হয়েছে।" },
+      { success: true, result: data, message: decision === "approved" ? "Product approved." : "Product submission rejected." },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {
     console.error("Product submissions PATCH error:", error);
-    return jsonError("সার্ভারে সমস্যা হয়েছে।", 500);
+    return jsonError("A server error occurred.", 500);
   }
 }
