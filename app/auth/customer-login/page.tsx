@@ -274,7 +274,7 @@ function CustomerLoginForm() {
 
             <div className="auth-password-label">
               <label htmlFor="customer-password">{isSignUp ? "Create a password" : "Password"}</label>
-              <Link href="/auth/forgot-password">Password ভুলে গেছেন?</Link>
+              <Link href="/auth/forgot-password">Forgot password?</Link>
             </div>
 
             <input
@@ -282,7 +282,7 @@ function CustomerLoginForm() {
               type="password"
               autoComplete={isSignUp ? "new-password" : "current-password"}
               minLength={isSignUp ? 8 : undefined}
-              placeholder={isSignUp ? "At least 8 characters" : "আপনার Password"}
+              placeholder={isSignUp ? "At least 8 characters" : "Your password"}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
