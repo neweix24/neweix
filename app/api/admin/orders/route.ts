@@ -80,7 +80,7 @@ export async function GET() {
     const orderColumns: string = staff.role === "supreme"
       ? `
         id, order_number, customer_name, customer_phone, phone, address,
-        shipping_address, shipping_city, status, subtotal, delivery_fee, total,
+        shipping_address, shipping_city, shipping_division_code, shipping_division, shipping_district_code, shipping_district, shipping_upazila_code, shipping_upazila, shipping_union_code, shipping_union, shipping_union_other, shipping_village, status, subtotal, delivery_fee, total,
         payment_method, payment_status, payment_transaction_id,
         payment_verified_at, payment_verified_by,
         delivery_provider, delivery_status, delivery_consignment_id,
@@ -93,7 +93,7 @@ export async function GET() {
       `
       : `
         id, order_number, customer_name, customer_phone, phone, address,
-        shipping_address, shipping_city, status, subtotal, delivery_fee, total,
+        shipping_address, shipping_city, shipping_division_code, shipping_division, shipping_district_code, shipping_district, shipping_upazila_code, shipping_upazila, shipping_union_code, shipping_union, shipping_union_other, shipping_village, status, subtotal, delivery_fee, total,
         payment_method, payment_status,
         delivery_provider, delivery_status, delivery_consignment_id,
         delivery_tracking_code, delivery_booked_at, delivery_error,
