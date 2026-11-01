@@ -181,6 +181,25 @@ export default function StorefrontHome() {
       </header>
 
       <main className={styles.main}>
+        <section className={styles.hero} aria-labelledby="home-hero-title">
+          <div className={styles.heroText}>
+            <span className={styles.eyebrow}>{t("homeHeroEyebrow")}</span>
+            <h1 id="home-hero-title">{t("homeHeroTitle")}</h1>
+            <p>{t("homeHeroCopy")}</p>
+            <div className={styles.heroActions}>
+              <Link href="/products" className={styles.primaryButton}>{t("homeHeroShop")} <Icon name="arrow-right" size={17} /></Link>
+              <Link href="/track-order" className={styles.secondaryButton}>{t("homeHeroTrack")}</Link>
+            </div>
+            <div className={styles.trustLine}>
+              <span>✓</span> {t("homeHeroSecure")} <span>✓</span> {t("homeHeroDelivery")} <span>✓</span> {t("homeHeroTrust")}
+            </div>
+          </div>
+          <div className={styles.heroVisual} aria-hidden="true">
+            <div className={styles.heroOrbit} />
+            <div className={styles.heroMonogram}>N</div>
+            <div className={styles.heroFloatTag}>NEWEIX<br />SMART SHOPPING</div>
+          </div>
+        </section>
         {categories.length > 0 && <section className={styles.categorySection} aria-labelledby="category-title">
           <div className={styles.categoryHeading}><div><span className={styles.eyebrow}>SHOP BY CATEGORY</span><h2 id="category-title">{t("categories")}</h2></div><Link href="/products">{t("allCategories")} <Icon name="arrow-right" size={16} /></Link></div>
           <div className={styles.categoryList}>
