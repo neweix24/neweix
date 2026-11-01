@@ -56,7 +56,7 @@ begin
      or p_shipping_upazila_code is null
      or p_shipping_division_code !~ '^BD-D[0-9]{2}$'
      or p_shipping_district_code !~ '^BD-D[0-9]{2}-Z[0-9]{2}$'
-     or (p_shipping_upazila_code <> 'other' and p_shipping_upazila_code !~ '^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}     or (p_shipping_union_code not in ('not_applicable','other')
+     or (p_shipping_upazila_code <> 'other' and p_shipping_upazila_code !~ '^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3} not in ('not_applicable','other')
          and p_shipping_union_code !~ '^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}-N[0-9]{4}$')
      or pg_catalog.char_length(pg_catalog.btrim(p_shipping_division)) < 2
      or pg_catalog.char_length(pg_catalog.btrim(p_shipping_district)) < 2
