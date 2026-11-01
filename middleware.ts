@@ -46,18 +46,17 @@ export async function middleware(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet, headers) {
+      setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
-        // Supabase supplies cache headers when auth cookies are refreshed.
-        // Preserve them so Cloudflare/CDNs cannot cache a response containing
-        // one user's refreshed session and serve it to another visitor.
-        Object.entries(headers).forEach(([name, value]) => {
-          response.headers.set(name, value);
-        });
+        // @supabase/ssr 0.7 does not expose cache headers through setAll.
+        // Explicitly prevent Cloudflare/CDNs from caching refreshed sessions.
+        response.headers.set("Cache-Control", "private, no-store, max-age=0");
+        response.headers.set("Expires", "0");
+        response.headers.set("Pragma", "no-cache");
       },
     },
   });
