@@ -7,6 +7,7 @@ import styles from "./checkout-view.module.css";
 import { useEffect, useState, type FormEvent } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import BangladeshAddressFields from "@/features/checkout/bangladesh-address-fields";
+import { useLanguage } from "@/components/language-provider";
 
 type CartItem = {
   product_id: string;
