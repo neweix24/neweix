@@ -700,7 +700,7 @@ export default function CheckoutView() {
         {couponPreview && !couponPreview.free_shipping && (
           <p className={styles.discountRow}><span>Coupon savings</span><strong>−{formatPrice(couponPreview.discount, locale)}</strong></p>
         )}
-        <p><strong>Estimated total: {formatPrice(Math.max(0, total - (couponPreview?.discount ?? 0)) + (deliveryFeeQuote ?? 0), locale)}</strong></p>
+        <p><strong>Estimated total: {formatPrice(Math.max(0, total - (couponPreview?.discount ?? 0)) + (couponPreview?.free_shipping ? 0 : (deliveryFeeQuote ?? 0)), locale)}</strong></p>
         <p><strong>Delivery fee: {deliveryFeeQuote === null ? "Calculate using your address" : couponPreview?.free_shipping ? "Free delivery (subject to server confirmation)" : formatPrice(deliveryFeeQuote, locale)}</strong></p>
         <p>{paymentMethod === "cod" ? "Cash on Delivery selected: pay only the delivery fee in advance via MFS; pay for the products upon delivery." : "MFS selected: the full product total and delivery fee must be paid in advance."}</p>
         <p>The server determines the delivery fee. Submitting a transaction ID does not confirm payment; an administrator must verify it.</p>
