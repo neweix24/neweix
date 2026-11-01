@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
 type Role = "manager" | "employee";
 type Department = { id: string; name: string; code: string };
@@ -80,7 +80,7 @@ export default function WorkforceDashboard({ role }: { role: Role }) {
     } finally { setBusy(false); }
   }
 
-  async function createTask(event: React.FormEvent<HTMLFormElement>) {
+  async function createTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setMessage("");
