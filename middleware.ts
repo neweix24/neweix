@@ -27,6 +27,12 @@ export async function middleware(request: NextRequest) {
     pathname === "/wishlist" || pathname.startsWith("/wishlist/");
   const isCustomerProtected = isCustomerPage || isCustomerApi;
 
+  // Avoid rotating Supabase refresh tokens on every public storefront request.
+  // Refresh and validate sessions only on routes that actually require authentication.
+  if (!isAdminPath && !isSupremePath && !isCustomerProtected) {
+    return response;
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
