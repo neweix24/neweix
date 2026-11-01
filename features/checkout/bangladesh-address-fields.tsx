@@ -49,6 +49,7 @@ export default function BangladeshAddressFields({
   const [upazilaCode, setUpazilaCode] = useState(initial.upazilaCode);
   const [unionCode, setUnionCode] = useState(initial.unionCode);
   const [unionOther, setUnionOther] = useState("");
+  const [upazilaOther, setUpazilaOther] = useState(initial.upazilaCode === "other" ? initialUpazila ?? "" : "");
 
   const division = BANGLADESH_ADMIN_AREAS.find((item) => item.code === divisionCode);
   const districts = division?.districts ?? [];
@@ -105,7 +106,15 @@ export default function BangladeshAddressFields({
         disabled={disabled || !districtCode} style={selectStyle}>
         <option value="">উপজেলা নির্বাচন করুন</option>
         {upazilas.map((item) => <option key={item.code} value={item.code}>{item.bn_name}</option>)}
+        <option value="other">তালিকায় নেই / নতুন উপজেলা</option>
       </select>
+
+      {upazilaCode === "other" && <>
+        <label htmlFor="shipping_upazila_other">উপজেলার নাম *</label>
+        <input id="shipping_upazila_other" name="shipping_upazila_other" required minLength={2} maxLength={120}
+          value={upazilaOther} onChange={(event) => setUpazilaOther(event.target.value)}
+          disabled={disabled} style={selectStyle} placeholder="উপজেলার নাম লিখুন" />
+      </>}
 
       <label htmlFor="shipping_union_code">ইউনিয়ন / পৌরসভা / সিটি কর্পোরেশন *</label>
       <select id="shipping_union_code" name="shipping_union_code" required
