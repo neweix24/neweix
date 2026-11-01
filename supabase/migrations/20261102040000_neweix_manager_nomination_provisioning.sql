@@ -18,4 +18,10 @@ comment on column public.staff_manager_nominations.provisioned_user_id is
 comment on column public.staff_manager_nominations.provisioned_at is
   'Timestamp when Supreme provisioned the approved Manager account.';
 
+-- The nominations table contains candidate contact details and review notes.
+-- It is server-only: never expose direct Data API access to client roles.
+alter table public.staff_manager_nominations enable row level security;
+revoke all on public.staff_manager_nominations from anon, authenticated;
+grant all on public.staff_manager_nominations to service_role;
+
 commit;
