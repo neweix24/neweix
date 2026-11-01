@@ -129,6 +129,7 @@ export async function POST(request: Request) {
   const shippingDivisionCode = cleanString(rawBody.shipping_division_code);
   const shippingDistrictCode = cleanString(rawBody.shipping_district_code);
   const shippingUpazilaCode = cleanString(rawBody.shipping_upazila_code);
+  const shippingUpazilaOther = cleanString(rawBody.shipping_upazila_other);
   const shippingUnionCode = cleanString(rawBody.shipping_union_code);
   const shippingUnionOther = cleanString(rawBody.shipping_union_other);
   const shippingVillage = cleanString(rawBody.shipping_village);
@@ -146,6 +147,9 @@ export async function POST(request: Request) {
   );
   if (!resolvedAddress) {
     return errorResponse("নির্বাচিত বিভাগ, জেলা, উপজেলা ও ইউনিয়নের সম্পর্ক সঠিক নয়। আবার নির্বাচন করুন।", 400);
+  }
+  if (shippingUpazilaCode === "other" && (!shippingUpazilaOther || shippingUpazilaOther.length < 2 || shippingUpazilaOther.length > 120)) {
+    return errorResponse("তালিকায় না থাকা উপজেলার নাম লিখুন।", 400);
   }
   if (shippingUnionCode === "other" && (!shippingUnionOther || shippingUnionOther.length < 2 || shippingUnionOther.length > 120)) {
     return errorResponse("তালিকায় না থাকা ইউনিয়ন বা এলাকার নাম লিখুন।", 400);
@@ -521,7 +525,7 @@ export async function POST(request: Request) {
           p_shipping_district_code: resolvedAddress.district.code,
           p_shipping_district: resolvedAddress.district.bn_name,
           p_shipping_upazila_code: resolvedAddress.upazila.code,
-          p_shipping_upazila: resolvedAddress.upazila.bn_name,
+          p_shipping_upazila: resolvedAddress.upazila?.bn_name ?? shippingUpazilaOther,
           p_shipping_union_code: shippingUnionCode,
           p_shipping_union: resolvedAddress.union?.bn_name ?? (shippingUnionCode === "other" ? shippingUnionOther : null),
           p_shipping_union_other: shippingUnionCode === "other" ? shippingUnionOther : null,
