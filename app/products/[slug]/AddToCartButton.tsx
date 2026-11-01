@@ -79,8 +79,8 @@ export default function AddToCartButton({
       <button type="button" className="primary-button" onClick={add} disabled={disabled}>
         {disabled ? "স্টক শেষ" : <><Icon name="cart" size={18} /> কার্টে যোগ করুন</>}
       </button>
-      <button type="button" className="secondary-button" onClick={buyNow} disabled={disabled}>
-        <Icon name="zap" size={18} /> এখনই কিনুন (Buy Now)
+      <button type="button" className="primary-button" onClick={buyNow} disabled={disabled} style={{ background: "transparent", color: "var(--primary)", marginTop: 0 }}>
+        <Icon name="sparkles" size={18} /> এখনই কিনুন (Buy Now)
       </button>
       <Link href="/cart"><Icon name="cart" size={16} /> কার্ট দেখুন</Link>
       {message && <p role="status" aria-live="polite">{message}</p>}
