@@ -19,16 +19,6 @@ type Order = {
   address: string | null;
   shipping_address: string | null;
   shipping_city: string | null;
-  shipping_division_code: string | null;
-  shipping_division: string | null;
-  shipping_district_code: string | null;
-  shipping_district: string | null;
-  shipping_upazila_code: string | null;
-  shipping_upazila: string | null;
-  shipping_union_code: string | null;
-  shipping_union: string | null;
-  shipping_union_other: string | null;
-  shipping_village: string | null;
   status: string;
   subtotal: number;
   delivery_fee: number;
@@ -181,7 +171,7 @@ export default function OrdersManager() {
       setError("সঠিক Pathao Store ID দিন।");
       return;
     }
-    const defaultAddress = [order.shipping_address, order.shipping_village, order.shipping_union_other || order.shipping_union, order.shipping_upazila, order.shipping_district || order.shipping_city, order.shipping_division].filter(Boolean).join(", ");
+    const defaultAddress = [order.shipping_address, order.shipping_city].filter(Boolean).join(", ");
     const recipientAddress = window.prompt(
       "Pathao-এর সম্পূর্ণ ঠিকানা দিন (রাস্তা/এলাকা, থানা/উপজেলা, জেলা):",
       defaultAddress,
@@ -549,13 +539,7 @@ export default function OrdersManager() {
               <p className="mt-3 break-words text-sm text-gray-700">
                 ঠিকানা:{" "}
                 {order.shipping_address || order.address || "ঠিকানা নেই"}
-                {[
-                  order.shipping_village,
-                  order.shipping_union_other || order.shipping_union,
-                  order.shipping_upazila,
-                  order.shipping_district || order.shipping_city,
-                  order.shipping_division,
-                ].filter(Boolean).map((part) => `, ${part}`).join("")}
+                {order.shipping_city ? `, ${order.shipping_city}` : ""}
               </p>
 
               {order.payment_transaction_id && (
