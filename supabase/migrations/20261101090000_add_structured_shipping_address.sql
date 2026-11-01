@@ -78,7 +78,11 @@ begin
     raise exception 'INVALID_PAYMENT_METHOD';
   end if;
 
-  if p_shipping_division_code !~ '^BD-D[0-9]{2}$'
+  if p_shipping_union_code is null
+     or p_shipping_division_code is null
+     or p_shipping_district_code is null
+     or p_shipping_upazila_code is null
+     or p_shipping_division_code !~ '^BD-D[0-9]{2}$'
      or p_shipping_district_code !~ '^BD-D[0-9]{2}-Z[0-9]{2}$'
      or p_shipping_upazila_code !~ '^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$'
      or (p_shipping_union_code not in ('not_applicable','other')
