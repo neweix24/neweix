@@ -5,7 +5,6 @@ export type BangladeshUnion = {
   id: string;
   name: string;
   bn_name: string;
-  gov_url: string;
 };
 
 export type BangladeshUpazila = {
