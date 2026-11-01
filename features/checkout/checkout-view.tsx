@@ -64,7 +64,7 @@ function isValidCartItem(item: unknown): item is CartItem {
 }
 
 export default function CheckoutView() {
-  const [locale, setLocale] = useState<"en" | "bn">("en");
+  const { locale } = useLanguage();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerPhone, setCustomerPhone] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
@@ -84,8 +84,6 @@ export default function CheckoutView() {
     useState<PaymentMethod>("cod");
 
   useEffect(() => {
-    const savedLocale = localStorage.getItem("neweix_locale");
-    setLocale(savedLocale === "bn" ? "bn" : "en");
     let cancelled = false;
 
     async function loadCheckout() {
