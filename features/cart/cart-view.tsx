@@ -33,7 +33,8 @@ function isCartItem(value: unknown): value is CartItem {
     Number(item.quantity) <= 100;
 }
 
-export default function CartView() {\n  const { t } = useLanguage();
+export default function CartView() {
+  const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
