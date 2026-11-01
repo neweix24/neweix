@@ -21,9 +21,12 @@ type EligibleOrder = {
   purchased_at: string;
 };
 
-function reviewDate(value: string, locale: string) {\n  return new Intl.DateTimeFormat(locale === "bn" ? "bn-BD" : "en-BD", { dateStyle: "medium" }).format(new Date(value));\n}
+function reviewDate(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale === "bn" ? "bn-BD" : "en-BD", { dateStyle: "medium" }).format(new Date(value));
+}
 
-export default function ProductReviewPanel({ productId, returnTo }: { productId: string; returnTo: string }) {\n  const { locale, t } = useLanguage();
+export default function ProductReviewPanel({ productId, returnTo }: { productId: string; returnTo: string }) {
+  const { locale, t } = useLanguage();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [eligibleOrders, setEligibleOrders] = useState<EligibleOrder[]>([]);
   const [authenticated, setAuthenticated] = useState(false);
