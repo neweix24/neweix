@@ -481,7 +481,7 @@ export default function CheckoutView() {
         ))}
 
         <p><strong>Product subtotal: {formatPrice(total)}</strong></p>
-        <p>ডেলিভারি: Pathao Courier</p>
+        <p>Delivery: Pathao Courier</p>
         <p>ডেলিভারি চার্জ: {deliveryQuoteLoading ? "Calculating..." : deliveryFeeQuote === null ? "Select your district above to calculate the fee." : formatPrice(deliveryFeeQuote)}</p>
 
         {missingProducts && <p role="alert">Some product details are unavailable.</p>}
@@ -634,8 +634,8 @@ export default function CheckoutView() {
 
         <p><strong>Product subtotal: {formatPrice(total)}</strong></p>
         <p><strong>ডেলিভারি চার্জ: {deliveryFeeQuote === null ? "Calculate using your address" : formatPrice(deliveryFeeQuote)}</strong></p>
-        <p>{paymentMethod === "cod" ? "COD নির্বাচন করেছেন: Only the delivery fee MFS-এ অগ্রিম দিতে হবে; পণ্যের মূল্য ডেলিভারির সময় দেবেন।" : "MFS selected: the full product total and delivery fee must be paid in advance."}</p>
-        <p>ডেলিভারি চার্জ সার্ভার নির্ধারণ করবে। TrxID জমা দিলেই Payment নিশ্চিত হবে না; অ্যাডমিন যাচাই করবেন।</p>
+        <p>{paymentMethod === "cod" ? "Cash on Delivery selected: pay only the delivery fee in advance via MFS; pay for the products upon delivery." : "MFS selected: the full product total and delivery fee must be paid in advance."}</p>
+        <p>The server determines the delivery fee. Submitting a transaction ID does not confirm payment; an administrator must verify it.</p>
 
         {error && (
           <p role="alert" className={styles.error}>
