@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { StaffRole } from "@/lib/permissions";
 
-export type StaffRole = "supreme" | "admin" | "staff";
+const ACTIVE_STAFF_ROLES: readonly StaffRole[] = [
+  "supreme", "admin", "manager", "employee", "staff",
+];
 
 export async function getCurrentStaff() {
   const supabase = await createServerSupabaseClient();
@@ -33,7 +36,7 @@ export async function getCurrentStaff() {
     profileError ||
     !profile ||
     profile.is_active !== true ||
-    !["supreme", "admin", "staff"].includes(profile.role)
+    !ACTIVE_STAFF_ROLES.includes(profile.role as StaffRole)
   ) {
     return null;
   }
@@ -43,10 +46,7 @@ export async function getCurrentStaff() {
     const { data: assurance, error: assuranceError } =
       await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
-    if (
-      assuranceError ||
-      assurance.currentLevel !== "aal2"
-    ) {
+    if (assuranceError || assurance.currentLevel !== "aal2") {
       return {
         user,
         role: profile.role as StaffRole,
@@ -62,9 +62,7 @@ export async function getCurrentStaff() {
   };
 }
 
-export async function requireStaff(
-  allowedRoles: StaffRole[]
-) {
+export async function requireStaff(allowedRoles: StaffRole[]) {
   const staff = await getCurrentStaff();
 
   if (!staff) {
