@@ -2,7 +2,8 @@ export type Locale = "en" | "bn";
 
 export const messages = {
   en: {
-    decreaseQuantity: "Decrease quantity", increaseQuantity: "Increase quantity", cartProducts: "Cart products", itemCount: "items",\n    language: "Language", english: "English", bengali: "বাংলা",
+    decreaseQuantity: "Decrease quantity", increaseQuantity: "Increase quantity", cartProducts: "Cart products", itemCount: "items",
+    language: "Language", english: "English", bengali: "বাংলা",
     home: "Home", products: "All products", trackOrder: "Track order", wishlist: "Wishlist", cart: "Cart",
     searchProducts: "Search for products...", search: "Search", categories: "Shop by category", allCategories: "All categories",
     discover: "DISCOVER NEWEIX", picksForYou: "Products for you", chooseFromStore: "Choose from products currently available in our store.",
