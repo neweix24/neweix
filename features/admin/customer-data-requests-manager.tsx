@@ -49,7 +49,7 @@ export default function CustomerDataRequestsManager() {
   useEffect(() => { void load(); }, [load]);
 
   async function update(item: RequestItem, status: "processing" | "completed" | "rejected") {
-    if ((status === "completed" || status === "rejected") && !window.confirm("অনুরোধটির কাজ বাস্তবে যাচাই করে Completed করেছেন?")) return;
+    if ((status === "completed" || status === "rejected") && !window.confirm("Have you verified that the requested action was actually completed?")) return;
     setBusyId(item.id); setError(""); setNotice("");
     try {
       const response = await fetch("/api/admin/customer-data-requests", {
@@ -92,13 +92,13 @@ export default function CustomerDataRequestsManager() {
               <label className="text-sm font-medium" htmlFor={`note-${item.id}`}>Resolution note (optional)</label>
               <textarea id={`note-${item.id}`} rows={2} maxLength={1000} value={notes[item.id] ?? ""} onChange={(event) => setNotes((current) => ({ ...current, [item.id]: event.target.value }))} className="w-full rounded-lg border p-3" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--ink)" }} />
               <div className="flex flex-wrap gap-2">
-                <button type="button" disabled={busyId === item.id} onClick={() => void update(item, "processing")} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--border)" }}>Processing করুন</button>
+                <button type="button" disabled={busyId === item.id} onClick={() => void update(item, "processing")} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--border)" }}>Mark as Processing</button>
                 <button type="button" disabled={busyId === item.id} onClick={() => void update(item, "completed")} className="rounded-lg px-3 py-2 text-sm font-semibold" style={{ background: "var(--primary)", color: "#080b09" }}>Completed</button>
                 <button type="button" disabled={busyId === item.id} onClick={() => void update(item, "rejected")} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>Reject</button>
               </div>
             </div>
           )}
-          {item.request_type === "delete" && <p className="mt-3 text-xs text-amber-700">সতর্কতা: এখানে Status Completed করা মানে অনুরোধের কাজ বাস্তবে Completed হয়েছে। কেবল বাটন চাপলেই Auth অ্যাকাউন্ট বা অর্ডার মুছে যায় না।</p>}
+          {item.request_type === "delete" && <p className="mt-3 text-xs text-amber-700">Warning: Marking this request as Completed means the requested action has actually been carried out. Clicking this button alone does not delete an Auth account or any orders.</p>}
         </article>
       ))}
     </section>
