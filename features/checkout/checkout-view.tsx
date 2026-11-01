@@ -80,6 +80,11 @@ export default function CheckoutView() {
   const [error, setError] = useState("");
   const [deliveryFeeQuote, setDeliveryFeeQuote] = useState<number | null>(null);
   const [deliveryQuoteLoading, setDeliveryQuoteLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponChecking, setCouponChecking] = useState(false);
+  const [couponMessage, setCouponMessage] = useState("");
+  const [couponError, setCouponError] = useState(false);
+  const [couponPreview, setCouponPreview] = useState<{ code: string; discount: number; free_shipping: boolean } | null>(null);
   const [orderNumber, setOrderNumber] = useState("");
   const [submittedPaymentMethod, setSubmittedPaymentMethod] =
     useState<PaymentMethod>("cod");
@@ -250,6 +255,44 @@ export default function CheckoutView() {
     paymentMethod === "cod"
       ? paymentConfig?.paymentMethods?.[mfsMethod]
       : paymentConfig?.paymentMethods?.[paymentMethod];
+
+  async function applyCoupon() {
+    const code = couponCode.trim().toUpperCase();
+    setCouponMessage("");
+    setCouponPreview(null);
+    setCouponError(false);
+    if (!/^[A-Z0-9_-]{3,40}$/.test(code)) {
+      setCouponError(true);
+      setCouponMessage("Enter a valid coupon code (3–40 letters, numbers, hyphens, or underscores).");
+      return;
+    }
+    setCouponChecking(true);
+    try {
+      const response = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({ code, subtotal: total }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success || !result?.coupon) {
+        throw new Error(result?.error || "This coupon could not be applied.");
+      }
+      const preview = result.coupon as { code: string; discount: number; free_shipping: boolean };
+      if (typeof preview.discount !== "number" || !Number.isSafeInteger(preview.discount) || preview.discount < 0 || preview.discount > total) {
+        throw new Error("The coupon preview returned an invalid discount.");
+      }
+      setCouponPreview(preview);
+      setCouponMessage(preview.free_shipping
+        ? "Coupon applied: free delivery will be confirmed when your order is placed."
+        : `Coupon applied. You save ${formatPrice(preview.discount, locale)}.`);
+    } catch (err) {
+      setCouponError(true);
+      setCouponMessage(err instanceof Error ? err.message : "Could not validate this coupon.");
+    } finally {
+      setCouponChecking(false);
+    }
+  }
 
   async function loadDeliveryQuote(city: string) {
     const normalizedCity = city.trim();
