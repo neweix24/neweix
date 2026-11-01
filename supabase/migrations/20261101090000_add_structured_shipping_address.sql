@@ -363,6 +363,8 @@ grant execute on function public.create_order_with_prepaid_delivery(
 ) to service_role;
 )
      or p_shipping_upazila is null
+     or pg_catalog.char_length(pg_catalog.btrim(p_shipping_upazila)) < 2
+     or pg_catalog.char_length(pg_catalog.btrim(p_shipping_upazila)) > 120
      or (p_shipping_union_code not in ('not_applicable','other')
          and p_shipping_union_code !~ '^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}-N[0-9]{4}$')
      or pg_catalog.char_length(pg_catalog.btrim(p_shipping_division)) < 2
