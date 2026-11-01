@@ -130,10 +130,10 @@ export default function OrdersManager() {
     }
 
     const confirmed = window.confirm(
-      `অর্ডার ${order.order_number}\n` +
+      `Order ${order.order_number}\n` +
         `Payment: ${paymentNames[order.payment_method] || order.payment_method}\n` +
         `Transaction ID: ${transactionId}\n\n` +
-        "পেমেন্ট প্রদানকারীর রেকর্ডে লেনদেন যাচাই করেছেন কি? Confirmed হলেই Paid করুন।"
+        "Have you verified the transaction in the payment provider's records? Mark it as Paid only when confirmed."
     );
 
     if (!confirmed) return;
@@ -176,7 +176,7 @@ export default function OrdersManager() {
       return;
     }
     const confirmed = window.confirm(
-      `অর্ডার ${order.order_number}\nডেলিভারি চার্জ: ৳${Number(order.delivery_fee).toLocaleString("en-BD")}\nMFS: ${paymentNames[order.delivery_fee_payment_method || ""] || order.delivery_fee_payment_method}\nTransaction ID: ${transactionId}\n\nপেমেন্ট প্রদানকারীর রেকর্ডে ডেলিভারি চার্জের টাকা পেয়েছেন কি?`
+      `Order ${order.order_number}\nDelivery Fee: BDT ${Number(order.delivery_fee).toLocaleString("en-BD")}\nMFS: ${paymentNames[order.delivery_fee_payment_method || ""] || order.delivery_fee_payment_method}\nTransaction ID: ${transactionId}\n\nHave you confirmed receipt of the delivery fee in the payment provider's records?`
     );
     if (!confirmed) return;
     setBusyId(order.id);
@@ -338,9 +338,9 @@ export default function OrdersManager() {
             <option value="mobile">Mobile Payments</option>
             <option value="verification_pending">Payment Verification Pending</option>
             <option value="paid">Payment Completed</option>
-            <option value="pending">পেমেন্ট Pending</option>
-            <option value="failed">পেমেন্ট Failed</option>
-            <option value="refunded">পেমেন্ট Refunded</option>
+            <option value="pending">Payment Pending</option>
+            <option value="failed">Payment Failed</option>
+            <option value="refunded">Payment Refunded</option>
           </select>
         </label>
       </div>
@@ -368,7 +368,7 @@ export default function OrdersManager() {
       )}
 
       {loading ? (
-        <p className="py-8">অর্ডার Loading...</p>
+        <p className="py-8">Loading orders...</p>
       ) : visibleOrders.length === 0 ? (
         <p className="py-8">
           No orders match this search or filter.
@@ -413,7 +413,7 @@ export default function OrdersManager() {
 
               <div className="mt-4 rounded-lg border p-3">
                 <label className="block text-sm font-medium">
-                  Order Status পরিবর্তন
+                  Update Order Status
                   <select
                     value={order.status}
                     onChange={(event) =>
@@ -481,7 +481,7 @@ export default function OrdersManager() {
               )}
 
               <div className="mt-3 border-t pt-3">
-                <p className="mb-2 text-sm font-semibold">পণ্যসমূহ</p>
+                <p className="mb-2 text-sm font-semibold">Products</p>
                 {(order.order_items || []).map((item) => (
                   <p key={item.id} className="text-sm">
                     {item.product_name} × {item.quantity} — ৳
@@ -494,7 +494,7 @@ export default function OrdersManager() {
 
               {order.payment_verified_at && (
                 <p className="mt-3 text-xs">
-                  যাচাই হয়েছে:{" "}
+                  Verified:{" "}
                   {new Date(order.payment_verified_at).toLocaleString("en-BD")}
                 </p>
               )}
@@ -511,7 +511,7 @@ export default function OrdersManager() {
                   >
                     {busyId === order.id
                       ? "Saving..."
-                      : "যাচাই করে Paid করুন"}
+                      : "Verify and Mark as Paid"}
                   </button>
                 )}
             </article>
