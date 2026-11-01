@@ -398,7 +398,7 @@ export async function PATCH(request: Request) {
 
     let body: unknown;
     try { body = JSON.parse(raw); } catch { return jsonError("Provide valid JSON data.", 400); }
-    if (!isRecord(body)) return jsonError("সঠিক তথ্য পাঠান।", 400);
+    if (!isRecord(body)) return jsonError("Provide valid data.", 400);
 
     const id = body.id;
     const decision = body.decision;
