@@ -16,7 +16,7 @@ async function getStaffContext() {
   const userId = claimsData?.claims?.sub;
 
   if (userError || typeof userId !== "string") {
-    return { error: "লগইন প্রয়োজন।", status: 401 as const };
+    return { error: "Authentication required.", status: 401 as const };
   }
 
   const { data: profile, error } = await supabase
@@ -31,7 +31,7 @@ async function getStaffContext() {
     profile.is_active !== true ||
     !["supreme", "admin"].includes(profile.role)
   ) {
-    return { error: "এই কাজের অনুমতি নেই।", status: 403 as const };
+    return { error: "You are not authorized to perform this action.", status: 403 as const };
   }
 
   if (profile.role === "supreme") {
@@ -39,7 +39,7 @@ async function getStaffContext() {
       await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
     if (assuranceError || assurance.currentLevel !== "aal2") {
-      return { error: "Supreme অ্যাকাউন্টে MFA সম্পন্ন করুন।", status: 403 as const };
+      return { error: "Complete MFA for the Supreme account.", status: 403 as const };
     }
   }
 
@@ -112,7 +112,7 @@ export async function GET() {
     if (error) {
       console.error("Admin orders query failed:", error.message);
       return NextResponse.json(
-        { error: "অর্ডার লোড করা যায়নি। ডেটাবেসের কলাম যাচাই করুন।" },
+        { error: "Could not load orders. Verify the database columns." },
         { status: 500 }
       );
     }
@@ -120,7 +120,7 @@ export async function GET() {
     return NextResponse.json({ orders: data ?? [] });
   } catch (error) {
     console.error("Admin orders GET failed:", error);
-    return NextResponse.json({ error: "সার্ভারে সমস্যা হয়েছে।" }, { status: 500 });
+    return NextResponse.json({ error: "A server error occurred." }, { status: 500 });
   }
 }
 
@@ -136,14 +136,14 @@ export async function POST(request: Request) {
 
     const raw = await request.text();
     if (new TextEncoder().encode(raw).byteLength > 8192) {
-      return NextResponse.json({ error: "অনুরোধটি অতিরিক্ত বড়।" }, { status: 413 });
+      return NextResponse.json({ error: "Request is too large." }, { status: 413 });
     }
 
     let body: unknown;
     try {
       body = JSON.parse(raw);
     } catch {
-      return NextResponse.json({ error: "অবৈধ JSON।" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
     }
 
     if (
@@ -153,11 +153,11 @@ export async function POST(request: Request) {
       typeof body.orderId !== "string" ||
       !UUID_REGEX.test(body.orderId)
     ) {
-      return NextResponse.json({ error: "সঠিক Order ID দিন।" }, { status: 400 });
+      return NextResponse.json({ error: "Provide a valid Order ID." }, { status: 400 });
     }
 
     if (staff.role !== "supreme") {
-      return NextResponse.json({ error: "পেমেন্ট রেফারেন্স যাচাই শুধু Supreme করতে পারবেন।" }, { status: 403 });
+      return NextResponse.json({ error: "Only Supreme can verify payment references." }, { status: 403 });
     }
 
     const action = "action" in body && body.action === "verify_delivery_fee"
@@ -181,7 +181,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
           {
             error:
-              "এই অর্ডার যাচাই করা যাচ্ছে না। পেমেন্ট স্ট্যাটাস ও Transaction ID পরীক্ষা করুন।",
+              "This order cannot be verified. Check the payment status and transaction ID.",
           },
           { status: 409 }
         );
@@ -189,7 +189,7 @@ export async function POST(request: Request) {
 
       console.error("Payment verification RPC failed:", error.message);
       return NextResponse.json(
-        { error: "পেমেন্ট যাচাই ব্যর্থ। SQL migration প্রয়োগ হয়েছে কি না দেখুন।" },
+        { error: "Payment verification failed. Check whether the SQL migration has been applied." },
         { status: 500 }
       );
     }
@@ -198,12 +198,12 @@ export async function POST(request: Request) {
       success: true,
       order: data,
       message: action === "verify_delivery_fee"
-        ? "ডেলিভারি চার্জের পেমেন্ট Paid হিসেবে সংরক্ষিত হয়েছে এবং অডিট লগ তৈরি হয়েছে।"
-        : "পেমেন্ট Paid হিসেবে সংরক্ষিত হয়েছে এবং অডিট লগ তৈরি হয়েছে.",
+        ? "Delivery fee payment was marked as Paid and an audit log was created."
+        : "Payment was marked as Paid and an audit log was created.",
     });
   } catch (error) {
     console.error("Admin orders POST failed:", error);
-    return NextResponse.json({ error: "সার্ভারে সমস্যা হয়েছে।" }, { status: 500 });
+    return NextResponse.json({ error: "A server error occurred." }, { status: 500 });
   }
 }
 
@@ -222,7 +222,7 @@ export async function PATCH(request: Request) {
 
     if (new TextEncoder().encode(raw).byteLength > 8192) {
       return NextResponse.json(
-        { error: "অনুরোধটি অতিরিক্ত বড়।" },
+        { error: "Request is too large." },
         { status: 413 }
       );
     }
@@ -233,14 +233,14 @@ export async function PATCH(request: Request) {
       body = JSON.parse(raw);
     } catch {
       return NextResponse.json(
-        { error: "অবৈধ JSON।" },
+        { error: "Invalid JSON." },
         { status: 400 }
       );
     }
 
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json(
-        { error: "সঠিক অনুরোধ পাঠান।" },
+        { error: "Provide a valid request." },
         { status: 400 }
       );
     }
@@ -251,10 +251,10 @@ export async function PATCH(request: Request) {
 
     if (input.action === "restock_returned") {
       if (typeof orderId !== "string" || !UUID_REGEX.test(orderId)) {
-        return NextResponse.json({ error: "সঠিক Order ID দিন।" }, { status: 400 });
+        return NextResponse.json({ error: "Provide a valid Order ID." }, { status: 400 });
       }
       if (typeof input.note !== "string" || input.note.trim().length < 5 || input.note.trim().length > 500) {
-        return NextResponse.json({ error: "স্টক ফেরতের কারণ ৫–৫০০ অক্ষরের মধ্যে লিখুন।" }, { status: 400 });
+        return NextResponse.json({ error: "Stock-restock reason must be between 5 and 500 characters." }, { status: 400 });
       }
       const admin = await getAdminClient();
       const { data, error } = await admin.rpc("admin_restock_returned_order", {
@@ -264,18 +264,18 @@ export async function PATCH(request: Request) {
       });
       if (error) {
         if (error.message.includes("STOCK_ALREADY_RESTORED")) {
-          return NextResponse.json({ error: "এই অর্ডারের স্টক আগেই ফেরত যোগ করা হয়েছে।" }, { status: 409 });
+          return NextResponse.json({ error: "Stock for this order has already been restocked." }, { status: 409 });
         }
         if (error.message.includes("ORDER_NOT_RETURNED")) {
-          return NextResponse.json({ error: "শুধু Returned অর্ডারের স্টক ফেরত যোগ করা যাবে।" }, { status: 409 });
+          return NextResponse.json({ error: "Only Returned orders can be restocked." }, { status: 409 });
         }
         if (error.message.includes("ORDER_ITEMS_MISSING") || error.message.includes("ORDER_PRODUCT_REFERENCE_MISSING") || error.message.includes("ORDER_PRODUCTS_NOT_FOUND")) {
-          return NextResponse.json({ error: "অর্ডারের কিছু পণ্য রেকর্ড পাওয়া যাচ্ছে না। স্টক ফেরতের আগে পণ্য রেকর্ড ম্যানুয়ালি যাচাই করুন।" }, { status: 409 });
+          return NextResponse.json({ error: "Some product records for this order are missing. Verify the product records manually before restocking." }, { status: 409 });
         }
         console.error("Returned order restock failed:", error.message);
-        return NextResponse.json({ error: "স্টক ফেরত যোগ করা যায়নি।" }, { status: 500 });
+        return NextResponse.json({ error: "Could not restock the items." }, { status: 500 });
       }
-      return NextResponse.json({ success: true, result: data, message: "পরীক্ষা শেষে পণ্যের স্টক ফেরত যোগ হয়েছে।" });
+      return NextResponse.json({ success: true, result: data, message: "Product stock was restocked after verification." });
     }
 
     const allowedStatuses = [
@@ -285,14 +285,14 @@ export async function PATCH(request: Request) {
 
     if (typeof orderId !== "string" || !UUID_REGEX.test(orderId)) {
       return NextResponse.json(
-        { error: "সঠিক Order ID দিন।" },
+        { error: "Provide a valid Order ID." },
         { status: 400 }
       );
     }
 
     if (typeof status !== "string" || !allowedStatuses.includes(status)) {
       return NextResponse.json(
-        { error: "অবৈধ অর্ডার স্ট্যাটাস।" },
+        { error: "Invalid order status." },
         { status: 400 }
       );
     }
@@ -308,21 +308,21 @@ export async function PATCH(request: Request) {
     if (error) {
       if (error.message.includes("ORDER_NOT_FOUND")) {
         return NextResponse.json(
-          { error: "অর্ডারটি পাওয়া যায়নি।" },
+          { error: "Order not found." },
           { status: 404 }
         );
       }
 
       if (error.message.includes("ORDER_CANNOT_BE_CANCELLED")) {
         return NextResponse.json(
-          { error: "পাঠানো বা ডেলিভারি সম্পন্ন অর্ডার সরাসরি বাতিল করা যাবে না। Return গ্রহণ ও পণ্য পরীক্ষা করে আলাদা প্রক্রিয়ায় স্টক আপডেট করুন।" },
+          { error: "Shipped or delivered orders cannot be cancelled directly. Process a return, inspect the items, and update stock through the separate return workflow." },
           { status: 409 }
         );
       }
 
       console.error("Order status update RPC failed:", error.message);
       return NextResponse.json(
-        { error: "অর্ডারের স্ট্যাটাস পরিবর্তন করা যায়নি।" },
+        { error: "Could not update the order status." },
         { status: 500 }
       );
     }
@@ -330,12 +330,12 @@ export async function PATCH(request: Request) {
     return NextResponse.json({
       success: true,
       order: data,
-      message: "অর্ডারের স্ট্যাটাস আপডেট হয়েছে।",
+      message: "Order status updated.",
     });
   } catch (error) {
     console.error("Admin orders PATCH failed:", error);
     return NextResponse.json(
-      { error: "সার্ভারে সমস্যা হয়েছে।" },
+      { error: "A server error occurred." },
       { status: 500 }
     );
   }
