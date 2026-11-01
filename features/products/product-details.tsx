@@ -47,7 +47,9 @@ function getYouTubeEmbedUrl(rawUrl?: string | null): string | null {
   }
 }
 
-function money(value: number, locale: string) {\n  return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", { maximumFractionDigits: 0 }).format(Number(value)) + " ৳";\n}
+function money(value: number, locale: string) {
+  return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", { maximumFractionDigits: 0 }).format(Number(value)) + " ৳";
+}
 
 export default function ProductDetails({ product }: { product: ProductDetailsData }) {
   const { locale, t } = useLanguage();
