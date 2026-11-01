@@ -14,8 +14,8 @@ type Product = {
 };
 type CartItem = { product_id: string; quantity: number };
 
-function formatPrice(price: number) {
-  return new Intl.NumberFormat("en-BD", {
+function formatPrice(price: number, locale: string) {
+  return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", {
     style: "currency",
     currency: "BDT",
     maximumFractionDigits: 0,
@@ -33,7 +33,7 @@ function isCartItem(value: unknown): value is CartItem {
 }
 
 export default function CartView() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -144,7 +144,7 @@ export default function CartView() {
                   ) : <div className="grid h-20 w-20 place-items-center rounded-xl text-xs font-black" style={{ background: "var(--surface-raised)", color: "var(--primary)" }}>NEWEIX</div>}
                   <div className="min-w-0 flex-1">
                     <h2 className="font-bold">{product.name}</h2>
-                    <p className="mt-1">{formatPrice(Number(product.price))} · {t("stock")} {product.stock}</p>
+                    <p className="mt-1">{formatPrice(Number(product.price), locale)} · {t("stock")} {product.stock}</p>
                     {quantity > product.stock && <p role="alert" style={{ color: "var(--danger)" }}>{t("tooManyInCart")}</p>}
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button type="button" aria-label={product.name + " " + t("decreaseQuantity")} onClick={() => changeQuantity(product, -1)} className="h-9 w-9 rounded-lg border" style={{ borderColor: "var(--border)" }}><Icon name="minus" size={16} /></button>
@@ -153,17 +153,17 @@ export default function CartView() {
                       <button type="button" onClick={() => saveCart(cart.filter((entry) => entry.product_id !== product.id))} className="ml-2 text-sm underline underline-offset-4" style={{ color: "var(--danger)" }}><Icon name="trash" size={15} /> {t("remove")}</button>
                     </div>
                   </div>
-                  <strong className="text-lg" style={{ color: "var(--primary)" }}>{formatPrice(Number(product.price) * quantity)}</strong>
+                  <strong className="text-lg" style={{ color: "var(--primary)" }}>{formatPrice(Number(product.price) * quantity, locale)}</strong>
                 </article>
               ))}
             </section>
 
             <aside className="h-fit rounded-2xl border p-5 lg:sticky lg:top-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
               <h2 className="text-xl font-bold">{t("orderSummary")}</h2>
-              <div className="mt-5 flex justify-between gap-3"><span>{t("products")} ({items.length} {t("itemCount")})</span><strong>{formatPrice(total)}</strong></div>
+              <div className="mt-5 flex justify-between gap-3"><span>{t("products")} ({items.length} {t("itemCount")})</span><strong>{formatPrice(total, locale)}</strong></div>
               <div className="mt-3 flex justify-between gap-3"><span>{t("delivery")}</span><span>{t("confirmedAtCheckout")}</span></div>
               <hr className="my-5" />
-              <div className="flex justify-between gap-3 text-lg font-black"><span>{t("total")}</span><strong style={{ color: "var(--primary)" }}>{formatPrice(total)}</strong></div>
+              <div className="flex justify-between gap-3 text-lg font-black"><span>{t("total")}</span><strong style={{ color: "var(--primary)" }}>{formatPrice(total, locale)}</strong></div>
               {stockIssues.length > 0 && <p role="alert" className="mt-4 text-sm" style={{ color: "var(--danger)" }}>{t("fixQuantity")}</p>}
               {unavailable.length > 0 && <p className="mt-2 text-sm" style={{ color: "var(--danger)" }}>{t("removeUnavailableFirst")}</p>}
               {stockIssues.length === 0 && unavailable.length === 0 ? (
