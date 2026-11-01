@@ -26,13 +26,13 @@ const INITIAL_THEME: ThemeSettings = {
 };
 
 const FIELDS: { key: keyof ThemeSettings; label: string }[] = [
-  { key: "background", label: "পেজের ব্যাকগ্রাউন্ড" },
-  { key: "surface", label: "কার্ড ও প্যানেলের রং" },
-  { key: "text", label: "লেখার রং" },
-  { key: "muted", label: "সহায়ক লেখার রং" },
-  { key: "button", label: "বাটনের রং" },
-  { key: "buttonText", label: "বাটনের লেখার রং" },
-  { key: "border", label: "বর্ডারের রং" },
+  { key: "background", label: "Page background" },
+  { key: "surface", label: "Card and panel colour" },
+  { key: "text", label: "Text colour" },
+  { key: "muted", label: "সহায়ক Text colour" },
+  { key: "button", label: "Button colour" },
+  { key: "buttonText", label: "বাটনের Text colour" },
+  { key: "border", label: "Border colour" },
 ];
 
 function isHexColor(value: unknown): value is string {
@@ -58,11 +58,11 @@ function contrastRatio(first: string, second: string): number {
 
 function getContrastIssues(theme: ThemeSettings): string[] {
   const checks: [string, string, string, number][] = [
-    ["প্রধান লেখা", theme.text, theme.background, 4.5],
-    ["কার্ডের লেখা", theme.text, theme.surface, 4.5],
-    ["সহায়ক লেখা ও ব্যাকগ্রাউন্ড", theme.muted, theme.background, 4.5],
-    ["সহায়ক লেখা ও কার্ড", theme.muted, theme.surface, 4.5],
-    ["বাটনের লেখা", theme.buttonText, theme.button, 4.5],
+    ["Primary text", theme.text, theme.background, 4.5],
+    ["Card text", theme.text, theme.surface, 4.5],
+    ["Muted text and background", theme.muted, theme.background, 4.5],
+    ["Muted text and card", theme.muted, theme.surface, 4.5],
+    ["Button text", theme.buttonText, theme.button, 4.5],
   ];
 
   return checks
@@ -118,7 +118,7 @@ export default function CustomerThemePage() {
           .maybeSingle();
 
         if (error) {
-          throw new Error("থিম লোড করা যায়নি। আবার চেষ্টা করুন।");
+          throw new Error("Could not load the theme. Please try again.");
         }
 
         if (active && data?.theme) {
@@ -152,7 +152,7 @@ export default function CustomerThemePage() {
 
   async function saveTheme() {
     if (contrastIssues.length > 0) {
-      setErrorMessage("রঙের কনট্রাস্ট যথেষ্ট নয়। সংরক্ষণের আগে নিচের রংগুলো ঠিক করুন।");
+      setErrorMessage("Colour contrast is insufficient. Adjust the colours below before saving.");
       return;
     }
 
@@ -182,13 +182,13 @@ export default function CustomerThemePage() {
         );
 
       if (error) {
-        throw new Error("থিম সংরক্ষণ হয়নি। আবার চেষ্টা করুন।");
+        throw new Error("The theme was not saved. Please try again.");
       }
 
-      setMessage("তোমার ব্যক্তিগত থিম সংরক্ষণ হয়েছে।");
+      setMessage("Your personal theme has been saved.");
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "থিম সংরক্ষণ করা যায়নি।"
+        error instanceof Error ? error.message : "Could not save the theme."
       );
     } finally {
       setSaving(false);
@@ -204,19 +204,19 @@ export default function CustomerThemePage() {
   return (
     <main className="theme-page" style={previewStyle}>
       <header className="theme-header">
-        <Link href="/account" aria-label="অ্যাকাউন্টে ফিরে যাও">← অ্যাকাউন্ট</Link>
-        <Link href="/" aria-label="হোম পেজ">⌂</Link>
+        <Link href="/account" aria-label="Return to account">← Account</Link>
+        <Link href="/" aria-label="Home page">⌂</Link>
       </header>
 
       <section className="theme-content">
         <p className="eyebrow">YOUR PERSONAL DESIGN</p>
-        <h1>নিজের থিম নিজেই তৈরি করো</h1>
+        <h1>Create your own theme</h1>
         <p className="description">
-          রং বেছে নাও, প্রিভিউ দেখো এবং শুধু পাবলিক NEWEIX ওয়েবসাইটের জন্য সংরক্ষণ করো।
+          Choose colours, preview your design, and save it for the public NEWEIX website only.
         </p>
 
         {loading ? (
-          <p role="status">থিম লোড হচ্ছে…</p>
+          <p role="status">Loading theme…</p>
         ) : (
           <>
             <section className="preview" style={{
@@ -224,10 +224,10 @@ export default function CustomerThemePage() {
               color: theme.text,
               borderColor: theme.border,
             }}>
-              <p style={{ color: theme.muted }}>লাইভ প্রিভিউ</p>
-              <h2>তোমার NEWEIX</h2>
+              <p style={{ color: theme.muted }}>Live preview</p>
+              <h2>Your NEWEIX</h2>
               <p style={{ color: theme.muted }}>
-                এই রংগুলো শুধু পাবলিক ওয়েবসাইটের পেজে প্রযোজ্য হবে; অ্যাকাউন্ট, ওয়ালেট, চেকআউট ও অ্যাডমিন অংশ অপরিবর্তিত থাকবে।
+                These colours apply only to public website pages. Account, wallet, checkout, and administration areas will remain unchanged.
               </p>
               <button
                 type="button"
@@ -236,19 +236,19 @@ export default function CustomerThemePage() {
                   color: theme.buttonText,
                 }}
               >
-                নমুনা বাটন
+                Sample button
               </button>
             </section>
 
             <section className="color-list">
-              <h2>রং নির্বাচন</h2>
+              <h2>Choose colours</h2>
               <p className="contrast-help">
-                লেখা ও বাটন স্পষ্ট রাখতে WCAG AA অনুযায়ী কনট্রাস্ট যাচাই করা হয়।
+                Contrast is checked against WCAG AA to keep text and buttons readable.
               </p>
               <p id="theme-contrast-note" className={contrastIssues.length ? "contrast-warning" : "contrast-ok"} role="status">
                 {contrastIssues.length
-                  ? `যে জায়গায় কনট্রাস্ট বাড়াতে হবে: ${contrastIssues.join(", ")}।`
-                  : "রঙের কনট্রাস্ট ঠিক আছে — থিম সংরক্ষণ করা যাবে।"}
+                  ? `Areas that need higher contrast: ${contrastIssues.join(", ")}।`
+                  : "Colour contrast is sufficient — the theme can be saved."}
               </p>
               {FIELDS.map((field) => (
                 <label className="color-row" key={field.key}>
@@ -278,7 +278,7 @@ export default function CustomerThemePage() {
               disabled={saving || contrastIssues.length > 0}
               aria-describedby="theme-contrast-note"
             >
-              {saving ? "সংরক্ষণ হচ্ছে…" : "থিম সংরক্ষণ করো"}
+              {saving ? "Saving…" : "Save theme"}
             </button>
 
             <button
@@ -290,7 +290,7 @@ export default function CustomerThemePage() {
                 setErrorMessage("");
               }}
             >
-              রং নতুন করে বেছে নাও
+              Choose colours again
             </button>
           </>
         )}
