@@ -483,14 +483,15 @@ export default function AccountView() {
       <style jsx>{`
         .account-page {
           min-height: 100vh;
-          padding: 0 20px 60px;
-          background: var(--bg);
+          padding: 0 20px 72px;
+          background: radial-gradient(ellipse at 85% 0%, rgba(182,255,74,.14), transparent 38%), linear-gradient(145deg, #fbfff7, #f3fff5 58%, #f5fbff);
+          color: var(--ink);
           color: var(--ink);
         }
 
         .account-header {
-          max-width: 1000px;
-          min-height: 72px;
+          max-width: 1120px;
+          min-height: 76px;
           margin: auto;
           display: flex;
           align-items: center;
@@ -514,13 +515,13 @@ export default function AccountView() {
 
         .account-content {
           box-sizing: border-box;
-          max-width: 520px;
-          margin: 44px auto 0;
-          padding: 30px;
-          border: 1px solid var(--border);
-          border-radius: 16px;
-          background: var(--surface);
-          box-shadow: 0 12px 35px rgba(182,255,74,.08);
+          max-width: 820px;
+          margin: 42px auto 0;
+          padding: clamp(22px, 4vw, 38px);
+          border: 1px solid #e0eae0;
+          border-radius: 26px;
+          background: rgba(255,255,255,.96);
+          box-shadow: 0 18px 48px rgba(45,110,65,.08);
         }
 
         .account-eyebrow {
@@ -532,7 +533,10 @@ export default function AccountView() {
 
         h1 {
           margin: 10px 0;
-          font-size: 32px;
+          font-size: clamp(30px, 5vw, 44px);
+          font-weight: 900;
+          letter-spacing: -1.2px;
+          color: var(--ink);
         }
 
         .account-description {
@@ -710,25 +714,36 @@ export default function AccountView() {
         }
 
         .account-links {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 20px;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+          gap: 10px;
           margin-top: 26px;
-          padding-top: 20px;
+          padding-top: 22px;
           border-top: 1px solid var(--border);
         }
 
         .account-links a {
-          color: var(--primary);
-          font-size: 14px;
-          font-weight: 600;
+          display: flex;
+          align-items: center;
+          min-height: 48px;
+          padding: 12px 14px;
+          border: 1px solid #e5eee3;
+          border-radius: 12px;
+          background: #fbfef9;
+          color: #285c3b;
+          font-size: 13px;
+          font-weight: 750;
           text-decoration: none;
+          transition: border-color .18s ease, transform .18s ease, background .18s ease;
         }
 
-        .account-links a:hover,
-        .account-home:hover {
-          text-decoration: underline;
+        .account-links a:hover {
+          border-color: #9acb91;
+          background: #f2ffec;
+          transform: translateY(-1px);
         }
+
+        .account-home:hover { text-decoration: underline; }
 
         .logout {
           margin-top: 26px;
