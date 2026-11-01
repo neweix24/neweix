@@ -78,7 +78,7 @@ export default function AddToCartButton({
   return (
     <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
       <button type="button" className="primary-button" onClick={add} disabled={disabled}>
-        {disabled ? "স্টক শেষ" : <><Icon name="cart" size={18} /> {t("addToCart")}</> }
+        {disabled ? t("outOfStock") : <><Icon name="cart" size={18} /> {t("addToCart")}</> }
       </button>
       <button type="button" className="primary-button" onClick={buyNow} disabled={disabled} style={{ background: "transparent", color: "var(--primary)", marginTop: 0 }}>
         <Icon name="sparkles" size={18} /> {t("buyNow")}
