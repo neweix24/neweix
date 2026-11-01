@@ -466,7 +466,10 @@ export default {
     _ctx: ExecutionContextLike,
   ): Promise<void> {
     console.log("[neweix-cron] started", controller.cron, new Date(controller.scheduledTime).toISOString());
-    const tasks: Promise<void>[] = [processCustomerNotificationQueue(env)];
+    const tasks: Promise<void>[] = [];
+    if (controller.cron === "*/5 * * * *") {
+      tasks.push(processCustomerNotificationQueue(env));
+    }
     if (controller.cron === "*/15 * * * *") {
       tasks.push(processSearchEmbeddingQueue(env));
       tasks.push(processSocialPublishingQueue(env));
