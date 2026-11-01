@@ -95,7 +95,7 @@ export default function TrackOrderView() {
       if (!response.ok || !result.success || !result.order) {
         setError(
           result.error ||
-            "অর্ডারের Information unavailable। আবার চেষ্টা করুন।"
+            "Order information could not be found. Please try again."
         );
         return;
       }
