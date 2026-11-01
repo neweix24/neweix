@@ -159,42 +159,12 @@ export default function ProductCatalog() {\n  const { t } = useLanguage();
     catch { setNotice("তুলনার তালিকা সংরক্ষণ করা যায়নি।"); }
   }
 
-  function addToCart(product: Product) {
-    if (!Number.isSafeInteger(Number(product.stock)) || Number(product.stock) < 1) {
-      setNotice("পণ্যটি বর্তমানে স্টকে নেই।");
-      return;
-    }
-    try {
-      const raw = localStorage.getItem("neweix_cart");
-      const parsed: unknown = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(parsed)) throw new Error("Invalid cart");
-      const quantities = new Map<string, number>();
-      for (const value of parsed) {
-        if (!value || typeof value !== "object") continue;
-        const item = value as Record<string, unknown>;
-        if (typeof item.product_id !== "string" || !item.product_id ||
-            !Number.isSafeInteger(item.quantity) || Number(item.quantity) < 1) continue;
-        quantities.set(item.product_id, Math.min(100, (quantities.get(item.product_id) ?? 0) + Number(item.quantity)));
-      }
-      const current = quantities.get(product.id) ?? 0;
-      if (current >= Math.min(100, Number(product.stock))) {
-        setNotice("স্টকে থাকা সর্বোচ্চ পরিমাণ ইতিমধ্যে কার্টে আছে।");
-        return;
-      }
-      quantities.set(product.id, current + 1);
-      const cart = Array.from(quantities, ([product_id, quantity]) => ({ product_id, quantity }));
-      localStorage.setItem("neweix_cart", JSON.stringify(cart));
-      window.dispatchEvent(new Event("neweix-cart-change"));
-      setNotice("পণ্যটি কার্টে যোগ হয়েছে।");
-    } catch {
-      setNotice("কার্ট আপডেট করা যায়নি। আবার চেষ্টা করুন।");
-    }
-  }
 
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Link href="/" className={styles.brand}>NEWEIX</Link>\n        <LanguageSwitcher />
+        <Link href="/" className={styles.brand}>NEWEIX</Link>
+        <LanguageSwitcher />
         <nav aria-label="Main navigation">
           <Link href="/track-order"><Icon name="truck" size={16} /> অর্ডার ট্র্যাক</Link>
           <Link href="/account"><Icon name="user" size={16} /> অ্যাকাউন্ট</Link>
@@ -307,9 +277,7 @@ export default function ProductCatalog() {\n  const { t } = useLanguage();
                       <del>{money(Number(product.compare_at_price))}</del>
                     )}
                   </div>
-                  <button type="button" disabled={product.stock < 1} onClick={() => addToCart(product)} className={styles.addButton} aria-label={product.name + " কার্টে যোগ করুন"} title="কার্টে যোগ করুন">
-                    <Icon name="plus" size={18} /> {t("addedToCart")}
-                  </button>
+                  <ProductCardActions productId={product.id} stock={product.stock} onNotice={setNotice} />
                 </div>
               </div>
             </article>
