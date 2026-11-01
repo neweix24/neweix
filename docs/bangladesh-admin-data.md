@@ -2,7 +2,7 @@
 
 This checked-in offline snapshot powers the checkout's cascading location selectors.
 
-- Snapshot source: [sohag-pro/BD-JSON](https://github.com/sohag-pro/BD-JSON), licensed MIT; contains bilingual labels and government portal hostnames.
+- Snapshot source: [sohag-pro/BD-JSON](https://github.com/sohag-pro/BD-JSON), licensed MIT; contains bilingual labels and government portal links; the bundled payload keeps only names and hierarchical source codes to reduce the client bundle.
 - Snapshot counts: 8 divisions, 64 districts, 491 upazilas, 4,540 unions.
 - Official cross-check: [Bangladesh National Portal division list](https://bangladesh.gov.bd/views/division-list/division-list/), [district list](https://bangladesh.gov.bd/views/district-list/District-List/), [upazila list](https://bangladesh.gov.bd/views/upazila-list), and [union list](https://bangladesh.gov.bd/views/union-list).
 
