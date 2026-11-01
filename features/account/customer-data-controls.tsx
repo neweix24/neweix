@@ -82,7 +82,7 @@ export default function CustomerDataControls() {
       } catch (err) {
         if (active) {
           setErrorMessage(
-            err instanceof Error ? err.message : "তথ্য লোড করা যায়নি।"
+            err instanceof Error ? err.message : "Could not load your information."
           );
         }
       } finally {
@@ -111,13 +111,13 @@ export default function CustomerDataControls() {
       .filter(Boolean);
 
     if (preferredSizes.length > 20 || preferredColors.length > 30) {
-      setErrorMessage("সাইজ সর্বোচ্চ ২০টি এবং রং সর্বোচ্চ ৩০টি দিতে পারবেন।");
+      setErrorMessage("You can add up to 20 sizes and 30 colours.");
       return;
     }
     if (
       [...preferredSizes, ...preferredColors].some((value) => value.length > 40)
     ) {
-      setErrorMessage("প্রতিটি পছন্দ সর্বোচ্চ ৪০ অক্ষরের হতে পারবে।");
+      setErrorMessage("Each preference can contain up to 40 characters.");
       return;
     }
 
@@ -178,12 +178,12 @@ export default function CustomerDataControls() {
         marketing_email: emailConsent,
         marketing_sms: smsConsent,
       });
-      setMessage("আপনার পছন্দ ও যোগাযোগের অনুমতি সংরক্ষণ করা হয়েছে।");
+      setMessage("Your preferences and communication consent have been saved.");
     } catch (err) {
       setErrorMessage(
         err instanceof Error
           ? err.message
-          : "তথ্য সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।"
+          : "Could not save your information. Please try again."
       );
     } finally {
       setSaving(false);
@@ -194,50 +194,50 @@ export default function CustomerDataControls() {
     <main className="data-page">
       <header className="data-header">
         <Link href="/" className="brand">NEWEIX</Link>
-        <Link href="/account" className="back">← অ্যাকাউন্টে ফিরুন</Link>
+        <Link href="/account" className="back">← Back to account</Link>
       </header>
 
       <section className="panel">
         <p className="eyebrow">PRIVACY & PREFERENCES</p>
-        <h1>গোপনীয়তা ও পছন্দ</h1>
+        <h1>Privacy & preferences</h1>
         <p className="intro">
-          আপনার কেনাকাটার পছন্দ সংরক্ষণ করুন এবং NEWEIX কোন মাধ্যমে
-          প্রচারণামূলক বার্তা পাঠাতে পারবে তা নিয়ন্ত্রণ করুন।
-          এই তথ্য দেওয়া ঐচ্ছিক; না দিলেও কেনাকাটা করতে পারবেন।
+          Save your shopping preferences and choose which channels NEWEIX may use
+          to send promotional messages.
+          Providing this information is optional. You can shop without it.
         </p>
 
         {loading ? (
-          <p role="status">তথ্য লোড হচ্ছে…</p>
+          <p role="status">Loading information…</p>
         ) : (
           <form onSubmit={save}>
             <section className="group">
-              <h2>আপনার পছন্দ</h2>
-              <label htmlFor="preferred-sizes">পছন্দের সাইজ</label>
+              <h2>Your preferences</h2>
+              <label htmlFor="preferred-sizes">Preferred sizes</label>
               <input
                 id="preferred-sizes"
                 value={sizes}
                 onChange={(event) => setSizes(event.target.value)}
                 maxLength={500}
-                placeholder="যেমন: S, M, L, XL"
+                placeholder="Example: S, M, L, XL"
               />
-              <small>কমা দিয়ে আলাদা করুন। ঐচ্ছিক।</small>
+              <small>Separate entries with commas. Optional.</small>
 
-              <label htmlFor="preferred-colors">পছন্দের রং</label>
+              <label htmlFor="preferred-colors">Preferred colours</label>
               <input
                 id="preferred-colors"
                 value={colors}
                 onChange={(event) => setColors(event.target.value)}
                 maxLength={800}
-                placeholder="যেমন: কালো, সাদা, নীল"
+                placeholder="Example: black, white, blue"
               />
-              <small>কমা দিয়ে আলাদা করুন। ঐচ্ছিক।</small>
+              <small>Separate entries with commas. Optional.</small>
             </section>
 
             <section className="group">
-              <h2>যোগাযোগের অনুমতি</h2>
+              <h2>Communication preferences</h2>
               <p className="note">
-                অর্ডার, পেমেন্ট ও ডেলিভারি সংক্রান্ত জরুরি বার্তা এই
-                মার্কেটিং পছন্দ থেকে আলাদা।
+                Essential messages about orders, payments, and delivery are separate from
+                your marketing preferences.
               </p>
               <label className="check-row">
                 <input
@@ -245,7 +245,7 @@ export default function CustomerDataControls() {
                   checked={emailConsent}
                   onChange={(event) => setEmailConsent(event.target.checked)}
                 />
-                <span>ইমেইলে অফার ও নতুন পণ্যের খবর পেতে চাই।</span>
+                <span>I would like to receive offers and new product updates by email.</span>
               </label>
               <label className="check-row">
                 <input
@@ -253,11 +253,11 @@ export default function CustomerDataControls() {
                   checked={smsConsent}
                   onChange={(event) => setSmsConsent(event.target.checked)}
                 />
-                <span>SMS-এ অফার ও নতুন পণ্যের খবর পেতে চাই।</span>
+                <span>I would like to receive offers and new product updates by SMS.</span>
               </label>
               <p className="note">
-                অনুমতি যেকোনো সময় বন্ধ করতে পারবেন। প্রতিটি পরিবর্তনের
-                সময় ও অবস্থা নিরাপদ সম্মতি-রেকর্ডে সংরক্ষিত হয়।
+                You can withdraw consent at any time. Each change, including its
+                timestamp and status, is stored in a secure consent record.
               </p>
             </section>
 
@@ -265,7 +265,7 @@ export default function CustomerDataControls() {
             {errorMessage && <p className="error" role="alert">{errorMessage}</p>}
 
             <button type="submit" disabled={saving}>
-              <><Icon name={saving ? "refresh" : "check"} size={16} /> {saving ? "সংরক্ষণ হচ্ছে…" : "পছন্দ সংরক্ষণ করুন"}</>
+              <><Icon name={saving ? "refresh" : "check"} size={16} /> {saving ? "Saving…" : "Save preferences"}</>
             </button>
           </form>
         )}
