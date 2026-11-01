@@ -173,9 +173,9 @@ export default function ProductCatalog() {
         </nav>
       </header>
 
-      <section className={styles.intro}>
+      <section className={styles.intro} aria-labelledby="catalog-title">
         <span className={styles.eyebrow}>NEWEIX COLLECTION</span>
-        <h1>{t("discoverProducts")}</h1>
+        <h1 id="catalog-title">{t("discoverProducts")}</h1>
         <p>{t("findFavorites")}</p>
         <form className={styles.searchForm} role="search" onSubmit={submitSearch}>
           <label className={styles.search} htmlFor="catalog-product-search">
@@ -205,6 +205,8 @@ export default function ProductCatalog() {
           <button type="button" aria-pressed={!categorySlug} className={!categorySlug ? styles.activeChip : ""} onClick={() => setCategorySlug("")}><Icon name="grid" size={14} /> {t("allProducts")}</button>
           {visibleCategories.map((category) => <button key={category.id} type="button" aria-pressed={categorySlug === category.slug} className={categorySlug === category.slug ? styles.activeChip : ""} onClick={() => setCategorySlug(category.slug)}><Icon name="tag" size={14} /> {category.name}</button>)}
         </div>}
+        <div className={styles.filterPanel}>
+        <div className={styles.filterHeading}><strong>{t("sortProducts")}</strong><span>{filtered.length} {t("resultsFound")}</span></div>
         <div className={styles.filterRow}>
           <label className={styles.priceField}>{t("minPrice")}
             <input aria-label={t("minPrice")} type="number" min="0" inputMode="numeric" placeholder="0" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} />
@@ -215,7 +217,7 @@ export default function ProductCatalog() {
           <label className={styles.stockFilter}><input type="checkbox" checked={inStockOnly} onChange={(event) => setInStockOnly(event.target.checked)} /> {t("onlyInStock")}</label>
           <button type="button" className={styles.clearFilters} onClick={() => { setQuery(""); setCategorySlug(""); setMinPrice(""); setMaxPrice(""); setInStockOnly(false); setSort("featured"); window.history.replaceState(null, "", "/products"); }}><Icon name="close" size={15} /> {t("clearFilters")}</button>
         </div>
-        <label className={styles.search} style={{ marginTop: 12 }}>
+        <label className={styles.sortControl}>
           <span className={styles.srOnly}>{t("sortProducts")}</span>
           <select aria-label={t("sortProducts")} value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
             <option value="featured">{t("featuredFirst")}</option>
@@ -223,7 +225,8 @@ export default function ProductCatalog() {
             <option value="price-desc">{t("priceHighLow")}</option>
           </select>
         </label>
-        <p aria-live="polite" style={{ marginTop: 12 }}>{categories.find((category) => category.slug === categorySlug)?.name ? `${categories.find((category) => category.slug === categorySlug)?.name} · ` : ""}{filtered.length}{t("resultsFound")}</p>
+        </div>
+        <p className={styles.resultSummary} aria-live="polite">{categories.find((category) => category.slug === categorySlug)?.name ? `${categories.find((category) => category.slug === categorySlug)?.name} · ` : ""}{filtered.length}{t("resultsFound")}</p>
       </section>
 
       <section className={styles.catalog} aria-label="Product list">
