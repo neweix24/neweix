@@ -144,7 +144,7 @@ export default function ProductReviewPanel({ productId, returnTo }: { productId:
               <input id="review-title" required minLength={3} maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} className="w-full rounded-lg border bg-transparent p-3 text-sm" style={{ borderColor: "var(--border)", color: "var(--ink)" }} />
               <label htmlFor="review-body" className="block text-xs font-semibold">{t("reviewBody")}</label>
               <textarea id="review-body" required minLength={20} maxLength={2000} rows={5} value={body} onChange={(event) => setBody(event.target.value)} className="w-full resize-y rounded-lg border bg-transparent p-3 text-sm" style={{ borderColor: "var(--border)", color: "var(--ink)" }} />
-              <button type="submit" disabled={submitting} className="w-full rounded-full px-4 py-3 text-sm font-bold disabled:opacity-50" style={{ background: "var(--primary)", color: "var(--bg)" }}><><Icon name={submitting ? "refresh" : "check"} size={17} /> {submitting ? "{t("submittingReview")}" : "{t("submitReview")}"}</></button>
+              <button type="submit" disabled={submitting} className="w-full rounded-full px-4 py-3 text-sm font-bold disabled:opacity-50" style={{ background: "var(--primary)", color: "var(--bg)" }}><><Icon name={submitting ? "refresh" : "check"} size={17} /> {submitting ? t("submittingReview") : t("submitReview")}</></button>
               <p className="text-xs leading-5" style={{ color: "var(--muted)" }}>{t("moderationNote")}</p>
             </form>
           )}
