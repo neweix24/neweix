@@ -63,7 +63,7 @@ export default function SupremeDashboard() {
           </article>
           <article className="rounded-2xl border p-5 sm:p-6" style={{ borderColor: "#f0dfc5", background: "rgba(255,255,255,.96)", boxShadow: "0 10px 28px rgba(45,110,65,.05)" }}>
             <div className="flex items-center justify-between"><span className="text-sm font-bold" style={{ color: "var(--muted)" }}>Low stock</span><span className="grid h-10 w-10 place-items-center rounded-xl" style={{ background: "#fff5e8", color: "#a7671d" }}><Icon name="package" size={20} /></span></div>
-            <p className="mt-4 text-4xl font-black" style={{ color: "#a7671d" }}>{loading ? "—" : lowStockProducts.length}</p><p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>At or below each product's threshold</p>
+            <p className="mt-4 text-4xl font-black" style={{ color: "#a7671d" }}>{loading ? "—" : lowStockProducts.length}</p><p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>At or below each product&apos;s threshold</p>
           </article>
           <article className="rounded-2xl border p-5 sm:p-6" style={{ borderColor: "#efcccc", background: "rgba(255,255,255,.96)", boxShadow: "0 10px 28px rgba(45,110,65,.05)" }}>
             <div className="flex items-center justify-between"><span className="text-sm font-bold" style={{ color: "var(--muted)" }}>Out of stock</span><span className="grid h-10 w-10 place-items-center rounded-xl" style={{ background: "#fff0ef", color: "#a13e3e" }}><Icon name="close" size={20} /></span></div>
