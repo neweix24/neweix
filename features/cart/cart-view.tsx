@@ -216,7 +216,7 @@ export default function CartView() {
                         <span aria-live="polite">{quantity}</span>
                         <button type="button" aria-label={product.name + " " + t("increaseQuantity")} disabled={quantity >= product.stock} onClick={() => changeQuantity(product, 1)}><Icon name="plus" size={15} /></button>
                       </div>
-                      <button type="button" className={styles.saveLater} onClick={() => saveForLater(product)}><Icon name="bookmark" size={15} /> Save for later</button>
+                      <button type="button" className={styles.saveLater} onClick={() => saveForLater(product)}><Icon name="tag" size={15} /> Save for later</button>
                       <button type="button" className={styles.remove} onClick={() => saveCart(cart.filter((entry) => entry.product_id !== product.id))}><Icon name="trash" size={15} /> {t("remove")}</button>
                     </div>
                   </div>
