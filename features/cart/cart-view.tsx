@@ -183,7 +183,7 @@ export default function CartView() {
           </div>
         )}
 
-        {!loading && !error && items.length === 0 && (
+        {!loading && !error && items.length === 0 && savedItems.length === 0 && (
           <section className={styles.empty}>
             <span className={styles.emptyIcon}><Icon name="cart" size={30} /></span>
             <h2>{t("emptyCart")}</h2>
@@ -192,13 +192,14 @@ export default function CartView() {
           </section>
         )}
 
-        {!loading && !error && items.length > 0 && (
+        {!loading && !error && (items.length > 0 || savedItems.length > 0) && (
           <div className={styles.layout}>
             <section className={styles.items} aria-label={t("cartProducts")}>
               <div className={styles.sectionHeading}>
                 <h2>{t("cartProducts")}</h2>
                 <span>{itemCount} {t("itemCount")}</span>
               </div>
+              {items.length === 0 && <p className={styles.cartEmptyNote}>Your cart is empty. Move a saved item back to your cart when you are ready.</p>}
               {items.map(({ product, quantity }) => (
                 <article key={product.id} className={styles.item}>
                   {product.image_urls?.[0] ? (
@@ -259,7 +260,7 @@ export default function CartView() {
               </section>
             )}
 
-            <aside className={styles.summary}>
+            {items.length > 0 && <aside className={styles.summary}>
               <h2>{t("orderSummary")}</h2>
               <div className={styles.summaryRow}><span>{t("products")} ({itemCount})</span><strong>{formatPrice(total, locale)}</strong></div>
               <div className={styles.summaryRow}><span>{t("delivery")}</span><span className={styles.muted}>{t("confirmedAtCheckout")}</span></div>
@@ -272,7 +273,7 @@ export default function CartView() {
               ) : <button type="button" disabled className={styles.checkoutDisabled}><Icon name="shield" size={17} /> {t("fixCartFirst")}</button>}
               <Link href="/products" className={styles.backLink}>{t("continueShopping")}</Link>
               <div className={styles.secureNote}><Icon name="shield" size={16} /><span>Your order is rechecked for current price and stock before it is placed.</span></div>
-            </aside>
+            </aside>}
           </div>
         )}
       </div>
