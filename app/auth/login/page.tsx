@@ -203,6 +203,14 @@ export default function LoginPage() {
         return;
       }
 
+      if (profile.role === "manager") {
+        navigateAfterAuth("/manager");
+        return;
+      }
+      if (profile.role === "employee") {
+        navigateAfterAuth("/employee");
+        return;
+      }
       navigateAfterAuth("/admin");
     } catch {
       setMessage("Could not sign in. Check Supabase environment variables and network connectivity.");
