@@ -287,7 +287,7 @@ export default function AccountView() {
       router.refresh();
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "Sign out করা যায়নি।"
+        error instanceof Error ? error.message : "Could not sign out."
       );
       setLoggingOut(false);
     }
@@ -323,7 +323,7 @@ export default function AccountView() {
               <span>Sign-in email</span>
               <div className="account-email-value">
                 <strong>{email || "No email provided"}</strong>
-                {emailVerified && <span className="verified-badge" aria-label="ইমেইল যাচাইকৃত"><Icon name="check" size={13} /> Verified</span>}
+                {emailVerified && <span className="verified-badge" aria-label="Email verified"><Icon name="check" size={13} /> Verified</span>}
               </div>
             </div>
 
@@ -369,7 +369,7 @@ export default function AccountView() {
                     <button
                       className="phone-edit-button"
                       type="button"
-                      aria-label="Phone number পরিবর্তন করুন"
+                      aria-label="Change phone number"
                       title="Phone number পরিবর্তন করুন"
                       onClick={() => {
                         setEditingPhone(true);
@@ -380,7 +380,7 @@ export default function AccountView() {
                     >
                       <Icon name="edit" size={17} />
                     </button>
-                    <span className="verified-badge" aria-label="Phone number যাচাইকৃত"><Icon name="check" size={13} /> Verified</span>
+                    <span className="verified-badge" aria-label="Phone number verified"><Icon name="check" size={13} /> Verified</span>
                   </div>
                 ) : (
                   <>
