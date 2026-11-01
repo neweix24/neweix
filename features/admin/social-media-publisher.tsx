@@ -27,22 +27,22 @@ export default function SocialMediaPublisher() {
   const load = useCallback(async () => {
     const response = await fetch("/api/admin/social-media", { cache: "no-store" });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "তথ্য লোড করা যায়নি।");
+    if (!response.ok) throw new Error(data.error || "Could not load information.");
     setAccounts(data.accounts ?? []);
     setPosts(data.posts ?? []);
   }, []);
 
   useEffect(() => {
-    load().catch((error) => setStatus(error instanceof Error ? error.message : "লোড ব্যর্থ হয়েছে।"));
+    load().catch((error) => setStatus(error instanceof Error ? error.message : "Loading failed."));
     const result = new URLSearchParams(window.location.search).get("youtube");
     const messages: Record<string, string> = {
-      connected: "YouTube চ্যানেল সফলভাবে সংযুক্ত হয়েছে।",
-      missing_credentials: "Google OAuth Client ID ও Client Secret Cloudflare-এ সেট করা হয়নি।",
-      missing_secrets: "Google OAuth এবং Token Encryption secrets সেট করা প্রয়োজন।",
-      state_error: "নিরাপত্তা যাচাই ব্যর্থ হয়েছে। আবার সংযোগ চেষ্টা করুন।",
-      consent_denied: "Google অনুমতি দেওয়া হয়নি।",
-      missing_code: "Google থেকে authorization code পাওয়া যায়নি।",
-      connection_failed: "YouTube সংযোগ ব্যর্থ হয়েছে। Server log পরীক্ষা করুন।",
+      connected: "YouTube channel connected successfully.",
+      missing_credentials: "Google OAuth Client ID and Client Secret are not configured in Cloudflare.",
+      missing_secrets: "Google OAuth and token-encryption secrets must be configured.",
+      state_error: "Security validation failed. Try connecting again.",
+      consent_denied: "Google authorization was denied.",
+      missing_code: "No authorization code was received from Google.",
+      connection_failed: "YouTube connection failed. Check the server logs.",
     };
     if (result && messages[result]) setStatus(messages[result]);
   }, [load]);
@@ -53,20 +53,20 @@ export default function SocialMediaPublisher() {
 
   async function createPost(asDraft: boolean) {
     if (!title.trim() || !caption.trim() || targets.length === 0) {
-      setStatus("শিরোনাম, ক্যাপশন এবং অন্তত একটি প্ল্যাটফর্ম নির্বাচন করুন।");
+      setStatus("Enter a title and caption, and select at least one platform.");
       return;
     }
     const mediaUrlList = mediaUrls.split("\n").map((value) => value.trim()).filter(Boolean);
     if (!asDraft && targets.some((target) => target !== "youtube")) {
-      setStatus("এই মুহূর্তে স্বয়ংক্রিয় প্রকাশ শুধু YouTube-এর জন্য চালু। অন্য প্ল্যাটফর্মের পোস্ট Draft হিসেবে রাখুন।");
+      setStatus("Automatic publishing is currently available only for YouTube. Save posts for other platforms as drafts.");
       return;
     }
     if (!asDraft && mediaUrlList.length === 0) {
-      setStatus("YouTube ভিডিওর পাবলিক HTTPS URL দিন।");
+      setStatus("Enter a public HTTPS URL for the YouTube video.");
       return;
     }
     if (!asDraft && !scheduledAt) {
-      setStatus("প্রকাশের তারিখ ও সময় নির্ধারণ করুন।");
+      setStatus("Set a publication date and time.");
       return;
     }
     setBusy(true);
@@ -78,16 +78,16 @@ export default function SocialMediaPublisher() {
         body: JSON.stringify({ title, caption, mediaUrls: mediaUrlList, targets, scheduledAt: asDraft ? null : new Date(scheduledAt).toISOString(), status: asDraft ? "draft" : "scheduled" }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "পোস্ট সংরক্ষণ করা যায়নি।");
+      if (!response.ok) throw new Error(data.error || "Could not save the post.");
       setTitle("");
       setCaption("");
       setMediaUrls("");
       setTargets([]);
       setScheduledAt("");
-      setStatus(asDraft ? "ড্রাফট সংরক্ষণ হয়েছে।" : "YouTube ভিডিও প্রকাশের জন্য শিডিউল হয়েছে। নির্ধারিত সময়ে ভিডিওটি Public হবে।");
+      setStatus(asDraft ? "Draft saved." : "YouTube video scheduled for publication. It will become public at the scheduled time.");
       await load();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "পোস্ট সংরক্ষণ ব্যর্থ হয়েছে।");
+      setStatus(error instanceof Error ? error.message : "Failed to save the post.");
     } finally {
       setBusy(false);
     }
@@ -99,39 +99,39 @@ export default function SocialMediaPublisher() {
     <div className="space-y-6">
       <section className="rounded-2xl border p-5 sm:p-7" style={cardStyle}>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div><h2 className="text-xl font-bold">প্ল্যাটফর্ম সংযোগ</h2><p className="mt-1 text-sm opacity-70">অফিসিয়াল OAuth/API সংযোগের অবস্থা</p></div>
-          <span className="rounded-full border px-3 py-1 text-xs">প্রাথমিক সেটআপ</span>
+          <div><h2 className="text-xl font-bold">Platform Connections</h2><p className="mt-1 text-sm opacity-70">Official OAuth/API connection status</p></div>
+          <span className="rounded-full border px-3 py-1 text-xs">Initial Setup</span>
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {platforms.map((platform) => {
             const linked = accounts.filter((account) => account.platform === platform.id && account.connection_status === "connected");
             return <div key={platform.id} className="rounded-xl border p-4" style={{ borderColor: "var(--border)" }}>
-              <div className="flex items-center justify-between gap-2"><strong>{platform.label}</strong><span className="text-xs">{linked.length ? "সংযুক্ত" : "সংযুক্ত নয়"}</span></div>
+              <div className="flex items-center justify-between gap-2"><strong>{platform.label}</strong><span className="text-xs">{linked.length ? "Connected" : "Not Connected"}</span></div>
               <p className="mt-1 text-xs opacity-70">{platform.note}</p>
-              {linked.length > 0 ? linked.map((account) => <p key={account.id} className="mt-2 text-sm">{account.account_name}</p>) : <p className="mt-2 text-sm opacity-70">Developer credentials ও OAuth অনুমোদন প্রয়োজন।</p>}
-              {platform.id === "youtube" && <a href="/api/admin/social-media/youtube/connect" className="mt-3 inline-flex rounded-xl border px-4 py-2 text-sm font-semibold" style={{ borderColor: "var(--border)" }}>{linked.length ? "YouTube পুনরায় সংযুক্ত করুন" : "Google দিয়ে YouTube সংযুক্ত করুন"}</a>}
+              {linked.length > 0 ? linked.map((account) => <p key={account.id} className="mt-2 text-sm">{account.account_name}</p>) : <p className="mt-2 text-sm opacity-70">Developer credentials and OAuth authorization are required.</p>}
+              {platform.id === "youtube" && <a href="/api/admin/social-media/youtube/connect" className="mt-3 inline-flex rounded-xl border px-4 py-2 text-sm font-semibold" style={{ borderColor: "var(--border)" }}>{linked.length ? "YouTube পুনরায় Connected করুন" : "Google দিয়ে YouTube Connected করুন"}</a>}
             </div>;
           })}
         </div>
       </section>
 
       <section className="rounded-2xl border p-5 sm:p-7" style={cardStyle}>
-        <h2 className="text-xl font-bold">নতুন পোস্ট তৈরি</h2>
-        <p className="mt-1 text-sm opacity-70">YouTube-এর জন্য ভিডিও URL দিয়ে স্বয়ংক্রিয় প্রকাশ শিডিউল করা যাবে। Facebook, Instagram ও TikTok এখন Draft-only—তাদের নিজস্ব API অনুমোদন প্রয়োজন।</p>
+        <h2 className="text-xl font-bold">Create New Post</h2>
+        <p className="mt-1 text-sm opacity-70">Schedule automatic YouTube publishing with a video URL. Facebook, Instagram, and TikTok are draft-only until their respective API access is approved.</p>
         <div className="mt-5 grid gap-4">
-          <label className="grid gap-2 text-sm font-semibold">পোস্টের শিরোনাম<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={200} className="min-h-11 rounded-xl border bg-transparent px-3 font-normal" style={{ borderColor: "var(--border)" }} /></label>
-          <label className="grid gap-2 text-sm font-semibold">ক্যাপশন / বিবরণ<textarea value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={5000} rows={5} className="rounded-xl border bg-transparent p-3 font-normal" style={{ borderColor: "var(--border)" }} /></label>
-          <label className="grid gap-2 text-sm font-semibold">ভিডিও URL (প্রতি লাইনে একটি, YouTube-এর জন্য প্রয়োজন)<textarea value={mediaUrls} onChange={(event) => setMediaUrls(event.target.value)} rows={3} placeholder="https://example.com/video.mp4" className="rounded-xl border bg-transparent p-3 font-normal" style={{ borderColor: "var(--border)" }} /></label>
-          <fieldset><legend className="mb-2 text-sm font-semibold">কোন প্ল্যাটফর্মে যাবে?</legend><div className="grid gap-2 sm:grid-cols-2">{platforms.map((platform) => <label key={platform.id} className="flex items-center gap-3 rounded-xl border p-3 text-sm" style={{ borderColor: "var(--border)" }}><input type="checkbox" checked={targets.includes(platform.id)} onChange={() => toggleTarget(platform.id)} />{platform.label}</label>)}</div></fieldset>
-          <label className="grid gap-2 text-sm font-semibold">প্রকাশের তারিখ ও সময়<input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} className="min-h-11 rounded-xl border bg-transparent px-3 font-normal" style={{ borderColor: "var(--border)" }} /></label>
-          <div className="flex flex-wrap gap-3"><button type="button" disabled={busy} onClick={() => createPost(true)} className="rounded-xl border px-5 py-3 font-semibold" style={{ borderColor: "var(--border)" }}>ড্রাফট সংরক্ষণ</button><button type="button" disabled={busy} onClick={() => createPost(false)} className="rounded-xl border px-5 py-3 font-semibold" style={{ borderColor: "var(--border)" }}>শিডিউল করুন</button></div>
+          <label className="grid gap-2 text-sm font-semibold">Post Title<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={200} className="min-h-11 rounded-xl border bg-transparent px-3 font-normal" style={{ borderColor: "var(--border)" }} /></label>
+          <label className="grid gap-2 text-sm font-semibold">Caption / Description<textarea value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={5000} rows={5} className="rounded-xl border bg-transparent p-3 font-normal" style={{ borderColor: "var(--border)" }} /></label>
+          <label className="grid gap-2 text-sm font-semibold">Video URLs (one per line; required for YouTube)<textarea value={mediaUrls} onChange={(event) => setMediaUrls(event.target.value)} rows={3} placeholder="https://example.com/video.mp4" className="rounded-xl border bg-transparent p-3 font-normal" style={{ borderColor: "var(--border)" }} /></label>
+          <fieldset><legend className="mb-2 text-sm font-semibold">Which platforms should receive this post?</legend><div className="grid gap-2 sm:grid-cols-2">{platforms.map((platform) => <label key={platform.id} className="flex items-center gap-3 rounded-xl border p-3 text-sm" style={{ borderColor: "var(--border)" }}><input type="checkbox" checked={targets.includes(platform.id)} onChange={() => toggleTarget(platform.id)} />{platform.label}</label>)}</div></fieldset>
+          <label className="grid gap-2 text-sm font-semibold">Publication Date & Time<input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} className="min-h-11 rounded-xl border bg-transparent px-3 font-normal" style={{ borderColor: "var(--border)" }} /></label>
+          <div className="flex flex-wrap gap-3"><button type="button" disabled={busy} onClick={() => createPost(true)} className="rounded-xl border px-5 py-3 font-semibold" style={{ borderColor: "var(--border)" }}>Save Draft</button><button type="button" disabled={busy} onClick={() => createPost(false)} className="rounded-xl border px-5 py-3 font-semibold" style={{ borderColor: "var(--border)" }}>Schedule</button></div>
           {status && <p role="status" className="text-sm">{status}</p>}
         </div>
       </section>
 
       <section className="rounded-2xl border p-5 sm:p-7" style={cardStyle}>
-        <h2 className="text-xl font-bold">পোস্টের তালিকা</h2>
-        <div className="mt-4 space-y-3">{posts.length === 0 ? <p className="text-sm opacity-70">এখনো কোনো পোস্ট তৈরি হয়নি।</p> : posts.map((post) => <article key={post.id} className="rounded-xl border p-4" style={{ borderColor: "var(--border)" }}><div className="flex flex-wrap items-center justify-between gap-2"><strong>{post.title}</strong><span className="rounded-full border px-3 py-1 text-xs">{post.status}</span></div><p className="mt-2 line-clamp-3 whitespace-pre-wrap text-sm opacity-80">{post.caption}</p><p className="mt-2 text-xs opacity-70">প্ল্যাটফর্ম: {post.post_targets.join(", ")}{post.scheduled_at ? " · " + new Date(post.scheduled_at).toLocaleString() : ""}</p>{post.media_urls?.length > 0 && <p className="mt-1 break-all text-xs opacity-60">Media: {post.media_urls.join(", ")}</p>}</article>)}</div>
+        <h2 className="text-xl font-bold">Post List</h2>
+        <div className="mt-4 space-y-3">{posts.length === 0 ? <p className="text-sm opacity-70">No posts have been created yet.</p> : posts.map((post) => <article key={post.id} className="rounded-xl border p-4" style={{ borderColor: "var(--border)" }}><div className="flex flex-wrap items-center justify-between gap-2"><strong>{post.title}</strong><span className="rounded-full border px-3 py-1 text-xs">{post.status}</span></div><p className="mt-2 line-clamp-3 whitespace-pre-wrap text-sm opacity-80">{post.caption}</p><p className="mt-2 text-xs opacity-70">Platforms: {post.post_targets.join(", ")}{post.scheduled_at ? " · " + new Date(post.scheduled_at).toLocaleString() : ""}</p>{post.media_urls?.length > 0 && <p className="mt-1 break-all text-xs opacity-60">Media: {post.media_urls.join(", ")}</p>}</article>)}</div>
       </section>
     </div>
   );
