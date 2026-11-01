@@ -573,9 +573,29 @@ export default function CheckoutView() {
         />
 
         <label htmlFor="coupon_code">Coupon code (optional)</label>
-        <input id="coupon_code" name="coupon_code" type="text" maxLength={40}
-          pattern="[A-Za-z0-9_-]{3,40}" title="Use 3–40 letters, numbers, hyphens, or underscores"
-          autoComplete="off" disabled={submitting} placeholder="Example: SAVE10" style={fieldStyle} />
+        <div className={styles.couponEntry}>
+          <input id="coupon_code" name="coupon_code" type="text" maxLength={40}
+            pattern="[A-Za-z0-9_-]{3,40}" title="Use 3–40 letters, numbers, hyphens, or underscores"
+            autoComplete="off" disabled={submitting} placeholder="Example: SAVE10" style={fieldStyle}
+            value={couponCode}
+            onChange={(event) => {
+              setCouponCode(event.target.value.toUpperCase());
+              setCouponPreview(null);
+              setCouponMessage("");
+              setCouponError(false);
+            }} />
+          <button type="button" className={styles.couponButton}
+            onClick={() => void applyCoupon()} disabled={submitting || couponChecking || !couponCode.trim()}>
+            {couponChecking ? "Checking..." : couponPreview ? "Apply again" : "Apply coupon"}
+          </button>
+        </div>
+        {couponMessage && <p role={couponError ? "alert" : "status"} className={couponError ? styles.couponError : styles.couponSuccess}>{couponMessage}</p>}
+        {couponPreview && (
+          <div className={styles.discountRow}>
+            <span>{couponPreview.free_shipping ? "Free delivery coupon" : "Coupon discount"}</span>
+            <strong>{couponPreview.free_shipping ? "Delivery fee waived at order confirmation" : `−${formatPrice(couponPreview.discount, locale)}`}</strong>
+          </div>
+        )}
 
         <section className={styles.paymentOptions} aria-labelledby="delivery-heading">
           <h2 id="delivery-heading">Delivery method</h2>
@@ -677,7 +697,11 @@ export default function CheckoutView() {
         </fieldset>
 
         <p><strong>Product subtotal: {formatPrice(total, locale)}</strong></p>
-        <p><strong>Delivery fee: {deliveryFeeQuote === null ? "Calculate using your address" : formatPrice(deliveryFeeQuote, locale)}</strong></p>
+        {couponPreview && !couponPreview.free_shipping && (
+          <p className={styles.discountRow}><span>Coupon savings</span><strong>−{formatPrice(couponPreview.discount, locale)}</strong></p>
+        )}
+        <p><strong>Estimated total: {formatPrice(Math.max(0, total - (couponPreview?.discount ?? 0)) + (deliveryFeeQuote ?? 0), locale)}</strong></p>
+        <p><strong>Delivery fee: {deliveryFeeQuote === null ? "Calculate using your address" : couponPreview?.free_shipping ? "Free delivery (subject to server confirmation)" : formatPrice(deliveryFeeQuote, locale)}</strong></p>
         <p>{paymentMethod === "cod" ? "Cash on Delivery selected: pay only the delivery fee in advance via MFS; pay for the products upon delivery." : "MFS selected: the full product total and delivery fee must be paid in advance."}</p>
         <p>The server determines the delivery fee. Submitting a transaction ID does not confirm payment; an administrator must verify it.</p>
 
