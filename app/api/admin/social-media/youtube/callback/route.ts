@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     const channelData = await channelResponse.json() as ChannelResponse;
     if (!channelResponse.ok) throw new Error("YouTube channel lookup failed.");
     const channel = channelData.items?.[0];
-    if (!channel?.id) throw new Error("এই Google অ্যাকাউন্টে কোনো YouTube channel পাওয়া যায়নি.");
+    if (!channel?.id) throw new Error("No YouTube channel was found for this Google account.");
 
     const supabase = await createRuntimeServiceClient();
     const { data: existing, error: lookupError } = await supabase
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     const encryptedRefresh = tokens.refresh_token
       ? await encryptYouTubeToken(tokens.refresh_token, env.YOUTUBE_TOKEN_ENCRYPTION_KEY)
       : existing?.refresh_token_ciphertext ?? null;
-    if (!encryptedRefresh) throw new Error("Google refresh token দেয়নি। Google consent পুনরায় দিন; refresh token ছাড়া scheduled publishing সম্ভব নয়.");
+    if (!encryptedRefresh) throw new Error("Google did not provide a refresh token. Grant Google consent again; scheduled publishing requires a refresh token.");
 
     const { error: saveError } = await supabase.from("social_media_accounts").upsert({
       platform: "youtube",
