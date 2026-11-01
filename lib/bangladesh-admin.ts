@@ -40,7 +40,7 @@ export const BANGLADESH_ADMIN_AREAS = rawAreas as BangladeshDivision[];
 export type ResolvedBangladeshAddress = {
   division: BangladeshDivision;
   district: BangladeshDistrict;
-  upazila: BangladeshUpazila;
+  upazila: BangladeshUpazila | null;
   union: BangladeshUnion | null;
 };
 
@@ -53,7 +53,13 @@ export function resolveBangladeshAddress(
   const division = BANGLADESH_ADMIN_AREAS.find((item) => item.code === divisionCode);
   const district = division?.districts.find((item) => item.code === districtCode);
   const upazila = district?.upazilas.find((item) => item.code === upazilaCode);
-  if (!division || !district || !upazila) return null;
+  if (!division || !district) return null;
+  if (upazilaCode === "other") {
+    return unionCode === "not_applicable" || unionCode === "other"
+      ? { division, district, upazila: null, union: null }
+      : null;
+  }
+  if (!upazila) return null;
   if (unionCode === "not_applicable" || unionCode === "other") {
     return { division, district, upazila, union: null };
   }
@@ -83,7 +89,7 @@ export function findAddressCodesByNames(input: {
   return {
     divisionCode: division?.code ?? "",
     districtCode: district?.code ?? "",
-    upazilaCode: upazila?.code ?? "",
+    upazilaCode: upazila?.code ?? (district && normalize(input.upazila) ? "other" : ""),
     unionCode: union?.code ?? "",
   };
 }
