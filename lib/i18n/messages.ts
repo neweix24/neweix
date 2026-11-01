@@ -49,7 +49,8 @@ export const messages = {
     addToCartError: "Could not add to cart. Please try again.", buyNowError: "Could not start checkout. Please try again.",
   },
   bn: {
-    decreaseQuantity: "পরিমাণ কমান", increaseQuantity: "পরিমাণ বাড়ান", cartProducts: "কার্টের পণ্য", itemCount: "টি",\n    language: "ভাষা", english: "English", bengali: "বাংলা",
+    decreaseQuantity: "পরিমাণ কমান", increaseQuantity: "পরিমাণ বাড়ান", cartProducts: "কার্টের পণ্য", itemCount: "টি",
+    language: "ভাষা", english: "English", bengali: "বাংলা",
     home: "হোম", products: "সব পণ্য", trackOrder: "অর্ডার ট্র্যাক", wishlist: "পছন্দের তালিকা", cart: "কার্ট",
     searchProducts: "কোন পণ্য খুঁজছেন?", search: "খুঁজুন", categories: "ক্যাটাগরি অনুযায়ী পণ্য", allCategories: "সব ক্যাটাগরি",
     discover: "NEWEIX আবিষ্কার করুন", picksForYou: "আপনার জন্য পণ্য", chooseFromStore: "স্টোরে বর্তমানে থাকা পণ্য থেকে বেছে নিন।",
