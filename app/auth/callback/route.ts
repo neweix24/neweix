@@ -36,7 +36,9 @@ function safeNextPath(value: string | null): string {
 }
 
 function redirectTo(request: NextRequest, path: string) {
-  return NextResponse.redirect(new URL(path, request.url));
+  const response = NextResponse.redirect(new URL(path, request.url));
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
 }
 
 export async function GET(request: NextRequest) {
@@ -84,6 +86,7 @@ export async function GET(request: NextRequest) {
 
   // Session cookies must be attached to the response returned to the browser.
   const response = NextResponse.redirect(new URL(next, request.url));
+  response.headers.set("Cache-Control", "private, no-store");
 
   const supabase = createServerClient(url, anonKey, {
     cookieOptions: persistentCookieOptions,
@@ -91,9 +94,12 @@ export async function GET(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet, headers) {
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
+        });
+        Object.entries(headers).forEach(([name, value]) => {
+          response.headers.set(name, value);
         });
       },
     },
