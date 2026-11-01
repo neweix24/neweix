@@ -99,7 +99,7 @@ export default function CompareView() {
           <p className="mt-2" style={{ color: "var(--muted)" }}>Add products by selecting “Compare” in the product catalog.</p>
           <Link href="/products" className="mt-5 inline-flex rounded-xl px-5 py-3 font-bold" style={{ background: "var(--primary)", color: "#080b09" }}>Browse products</Link>
         </section>}
-        {!loading && selected.length > 0 && <div className="overflow-x-auto rounded-3xl border" style={{ borderColor: "#dfeade", background: "rgba(255,255,255,.97)", boxShadow: "0 14px 38px rgba(45,110,65,.07)" }}>>
+        {!loading && selected.length > 0 && <div className="overflow-x-auto rounded-3xl border" style={{ borderColor: "#dfeade", background: "rgba(255,255,255,.97)", boxShadow: "0 14px 38px rgba(45,110,65,.07)" }}>
           <table className="w-full min-w-[720px] border-collapse text-left text-sm">
             <thead style={{ background: "#f5fbf1" }}><tr><th className="w-36 border-b p-4" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>Feature</th>
               {selected.map((product) => <th key={product.id} className="min-w-48 border-b p-4 align-top" style={{ borderColor: "var(--border)" }}>
