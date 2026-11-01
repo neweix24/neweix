@@ -1,0 +1,33 @@
+name: NEWEIX production smoke tests
+
+on:
+  workflow_run:
+    workflows: ["Deploy NEWEIX to Cloudflare Workers"]
+    types: [completed]
+  workflow_dispatch:
+  schedule:
+    - cron: "17 2 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: neweix-production-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke-test:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      NEWEIX_SITE_URL: https://neweix.com
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check production storefront and access controls
+        run: node scripts/production-smoke.mjs
