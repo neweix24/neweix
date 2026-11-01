@@ -125,7 +125,7 @@ export default function ProductReviewPanel({ productId, returnTo }: { productId:
           {!authenticated ? (
             <div className="mt-3 text-sm leading-7" style={{ color: "var(--muted)" }}>
               {t("loginToReview")}
-              <Link className="mt-3 inline-flex font-bold underline underline-offset-4" style={{ color: "var(--primary)" }} href={"/auth/customer-login?next=" + encodeURIComponent(returnTo)}>লগইন করুন</Link>
+              <Link className="mt-3 inline-flex font-bold underline underline-offset-4" style={{ color: "var(--primary)" }} href={"/auth/customer-login?next=" + encodeURIComponent(returnTo)}>{t("loginSignup")}</Link>
             </div>
           ) : eligibleOrders.length === 0 ? (
             <p className="mt-3 text-sm leading-7" style={{ color: "var(--muted)" }}>{t("eligibleOrders")}</p>
@@ -134,7 +134,7 @@ export default function ProductReviewPanel({ productId, returnTo }: { productId:
               <label className="block text-xs font-semibold">{t("selectOrder")}</label>
               <select required value={orderItemId} onChange={(event) => setOrderItemId(event.target.value)} className="w-full rounded-lg border bg-transparent p-3 text-sm" style={{ borderColor: "var(--border)", color: "var(--ink)" }}>
                 <option value="">{t("chooseOrder")}</option>
-                {eligibleOrders.map((order) => <option key={order.order_item_id} value={order.order_item_id}>#{order.order_number} · {order.product_name} · {order.quantity}টি</option>)}
+                {eligibleOrders.map((order) => <option key={order.order_item_id} value={order.order_item_id}>#{order.order_number} · {order.product_name} · {order.quantity} {t("itemCount")}</option>)}
               </select>
               <label className="block text-xs font-semibold">{t("rating")}</label>
               <div className="flex gap-1" role="group" aria-label={t("chooseRating")}>
