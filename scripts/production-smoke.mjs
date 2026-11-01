@@ -9,7 +9,6 @@ const publicPages = [
   "/checkout",
   "/search",
   "/track-order",
-  "/wishlist",
   "/compare",
   "/auth/login",
   "/auth/customer-login",
@@ -20,6 +19,10 @@ const protectedPages = [
   "/admin/orders",
   "/admin/integrations",
   "/supreme",
+];
+
+const protectedCustomerPages = [
+  "/wishlist",
 ];
 
 const protectedApis = [
@@ -96,6 +99,17 @@ for (const path of protectedPages) {
   });
 }
 
+for (const path of protectedCustomerPages) {
+  await runCheck(`Customer-protected page ${path}`, path, async (response) => {
+    const location = response.headers.get("location") || "";
+    const redirectedToCustomerLogin = response.status >= 300 && response.status < 400 &&
+      location.includes("/auth/customer-login");
+    return redirectedToCustomerLogin
+      ? { ok: true }
+      : { ok: false, reason: `Expected redirect to customer login, received HTTP ${response.status} (${location || "no Location header"})` };
+  });
+}
+
 for (const path of protectedApis) {
   await runCheck(`Protected API ${path}`, path, async (response) => {
     return response.status === 401 || response.status === 403
@@ -104,7 +118,7 @@ for (const path of protectedApis) {
   });
 }
 
-process.stdout.write(`\nSmoke test summary: ${publicPages.length + protectedPages.length + protectedApis.length + 1 - failures.length} passed, ${failures.length} failed.\n`);
+process.stdout.write(`\nSmoke test summary: ${publicPages.length + protectedPages.length + protectedCustomerPages.length + protectedApis.length + 1 - failures.length} passed, ${failures.length} failed.\n`);
 if (failures.length > 0) {
   process.stderr.write(JSON.stringify(failures, null, 2) + "\n");
   process.exitCode = 1;
