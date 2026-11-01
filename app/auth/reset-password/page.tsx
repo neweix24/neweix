@@ -66,7 +66,7 @@ export default function ResetPasswordPage() {
       <p className="eyebrow">NEWEIX · ACCOUNT RECOVERY</p>
       <h1>Set a new password</h1>
       <p className="hero-copy">
-        নতুন The password must be at least 8 characters long.
+        Your new password must be at least 8 characters long.
       </p>
 
       <form className="track-form" onSubmit={handleSubmit}>
