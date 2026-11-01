@@ -340,6 +340,7 @@ export default function CheckoutView() {
       shipping_division_code: String(formData.get("shipping_division_code") ?? ""),
       shipping_district_code: String(formData.get("shipping_district_code") ?? ""),
       shipping_upazila_code: String(formData.get("shipping_upazila_code") ?? ""),
+      shipping_upazila_other: String(formData.get("shipping_upazila_other") ?? "").trim(),
       shipping_union_code: String(formData.get("shipping_union_code") ?? ""),
       shipping_union_other: String(formData.get("shipping_union_other") ?? "").trim(),
       shipping_village: String(formData.get("shipping_village") ?? "").trim(),
