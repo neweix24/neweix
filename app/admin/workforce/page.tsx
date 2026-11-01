@@ -5,7 +5,7 @@ import AdminWorkforceManager from "./AdminWorkforceManager";
 export const dynamic = "force-dynamic";
 
 export default async function AdminWorkforcePage() {
-  await requireStaff(["admin"]);
+  await requireStaff(["supreme", "admin"]);
   return (
     <main className="min-h-screen px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-5xl space-y-6">
