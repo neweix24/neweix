@@ -106,7 +106,8 @@ export default function CheckoutView() {
           }
         }
 
-        const saved = localStorage.getItem("neweix_cart");
+        const isBuyNow = new URLSearchParams(window.location.search).get("buyNow") === "1";
+        const saved = localStorage.getItem(isBuyNow ? "neweix_buy_now" : "neweix_cart");
         const parsed: unknown = saved ? JSON.parse(saved) : [];
 
         if (!Array.isArray(parsed)) {
@@ -373,7 +374,11 @@ export default function CheckoutView() {
         );
       }
 
-      localStorage.removeItem("neweix_cart");
+      if (new URLSearchParams(window.location.search).get("buyNow") === "1") {
+        localStorage.removeItem("neweix_buy_now");
+      } else {
+        localStorage.removeItem("neweix_cart");
+      }
       setCart([]);
       setSubmittedPaymentMethod(paymentMethod);
       setOrderNumber(createdOrderNumber);
