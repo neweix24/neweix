@@ -4,7 +4,7 @@ The production smoke test is a lightweight HTTP-level check. It runs automatical
 
 ## What it checks
 
-- Public storefront routes return HTTP 200 and a non-empty page.
+- Public storefront routes return HTTP 200 and a non-empty page.\n- Customer-protected pages such as Wishlist redirect unauthenticated visitors to Customer Login.
 - The public product API returns JSON successfully.
 - Admin, Supreme and integration pages redirect unauthenticated visitors to the login flow.
 - Admin product, order, Pathao and BulkSMSBD APIs reject unauthenticated requests with HTTP 401 or 403.
