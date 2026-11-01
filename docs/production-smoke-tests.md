@@ -9,7 +9,7 @@ The production smoke test is a lightweight HTTP-level check. It runs automatical
 - Admin, Supreme and integration pages redirect unauthenticated visitors to the login flow.
 - Admin product, order, Pathao and BulkSMSBD APIs reject unauthenticated requests with HTTP 401 or 403.
 
-Covered public pages include Home, Products, Cart, Checkout, Search, Order Tracking, Wishlist, Compare, Login and Customer Login.
+Covered public pages include Home, Products, Cart, Checkout, Search, Order Tracking, Compare, Login and Customer Login. Wishlist is checked separately as a customer-protected page.
 
 ## Run manually
 
