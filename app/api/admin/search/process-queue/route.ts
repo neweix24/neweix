@@ -112,7 +112,7 @@ export async function POST(request: Request) {
 
     try {
       const { data: rawJobs, error: claimError } = await admin.rpc(
-        "neweix_claim_search_embedding_jobs",
+        "neweix_claim_search_embedding_jobs_v2",
         { p_limit: limit },
       );
       if (claimError) {
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
       if (productError) {
         console.error("Search queue product lookup failed:", productError.message);
         await Promise.all(jobs.map((job) =>
-          admin.rpc("neweix_fail_search_embedding_job", {
+          admin.rpc("neweix_fail_search_embedding_job_v2", {
             p_job_id: job.job_id,
             p_lease_token: job.lease_token,
             p_error: productError.message,
@@ -147,7 +147,7 @@ export async function POST(request: Request) {
       const activeJobs = jobs.filter((job) => byId.get(job.product_id)?.is_active === true);
       for (const job of jobs) {
         if (!activeJobs.some((active) => active.job_id === job.job_id)) {
-          await admin.rpc("neweix_complete_search_embedding_job", {
+          await admin.rpc("neweix_complete_search_embedding_job_v2", {
             p_job_id: job.job_id,
             p_lease_token: job.lease_token,
           });
@@ -182,7 +182,7 @@ export async function POST(request: Request) {
           )
         ) {
           for (const job of activeJobs) {
-            await admin.rpc("neweix_fail_search_embedding_job", {
+            await admin.rpc("neweix_fail_search_embedding_job_v2", {
               p_job_id: job.job_id,
               p_lease_token: job.lease_token,
               p_error: "AI returned an invalid embedding response",
@@ -201,7 +201,7 @@ export async function POST(request: Request) {
               p_model: "@cf/baai/bge-m3",
             });
             if (error) {
-              await admin.rpc("neweix_fail_search_embedding_job", {
+              await admin.rpc("neweix_fail_search_embedding_job_v2", {
                 p_job_id: job.job_id,
                 p_lease_token: job.lease_token,
                 p_error: error.message,
