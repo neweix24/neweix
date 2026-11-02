@@ -166,7 +166,7 @@ async function processSearchEmbeddingQueue(env: Env): Promise<void> {
 
     const { error: completeError } = await supabase.rpc(
       "neweix_complete_search_embedding_job",
-      { p_job_id: job.job_id },
+      { p_job_id: job.job_id, p_lease_token: job.lease_token },
     );
     if (completeError) {
       console.error("[search-cron] job completion failed", job.job_id, completeError.message);
@@ -273,6 +273,7 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
       if (!accepted) {
         await supabase.rpc("neweix_fail_customer_notification", {
           p_id: job.id,
+          p_lease_token: job.lease_token,
           p_error: `BulkSMSBD rejected request (HTTP ${response.status}, code ${responseCode ?? "unknown"})`,
         });
         failed += 1;
@@ -281,11 +282,12 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
 
       const { error: completeError } = await supabase.rpc(
         "neweix_complete_customer_notification",
-        { p_id: job.id },
+        { p_id: job.id, p_lease_token: job.lease_token },
       );
       if (completeError) {
         await supabase.rpc("neweix_fail_customer_notification", {
           p_id: job.id,
+          p_lease_token: job.lease_token,
           p_error: completeError.message,
         });
         failed += 1;
