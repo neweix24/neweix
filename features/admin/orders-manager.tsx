@@ -7,6 +7,7 @@ type OrderItem = {
   product_name: string;
   unit_price: number;
   quantity: number;
+  restocked_quantity?: number;
 };
 
 type Order = {
@@ -100,6 +101,8 @@ export default function OrdersManager() {
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [restockQuantities, setRestockQuantities] = useState<Record<string, number>>({});
+  const [restockIdempotencyKeys, setRestockIdempotencyKeys] = useState<Record<string, string>>({});
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -277,12 +280,44 @@ export default function OrdersManager() {
   }
 
   async function restockReturnedOrder(order: Order) {
-    const note = window.prompt("Enter the reason for restocking inspected returned items (5–500 characters):");
+    const selected = (order.order_items || [])
+      .map((item) => ({
+        item,
+        quantity: Math.max(0, Math.floor(restockQuantities[item.id] || 0)),
+        remaining: Math.max(0, item.quantity - (item.restocked_quantity || 0)),
+      }))
+      .filter((entry) => entry.quantity > 0);
+
+    if (selected.length === 0) {
+      setError("Enter a returned quantity for at least one product.");
+      return;
+    }
+    if (selected.some((entry) => entry.quantity > entry.remaining)) {
+      setError("A restock quantity cannot exceed the remaining un-restocked quantity.");
+      return;
+    }
+
+    const note = window.prompt("Enter the reason for restocking these inspected returned quantities (5–500 characters):");
     if (!note || note.trim().length < 5 || note.trim().length > 500) {
       if (note !== null) setError("The reason must be between 5 and 500 characters.");
       return;
     }
-    if (!window.confirm(`Have the returned items for order ${order.order_number} been inspected and approved for restocking?`)) return;
+
+    const items = selected.map(({ item, quantity }) => ({
+      order_item_id: item.id,
+      quantity,
+      idempotency_key: restockIdempotencyKeys[item.id] || crypto.randomUUID(),
+    }));
+    setRestockIdempotencyKeys((current) => ({
+      ...current,
+      ...Object.fromEntries(items.map((item) => [item.order_item_id, item.idempotency_key])),
+    }));
+
+    const summary = selected
+      .map(({ item, quantity }) => `${item.product_name}: ${quantity} of ${item.quantity - (item.restocked_quantity || 0)} remaining`)
+      .join("\n");
+    if (!window.confirm(`Confirm inspected stock restoration for order ${order.order_number}?\n\n${summary}`)) return;
+
     setBusyId(order.id);
     setError("");
     setNotice("");
@@ -290,14 +325,30 @@ export default function OrdersManager() {
       const response = await fetch("/api/admin/orders", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "restock_returned", orderId: order.id, note: note.trim() }),
+        body: JSON.stringify({
+          action: "restock_returned_items",
+          orderId: order.id,
+          note: note.trim(),
+          items,
+        }),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Could not restock returned items.");
-      setNotice(`${order.order_number}: Returned items have been restocked.`);
+      if (!response.ok) throw new Error(result.error || "Could not restock returned quantities.");
+      setNotice(`${order.order_number}: Inspected returned quantities were added to inventory.`);
+      setRestockQuantities((current) => {
+        const next = { ...current };
+        for (const item of items) delete next[item.order_item_id];
+        return next;
+      });
+      setRestockIdempotencyKeys((current) => {
+        const next = { ...current };
+        for (const item of items) delete next[item.order_item_id];
+        return next;
+      });
       await loadOrders();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not restock returned items.");
+      // Keep the same idempotency keys after ambiguous network failures so retries cannot double-restock.
+      setError(err instanceof Error ? err.message : "Could not restock returned quantities.");
     } finally {
       setBusyId("");
     }
@@ -549,19 +600,52 @@ export default function OrdersManager() {
                 <div className="mt-3 rounded-lg border border-dashed p-3">
                   {order.stock_restored_at ? (
                     <p className="text-sm">
-                      Stock restocked: {new Date(order.stock_restored_at).toLocaleString("en-BD")}
+                      All ordered quantities have been restocked: {new Date(order.stock_restored_at).toLocaleString("en-BD")}
                       {order.stock_restoration_note ? ` · ${order.stock_restoration_note}` : ""}
                     </p>
                   ) : (
                     <>
-                      <p className="text-sm">Inspect the returned products and quantities before adding them back to inventory.</p>
+                      <p className="text-sm">Inspect each returned product. Enter only the quantity physically received and approved for resale.</p>
+                      <div className="mt-3 space-y-2">
+                        {(order.order_items || []).map((item) => {
+                          const restored = item.restocked_quantity || 0;
+                          const remaining = Math.max(0, item.quantity - restored);
+                          return (
+                            <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-gray-50 p-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium">{item.product_name}</p>
+                                <p className="text-xs text-gray-600">Ordered: {item.quantity} · Already restocked: {restored} · Remaining: {remaining}</p>
+                              </div>
+                              <label className="flex items-center gap-2 text-xs">
+                                <span>Restock now</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={remaining}
+                                  step={1}
+                                  value={restockQuantities[item.id] ?? 0}
+                                  onChange={(event) => {
+                                    const value = event.target.value === "" ? 0 : Number(event.target.value);
+                                    setRestockQuantities((current) => ({
+                                      ...current,
+                                      [item.id]: Number.isSafeInteger(value) ? Math.max(0, Math.min(remaining, value)) : 0,
+                                    }));
+                                  }}
+                                  disabled={remaining === 0 || busyId !== "" || statusBusyId !== ""}
+                                  className="w-20 rounded-md border border-gray-300 bg-white px-2 py-1 text-sm"
+                                />
+                              </label>
+                            </div>
+                          );
+                        })}
+                      </div>
                       <button
                         type="button"
                         onClick={() => void restockReturnedOrder(order)}
-                        disabled={busyId !== "" || statusBusyId !== ""}
-                        className="neweix-button-secondary mt-2 disabled:opacity-50"
+                        disabled={busyId !== "" || statusBusyId !== "" || !order.order_items?.some((item) => (restockQuantities[item.id] || 0) > 0)}
+                        className="neweix-button-secondary mt-3 disabled:opacity-50"
                       >
-                        {busyId === order.id ? "Restocking..." : "Restock inspected returned items"}
+                        {busyId === order.id ? "Restocking..." : "Restock selected inspected quantities"}
                       </button>
                     </>
                   )}
