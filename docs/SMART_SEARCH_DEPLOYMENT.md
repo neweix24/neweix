@@ -17,6 +17,7 @@
 - Migration `007_search_embedding_queue.sql` creates the private embedding queue and database triggers. New active products and changes to product name, description, SKU, or active state automatically enqueue embedding work. Existing active products are queued for initial indexing.
 - Migration `008_search_embedding_queue_service_policy.sql` and subsequent queue hardening migrations restrict queue access to service-role functions.
 - `worker.ts` is the custom OpenNext Worker entrypoint. It forwards HTTP requests to the generated OpenNext fetch handler and processes background queues from its Cloudflare `scheduled()` handler.
+- Scheduled and manual search batches share a private database gate: one active batch globally and at least 30 seconds between starts. The gate lease expires automatically if a Worker stops unexpectedly.
 - `wrangler.jsonc` configures `*/15 * * * *` for search embedding and scheduled social publishing. Each search run claims up to 10 jobs, generates BGE-M3 embeddings, persists vectors, and completes or retries jobs through service-role-only RPCs.
 - Routine queue processing is automatic; an admin does not need to stay signed in and does not need to invoke the manual endpoint.
 
