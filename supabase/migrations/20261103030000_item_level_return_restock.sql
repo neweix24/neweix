@@ -89,8 +89,6 @@ begin
    for update;
   if not found then raise exception 'ORDER_NOT_FOUND'; end if;
   if v_order.status <> 'returned' then raise exception 'ORDER_NOT_RETURNED'; end if;
-  if v_order.stock_restored_at is not null then raise exception 'STOCK_ALREADY_RESTORED'; end if;
-
   if (
     select pg_catalog.count(*)
       from pg_catalog.jsonb_array_elements(p_items) e
@@ -164,6 +162,11 @@ begin
         )
       );
       continue;
+    end if;
+
+    -- A fully restored order accepts only exact idempotent replays; no new stock can be added.
+    if v_order.stock_restored_at is not null then
+      raise exception 'STOCK_ALREADY_RESTORED';
     end if;
 
     select coalesce(pg_catalog.sum(r.quantity), 0)::integer
