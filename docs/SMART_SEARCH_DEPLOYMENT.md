@@ -23,7 +23,7 @@
 ## Manual operations
 
 - An Admin or Supreme user can POST to `/api/admin/search/process-queue` with `{ "limit": 10 }` to manually process a batch or diagnose a queue issue. Repeat only when needed until the response reports `processed: 0`.
-- An Admin or Supreme user can POST to `/api/admin/search/reindex` with `{ "offset": 0, "limit": 10 }` to force a full embedding rebuild. Continue with the returned `nextOffset` until `complete` is true. This is a maintenance operation, not the normal refresh path.
+- An Admin or Supreme user can POST to `/api/admin/search/reindex` with `{ "offset": 0, "limit": 10 }` to enqueue a full embedding rebuild in bounded batches. The endpoint returns `queued` and `nextOffset`; the scheduled Search Embedding Queue performs the actual AI work. Continue with the returned `nextOffset` until `complete` is true. Reindexing no longer writes embeddings directly, so normal lease fencing and stale-write protection still apply. This is a maintenance operation, not the normal refresh path.
 - Both endpoints require a valid staff session; Supreme access additionally requires completed MFA. Never call them from public storefront code.
 
 ## Operations checks
