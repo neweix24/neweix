@@ -6,15 +6,7 @@ export const dynamic = "force-dynamic";
 type PendingCookie = {
   name: string;
   value: string;
-  options?: {
-    path?: string;
-    domain?: string;
-    sameSite?: "strict" | "lax" | "none";
-    secure?: boolean;
-    httpOnly?: boolean;
-    maxAge?: number;
-    expires?: Date;
-  };
+  options?: unknown;
 };
 
 function safeNextPath(value: string | null): string {
@@ -34,18 +26,22 @@ function safeNextPath(value: string | null): string {
 function applyPendingCookies(response: NextResponse, cookies: PendingCookie[]) {
   for (const cookie of cookies) {
     const isPkceVerifier = cookie.name.endsWith("-code-verifier");
+    const originalOptions =
+      cookie.options && typeof cookie.options === "object"
+        ? cookie.options as Record<string, unknown>
+        : {};
     const options = isPkceVerifier
       ? {
-          ...cookie.options,
+          ...originalOptions,
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax" as const,
           path: "/",
           maxAge: 10 * 60,
         }
-      : cookie.options;
+      : originalOptions;
 
-    response.cookies.set(cookie.name, cookie.value, options);
+    response.cookies.set(cookie.name, cookie.value, options as never);
   }
 }
 
