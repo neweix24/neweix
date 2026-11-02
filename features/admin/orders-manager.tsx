@@ -229,7 +229,7 @@ export default function OrdersManager() {
       setError("Instructions must be 500 characters or fewer.");
       return;
     }
-    if (!window.confirm(`Order ${order.order_number} book this shipment with Pathao?\nCOD to collect: ৳${Number(order.total).toLocaleString("bn-BD")}`)) return;
+    if (!window.confirm(`Book order ${order.order_number} with Pathao?\nCOD to collect: ৳${Number(order.total).toLocaleString("en-BD")}`)) return;
 
     setBusyId(order.id);
     setError("");
@@ -264,7 +264,8 @@ export default function OrdersManager() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Tracking information is unavailable.");
-      setNotice(`${order.order_number}: Pathao tracking data refreshed.`);\n      await loadOrders();
+      setNotice(`${order.order_number}: Pathao tracking data refreshed.`);
+      await loadOrders();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Tracking information is unavailable.");
     } finally {
