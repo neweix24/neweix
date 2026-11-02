@@ -81,7 +81,7 @@ async function processSearchEmbeddingQueueBatch(env: Env): Promise<void> {
   });
 
   const { data: jobs, error: claimError } = await supabase.rpc(
-    "neweix_claim_search_embedding_jobs",
+    "neweix_claim_search_embedding_jobs_v2",
     { p_limit: 10 },
   );
   if (claimError) throw new Error(`Queue claim failed: ${claimError.message}`);
@@ -98,7 +98,7 @@ async function processSearchEmbeddingQueueBatch(env: Env): Promise<void> {
 
   if (productsError) {
     await Promise.all(typedJobs.map((job) =>
-      supabase.rpc("neweix_fail_search_embedding_job", {
+      supabase.rpc("neweix_fail_search_embedding_job_v2", {
         p_job_id: job.job_id,
         p_lease_token: job.lease_token,
         p_error: productsError.message,
@@ -114,7 +114,7 @@ async function processSearchEmbeddingQueueBatch(env: Env): Promise<void> {
 
   for (const job of typedJobs) {
     if (!activeJobs.some((active) => active.job_id === job.job_id)) {
-      const { error } = await supabase.rpc("neweix_complete_search_embedding_job", {
+      const { error } = await supabase.rpc("neweix_complete_search_embedding_job_v2", {
         p_job_id: job.job_id,
         p_lease_token: job.lease_token,
       });
@@ -143,7 +143,7 @@ async function processSearchEmbeddingQueueBatch(env: Env): Promise<void> {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Workers AI embedding failed";
     await Promise.all(activeJobs.map((job) =>
-      supabase.rpc("neweix_fail_search_embedding_job", {
+      supabase.rpc("neweix_fail_search_embedding_job_v2", {
         p_job_id: job.job_id,
         p_lease_token: job.lease_token,
         p_error: message,
@@ -160,7 +160,7 @@ async function processSearchEmbeddingQueueBatch(env: Env): Promise<void> {
     )
   ) {
     await Promise.all(activeJobs.map((job) =>
-      supabase.rpc("neweix_fail_search_embedding_job", {
+      supabase.rpc("neweix_fail_search_embedding_job_v2", {
         p_job_id: job.job_id,
         p_lease_token: job.lease_token,
         p_error: "Workers AI returned an invalid 1024-dimensional embedding response",
@@ -186,7 +186,7 @@ async function processSearchEmbeddingQueueBatch(env: Env): Promise<void> {
     );
 
     if (saveError) {
-      await supabase.rpc("neweix_fail_search_embedding_job", {
+      await supabase.rpc("neweix_fail_search_embedding_job_v2", {
         p_job_id: job.job_id,
         p_lease_token: job.lease_token,
         p_error: saveError.message,
@@ -259,7 +259,7 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data: jobs, error: claimError } = await supabase.rpc(
-    "neweix_claim_customer_notifications",
+    "neweix_claim_customer_notifications_v2",
     { p_limit: 10 },
   );
   if (claimError) throw new Error(`Customer SMS queue claim failed: ${claimError.message}`);
@@ -270,7 +270,7 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
   for (const job of jobs as CustomerNotificationJob[]) {
     const number = normalizeBulkSmsPhone(job.phone);
     if (!number) {
-      await supabase.rpc("neweix_fail_customer_notification", {
+      await supabase.rpc("neweix_fail_customer_notification_v2", {
         p_id: job.id,
         p_lease_token: job.lease_token,
         p_error: "Invalid Bangladesh phone number",
@@ -298,7 +298,7 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
         (responseCode === 202 || (response.status === 202 && responseCode === null));
 
       if (!accepted) {
-        await supabase.rpc("neweix_fail_customer_notification", {
+        await supabase.rpc("neweix_fail_customer_notification_v2", {
           p_id: job.id,
           p_lease_token: job.lease_token,
           p_error: `BulkSMSBD rejected request (HTTP ${response.status}, code ${responseCode ?? "unknown"})`,
@@ -308,11 +308,11 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
       }
 
       const { error: completeError } = await supabase.rpc(
-        "neweix_complete_customer_notification",
+        "neweix_complete_customer_notification_v2",
         { p_id: job.id, p_lease_token: job.lease_token },
       );
       if (completeError) {
-        await supabase.rpc("neweix_fail_customer_notification", {
+        await supabase.rpc("neweix_fail_customer_notification_v2", {
           p_id: job.id,
           p_lease_token: job.lease_token,
           p_error: completeError.message,
@@ -322,7 +322,7 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
       }
       sent += 1;
     } catch (error) {
-      await supabase.rpc("neweix_fail_customer_notification", {
+      await supabase.rpc("neweix_fail_customer_notification_v2", {
         p_id: job.id,
         p_lease_token: job.lease_token,
         p_error: error instanceof Error ? error.message : "BulkSMSBD network failure",
