@@ -76,6 +76,12 @@ jobs:
         run: |
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/eixpay_watchdog_privileges_test.sql
 
+      - name: Verify terminal order states and one-time cancellation restocking
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/order_status_transition_smoke_test.sql
+
       - name: Stop disposable Supabase
         if: always()
         run: supabase stop --no-backup

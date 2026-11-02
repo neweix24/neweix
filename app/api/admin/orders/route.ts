@@ -412,6 +412,27 @@ export async function PATCH(request: Request) {
         );
       }
 
+      if (error.message.includes("INVALID_ORDER_STATUS_TRANSITION")) {
+        return NextResponse.json(
+          { error: "This order cannot move from its current status to the selected status. Order statuses move forward only; cancelled and returned orders cannot be reopened, while delivered orders may enter the return workflow." },
+          { status: 409 }
+        );
+      }
+
+      if (error.message.includes("ORDER_DELIVERY_MUST_BE_CANCELLED_FIRST")) {
+        return NextResponse.json(
+          { error: "This order has a courier booking attempt or linked consignment. Reconcile its Pathao status before cancelling the order or restoring its stock." },
+          { status: 409 }
+        );
+      }
+
+      if (error.message.includes("ORDER_PRODUCT_REFERENCE_MISSING")) {
+        return NextResponse.json(
+          { error: "A product linked to this order is missing. Inventory was not changed; review the order before retrying." },
+          { status: 409 }
+        );
+      }
+
       if (error.message.includes("ORDER_CANNOT_BE_CANCELLED")) {
         return NextResponse.json(
           { error: "Shipped or delivered orders cannot be cancelled directly. Process a return, inspect the items, and update stock through the separate return workflow." },

@@ -72,12 +72,17 @@ function CustomerLoginForm() {
 
   function getSafeNextPath() {
     const next = searchParams.get("next");
-
-    if (next && next.startsWith("/") && !next.startsWith("//")) {
-      return next;
+    if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
+      return "/account";
     }
 
-    return "/account";
+    try {
+      const target = new URL(next, window.location.origin);
+      if (target.origin !== window.location.origin) return "/account";
+      return `${target.pathname}${target.search}${target.hash}`;
+    } catch {
+      return "/account";
+    }
   }
 
   async function signInWithProvider(provider: "google" | "facebook") {

@@ -91,6 +91,17 @@ const orderStatuses = [
   "returned",
 ] as const;
 
+const nextOrderStatuses: Record<string, readonly string[]> = {
+  pending: ["confirmed", "processing", "packed", "cancelled"],
+  confirmed: ["processing", "packed", "cancelled"],
+  processing: ["packed", "shipped", "cancelled"],
+  packed: ["shipped", "cancelled"],
+  shipped: ["delivered", "returned"],
+  delivered: ["returned"],
+  returned: [],
+  cancelled: [],
+};
+
 export default function OrdersManager() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -581,13 +592,16 @@ export default function OrdersManager() {
                     }
                     className="mt-1 block w-full rounded-lg border p-2 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {orderStatuses.map((status) => (
+                    {[order.status, ...(nextOrderStatuses[order.status] ?? [])].map((status) => (
                       <option key={status} value={status}>
-                        {orderStatusNames[status]}
+                        {orderStatusNames[status] || status}
                       </option>
                     ))}
                   </select>
                 </label>
+                <p className="mt-2 text-xs text-slate-500">
+                  Statuses move forward only. Cancelled and returned orders are final; delivered orders may enter the return workflow.
+                </p>
 
                 {statusBusyId === order.id && (
                   <p className="mt-2 text-sm">
