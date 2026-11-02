@@ -6,10 +6,11 @@ declare
   v_gate_token uuid;
   v_second_gate_token uuid;
   v_released boolean;
+  v_old_claim_count integer;
 begin
-  if has_function_privilege('anon', 'public.neweix_claim_customer_notifications(integer)', 'EXECUTE')
-     or has_function_privilege('authenticated', 'public.neweix_claim_customer_notifications(integer)', 'EXECUTE')
-     or not has_function_privilege('service_role', 'public.neweix_claim_customer_notifications(integer)', 'EXECUTE') then
+  if has_function_privilege('anon', 'public.neweix_claim_customer_notifications_v2(integer)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.neweix_claim_customer_notifications_v2(integer)', 'EXECUTE')
+     or not has_function_privilege('service_role', 'public.neweix_claim_customer_notifications_v2(integer)', 'EXECUTE') then
     raise exception 'Customer SMS queue RPC privilege boundary regression.';
   end if;
 
@@ -42,6 +43,23 @@ begin
 
   v_previous_role := current_setting('request.jwt.claim.role', true);
   perform pg_catalog.set_config('request.jwt.claim.role', 'service_role', true);
+
+  select pg_catalog.count(*)::integer into v_old_claim_count
+    from public.neweix_claim_customer_notifications(10);
+  if v_old_claim_count <> 0 then
+    raise exception 'Legacy SMS queue RPC must not claim work during rolling deployment.';
+  end if;
+  select pg_catalog.count(*)::integer into v_old_claim_count
+    from public.neweix_claim_search_embedding_jobs(10);
+  if v_old_claim_count <> 0 then
+    raise exception 'Legacy search queue RPC must not claim work during rolling deployment.';
+  end if;
+  if public.neweix_complete_search_embedding_job(gen_random_uuid()) is not false
+     or public.neweix_fail_search_embedding_job(gen_random_uuid(), 'legacy test') is not false then
+    raise exception 'Legacy search queue mutation RPC must be inert.';
+  end if;
+  perform public.neweix_complete_customer_notification(gen_random_uuid());
+  perform public.neweix_fail_customer_notification(gen_random_uuid(), 'legacy test');
   v_gate_token := public.neweix_acquire_search_embedding_gate(30, 600);
   if v_gate_token is null then
     raise exception 'Search queue gate did not grant the first lease.';
