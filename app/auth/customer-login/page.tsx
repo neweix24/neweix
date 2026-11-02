@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Script from "next/script";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import Icon from "@/components/ui/icon";
@@ -30,7 +30,6 @@ declare global {
 const TURNSTILE_SITE_KEY = "0x4AAAAAAFtxqj-OF3yfnL11";
 
 function CustomerLoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
@@ -156,8 +155,9 @@ function CustomerLoginForm() {
         if (data.session) {
           await fetch("/api/account/security/register-device", { method: "POST", cache: "no-store" }).catch(() => undefined);
           await fetch("/api/eixpay/referral/apply", { method: "POST", cache: "no-store" }).catch(() => undefined);
-          router.replace("/account");
-          router.refresh();
+          // Use a full document navigation so the browser has committed
+          // the Supabase auth cookies before protected middleware runs.
+          window.location.replace("/account");
         } else {
           setMessage("Sign-up successful. Confirm the link sent to your email, then verify your phone number with an OTP in your account.");
         }
@@ -177,8 +177,8 @@ function CustomerLoginForm() {
       }
 
       await fetch("/api/account/security/register-device", { method: "POST", cache: "no-store" }).catch(() => undefined);
-      router.replace(getSafeNextPath());
-      router.refresh();
+      // Avoid an App Router refresh racing the newly written auth cookies.
+      window.location.replace(getSafeNextPath());
     } catch {
       resetCaptcha();
       setMessage("Could not sign in. Please try again.");

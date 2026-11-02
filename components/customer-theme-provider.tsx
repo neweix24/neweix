@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 const DEFAULT_THEME = {
@@ -95,21 +96,30 @@ export default function CustomerThemeProvider() {
 
     const supabase = createBrowserSupabaseClient();
 
-    async function loadTheme() {
+    let currentUserId: string | null = null;
+
+    async function loadTheme(userId?: string) {
       const currentRequest = ++requestVersion;
       clearTheme();
       try {
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser();
+        let resolvedUserId: string | null = userId ?? null;
+        if (!resolvedUserId) {
+          const { data: { session }, error: sessionError } =
+            await supabase.auth.getSession();
+          if (sessionError || !session?.user) {
+            currentUserId = null;
+            return;
+          }
+          resolvedUserId = session.user.id;
+        }
+
+        currentUserId = resolvedUserId;
         if (!active || currentRequest !== requestVersion) return;
-        if (authError || !user) return;
 
         const { data, error } = await supabase
           .from("customer_theme_settings")
           .select("theme")
-          .eq("user_id", user.id)
+          .eq("user_id", resolvedUserId)
           .maybeSingle();
 
         if (!active || currentRequest !== requestVersion) return;
@@ -122,12 +132,25 @@ export default function CustomerThemeProvider() {
     void loadTheme();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
+    } = supabase.auth.onAuthStateChange((
+      event: AuthChangeEvent,
+      session: Session | null
+    ) => {
+      // Token refreshes do not change the customer identity. Do not issue
+      // another auth lookup or theme request for every refresh event.
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT") return;
+
+      const nextUserId = session?.user?.id ?? null;
+      if (nextUserId === currentUserId) return;
+
+      currentUserId = nextUserId;
       clearTheme();
       requestVersion += 1;
-      queueMicrotask(() => {
-        if (active) void loadTheme();
-      });
+      if (nextUserId) {
+        queueMicrotask(() => {
+          if (active) void loadTheme(nextUserId);
+        });
+      }
     });
 
     return () => {
