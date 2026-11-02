@@ -218,9 +218,9 @@ begin
        ), 0) < oi.quantity
   ) then
     update public.orders
-       set stock_restored_at = pg_catalog.now(),
-           stock_restored_by = p_actor_id,
-           stock_restoration_note = pg_catalog.btrim(p_note),
+       set stock_restored_at = coalesce(stock_restored_at, pg_catalog.now()),
+           stock_restored_by = coalesce(stock_restored_by, p_actor_id),
+           stock_restoration_note = coalesce(stock_restoration_note, pg_catalog.btrim(p_note)),
            updated_at = pg_catalog.now()
      where id = p_order_id;
   end if;
