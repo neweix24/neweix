@@ -85,21 +85,22 @@ function CustomerLoginForm() {
     setBusy(true);
 
     try {
-      const supabase = createBrowserSupabaseClient();
       const next = getSafeNextPath();
-      const callbackUrl = new URL("/auth/callback", window.location.origin);
 
+      // Google OAuth is initiated on the server so its one-time PKCE verifier
+      // is issued as an HttpOnly cookie and is available to the callback Worker.
+      if (provider === "google") {
+        window.location.assign(`/auth/google?next=${encodeURIComponent(next)}`);
+        return;
+      }
+
+      const supabase = createBrowserSupabaseClient();
+      const callbackUrl = new URL("/auth/callback", window.location.origin);
       callbackUrl.searchParams.set("next", next);
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: {
-          redirectTo: callbackUrl.toString(),
-          queryParams:
-            provider === "google"
-              ? { prompt: "select_account" }
-              : undefined,
-        },
+        options: { redirectTo: callbackUrl.toString() },
       });
 
       if (error) {
