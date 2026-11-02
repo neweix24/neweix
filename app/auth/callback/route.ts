@@ -106,17 +106,17 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     console.error("Supabase callback exchange failed:", error.message);
-
-    return redirectTo(
-      request,
-      isCustomerFlow
-        ? "/auth/customer-login?error=oauth_failed"
-        : "/auth/forgot-password?error=invalid_or_expired"
-    );
+    // Keep the response created above so Supabase's expired PKCE-cookie
+    // deletion is delivered to the browser instead of being discarded.
+    const failurePath = isCustomerFlow
+      ? "/auth/customer-login?error=oauth_failed"
+      : "/auth/forgot-password?error=invalid_or_expired";
+    response.headers.set("Location", new URL(failurePath, request.url).toString());
+    return response;
   }
 
   if (isCustomerFlow) {
@@ -132,10 +132,12 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const { data: authData, error: userError } = await supabase.auth.getUser();
-    const user = authData.user;
+    // exchangeCodeForSession has already validated the one-time OAuth code
+    // and returned the authenticated user. Avoid a second /user request here:
+    // it can compete with middleware/browser refresh-token rotation.
+    const user = exchangeData.user;
 
-    if (!userError && user) {
+    if (user) {
       // Keep a random, first-party browser device ID. Never derive it from fingerprint data.
       const existingDeviceId = request.cookies.get("neweix_device_id")?.value;
       const deviceId = existingDeviceId && /^[0-9a-f-]{36}$/i.test(existingDeviceId)
