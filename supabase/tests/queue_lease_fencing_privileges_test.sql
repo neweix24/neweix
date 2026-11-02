@@ -2,6 +2,7 @@
 do $test$
 declare
   v_previous_role text;
+  v_previous_claims text;
   v_gate_token uuid;
   v_second_gate_token uuid;
   v_released boolean;
@@ -57,6 +58,16 @@ begin
   if v_second_gate_token is not null then
     raise exception 'Search queue gate did not enforce its minimum start interval.';
   end if;
+
+  -- Supabase may provide the role only inside request.jwt.claims.
+  v_previous_claims := current_setting('request.jwt.claims', true);
+  perform pg_catalog.set_config('request.jwt.claim.role', '', true);
+  perform pg_catalog.set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  v_released := public.neweix_release_search_embedding_gate(v_gate_token);
+  if v_released is not false then
+    raise exception 'Search queue gate accepted an already released lease.';
+  end if;
+  perform pg_catalog.set_config('request.jwt.claims', coalesce(v_previous_claims, ''), true);
   perform pg_catalog.set_config('request.jwt.claim.role', coalesce(v_previous_role, ''), true);
 
   if not exists (
