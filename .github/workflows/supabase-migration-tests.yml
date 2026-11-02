@@ -82,8 +82,4 @@ jobs:
         run: |
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/order_status_transition_smoke_test.sql
 
-      - name: Stop disposable Supabase
-        if: always()
-        continue-on-error: true
-        timeout-minutes: 2
-        run: supabase stop --no-backup
+      # GitHub-hosted runners are ephemeral; Docker containers are discarded after the job.
