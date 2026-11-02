@@ -10,13 +10,12 @@ const UUID_OR_CONSIGNMENT = /^[A-Za-z0-9-]{3,80}$/;
 function webhookResponse(
   body: Record<string, unknown>,
   status: number,
-  responseSecret: string | null,
 ) {
   return NextResponse.json(body, {
     status,
     headers: {
       "Cache-Control": "no-store",
-      ...(responseSecret ? { "X-Pathao-Merchant-Webhook-Integration-Secret": responseSecret } : {}),
+      "X-Pathao-Merchant-Webhook-Integration-Secret": "f3992ecc-59da-4cbe-a049-a13da2018d51",
     },
   });
 }
@@ -75,44 +74,43 @@ const statusRank: Record<string, number> = {
 
 export async function POST(request: Request) {
   const configuredSecret = getServerSetting("PATHAO_WEBHOOK_SECRET");
-  const responseSecret = getServerSetting("PATHAO_WEBHOOK_RESPONSE_SECRET");
-  if (!configuredSecret || configuredSecret.length < 24 || !responseSecret || responseSecret.length < 24) {
-    return webhookResponse({ error: "Pathao webhook is not configured." }, 503, null);
+  if (!configuredSecret || configuredSecret.length < 24) {
+    return webhookResponse({ error: "Pathao webhook is not configured." }, 503);
   }
 
   const signature = request.headers.get("X-PATHAO-SIGNATURE") ?? "";
   if (!signature || !constantTimeEqual(signature, configuredSecret)) {
-    return webhookResponse({ error: "Invalid Pathao webhook signature." }, 401, responseSecret);
+    return webhookResponse({ error: "Invalid Pathao webhook signature." }, 401);
   }
 
   const contentLength = Number(request.headers.get("content-length") ?? 0);
   if (Number.isFinite(contentLength) && contentLength > 32_768) {
-    return webhookResponse({ error: "Webhook payload is too large." }, 413, responseSecret);
+    return webhookResponse({ error: "Webhook payload is too large." }, 413);
   }
 
   let payload: unknown;
   try {
     const raw = await request.text();
     if (new TextEncoder().encode(raw).byteLength > 32_768) {
-      return webhookResponse({ error: "Webhook payload is too large." }, 413, responseSecret);
+      return webhookResponse({ error: "Webhook payload is too large." }, 413);
     }
     payload = JSON.parse(raw);
   } catch {
-    return webhookResponse({ error: "Invalid JSON payload." }, 400, responseSecret);
+    return webhookResponse({ error: "Invalid JSON payload." }, 400);
   }
 
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    return webhookResponse({ error: "Invalid webhook payload." }, 400, responseSecret);
+    return webhookResponse({ error: "Invalid webhook payload." }, 400);
   }
 
   const event = (payload as Record<string, unknown>).event;
   if (event === "webhook_integration") {
-    return webhookResponse({ accepted: true, message: "Pathao webhook integration verified." }, 202, responseSecret);
+    return webhookResponse({ accepted: true, message: "Pathao webhook integration verified." }, 202);
   }
 
   const consignmentId = (payload as Record<string, unknown>).consignment_id;
   if (typeof consignmentId !== "string" || !UUID_OR_CONSIGNMENT.test(consignmentId)) {
-    return webhookResponse({ error: "A valid consignment ID is required." }, 400, responseSecret);
+    return webhookResponse({ error: "A valid consignment ID is required." }, 400);
   }
 
   try {
@@ -126,10 +124,10 @@ export async function POST(request: Request) {
 
     if (orderError) {
       console.error("Pathao webhook order lookup failed:", orderError.message);
-      return webhookResponse({ error: "Unable to locate the linked order." }, 503, responseSecret);
+      return webhookResponse({ error: "Unable to locate the linked order." }, 503);
     }
     if (!order) {
-      return webhookResponse({ accepted: true, ignored: true, reason: "Unknown consignment." }, 202, responseSecret);
+      return webhookResponse({ accepted: true, ignored: true, reason: "Unknown consignment." }, 202);
     }
 
     // Treat the webhook only as a notification. Fetch the current state from Pathao
@@ -138,7 +136,7 @@ export async function POST(request: Request) {
     const providerStatus = getProviderStatus(providerOrder);
     const nextStatus = mapPathaoStatus(providerStatus);
     if (!nextStatus) {
-      return webhookResponse({ accepted: true, synced: false, reason: "Provider status is not mapped." }, 202, responseSecret);
+      return webhookResponse({ accepted: true, synced: false, reason: "Provider status is not mapped." }, 202);
     }
 
     const currentStatus = typeof order.delivery_status === "string" ? order.delivery_status : "booked";
@@ -146,11 +144,11 @@ export async function POST(request: Request) {
       terminalStates.has(currentStatus) ||
       (statusRank[nextStatus] ?? 0) < (statusRank[currentStatus] ?? 0)
     ) {
-      return webhookResponse({ accepted: true, synced: false, reason: "A newer delivery state is already stored." }, 202, responseSecret);
+      return webhookResponse({ accepted: true, synced: false, reason: "A newer delivery state is already stored." }, 202);
     }
 
     if (currentStatus === nextStatus) {
-      return webhookResponse({ accepted: true, synced: true, unchanged: true }, 202, responseSecret);
+      return webhookResponse({ accepted: true, synced: true, unchanged: true }, 202);
     }
 
     const { error: updateError } = await supabase
@@ -166,15 +164,15 @@ export async function POST(request: Request) {
 
     if (updateError) {
       console.error("Pathao webhook order update failed:", updateError.message);
-      return webhookResponse({ error: "Unable to update the linked order." }, 503, responseSecret);
+      return webhookResponse({ error: "Unable to update the linked order." }, 503);
     }
 
-    return webhookResponse({ accepted: true, synced: true, deliveryStatus: nextStatus }, 202, responseSecret);
+    return webhookResponse({ accepted: true, synced: true, deliveryStatus: nextStatus }, 202);
   } catch (error) {
     console.error(
       "Pathao webhook processing failed:",
       error instanceof Error ? error.message : "unknown error",
     );
-    return webhookResponse({ error: "Pathao status verification is temporarily unavailable." }, 503, responseSecret);
+    return webhookResponse({ error: "Pathao status verification is temporarily unavailable." }, 503);
   }
 }
