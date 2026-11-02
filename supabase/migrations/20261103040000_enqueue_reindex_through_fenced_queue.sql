@@ -11,7 +11,7 @@ as $function$
 declare
   v_count integer;
 begin
-  if current_setting('request.jwt.claim.role', true) is distinct from 'service_role' then
+  if coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role') is distinct from 'service_role' then
     raise exception 'service role required' using errcode = '42501';
   end if;
   if p_offset is null or p_offset < 0 or p_offset > 1000000
