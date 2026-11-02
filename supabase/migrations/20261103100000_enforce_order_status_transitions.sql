@@ -59,9 +59,9 @@ begin
   -- Statuses move forward only. Shipped orders must complete delivery or
   -- enter the return workflow; terminal orders cannot be reopened.
   v_transition_allowed := case v_old_status
-    when 'pending' then p_new_status in ('confirmed', 'cancelled')
-    when 'confirmed' then p_new_status in ('processing', 'cancelled')
-    when 'processing' then p_new_status in ('packed', 'cancelled')
+    when 'pending' then p_new_status in ('confirmed', 'processing', 'packed', 'cancelled')
+    when 'confirmed' then p_new_status in ('processing', 'packed', 'cancelled')
+    when 'processing' then p_new_status in ('packed', 'shipped', 'cancelled')
     when 'packed' then p_new_status in ('shipped', 'cancelled')
     when 'shipped' then p_new_status in ('delivered', 'returned')
     else false
