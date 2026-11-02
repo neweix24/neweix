@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 const DEFAULT_THEME = {
@@ -101,7 +102,7 @@ export default function CustomerThemeProvider() {
       const currentRequest = ++requestVersion;
       clearTheme();
       try {
-        let resolvedUserId = userId;
+        let resolvedUserId: string | null = userId ?? null;
         if (!resolvedUserId) {
           const { data: { session }, error: sessionError } =
             await supabase.auth.getSession();
@@ -131,7 +132,10 @@ export default function CustomerThemeProvider() {
     void loadTheme();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((
+      event: AuthChangeEvent,
+      session: Session | null
+    ) => {
       // Token refreshes do not change the customer identity. Do not issue
       // another auth lookup or theme request for every refresh event.
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT") return;
