@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: supabase-migration-tests-${{ github.ref }}
+  group: supabase-migration-tests-v2-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
