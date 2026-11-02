@@ -419,6 +419,13 @@ export async function PATCH(request: Request) {
         );
       }
 
+      if (error.message.includes("ORDER_DELIVERY_MUST_BE_CANCELLED_FIRST")) {
+        return NextResponse.json(
+          { error: "This order has an active or linked courier booking. Resolve the Pathao shipment before cancelling the order or restoring its stock." },
+          { status: 409 }
+        );
+      }
+
       if (error.message.includes("ORDER_PRODUCT_REFERENCE_MISSING")) {
         return NextResponse.json(
           { error: "A product linked to this order is missing. Inventory was not changed; review the order before retrying." },
