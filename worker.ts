@@ -144,32 +144,29 @@ async function processSearchEmbeddingQueue(env: Env): Promise<void> {
   for (let index = 0; index < activeJobs.length; index += 1) {
     const job = activeJobs[index];
     const vector = vectors[index];
-    const { error: updateError } = await supabase
-      .from("products")
-      .update({
-        search_embedding: `[${vector.join(",")}]`,
-        search_embedding_model: "@cf/baai/bge-m3",
-        search_embedding_updated_at: new Date().toISOString(),
-      })
-      .eq("id", job.product_id)
-      .eq("is_active", true);
+    const { data: saved, error: saveError } = await supabase.rpc(
+      "neweix_save_search_embedding",
+      {
+        p_job_id: job.job_id,
+        p_product_id: job.product_id,
+        p_lease_token: job.lease_token,
+        p_embedding: `[${vector.join(",")}]`,
+        p_model: "@cf/baai/bge-m3",
+      },
+    );
 
-    if (updateError) {
+    if (saveError) {
       await supabase.rpc("neweix_fail_search_embedding_job", {
         p_job_id: job.job_id,
         p_lease_token: job.lease_token,
-        p_error: updateError.message,
+        p_error: saveError.message,
       });
       failed += 1;
       continue;
     }
-
-    const { error: completeError } = await supabase.rpc(
-      "neweix_complete_search_embedding_job",
-      { p_job_id: job.job_id, p_lease_token: job.lease_token },
-    );
-    if (completeError) {
-      console.error("[search-cron] job completion failed", job.job_id, completeError.message);
+    if (saved !== true) {
+      // The lease was superseded or the product was removed/deactivated.
+      // A stale worker must never write an embedding or mutate the new lease.
       failed += 1;
       continue;
     }
