@@ -161,9 +161,7 @@ export default function StorefrontHome() {
     const supabase = createBrowserSupabaseClient();
     const { error } = await supabase.auth.signOut();
     if (!error) {
-      setCustomer(null);
-      setDrawerOpen(false);
-      router.refresh();
+      window.location.replace("/");
     }
   }
 

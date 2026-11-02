@@ -73,8 +73,7 @@ export default function MfaPage() {
         !currentAssuranceError &&
         currentAssurance?.currentLevel === "aal2"
       ) {
-        router.replace("/supreme");
-        router.refresh();
+        window.location.replace("/supreme");
         return;
       }
 
@@ -143,8 +142,7 @@ export default function MfaPage() {
       }
 
       // 8. যাচাই সফল হলে Supreme Dashboard-এ যাওয়া
-      router.replace("/supreme");
-      router.refresh();
+      window.location.replace("/supreme");
     } catch {
       setMessage(
         "যাচাইকরণে সমস্যা হয়েছে। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।"

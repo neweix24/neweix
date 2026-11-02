@@ -283,8 +283,7 @@ export default function AccountView() {
         throw new Error("Could not sign out. Please try again.");
       }
 
-      router.replace("/");
-      router.refresh();
+      window.location.replace("/");
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Could not sign out."
