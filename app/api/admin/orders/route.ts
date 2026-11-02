@@ -66,6 +66,12 @@ async function getAdminClient() {
   });
 }
 
+type AdminOrderItemRow = Record<string, unknown> & { id: string };
+type AdminOrderRow = Record<string, unknown> & {
+  id: string;
+  order_items?: AdminOrderItemRow[] | null;
+};
+
 export async function GET() {
   try {
     const staff = await getStaffContext();
@@ -117,7 +123,7 @@ export async function GET() {
       );
     }
 
-    const orders = data ?? [];
+    const orders = (data ?? []) as unknown as AdminOrderRow[];
     const orderIds = orders.map((order) => order.id);
     const restockedByItem = new Map<string, number>();
     if (orderIds.length > 0) {
