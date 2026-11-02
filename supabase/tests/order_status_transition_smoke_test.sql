@@ -9,6 +9,7 @@ declare
   v_product_id uuid;
   v_cancel_order_id uuid := gen_random_uuid();
   v_shipped_order_id uuid := gen_random_uuid();
+  v_booked_order_id uuid := gen_random_uuid();
   v_stock integer;
   v_result jsonb;
 begin
@@ -95,6 +96,35 @@ begin
   select stock into v_stock from public.products where id = v_product_id;
   if v_stock <> 12 then
     raise exception 'SHIPPED_ORDER_CANCELLATION_CHANGED_INVENTORY';
+  end if;
+
+  insert into public.orders (
+    id, order_number, customer_name, customer_phone, shipping_address,
+    subtotal, delivery_fee, total, payment_method, payment_status, status,
+    delivery_status, delivery_consignment_id
+  ) values (
+    v_booked_order_id, 'TEST-BOOKED-' || substr(v_actor_id::text, 1, 8),
+    'Test Customer', '+8801700000000', 'Test address, Dhaka',
+    100, 0, 100, 'cod', 'pending', 'packed', 'booked', 'PATHAO-TEST-BOOKING'
+  );
+
+  insert into public.order_items (
+    order_id, product_id, product_name, quantity, unit_price, line_total
+  ) values (
+    v_booked_order_id, v_product_id, 'Order transition test product', 1, 100, 100
+  );
+
+  begin
+    perform public.admin_update_order_status(v_booked_order_id, 'cancelled', v_actor_id);
+    raise exception 'ACTIVE_COURIER_BOOKING_WAS_CANCELLED';
+  exception
+    when sqlstate '55000' then
+      if sqlerrm <> 'ORDER_DELIVERY_MUST_BE_CANCELLED_FIRST' then raise; end if;
+  end;
+
+  select stock into v_stock from public.products where id = v_product_id;
+  if v_stock <> 12 then
+    raise exception 'COURIER_BOOKING_CANCELLATION_CHANGED_INVENTORY';
   end if;
 
   if has_function_privilege('anon', 'public.admin_update_order_status(uuid,text,uuid)', 'EXECUTE')
