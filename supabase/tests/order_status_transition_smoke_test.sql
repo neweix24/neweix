@@ -41,9 +41,9 @@ begin
   );
 
   insert into public.order_items (
-    order_id, product_id, product_name, quantity, unit_price, line_total
+    order_id, product_id, product_name_snapshot, unit_price, quantity
   ) values (
-    v_cancel_order_id, v_product_id, 'Order transition test product', 2, 100, 200
+    v_cancel_order_id, v_product_id, 'Order transition test product', 100, 2
   );
 
   v_result := public.admin_update_order_status(v_cancel_order_id, 'cancelled', v_actor_id);
@@ -81,9 +81,9 @@ begin
   );
 
   insert into public.order_items (
-    order_id, product_id, product_name, quantity, unit_price, line_total
+    order_id, product_id, product_name_snapshot, unit_price, quantity
   ) values (
-    v_shipped_order_id, v_product_id, 'Order transition test product', 1, 100, 100
+    v_shipped_order_id, v_product_id, 'Order transition test product', 100, 1
   );
 
   begin
@@ -110,9 +110,9 @@ begin
   );
 
   insert into public.order_items (
-    order_id, product_id, product_name, quantity, unit_price, line_total
+    order_id, product_id, product_name_snapshot, unit_price, quantity
   ) values (
-    v_booked_order_id, v_product_id, 'Order transition test product', 1, 100, 100
+    v_booked_order_id, v_product_id, 'Order transition test product', 100, 1
   );
 
   begin
