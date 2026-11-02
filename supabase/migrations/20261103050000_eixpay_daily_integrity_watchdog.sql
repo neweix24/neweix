@@ -54,11 +54,21 @@ begin
   end if;
 
   for v_event in
-    select sequence, source_table, source_id, source_hash,
-           previous_hash, event_hash
-      from private.eixpay_integrity_events
-     where sequence <= v_state.last_sequence
-     order by sequence asc
+    select
+      e.sequence, e.source_table, e.source_id, e.source_hash,
+      e.previous_hash, e.event_hash,
+      case
+        when e.source_table = 'eixpay_ledger' then pg_catalog.to_jsonb(l)
+        when e.source_table = 'eixpay_audit_events' then pg_catalog.to_jsonb(a)
+        else null
+      end as current_payload
+    from private.eixpay_integrity_events e
+    left join private.eixpay_ledger l
+      on e.source_table = 'eixpay_ledger' and l.id = e.source_id
+    left join private.eixpay_audit_events a
+      on e.source_table = 'eixpay_audit_events' and a.id = e.source_id
+    where e.sequence <= v_state.last_sequence
+    order by e.sequence asc
   loop
     v_checked := v_checked + 1;
 
@@ -74,20 +84,13 @@ begin
       exit;
     end if;
 
-    if v_event.source_table = 'eixpay_ledger' then
-      select pg_catalog.to_jsonb(l) into v_current_payload
-        from private.eixpay_ledger l
-       where l.id = v_event.source_id;
-    elsif v_event.source_table = 'eixpay_audit_events' then
-      select pg_catalog.to_jsonb(a) into v_current_payload
-        from private.eixpay_audit_events a
-       where a.id = v_event.source_id;
-    else
+    if v_event.source_table not in ('eixpay_ledger', 'eixpay_audit_events') then
       v_first_invalid := v_event.sequence;
       v_reason := 'UNSUPPORTED_SOURCE_TABLE';
       exit;
     end if;
 
+    v_current_payload := v_event.current_payload;
     if v_current_payload is null then
       v_first_invalid := v_event.sequence;
       v_reason := 'SOURCE_ROW_MISSING';
