@@ -23,7 +23,7 @@ export async function GET() {
       console.error("Supabase environment variables are missing.");
       return NextResponse.json(
         { error: "Supabase environment variables are missing." },
-        { status: 500 }
+        { status: 500, headers: { "Cache-Control": "no-store" } }
       );
     }
 
@@ -45,12 +45,12 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ data: data ?? [] });
+    return NextResponse.json({ data: data ?? [] }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Products API runtime error:", error);
     return NextResponse.json(
       { error: "পণ্য লোড করা যায়নি।" },
-      { status: 500 }
+      { status: 500, headers: { "Cache-Control": "no-store" } }
     );
   }
 }

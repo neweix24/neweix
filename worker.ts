@@ -30,6 +30,7 @@ type SearchJob = {
   job_id: string;
   product_id: string;
   attempts: number;
+  lease_token: string;
 };
 
 type Product = {
@@ -41,6 +42,36 @@ type Product = {
 };
 
 async function processSearchEmbeddingQueue(env: Env): Promise<void> {
+  if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Search embedding gate is missing Supabase bindings.");
+  }
+  const gateClient = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: leaseToken, error: gateError } = await gateClient.rpc(
+    "neweix_acquire_search_embedding_gate",
+    { p_min_interval_seconds: 30, p_lease_seconds: 600 },
+  );
+  if (gateError) throw new Error(`Search embedding gate failed: ${gateError.message}`);
+  if (typeof leaseToken !== "string") {
+    console.log("[search-cron] batch skipped by global concurrency/rate gate");
+    return;
+  }
+
+  try {
+    await processSearchEmbeddingQueueBatch(env);
+  } finally {
+    const { error: releaseError } = await gateClient.rpc(
+      "neweix_release_search_embedding_gate",
+      { p_lease_token: leaseToken },
+    );
+    if (releaseError) {
+      console.error("[search-cron] global gate release failed", releaseError.message);
+    }
+  }
+}
+
+async function processSearchEmbeddingQueueBatch(env: Env): Promise<void> {
   if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY || !env.AI) {
     throw new Error("Search embedding cron is missing required bindings.");
   }
@@ -50,7 +81,7 @@ async function processSearchEmbeddingQueue(env: Env): Promise<void> {
   });
 
   const { data: jobs, error: claimError } = await supabase.rpc(
-    "neweix_claim_search_embedding_jobs",
+    "neweix_claim_search_embedding_jobs_v2",
     { p_limit: 10 },
   );
   if (claimError) throw new Error(`Queue claim failed: ${claimError.message}`);
@@ -67,8 +98,9 @@ async function processSearchEmbeddingQueue(env: Env): Promise<void> {
 
   if (productsError) {
     await Promise.all(typedJobs.map((job) =>
-      supabase.rpc("neweix_fail_search_embedding_job", {
+      supabase.rpc("neweix_fail_search_embedding_job_v2", {
         p_job_id: job.job_id,
+        p_lease_token: job.lease_token,
         p_error: productsError.message,
       }),
     ));
@@ -82,8 +114,9 @@ async function processSearchEmbeddingQueue(env: Env): Promise<void> {
 
   for (const job of typedJobs) {
     if (!activeJobs.some((active) => active.job_id === job.job_id)) {
-      const { error } = await supabase.rpc("neweix_complete_search_embedding_job", {
+      const { error } = await supabase.rpc("neweix_complete_search_embedding_job_v2", {
         p_job_id: job.job_id,
+        p_lease_token: job.lease_token,
       });
       if (error) console.error("[search-cron] stale job cleanup failed", job.job_id, error.message);
     }
@@ -110,8 +143,9 @@ async function processSearchEmbeddingQueue(env: Env): Promise<void> {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Workers AI embedding failed";
     await Promise.all(activeJobs.map((job) =>
-      supabase.rpc("neweix_fail_search_embedding_job", {
+      supabase.rpc("neweix_fail_search_embedding_job_v2", {
         p_job_id: job.job_id,
+        p_lease_token: job.lease_token,
         p_error: message,
       }),
     ));
@@ -126,8 +160,9 @@ async function processSearchEmbeddingQueue(env: Env): Promise<void> {
     )
   ) {
     await Promise.all(activeJobs.map((job) =>
-      supabase.rpc("neweix_fail_search_embedding_job", {
+      supabase.rpc("neweix_fail_search_embedding_job_v2", {
         p_job_id: job.job_id,
+        p_lease_token: job.lease_token,
         p_error: "Workers AI returned an invalid 1024-dimensional embedding response",
       }),
     ));
@@ -139,31 +174,29 @@ async function processSearchEmbeddingQueue(env: Env): Promise<void> {
   for (let index = 0; index < activeJobs.length; index += 1) {
     const job = activeJobs[index];
     const vector = vectors[index];
-    const { error: updateError } = await supabase
-      .from("products")
-      .update({
-        search_embedding: `[${vector.join(",")}]`,
-        search_embedding_model: "@cf/baai/bge-m3",
-        search_embedding_updated_at: new Date().toISOString(),
-      })
-      .eq("id", job.product_id)
-      .eq("is_active", true);
-
-    if (updateError) {
-      await supabase.rpc("neweix_fail_search_embedding_job", {
+    const { data: saved, error: saveError } = await supabase.rpc(
+      "neweix_save_search_embedding",
+      {
         p_job_id: job.job_id,
-        p_error: updateError.message,
+        p_product_id: job.product_id,
+        p_lease_token: job.lease_token,
+        p_embedding: `[${vector.join(",")}]`,
+        p_model: "@cf/baai/bge-m3",
+      },
+    );
+
+    if (saveError) {
+      await supabase.rpc("neweix_fail_search_embedding_job_v2", {
+        p_job_id: job.job_id,
+        p_lease_token: job.lease_token,
+        p_error: saveError.message,
       });
       failed += 1;
       continue;
     }
-
-    const { error: completeError } = await supabase.rpc(
-      "neweix_complete_search_embedding_job",
-      { p_job_id: job.job_id },
-    );
-    if (completeError) {
-      console.error("[search-cron] job completion failed", job.job_id, completeError.message);
+    if (saved !== true) {
+      // The lease was superseded or the product was removed/deactivated.
+      // A stale worker must never write an embedding or mutate the new lease.
       failed += 1;
       continue;
     }
@@ -184,6 +217,7 @@ type CustomerNotificationJob = {
   phone: string;
   message: string;
   attempts: number;
+  lease_token: string;
 };
 
 function normalizeBulkSmsPhone(phone: string): string | null {
@@ -225,7 +259,7 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data: jobs, error: claimError } = await supabase.rpc(
-    "neweix_claim_customer_notifications",
+    "neweix_claim_customer_notifications_v2",
     { p_limit: 10 },
   );
   if (claimError) throw new Error(`Customer SMS queue claim failed: ${claimError.message}`);
@@ -236,8 +270,9 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
   for (const job of jobs as CustomerNotificationJob[]) {
     const number = normalizeBulkSmsPhone(job.phone);
     if (!number) {
-      await supabase.rpc("neweix_fail_customer_notification", {
+      await supabase.rpc("neweix_fail_customer_notification_v2", {
         p_id: job.id,
+        p_lease_token: job.lease_token,
         p_error: "Invalid Bangladesh phone number",
       });
       failed += 1;
@@ -263,8 +298,9 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
         (responseCode === 202 || (response.status === 202 && responseCode === null));
 
       if (!accepted) {
-        await supabase.rpc("neweix_fail_customer_notification", {
+        await supabase.rpc("neweix_fail_customer_notification_v2", {
           p_id: job.id,
+          p_lease_token: job.lease_token,
           p_error: `BulkSMSBD rejected request (HTTP ${response.status}, code ${responseCode ?? "unknown"})`,
         });
         failed += 1;
@@ -272,12 +308,13 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
       }
 
       const { error: completeError } = await supabase.rpc(
-        "neweix_complete_customer_notification",
-        { p_id: job.id },
+        "neweix_complete_customer_notification_v2",
+        { p_id: job.id, p_lease_token: job.lease_token },
       );
       if (completeError) {
-        await supabase.rpc("neweix_fail_customer_notification", {
+        await supabase.rpc("neweix_fail_customer_notification_v2", {
           p_id: job.id,
+          p_lease_token: job.lease_token,
           p_error: completeError.message,
         });
         failed += 1;
@@ -285,8 +322,9 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
       }
       sent += 1;
     } catch (error) {
-      await supabase.rpc("neweix_fail_customer_notification", {
+      await supabase.rpc("neweix_fail_customer_notification_v2", {
         p_id: job.id,
+        p_lease_token: job.lease_token,
         p_error: error instanceof Error ? error.message : "BulkSMSBD network failure",
       });
       failed += 1;
@@ -295,6 +333,45 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
   console.log("[customer-sms-cron] batch complete", { processed: jobs.length, sent, failed });
 }
 
+
+async function processEixPayIntegrityWatchdog(env: Env): Promise<void> {
+  if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("EixPay integrity watchdog is missing Supabase bindings.");
+  }
+
+  const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await supabase.rpc("eixpay_verify_integrity_watchdog");
+  if (error) {
+    throw new Error(`EixPay integrity verification failed: ${error.message}`);
+  }
+
+  const result = data as {
+    valid?: boolean;
+    checked_events?: number;
+    failure_reason?: string | null;
+    first_invalid_sequence?: number | null;
+    watchdog_run_id?: number;
+    independent_signature?: boolean;
+  } | null;
+
+  if (!result?.valid) {
+    console.error("[eixpay-integrity-watchdog] INTEGRITY FAILURE", {
+      checkedEvents: result?.checked_events ?? 0,
+      failureReason: result?.failure_reason ?? "UNKNOWN",
+      firstInvalidSequence: result?.first_invalid_sequence ?? null,
+      watchdogRunId: result?.watchdog_run_id ?? null,
+    });
+    return;
+  }
+
+  console.log("[eixpay-integrity-watchdog] verification passed", {
+    checkedEvents: result.checked_events ?? 0,
+    watchdogRunId: result.watchdog_run_id ?? null,
+    independentSignature: result.independent_signature === true,
+  });
+}
 
 type ScheduledSocialPost = {
   id: string;
@@ -469,10 +546,13 @@ export default {
     const tasks: Promise<void>[] = [];
     if (controller.cron === "*/5 * * * *") {
       tasks.push(processCustomerNotificationQueue(env));
+      tasks.push(processSearchEmbeddingQueue(env));
     }
     if (controller.cron === "*/15 * * * *") {
-      tasks.push(processSearchEmbeddingQueue(env));
       tasks.push(processSocialPublishingQueue(env));
+    }
+    if (controller.cron === "17 2 * * *") {
+      tasks.push(processEixPayIntegrityWatchdog(env));
     }
     const results = await Promise.allSettled(tasks);
     for (const result of results) {

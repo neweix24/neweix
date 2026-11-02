@@ -58,6 +58,24 @@ jobs:
         run: |
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/customer_phone_verification_grants_test.sql
 
+      - name: Verify queue lease RPC privilege boundaries
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/queue_lease_fencing_privileges_test.sql
+
+      - name: Verify partial-return restock ledger permissions
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/partial_return_restock_privileges_test.sql
+
+      - name: Verify EixPay daily watchdog permissions
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/eixpay_watchdog_privileges_test.sql
+
       - name: Stop disposable Supabase
         if: always()
         run: supabase stop --no-backup

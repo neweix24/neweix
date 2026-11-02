@@ -22,7 +22,7 @@ Configure these as Worker secrets; never add values to Git:
 - `PATHAO_USERNAME`
 - `PATHAO_PASSWORD`
 - `PATHAO_BASE_URL` (optional; defaults to `https://api-hermes.pathao.com`)
-- `PATHAO_WEBHOOK_SECRET` (required to activate webhook callbacks)
+- `PATHAO_WEBHOOK_SECRET` (the merchant-configured inbound signature secret; required to activate webhook callbacks)
 
 For the webhook secret, generate a long random value locally, then set it in Cloudflare:
 
@@ -42,7 +42,9 @@ Paste the generated value into the Wrangler prompt, then configure the exact sam
 5. Enable the shipment events Pathao makes available and save the configuration.
 6. Verify the integration handshake, then create and track a controlled test consignment.
 
-The endpoint checks the `X-PATHAO-SIGNATURE` header against the configured secret. It does not trust a status, delivery fee or COD amount in the incoming payload. Instead, it fetches the shipment from Pathao before applying a recognized status. This is important because a webhook callback should not be treated as authoritative order data.
+The endpoint checks the `X-PATHAO-SIGNATURE` header against the configured merchant secret and returns Pathao's required `X-Pathao-Merchant-Webhook-Integration-Secret` protocol header.
+
+Configure the same merchant webhook signature secret in Cloudflare with `npx wrangler secret put PATHAO_WEBHOOK_SECRET`. Do not add a second response secret: the endpoint emits Pathao's fixed response protocol value itself. It does not trust a status, delivery fee or COD amount in the incoming payload. Instead, it fetches the shipment from Pathao before applying a recognized status. This is important because a webhook callback should not be treated as authoritative order data.
 
 ### Operational limits
 
@@ -84,6 +86,7 @@ Bangla SMS uses Unicode encoding and can consume multiple SMS parts. Review the 
 
 - `*/5 * * * *`: process customer transactional SMS notifications.
 - `*/15 * * * *`: process search embedding and scheduled social publishing queues.
+- `17 2 * * *` (02:17 UTC daily): verify the complete EixPay SHA-256 integrity chain and store a private verification result. This is database-local tamper evidence, not an external signature.
 
 The jobs are separated so the SMS queue is not unnecessarily invoked twice at timestamps where both cron expressions match.
 

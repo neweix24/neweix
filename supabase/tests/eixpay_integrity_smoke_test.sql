@@ -13,6 +13,9 @@ declare
   v_chain_hash text;
   v_expected_hash text;
   v_payload jsonb;
+  v_watchdog_result jsonb;
+  v_previous_role text;
+  v_previous_claims text;
 begin
   if to_regclass('private.eixpay_config') is null
      or to_regclass('private.eixpay_wallets') is null
@@ -94,6 +97,20 @@ begin
       and e.source_hash=encode(extensions.digest(convert_to(v_payload::text,'UTF8'),'sha256'),'hex')
   ) then
     raise exception 'EIXPAY_LEDGER_SOURCE_HASH_MISMATCH';
+  end if;
+
+  v_previous_role := current_setting('request.jwt.claim.role', true);
+  v_previous_claims := current_setting('request.jwt.claims', true);
+  perform pg_catalog.set_config('request.jwt.claim.role', '', true);
+  perform pg_catalog.set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  v_watchdog_result := public.eixpay_verify_integrity_watchdog();
+  perform pg_catalog.set_config('request.jwt.claims', coalesce(v_previous_claims, ''), true);
+  perform pg_catalog.set_config('request.jwt.claim.role', coalesce(v_previous_role, ''), true);
+
+  if coalesce((v_watchdog_result->>'valid')::boolean, false) is not true
+     or coalesce((v_watchdog_result->>'checked_events')::bigint, 0) < 2
+     or v_watchdog_result->>'watchdog_run_id' is null then
+    raise exception 'EIXPAY_DAILY_WATCHDOG_VERIFICATION_FAILED';
   end if;
 
   begin

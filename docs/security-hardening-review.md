@@ -1,6 +1,6 @@
 # NEWEIX Security and Integration Review
 
-**Updated:** 2026-10-31  
+**Updated:** 2026-11-02  
 **Repository:** neweix24/neweix, branch main  
 **Hosting:** Cloudflare Workers via OpenNext  
 **Database:** Connected Supabase project
@@ -37,7 +37,7 @@ This document replaces older review notes that referred to EixPay/social foundat
 
 - COD orders with zero delivery fee no longer require an MFS transaction ID.
 - If a COD delivery fee is due, the delivery-fee payment still requires MFS details and verification.
-- Returned orders now have a manual, audited restock action. Stock is restored only after staff inspect the returned items; row locking and stock_restored_at prevent duplicate restoration.
+- Returned orders now support item-level partial restocking after staff inspect the physical quantities. A per-line idempotency ledger, order/product row locks and audit-log entries prevent double restocking and preserve who approved each quantity.
 
 ### 5. Pathao Courier
 
@@ -53,7 +53,8 @@ This document replaces older review notes that referred to EixPay/social foundat
 - Phone OTP continues to use BulkSMSBD.
 - Added a private, RLS-protected notification outbox for order-created, payment-confirmed and order-status messages.
 - A database trigger queues notifications; the Cloudflare Worker processes them every five minutes.
-- Failed sends are retried with backoff up to five attempts. The private outbox and claim/complete/fail RPCs are service-role-only.
+- Versioned lease-token RPCs fence claims/completion/retries; legacy queue RPC signatures are inert during rolling deployment. Failed sends are retried with backoff up to five attempts.
+- Delivery remains at-least-once if BulkSMSBD accepts a message but the response is lost; provider-side idempotency is required for exactly-once delivery.
 
 **Live test still required:** confirm provider balance, sender ID approval, source-IP allowlisting and successful delivery to a controlled test number. Marketing/bulk promotional campaigns are not enabled; those require customer consent and compliance review.
 
@@ -71,18 +72,26 @@ This document replaces older review notes that referred to EixPay/social foundat
 
 - Cloudflare production deployment is gated on both the matching GitHub CI run and disposable PostgreSQL migration/regression test succeeding; it checks out the exact tested commit.
 - Added a Content-Security-Policy header, including the Cloudflare Turnstile, Google OAuth and YouTube frame hosts.
-- CSP currently permits broad HTTPS resources and inline/eval script compatibility. It is a baseline policy, not a final nonce-based strict CSP. Tightening requires a report/compatibility pass against the live storefront and auth flows.
+- Removed `unsafe-eval` and the generic HTTPS script wildcard; the policy still permits inline scripts/styles and broad HTTPS image/style resources. It is a hardened baseline, not a final nonce-based strict CSP. Further tightening requires a compatibility pass against the live storefront and auth flows.
 - wrangler.jsonc now lists the required server-only integration secrets; .env.example documents their names without values.
 
 ## Verified security foundations
 
-- Supabase Performance Advisor's unindexed foreign-key findings were cleared by adding indexes for the newly introduced order and social-media foreign keys.
-
-- The last schema audit found RLS enabled on all 45 public/private tables checked (45 enabled, 0 disabled).
 - Sensitive service-role operations remain server-side.
-- Private EixPay and notification tables are not directly readable by anon or authenticated.
-- Supreme-only operations use server-side role checks and AAL2 checks.
+- The live Production audit confirmed that the 19 tables flagged as RLS-enabled-without-policies have no direct SELECT/INSERT/UPDATE grants for anon or authenticated; the no-policy design is intentional for those private/server-only tables.
+- The live Production audit found 29 authenticated SECURITY DEFINER RPCs. All inspected authenticated RPCs check `auth.uid()`; Supreme-only operations also check staff role and AAL2. The single anon-executable review-list RPC returns approved public reviews only.
+- Six new workforce/department foreign-key indexes are included in a follow-up migration; the six affected tables currently contain zero rows.
+- 52 indexes are reported unused by current advisor statistics. They are not dropped because usage counters may have reset and the indexes support existing query paths.
 - Customer device/IP records are audit signals; they are not used to block users by country or VPN.
+
+
+## Live Production audit notes (2026-11-02)
+
+- Connected Supabase project is healthy on PostgreSQL 17.11.0.003.
+- Production migration history currently ends at version `20261102040000`. The new timestamped migrations in the open GitHub PR are later than that version and have not been applied.
+- The live `audit_logs` table uses `actor_id`; new restock audit writes must target that column (not the older `actor_user_id` name found in historical source schema files).
+- At audit time the SMS outbox contained one failed job and no queued/sending jobs; the search embedding queue had no rows. This is a point-in-time observation, not a permanent guarantee.
+- Supabase Security Advisor reports leaked-password protection disabled. This is an Auth dashboard setting, not a repository migration; an authorized project administrator must enable it under Authentication security/password settings.
 
 ## Remaining issues and external dependencies
 
@@ -99,8 +108,10 @@ This document replaces older review notes that referred to EixPay/social foundat
 
 - Eixon is an internal reward unit, not a blockchain token or real-money cryptocurrency.
 - The SHA-256 integrity chain provides database-local tamper evidence for covered events.
+- A service-role-only watchdog verifies the complete chain daily from the Cloudflare Worker Cron Trigger and records verification results in a private history table (retained for 400 days).
+- A daily verification failure is emitted as a high-severity Worker log; it does not automatically freeze wallet operations.
 - It is not end-to-end encryption and is not independently tamper-proof against a privileged database owner.
-- Independent Ed25519 signing/checkpoint storage outside PostgreSQL has not been implemented.
+- Independent Ed25519 signing/checkpoint storage outside PostgreSQL has not been implemented; the watchdog reports `independent_signature: false`.
 - Earning, redemption and transfer flags remain disabled pending legal review.
 
 ## Validation policy

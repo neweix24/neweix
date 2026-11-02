@@ -5,8 +5,9 @@ import { getPathaoOrderInfo } from "@/lib/pathao";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PATHAO_WEBHOOK_RESPONSE_SECRET = "f3992ecc-59da-4cbe-a049-a13da2018d51";
 const UUID_OR_CONSIGNMENT = /^[A-Za-z0-9-]{3,80}$/;
+// Pathao protocol response value; this is a documented fixed integration header, not a merchant credential.
+const PATHAO_WEBHOOK_INTEGRATION_RESPONSE = "f3992ecc-59da-4cbe-a049-a13da2018d51";
 
 function webhookResponse(
   body: Record<string, unknown>,
@@ -16,7 +17,7 @@ function webhookResponse(
     status,
     headers: {
       "Cache-Control": "no-store",
-      "X-Pathao-Merchant-Webhook-Integration-Secret": PATHAO_WEBHOOK_RESPONSE_SECRET,
+      "X-Pathao-Merchant-Webhook-Integration-Secret": PATHAO_WEBHOOK_INTEGRATION_RESPONSE,
     },
   });
 }

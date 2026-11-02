@@ -59,6 +59,7 @@ Configure the following as Cloudflare secrets (never commit secret values):
 - PATHAO_CLIENT_SECRET
 - PATHAO_USERNAME
 - PATHAO_PASSWORD
+- PATHAO_WEBHOOK_SECRET (the merchant-configured inbound webhook signature secret)
 
 Public/non-secret settings such as NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, NEWEIX_SITE_URL and payment receiver numbers belong in Cloudflare vars or the local environment, not in the secret list.
 

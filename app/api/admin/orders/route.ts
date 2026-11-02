@@ -66,6 +66,12 @@ async function getAdminClient() {
   });
 }
 
+type AdminOrderItemRow = Record<string, unknown> & { id: string };
+type AdminOrderRow = Record<string, unknown> & {
+  id: string;
+  order_items?: AdminOrderItemRow[] | null;
+};
+
 export async function GET() {
   try {
     const staff = await getStaffContext();
@@ -117,7 +123,38 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ orders: data ?? [] });
+    const orders = (data ?? []) as unknown as AdminOrderRow[];
+    const orderIds = orders.map((order) => order.id);
+    const restockedByItem = new Map<string, number>();
+    if (orderIds.length > 0) {
+      const { data: restocksData, error: restockError } = await admin
+        .from("order_item_return_restocks")
+        .select("order_item_id,quantity")
+        .in("order_id", orderIds);
+      if (restockError) {
+        console.error("Admin returned-item restock totals failed:", restockError.message);
+        return NextResponse.json(
+          { error: "Could not load returned-item inventory history." },
+          { status: 500 }
+        );
+      }
+      const restocks = (restocksData ?? []) as unknown as Array<{ order_item_id: string; quantity: number }>;
+      for (const row of restocks) {
+        restockedByItem.set(
+          row.order_item_id,
+          (restockedByItem.get(row.order_item_id) ?? 0) + Number(row.quantity)
+        );
+      }
+    }
+
+    const ordersWithRestockTotals = orders.map((order) => ({
+      ...order,
+      order_items: (order.order_items ?? []).map((item) => ({
+        ...item,
+        restocked_quantity: restockedByItem.get(item.id) ?? 0,
+      })),
+    }));
+    return NextResponse.json({ orders: ordersWithRestockTotals });
   } catch (error) {
     console.error("Admin orders GET failed:", error);
     return NextResponse.json({ error: "A server error occurred." }, { status: 500 });
@@ -249,6 +286,68 @@ export async function PATCH(request: Request) {
     const orderId = input.orderId;
     const status = input.status;
 
+    if (input.action === "restock_returned_items") {
+      if (typeof orderId !== "string" || !UUID_REGEX.test(orderId)) {
+        return NextResponse.json({ error: "Provide a valid Order ID." }, { status: 400 });
+      }
+      if (typeof input.note !== "string" || input.note.trim().length < 5 || input.note.trim().length > 500) {
+        return NextResponse.json({ error: "Stock-restock reason must be between 5 and 500 characters." }, { status: 400 });
+      }
+      if (!Array.isArray(input.items) || input.items.length < 1 || input.items.length > 50) {
+        return NextResponse.json({ error: "Select between 1 and 50 returned order items." }, { status: 400 });
+      }
+      const items: Array<{ order_item_id: string; quantity: number; idempotency_key: string }> = [];
+      const seen = new Set<string>();
+      for (const rawItem of input.items) {
+        if (!rawItem || typeof rawItem !== "object" || Array.isArray(rawItem)) {
+          return NextResponse.json({ error: "A returned-item entry is invalid." }, { status: 400 });
+        }
+        const item = rawItem as Record<string, unknown>;
+        if (
+          typeof item.order_item_id !== "string" || !UUID_REGEX.test(item.order_item_id) ||
+          typeof item.idempotency_key !== "string" || !UUID_REGEX.test(item.idempotency_key) ||
+          !Number.isSafeInteger(item.quantity) || Number(item.quantity) < 1 ||
+          seen.has(item.order_item_id)
+        ) {
+          return NextResponse.json({ error: "Returned-item IDs, quantities, or idempotency keys are invalid." }, { status: 400 });
+        }
+        seen.add(item.order_item_id);
+        items.push({
+          order_item_id: item.order_item_id,
+          quantity: Number(item.quantity),
+          idempotency_key: item.idempotency_key,
+        });
+      }
+
+      const admin = await getAdminClient();
+      const { data, error } = await admin.rpc("admin_restock_returned_order_items", {
+        p_order_id: orderId,
+        p_actor_id: staff.user.id,
+        p_note: input.note.trim(),
+        p_items: items,
+      });
+      if (error) {
+        const conflicts = [
+          "STOCK_ALREADY_RESTORED", "ORDER_NOT_RETURNED", "RESTOCK_QUANTITY_EXCEEDS_RETURNED",
+          "IDEMPOTENCY_KEY_REUSED", "ORDER_ITEM_NOT_FOUND", "ORDER_PRODUCT_REFERENCE_MISSING",
+          "ORDER_PRODUCT_NOT_FOUND", "DUPLICATE_RESTOCK_ITEM",
+        ];
+        if (conflicts.some((code) => error.message.includes(code))) {
+          return NextResponse.json({ error: "The returned quantities changed or were already restocked. Refresh the order and verify the remaining quantities." }, { status: 409 });
+        }
+        if (error.message.includes("ACTOR_NOT_AUTHORIZED")) {
+          return NextResponse.json({ error: "You are not authorized to restock returned inventory." }, { status: 403 });
+        }
+        console.error("Item-level returned stock restock failed:", error.message);
+        return NextResponse.json({ error: "Could not restock the selected returned quantities." }, { status: 500 });
+      }
+      return NextResponse.json({
+        success: true,
+        result: data,
+        message: "Inspected returned quantities were added to inventory.",
+      });
+    }
+
     if (input.action === "restock_returned") {
       if (typeof orderId !== "string" || !UUID_REGEX.test(orderId)) {
         return NextResponse.json({ error: "Provide a valid Order ID." }, { status: 400 });
@@ -263,8 +362,8 @@ export async function PATCH(request: Request) {
         p_note: input.note.trim(),
       });
       if (error) {
-        if (error.message.includes("STOCK_ALREADY_RESTORED")) {
-          return NextResponse.json({ error: "Stock for this order has already been restocked." }, { status: 409 });
+        if (error.message.includes("STOCK_ALREADY_RESTORED") || error.message.includes("ITEM_LEVEL_RESTOCK_EXISTS")) {
+          return NextResponse.json({ error: "This order already has recorded stock restoration. Continue with the item-level returned-stock workflow." }, { status: 409 });
         }
         if (error.message.includes("ORDER_NOT_RETURNED")) {
           return NextResponse.json({ error: "Only Returned orders can be restocked." }, { status: 409 });
