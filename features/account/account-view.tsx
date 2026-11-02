@@ -2,13 +2,10 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import Icon from "@/components/ui/icon";
 
 export default function AccountView() {
-  const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
   const [name, setName] = useState("");
@@ -37,13 +34,19 @@ export default function AccountView() {
       try {
         const supabase = createBrowserSupabaseClient();
 
+        // Middleware has already validated this protected request with getClaims().
+        // Read the browser's established session without starting another /user
+        // request that could race refresh-token rotation.
         const {
-          data: { user },
+          data: { session },
           error: authError,
-        } = await supabase.auth.getUser();
+        } = await supabase.auth.getSession();
+        const user = session?.user;
 
         if (authError || !user) {
-          router.replace("/auth/customer-login?next=/account");
+          if (active) {
+            setErrorMessage("Your session could not be read. Refresh the page or sign in again.");
+          }
           return;
         }
 
@@ -127,7 +130,7 @@ export default function AccountView() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, []);
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -160,12 +163,13 @@ export default function AccountView() {
       const supabase = createBrowserSupabaseClient();
 
       const {
-        data: { user },
+        data: { session },
         error: authError,
-      } = await supabase.auth.getUser();
+      } = await supabase.auth.getSession();
+      const user = session?.user;
 
       if (authError || !user) {
-        router.replace("/auth/customer-login?next=/account");
+        setErrorMessage("Your session could not be read. Refresh the page or sign in again.");
         return;
       }
 
