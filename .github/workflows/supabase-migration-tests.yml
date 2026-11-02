@@ -84,4 +84,6 @@ jobs:
 
       - name: Stop disposable Supabase
         if: always()
+        continue-on-error: true
+        timeout-minutes: 2
         run: supabase stop --no-backup
