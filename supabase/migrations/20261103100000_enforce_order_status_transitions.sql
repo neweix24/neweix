@@ -112,24 +112,62 @@ begin
      where p.id = item_totals.product_id;
   end if;
 
-  update public.orders
-     set status = p_new_status,
-         updated_at = pg_catalog.now()
-   where id = p_order_id;
+  -- Historical local schema used an enum for orders.status, while the
+  -- connected Production schema uses text. Preserve compatibility with both.
+  if pg_catalog.to_regtype('public.order_status') is not null
+     and exists (
+       select 1 from pg_catalog.pg_attribute a
+       where a.attrelid = 'public.orders'::regclass
+         and a.attname = 'status'
+         and a.atttypid = pg_catalog.to_regtype('public.order_status')
+         and not a.attisdropped
+     ) then
+    execute
+      'update public.orders set status = $1::public.order_status, updated_at = pg_catalog.now() where id = $2'
+      using p_new_status, p_order_id;
+  else
+    update public.orders
+       set status = p_new_status,
+           updated_at = pg_catalog.now()
+     where id = p_order_id;
+  end if;
 
-  insert into public.audit_logs (
-    actor_id, action, target_type, target_id, details
-  ) values (
-    p_actor_id,
-    'admin_order_status_updated',
-    'order',
-    p_order_id::text,
-    pg_catalog.jsonb_build_object(
-      'old_status', v_old_status,
-      'new_status', p_new_status,
-      'inventory_restocked', p_new_status = 'cancelled'
-    )
-  );
+  -- Production uses audit_logs.actor_id; the historical migration baseline
+  -- used actor_user_id. Select the existing column without changing live data.
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'audit_logs'
+      and column_name = 'actor_id'
+  ) then
+    insert into public.audit_logs (
+      actor_id, action, target_type, target_id, details
+    ) values (
+      p_actor_id,
+      'admin_order_status_updated',
+      'order',
+      p_order_id::text,
+      pg_catalog.jsonb_build_object(
+        'old_status', v_old_status,
+        'new_status', p_new_status,
+        'inventory_restocked', p_new_status = 'cancelled'
+      )
+    );
+  else
+    insert into public.audit_logs (
+      actor_user_id, action, target_type, target_id, details
+    ) values (
+      p_actor_id,
+      'admin_order_status_updated',
+      'order',
+      p_order_id::text,
+      pg_catalog.jsonb_build_object(
+        'old_status', v_old_status,
+        'new_status', p_new_status,
+        'inventory_restocked', p_new_status = 'cancelled'
+      )
+    );
+  end if;
 
   return pg_catalog.jsonb_build_object(
     'order_id', p_order_id,
