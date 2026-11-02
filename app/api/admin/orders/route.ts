@@ -412,6 +412,20 @@ export async function PATCH(request: Request) {
         );
       }
 
+      if (error.message.includes("INVALID_ORDER_STATUS_TRANSITION")) {
+        return NextResponse.json(
+          { error: "This order cannot move from its current status to the selected status. Order statuses move forward only; cancelled, delivered, and returned orders cannot be reopened." },
+          { status: 409 }
+        );
+      }
+
+      if (error.message.includes("ORDER_PRODUCT_REFERENCE_MISSING")) {
+        return NextResponse.json(
+          { error: "A product linked to this order is missing. Inventory was not changed; review the order before retrying." },
+          { status: 409 }
+        );
+      }
+
       if (error.message.includes("ORDER_CANNOT_BE_CANCELLED")) {
         return NextResponse.json(
           { error: "Shipped or delivered orders cannot be cancelled directly. Process a return, inspect the items, and update stock through the separate return workflow." },
