@@ -213,7 +213,7 @@ begin
 
   if v_new_items > 0 then
     insert into public.audit_logs(
-      actor_user_id, action, target_type, target_id, details
+      actor_id, action, target_type, target_id, details
     ) values (
       p_actor_id,
       'order.return_items_restocked',
@@ -330,7 +330,7 @@ begin
    where id = p_order_id;
 
   insert into public.audit_logs(
-    actor_user_id, action, target_type, target_id, details
+    actor_id, action, target_type, target_id, details
   ) values (
     p_actor_id,
     'order.returned_stock_restocked',
