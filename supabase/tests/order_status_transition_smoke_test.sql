@@ -10,6 +10,7 @@ declare
   v_cancel_order_id uuid := gen_random_uuid();
   v_shipped_order_id uuid := gen_random_uuid();
   v_booked_order_id uuid := gen_random_uuid();
+  v_delivered_order_id uuid := gen_random_uuid();
   v_stock integer;
   v_result jsonb;
 begin
@@ -144,6 +145,31 @@ begin
   if v_stock <> 13 or (v_result->>'changed')::boolean is not false then
     raise exception 'REPEATED_PATHAO_FAILURE_CANCEL_CHANGED_INVENTORY';
   end if;
+
+  insert into public.orders (
+    id, order_number, customer_name, customer_phone, shipping_address,
+    subtotal, delivery_fee, total, payment_method, payment_status, status,
+    delivery_provider, delivery_status, delivery_consignment_id
+  ) values (
+    v_delivered_order_id, 'TEST-DELIVERED-' || substr(v_actor_id::text, 1, 8),
+    'Test Customer', '+8801700000000', 'Test address, Dhaka',
+    100, 0, 100, 'cod', 'pending', 'delivered',
+    'pathao', 'delivered', 'PATHAO-DELIVERED-TEST'
+  );
+
+  v_result := public.admin_update_order_status(v_delivered_order_id, 'returned', v_actor_id);
+  if (v_result->>'changed')::boolean is not true
+     or v_result->>'new_status' <> 'returned' then
+    raise exception 'DELIVERED_ORDER_COULD_NOT_ENTER_RETURN_WORKFLOW';
+  end if;
+
+  begin
+    perform public.admin_update_order_status(v_delivered_order_id, 'processing', v_actor_id);
+    raise exception 'RETURNED_ORDER_WAS_REOPENED';
+  exception
+    when sqlstate '22023' then
+      if sqlerrm <> 'INVALID_ORDER_STATUS_TRANSITION' then raise; end if;
+  end;
 
   if has_function_privilege('anon', 'public.admin_update_order_status(uuid,text,uuid)', 'EXECUTE')
      or has_function_privilege('authenticated', 'public.admin_update_order_status(uuid,text,uuid)', 'EXECUTE')
