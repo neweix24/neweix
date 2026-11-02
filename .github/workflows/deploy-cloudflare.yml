@@ -12,7 +12,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: neweix-cloudflare-production
+  group: ${{ github.event_name == 'pull_request' && format('neweix-cloudflare-pr-{0}', github.event.pull_request.number) || 'neweix-cloudflare-production' }}
   cancel-in-progress: false
 
 jobs:
