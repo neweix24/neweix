@@ -6,7 +6,15 @@ export const dynamic = "force-dynamic";
 type PendingCookie = {
   name: string;
   value: string;
-  options?: Record<string, unknown>;
+  options?: {
+    path?: string;
+    domain?: string;
+    sameSite?: "strict" | "lax" | "none";
+    secure?: boolean;
+    httpOnly?: boolean;
+    maxAge?: number;
+    expires?: Date;
+  };
 };
 
 function safeNextPath(value: string | null): string {
