@@ -63,7 +63,7 @@ export default function SupremeMfaSetupPage() {
           await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
         if (!assuranceError && assurance?.currentLevel === "aal2") {
-          router.replace("/supreme");
+          window.location.replace("/supreme");
           return;
         }
 
@@ -261,8 +261,7 @@ export default function SupremeMfaSetupPage() {
         return;
       }
 
-      router.replace("/supreme");
-      router.refresh();
+      window.location.replace("/supreme");
     } catch {
       setMessage(
         "MFA যাচাই করা যায়নি। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।"
