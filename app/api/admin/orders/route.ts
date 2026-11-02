@@ -355,8 +355,8 @@ export async function PATCH(request: Request) {
         p_note: input.note.trim(),
       });
       if (error) {
-        if (error.message.includes("STOCK_ALREADY_RESTORED")) {
-          return NextResponse.json({ error: "Stock for this order has already been restocked." }, { status: 409 });
+        if (error.message.includes("STOCK_ALREADY_RESTORED") || error.message.includes("ITEM_LEVEL_RESTOCK_EXISTS")) {
+          return NextResponse.json({ error: "This order already has recorded stock restoration. Continue with the item-level returned-stock workflow." }, { status: 409 });
         }
         if (error.message.includes("ORDER_NOT_RETURNED")) {
           return NextResponse.json({ error: "Only Returned orders can be restocked." }, { status: 409 });
