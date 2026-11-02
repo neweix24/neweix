@@ -1,6 +1,35 @@
 -- Prevent reopening terminal orders and prevent inventory being restored twice.
 -- The order row lock serializes concurrent transitions; terminal states cannot be left.
 
+-- The historical migration baseline used an enum containing 'packing',
+-- while the live application and Production schema use text with 'processing'
+-- and 'packed'. Normalize only enum-backed installations to the app schema.
+do $migration$
+declare
+  v_status_type oid;
+begin
+  select a.atttypid
+    into v_status_type
+    from pg_catalog.pg_attribute a
+   where a.attrelid = 'public.orders'::regclass
+     and a.attname = 'status'
+     and not a.attisdropped;
+
+  if v_status_type = pg_catalog.to_regtype('public.order_status') then
+    alter table public.orders alter column status drop default;
+    alter table public.orders
+      alter column status type text
+      using (
+        case status::text
+          when 'packing' then 'processing'
+          else status::text
+        end
+      );
+    alter table public.orders alter column status set default 'pending';
+  end if;
+end;
+$migration$;
+
 create or replace function public.admin_update_order_status(
   p_order_id uuid,
   p_new_status text,
@@ -112,25 +141,10 @@ begin
      where p.id = item_totals.product_id;
   end if;
 
-  -- Historical local schema used an enum for orders.status, while the
-  -- connected Production schema uses text. Preserve compatibility with both.
-  if pg_catalog.to_regtype('public.order_status') is not null
-     and exists (
-       select 1 from pg_catalog.pg_attribute a
-       where a.attrelid = 'public.orders'::regclass
-         and a.attname = 'status'
-         and a.atttypid = pg_catalog.to_regtype('public.order_status')
-         and not a.attisdropped
-     ) then
-    execute
-      'update public.orders set status = $1::public.order_status, updated_at = pg_catalog.now() where id = $2'
-      using p_new_status, p_order_id;
-  else
-    update public.orders
-       set status = p_new_status,
-           updated_at = pg_catalog.now()
-     where id = p_order_id;
-  end if;
+  update public.orders
+     set status = p_new_status,
+         updated_at = pg_catalog.now()
+   where id = p_order_id;
 
   -- Production uses audit_logs.actor_id; the historical migration baseline
   -- used actor_user_id. Select the existing column without changing live data.
