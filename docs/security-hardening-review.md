@@ -99,8 +99,10 @@ This document replaces older review notes that referred to EixPay/social foundat
 
 - Eixon is an internal reward unit, not a blockchain token or real-money cryptocurrency.
 - The SHA-256 integrity chain provides database-local tamper evidence for covered events.
+- A service-role-only watchdog verifies the complete chain daily from the Cloudflare Worker Cron Trigger and records verification results in a private history table (retained for 400 days).
+- A daily verification failure is emitted as a high-severity Worker log; it does not automatically freeze wallet operations.
 - It is not end-to-end encryption and is not independently tamper-proof against a privileged database owner.
-- Independent Ed25519 signing/checkpoint storage outside PostgreSQL has not been implemented.
+- Independent Ed25519 signing/checkpoint storage outside PostgreSQL has not been implemented; the watchdog reports `independent_signature: false`.
 - Earning, redemption and transfer flags remain disabled pending legal review.
 
 ## Validation policy
