@@ -104,11 +104,7 @@ function CustomerLoginForm() {
       });
 
       if (error) {
-        setMessage(
-          provider === "google"
-            ? "Could not start Google sign-in. Check the OAuth settings."
-            : "Could not start Facebook sign-in. Check the OAuth settings."
-        );
+        setMessage("Could not start Facebook sign-in. Check the OAuth settings.");
         setBusy(false);
       }
     } catch {
