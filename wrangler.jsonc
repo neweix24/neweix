@@ -28,6 +28,7 @@
       "binding": "AI"
     }
   },
+  // Pathao webhook stays fail-closed (503) until its merchant secret is provisioned.
   "secrets": {
     "required": [
       "SUPABASE_SERVICE_ROLE_KEY",
@@ -40,8 +41,7 @@
       "PATHAO_CLIENT_ID",
       "PATHAO_CLIENT_SECRET",
       "PATHAO_USERNAME",
-      "PATHAO_PASSWORD",
-      "PATHAO_WEBHOOK_SECRET"
+      "PATHAO_PASSWORD"
     ]
   },
   "ai": {
