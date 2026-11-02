@@ -51,7 +51,7 @@ declare
   product_is_active boolean;
   lease_is_current boolean;
 begin
-  if current_setting('request.jwt.claim.role', true) is distinct from 'service_role' then
+  if coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role') is distinct from 'service_role' then
     raise exception 'service role required' using errcode = '42501';
   end if;
   if p_job_id is null or p_product_id is null or p_lease_token is null
