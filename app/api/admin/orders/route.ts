@@ -127,7 +127,7 @@ export async function GET() {
     const orderIds = orders.map((order) => order.id);
     const restockedByItem = new Map<string, number>();
     if (orderIds.length > 0) {
-      const { data: restocks, error: restockError } = await admin
+      const { data: restocksData, error: restockError } = await admin
         .from("order_item_return_restocks")
         .select("order_item_id,quantity")
         .in("order_id", orderIds);
@@ -138,7 +138,8 @@ export async function GET() {
           { status: 500 }
         );
       }
-      for (const row of restocks ?? []) {
+      const restocks = (restocksData ?? []) as unknown as Array<{ order_item_id: string; quantity: number }>;
+      for (const row of restocks) {
         restockedByItem.set(
           row.order_item_id,
           (restockedByItem.get(row.order_item_id) ?? 0) + Number(row.quantity)
