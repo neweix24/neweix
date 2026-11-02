@@ -414,7 +414,7 @@ export async function PATCH(request: Request) {
 
       if (error.message.includes("INVALID_ORDER_STATUS_TRANSITION")) {
         return NextResponse.json(
-          { error: "This order cannot move from its current status to the selected status. Order statuses move forward only; cancelled, delivered, and returned orders cannot be reopened." },
+          { error: "This order cannot move from its current status to the selected status. Order statuses move forward only; cancelled and returned orders cannot be reopened, while delivered orders may enter the return workflow." },
           { status: 409 }
         );
       }
