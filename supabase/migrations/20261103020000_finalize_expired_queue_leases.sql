@@ -15,14 +15,14 @@ begin
     raise exception 'INVALID_BATCH_SIZE';
   end if;
 
-  update private.customer_notification_outbox
+  update private.customer_notification_outbox as q
      set status = 'failed',
          lease_token = null,
-         last_error = coalesce(last_error, 'SMS worker lease expired after final attempt'),
+         last_error = coalesce(q.last_error, 'SMS worker lease expired after final attempt'),
          updated_at = pg_catalog.now()
-   where status = 'sending'
-     and attempts >= 5
-     and updated_at <= pg_catalog.now() - interval '15 minutes';
+   where q.status = 'sending'
+     and q.attempts >= 5
+     and q.updated_at <= pg_catalog.now() - interval '15 minutes';
 
   return query
   with due as (
