@@ -41,6 +41,8 @@ declare
   v_already_restored integer;
   v_processed integer := 0;
   v_total_quantity integer := 0;
+  v_new_quantity integer := 0;
+  v_new_items integer := 0;
   v_result jsonb := '[]'::jsonb;
 begin
   if p_order_id is null or p_actor_id is null
@@ -198,6 +200,8 @@ begin
 
     v_processed := v_processed + 1;
     v_total_quantity := v_total_quantity + v_entry.quantity;
+    v_new_items := v_new_items + 1;
+    v_new_quantity := v_new_quantity + v_entry.quantity;
     v_result := v_result || pg_catalog.jsonb_build_array(
       pg_catalog.jsonb_build_object(
         'order_item_id', v_entry.order_item_id,
@@ -206,6 +210,23 @@ begin
       )
     );
   end loop;
+
+  if v_new_items > 0 then
+    insert into public.audit_logs(
+      actor_user_id, action, target_type, target_id, details
+    ) values (
+      p_actor_id,
+      'order.return_items_restocked',
+      'order',
+      p_order_id::text,
+      pg_catalog.jsonb_build_object(
+        'new_items', v_new_items,
+        'new_quantity', v_new_quantity,
+        'items', v_result,
+        'note', pg_catalog.btrim(p_note)
+      )
+    );
+  end if;
 
   if not exists (
     select 1
@@ -307,6 +328,19 @@ begin
          stock_restoration_note = pg_catalog.btrim(p_note),
          updated_at = pg_catalog.now()
    where id = p_order_id;
+
+  insert into public.audit_logs(
+    actor_user_id, action, target_type, target_id, details
+  ) values (
+    p_actor_id,
+    'order.returned_stock_restocked',
+    'order',
+    p_order_id::text,
+    pg_catalog.jsonb_build_object(
+      'products_updated', v_item_count,
+      'note', pg_catalog.btrim(p_note)
+    )
+  );
 
   return pg_catalog.jsonb_build_object(
     'order_id', p_order_id,
