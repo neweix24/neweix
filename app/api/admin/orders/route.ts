@@ -421,7 +421,7 @@ export async function PATCH(request: Request) {
 
       if (error.message.includes("ORDER_DELIVERY_MUST_BE_CANCELLED_FIRST")) {
         return NextResponse.json(
-          { error: "This order has an active or linked courier booking. Resolve the Pathao shipment before cancelling the order or restoring its stock." },
+          { error: "This order has a courier booking attempt or linked consignment. Reconcile its Pathao status before cancelling the order or restoring its stock." },
           { status: 409 }
         );
       }
