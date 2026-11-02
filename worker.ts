@@ -30,6 +30,7 @@ type SearchJob = {
   job_id: string;
   product_id: string;
   attempts: number;
+  lease_token: string;
 };
 
 type Product = {
@@ -69,6 +70,7 @@ async function processSearchEmbeddingQueue(env: Env): Promise<void> {
     await Promise.all(typedJobs.map((job) =>
       supabase.rpc("neweix_fail_search_embedding_job", {
         p_job_id: job.job_id,
+        p_lease_token: job.lease_token,
         p_error: productsError.message,
       }),
     ));
@@ -84,6 +86,7 @@ async function processSearchEmbeddingQueue(env: Env): Promise<void> {
     if (!activeJobs.some((active) => active.job_id === job.job_id)) {
       const { error } = await supabase.rpc("neweix_complete_search_embedding_job", {
         p_job_id: job.job_id,
+        p_lease_token: job.lease_token,
       });
       if (error) console.error("[search-cron] stale job cleanup failed", job.job_id, error.message);
     }
@@ -112,6 +115,7 @@ async function processSearchEmbeddingQueue(env: Env): Promise<void> {
     await Promise.all(activeJobs.map((job) =>
       supabase.rpc("neweix_fail_search_embedding_job", {
         p_job_id: job.job_id,
+        p_lease_token: job.lease_token,
         p_error: message,
       }),
     ));
@@ -128,6 +132,7 @@ async function processSearchEmbeddingQueue(env: Env): Promise<void> {
     await Promise.all(activeJobs.map((job) =>
       supabase.rpc("neweix_fail_search_embedding_job", {
         p_job_id: job.job_id,
+        p_lease_token: job.lease_token,
         p_error: "Workers AI returned an invalid 1024-dimensional embedding response",
       }),
     ));
@@ -152,6 +157,7 @@ async function processSearchEmbeddingQueue(env: Env): Promise<void> {
     if (updateError) {
       await supabase.rpc("neweix_fail_search_embedding_job", {
         p_job_id: job.job_id,
+        p_lease_token: job.lease_token,
         p_error: updateError.message,
       });
       failed += 1;
@@ -184,6 +190,7 @@ type CustomerNotificationJob = {
   phone: string;
   message: string;
   attempts: number;
+  lease_token: string;
 };
 
 function normalizeBulkSmsPhone(phone: string): string | null {
@@ -238,6 +245,7 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
     if (!number) {
       await supabase.rpc("neweix_fail_customer_notification", {
         p_id: job.id,
+        p_lease_token: job.lease_token,
         p_error: "Invalid Bangladesh phone number",
       });
       failed += 1;
@@ -287,6 +295,7 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
     } catch (error) {
       await supabase.rpc("neweix_fail_customer_notification", {
         p_id: job.id,
+        p_lease_token: job.lease_token,
         p_error: error instanceof Error ? error.message : "BulkSMSBD network failure",
       });
       failed += 1;
