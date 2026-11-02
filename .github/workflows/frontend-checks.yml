@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - feature/neweix-frontend
-  pull_request:
-    branches:
-      - main
 
 permissions:
   contents: read

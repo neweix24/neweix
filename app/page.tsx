@@ -1,5 +1,5 @@
-import PortalHome from "@/features/portal/portal-home";
+import StorefrontHome from "@/features/portal/storefront-home";
 
 export default function HomePage() {
-  return <PortalHome />;
+  return <StorefrontHome />;
 }
