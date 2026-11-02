@@ -35,6 +35,29 @@ begin
 end;
 $function$;
 
+create or replace function private.guard_product_search_embedding_write()
+returns trigger
+language plpgsql
+set search_path = ''
+as $function$
+begin
+  if current_setting('neweix.search_embedding_rpc', true) is distinct from 'true' then
+    raise exception 'SEARCH_EMBEDDING_WRITE_REQUIRES_FENCED_RPC'
+      using errcode = '42501';
+  end if;
+  return new;
+end;
+$function$;
+
+revoke all on function private.guard_product_search_embedding_write()
+  from public, anon, authenticated, service_role;
+
+drop trigger if exists products_search_embedding_fenced_write on public.products;
+create trigger products_search_embedding_fenced_write
+before update of search_embedding, search_embedding_model, search_embedding_updated_at
+on public.products
+for each row execute function private.guard_product_search_embedding_write();
+
 create or replace function public.neweix_save_search_embedding(
   p_job_id uuid,
   p_product_id uuid,
@@ -81,6 +104,7 @@ begin
   end if;
 
   if product_is_active then
+    perform pg_catalog.set_config('neweix.search_embedding_rpc', 'true', true);
     update public.products
        set search_embedding = p_embedding,
            search_embedding_model = p_model,
