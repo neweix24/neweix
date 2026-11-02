@@ -91,6 +91,17 @@ const orderStatuses = [
   "returned",
 ] as const;
 
+const nextOrderStatuses: Record<string, readonly string[]> = {
+  pending: ["confirmed", "cancelled"],
+  confirmed: ["processing", "cancelled"],
+  processing: ["packed", "cancelled"],
+  packed: ["shipped", "cancelled"],
+  shipped: ["delivered", "returned"],
+  delivered: [],
+  returned: [],
+  cancelled: [],
+};
+
 export default function OrdersManager() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -581,9 +592,9 @@ export default function OrdersManager() {
                     }
                     className="mt-1 block w-full rounded-lg border p-2 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {orderStatuses.map((status) => (
+                    {[order.status, ...(nextOrderStatuses[order.status] ?? [])].map((status) => (
                       <option key={status} value={status}>
-                        {orderStatusNames[status]}
+                        {orderStatusNames[status] || status}
                       </option>
                     ))}
                   </select>
