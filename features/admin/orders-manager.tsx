@@ -599,6 +599,9 @@ export default function OrdersManager() {
                     ))}
                   </select>
                 </label>
+                <p className="mt-2 text-xs text-slate-500">
+                  Statuses move forward only. Cancelled, delivered, and returned orders are final.
+                </p>
 
                 {statusBusyId === order.id && (
                   <p className="mt-2 text-sm">
