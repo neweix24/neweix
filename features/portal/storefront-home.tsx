@@ -76,7 +76,11 @@ export default function StorefrontHome() {
     async function loadCustomer() {
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        // The storefront only needs the cached browser identity for display.
+        // Avoid a remote /auth/v1/user request during homepage initialization.
+        const { data: { session }, error: sessionError } =
+          await supabase.auth.getSession();
+        const user = sessionError ? null : session?.user ?? null;
         if (!active) return;
         if (!user) { setCustomer(null); return; }
         const { data: profile } = await supabase.from("customer_profiles").select("full_name").eq("user_id", user.id).maybeSingle();
