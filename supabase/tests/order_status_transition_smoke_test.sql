@@ -101,11 +101,11 @@ begin
   insert into public.orders (
     id, order_number, customer_name, customer_phone, shipping_address,
     subtotal, delivery_fee, total, payment_method, payment_status, status,
-    delivery_status, delivery_consignment_id
+    delivery_provider, delivery_status
   ) values (
     v_booked_order_id, 'TEST-BOOKED-' || substr(v_actor_id::text, 1, 8),
     'Test Customer', '+8801700000000', 'Test address, Dhaka',
-    100, 0, 100, 'cod', 'pending', 'packed', 'booked', 'PATHAO-TEST-BOOKING'
+    100, 0, 100, 'cod', 'pending', 'packed', 'pathao', 'booking'
   );
 
   insert into public.order_items (
@@ -127,24 +127,22 @@ begin
     raise exception 'COURIER_BOOKING_CANCELLATION_CHANGED_INVENTORY';
   end if;
 
-  -- Even a failed provider request is ambiguous after the booking reservation
-  -- starts; do not restore stock until the Pathao state has been reconciled.
+  -- A timeout remains in 'booking' and must fail closed until reconciled.
+  -- A definite provider rejection is marked 'failed' and may be cancelled.
   update public.orders
-     set delivery_status = 'failed',
-         delivery_consignment_id = null
+     set delivery_status = 'failed'
    where id = v_booked_order_id;
 
-  begin
-    perform public.admin_update_order_status(v_booked_order_id, 'cancelled', v_actor_id);
-    raise exception 'AMBIGUOUS_PATHAO_TIMEOUT_WAS_CANCELLED';
-  exception
-    when sqlstate '55000' then
-      if sqlerrm <> 'ORDER_DELIVERY_MUST_BE_CANCELLED_FIRST' then raise; end if;
-  end;
-
+  v_result := public.admin_update_order_status(v_booked_order_id, 'cancelled', v_actor_id);
   select stock into v_stock from public.products where id = v_product_id;
-  if v_stock <> 12 then
-    raise exception 'AMBIGUOUS_PATHAO_TIMEOUT_CHANGED_INVENTORY';
+  if v_stock <> 13 or (v_result->>'inventory_restocked')::boolean is not true then
+    raise exception 'DEFINITE_PATHAO_FAILURE_DID_NOT_RESTORE_STOCK';
+  end if;
+
+  v_result := public.admin_update_order_status(v_booked_order_id, 'cancelled', v_actor_id);
+  select stock into v_stock from public.products where id = v_product_id;
+  if v_stock <> 13 or (v_result->>'changed')::boolean is not false then
+    raise exception 'REPEATED_PATHAO_FAILURE_CANCEL_CHANGED_INVENTORY';
   end if;
 
   if has_function_privilege('anon', 'public.admin_update_order_status(uuid,text,uuid)', 'EXECUTE')
