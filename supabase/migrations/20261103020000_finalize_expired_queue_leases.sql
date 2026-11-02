@@ -105,16 +105,16 @@ begin
     raise exception 'service role required' using errcode = '42501';
   end if;
 
-  update private.product_search_embedding_jobs
+  update private.product_search_embedding_jobs as q
      set status = 'failed',
          lease_token = null,
          locked_until = null,
-         last_error = coalesce(last_error, 'Embedding worker lease expired after final attempt'),
+         last_error = coalesce(q.last_error, 'Embedding worker lease expired after final attempt'),
          updated_at = pg_catalog.now()
-   where attempts >= 8
+   where q.attempts >= 8
      and (
-       status = 'processing' and locked_until <= pg_catalog.now()
-       or status = 'pending'
+       (q.status = 'processing' and q.locked_until <= pg_catalog.now())
+       or q.status = 'pending'
      );
 
   return query
