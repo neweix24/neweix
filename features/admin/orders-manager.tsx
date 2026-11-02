@@ -92,9 +92,9 @@ const orderStatuses = [
 ] as const;
 
 const nextOrderStatuses: Record<string, readonly string[]> = {
-  pending: ["confirmed", "cancelled"],
-  confirmed: ["processing", "cancelled"],
-  processing: ["packed", "cancelled"],
+  pending: ["confirmed", "processing", "packed", "cancelled"],
+  confirmed: ["processing", "packed", "cancelled"],
+  processing: ["packed", "shipped", "cancelled"],
   packed: ["shipped", "cancelled"],
   shipped: ["delivered", "returned"],
   delivered: [],
