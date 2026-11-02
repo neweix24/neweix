@@ -118,7 +118,25 @@ for (const path of protectedApis) {
   });
 }
 
-process.stdout.write(`\nSmoke test summary: ${publicPages.length + protectedPages.length + protectedCustomerPages.length + protectedApis.length + 1 - failures.length} passed, ${failures.length} failed.\n`);
+const protectedCustomerApis = [
+  "/api/eixpay/wallet",
+  "/api/account/phone/status",
+];
+
+for (const path of protectedCustomerApis) {
+  await runCheck(`Customer API ${path}`, path, async (response) => {
+    const contentType = response.headers.get("content-type") || "";
+    if (response.status !== 401) {
+      return { ok: false, reason: `Expected HTTP 401 without a customer session, received ${response.status}` };
+    }
+    if (!contentType.includes("application/json")) {
+      return { ok: false, reason: "Expected a JSON authentication error, not an HTML redirect" };
+    }
+    return { ok: true };
+  });
+}
+
+process.stdout.write(`\nSmoke test summary: ${publicPages.length + protectedPages.length + protectedCustomerPages.length + protectedApis.length + protectedCustomerApis.length + 1 - failures.length} passed, ${failures.length} failed.\n`);
 if (failures.length > 0) {
   process.stderr.write(JSON.stringify(failures, null, 2) + "\n");
   process.exitCode = 1;
