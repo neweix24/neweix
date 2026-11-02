@@ -84,6 +84,13 @@ export async function middleware(request: NextRequest) {
   // Require verified customer phone numbers before protected account features are accessible.
   if (isCustomerProtected) {
     if (claimsError || typeof userId !== "string" || !userId) {
+      if (isCustomerApi) {
+        return NextResponse.json(
+          { error: "Authentication required.", code: "AUTHENTICATION_REQUIRED" },
+          { status: 401, headers: { "Cache-Control": "private, no-store, max-age=0" } }
+        );
+      }
+
       const destination = request.nextUrl.clone();
       destination.pathname = "/auth/customer-login";
       destination.search = "";
