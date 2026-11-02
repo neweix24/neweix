@@ -546,9 +546,9 @@ export default {
     const tasks: Promise<void>[] = [];
     if (controller.cron === "*/5 * * * *") {
       tasks.push(processCustomerNotificationQueue(env));
+      tasks.push(processSearchEmbeddingQueue(env));
     }
     if (controller.cron === "*/15 * * * *") {
-      tasks.push(processSearchEmbeddingQueue(env));
       tasks.push(processSocialPublishingQueue(env));
     }
     if (controller.cron === "17 2 * * *") {
