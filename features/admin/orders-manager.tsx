@@ -264,7 +264,7 @@ export default function OrdersManager() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Tracking information is unavailable.");
-      setNotice(`${order.order_number}: Pathao tracking তথ্য: ${JSON.stringify(result.tracking).slice(0, 700)}`);
+      setNotice(`${order.order_number}: Pathao tracking data refreshed.`);\n      await loadOrders();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Tracking information is unavailable.");
     } finally {
@@ -278,7 +278,7 @@ export default function OrdersManager() {
       if (note !== null) setError("The reason must be between 5 and 500 characters.");
       return;
     }
-    if (!window.confirm(`Order ${order.order_number}have been inspected. Restock them now?`)) return;
+    if (!window.confirm(`Have the returned items for order ${order.order_number} been inspected and approved for restocking?`)) return;
     setBusyId(order.id);
     setError("");
     setNotice("");
@@ -546,7 +546,7 @@ export default function OrdersManager() {
                   {order.stock_restored_at ? (
                     <p className="text-sm">
                       Stock restocked: {new Date(order.stock_restored_at).toLocaleString("en-BD")}
-                      {order.stock_restoration_note ? \` · \${order.stock_restoration_note}\` : ""}
+                      {order.stock_restoration_note ? ` · ${order.stock_restoration_note}` : ""}
                     </p>
                   ) : (
                     <>
