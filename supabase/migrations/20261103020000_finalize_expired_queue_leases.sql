@@ -1,7 +1,7 @@
 -- Close the final-attempt crash gap and reject completion from expired leases.
 begin;
 
-create or replace function public.neweix_claim_customer_notifications(p_limit integer default 10)
+create or replace function public.neweix_claim_customer_notifications_v2(p_limit integer default 10)
 returns table(id uuid, phone text, message text, attempts integer, lease_token uuid)
 language plpgsql
 security definer
@@ -48,7 +48,7 @@ begin
 end;
 $function$;
 
-create or replace function public.neweix_complete_customer_notification(p_id uuid, p_lease_token uuid)
+create or replace function public.neweix_complete_customer_notification_v2(p_id uuid, p_lease_token uuid)
 returns boolean
 language plpgsql
 security definer
@@ -70,7 +70,7 @@ begin
 end;
 $function$;
 
-create or replace function public.neweix_fail_customer_notification(p_id uuid, p_lease_token uuid, p_error text)
+create or replace function public.neweix_fail_customer_notification_v2(p_id uuid, p_lease_token uuid, p_error text)
 returns boolean
 language plpgsql
 security definer
@@ -94,7 +94,7 @@ begin
 end;
 $function$;
 
-create or replace function public.neweix_claim_search_embedding_jobs(p_limit integer default 10)
+create or replace function public.neweix_claim_search_embedding_jobs_v2(p_limit integer default 10)
 returns table(job_id uuid, product_id uuid, attempts integer, lease_token uuid)
 language plpgsql
 security definer
@@ -144,7 +144,7 @@ begin
 end;
 $function$;
 
-create or replace function public.neweix_complete_search_embedding_job(p_job_id uuid, p_lease_token uuid)
+create or replace function public.neweix_complete_search_embedding_job_v2(p_job_id uuid, p_lease_token uuid)
 returns boolean
 language plpgsql
 security definer
@@ -163,7 +163,7 @@ begin
 end;
 $function$;
 
-create or replace function public.neweix_fail_search_embedding_job(p_job_id uuid, p_lease_token uuid, p_error text default 'Embedding generation failed')
+create or replace function public.neweix_fail_search_embedding_job_v2(p_job_id uuid, p_lease_token uuid, p_error text default 'Embedding generation failed')
 returns boolean
 language plpgsql
 security definer
