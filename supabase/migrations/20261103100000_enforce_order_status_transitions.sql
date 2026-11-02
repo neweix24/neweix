@@ -14,6 +14,7 @@ as $function$
 declare
   v_old_status text;
   v_delivery_status text;
+  v_delivery_provider text;
   v_delivery_consignment_id text;
   v_transition_allowed boolean;
 begin
@@ -38,8 +39,8 @@ begin
     raise exception 'ACTOR_NOT_AUTHORIZED';
   end if;
 
-  select o.status, o.delivery_status, o.delivery_consignment_id
-    into v_old_status, v_delivery_status, v_delivery_consignment_id
+  select o.status, o.delivery_status, o.delivery_provider, o.delivery_consignment_id
+    into v_old_status, v_delivery_status, v_delivery_provider, v_delivery_consignment_id
     from public.orders o
    where o.id = p_order_id
    for update;
@@ -58,11 +59,13 @@ begin
     );
   end if;
 
-  -- Do not restock/cancel while a courier booking is active or still linked.
-  -- Resolve the Pathao consignment first; a callback may still be in flight.
+  -- Do not restock/cancel after a courier booking attempt has started. A
+  -- provider timeout can be ambiguous even when no consignment ID was saved.
+  -- Resolve the Pathao state first; a callback may still be in flight.
   if p_new_status = 'cancelled'
      and (
-       v_delivery_status not in ('not_booked', 'failed')
+       v_delivery_status <> 'not_booked'
+       or v_delivery_provider is not null
        or v_delivery_consignment_id is not null
      ) then
     raise exception 'ORDER_DELIVERY_MUST_BE_CANCELLED_FIRST'
