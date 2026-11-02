@@ -1,6 +1,6 @@
 # NEWEIX Security and Integration Review
 
-**Updated:** 2026-11-02  
+**Updated:** 2026-11-03  
 **Repository:** neweix24/neweix, branch main  
 **Hosting:** Cloudflare Workers via OpenNext  
 **Database:** Connected Supabase project
@@ -73,14 +73,15 @@ This document replaces older review notes that referred to EixPay/social foundat
 - Cloudflare production deployment is gated on both the matching GitHub CI run and disposable PostgreSQL migration/regression test succeeding; it checks out the exact tested commit.
 - Added a Content-Security-Policy header, including the Cloudflare Turnstile, Google OAuth and YouTube frame hosts.
 - Removed `unsafe-eval` and the generic HTTPS script wildcard; the policy still permits inline scripts/styles and broad HTTPS image/style resources. It is a hardened baseline, not a final nonce-based strict CSP. Further tightening requires a compatibility pass against the live storefront and auth flows.
-- wrangler.jsonc now lists the required server-only integration secrets; .env.example documents their names without values.
+- wrangler.jsonc lists required server-only integration secrets; `PATHAO_WEBHOOK_SECRET` is intentionally not a deployment blocker while it is absent, so the Pathao webhook fails closed with HTTP 503 until the merchant-configured value is added. .env.example documents the secret name without its value.
+- The production Worker was deployed from main commit `d574e2850300f19f9f7474173ca80487d4552134`; Cloudflare reports Worker version 371 at 100% traffic. Query-string redaction is enabled and the daily `17 2 * * *` EixPay watchdog trigger is present.
 
 ## Verified security foundations
 
 - Sensitive service-role operations remain server-side.
 - The live Production audit confirmed that the 19 tables flagged as RLS-enabled-without-policies have no direct SELECT/INSERT/UPDATE grants for anon or authenticated; the no-policy design is intentional for those private/server-only tables.
 - The live Production audit found 29 authenticated SECURITY DEFINER RPCs. All inspected authenticated RPCs check `auth.uid()`; Supreme-only operations also check staff role and AAL2. The single anon-executable review-list RPC returns approved public reviews only.
-- Six new workforce/department foreign-key indexes are included in a follow-up migration; the six affected tables currently contain zero rows.
+- Six workforce/department foreign-key indexes and two return-restock indexes are applied. Performance Advisor no longer reports unindexed foreign keys for the introduced restock ledger.
 - 52 indexes are reported unused by current advisor statistics. They are not dropped because usage counters may have reset and the indexes support existing query paths.
 - Customer device/IP records are audit signals; they are not used to block users by country or VPN.
 
@@ -88,16 +89,18 @@ This document replaces older review notes that referred to EixPay/social foundat
 ## Live Production audit notes (2026-11-02)
 
 - Connected Supabase project is healthy on PostgreSQL 17.11.0.003.
-- Production migration history currently ends at version `20261102040000`. The new timestamped migrations in the open GitHub PR are later than that version and have not been applied.
+- Eleven production migrations for queue fencing, atomic embedding writes, partial-return stock restoration, EixPay watchdog, search gate and supporting indexes were applied successfully, followed by two SQL hotfix migrations for ambiguous PL/pgSQL column references. The disposable PostgreSQL migration/regression suite also passed on the merged main commit.
 - The live `audit_logs` table uses `actor_id`; new restock audit writes must target that column (not the older `actor_user_id` name found in historical source schema files).
-- At audit time the SMS outbox contained one failed job and no queued/sending jobs; the search embedding queue had no rows. This is a point-in-time observation, not a permanent guarantee.
+- At the initial queue audit, the SMS outbox contained one failed job and no queued/sending jobs; the search embedding queue had no rows. Production smoke tests later executed both v2 claim RPCs successfully with no rows claimed. This is a point-in-time observation, not a permanent guarantee.
+- The EixPay watchdog returned `valid: true`, `checked_events: 0`, `independent_signature: false`; the current chain contains no events, so this validates the empty-chain state only.
 - Supabase Security Advisor reports leaked-password protection disabled. This is an Auth dashboard setting, not a repository migration; an authorized project administrator must enable it under Authentication security/password settings.
 
 ## Remaining issues and external dependencies
 
-1. **Supabase leaked-password protection:** Security Advisor reported this setting disabled. It must be enabled in Supabase Auth settings by an authorized project administrator if available on the current plan. It cannot safely be changed through repository code.
+1. **Supabase leaked-password protection:** Security Advisor still reports this setting disabled. It must be enabled in Supabase Auth settings by an authorized project administrator if available on the current plan. It cannot safely be changed through repository code.
+2. **Pathao webhook secret:** `PATHAO_WEBHOOK_SECRET` is not present in the production Worker. The endpoint currently returns HTTP 503 until the exact inbound signature secret configured in Pathao Developer API > Webhook Integration is added as a Cloudflare Worker secret. Do not guess or reuse the Pathao API client secret.
 2. **Legacy migration history:** older repository filenames and production migration versions diverge. The duplicate 20261031180000 prefix has been resolved by renaming the social migration to 20261031180100, but the older history still needs a deliberate baseline/version mapping. Do not run supabase db push blindly.
-3. **CI and deployment:** latest checks must finish successfully before claiming a deployment. Any cancelled intermediate workflow is not a validation result.
+3. **CI and deployment:** merged main commit `04da09c5e19a9061cd810351eadf79c9b084ad84` passed CI and disposable migration tests; the subsequent deployment-configuration commit `d574e2850300f19f9f7474173ca80487d4552134` passed CI/migration tests and deployed Worker version 371. The earlier deployment attempt failed because the Pathao webhook secret was absent; the deployment guard was then adjusted so the rest of the site could deploy while that webhook stays fail-closed.
 4. **End-to-end tests:** automated browser coverage is still needed for login/MFA, phone OTP, checkout, payment verification, order cancellation/return, product permissions, Pathao and YouTube publishing.
 5. **NPM dependencies:** CI install reported 18 moderate audit findings. Review the lockfile/dependency advisories and apply compatible updates; do not use npm audit fix --force without checking breaking changes.
 6. **CSP hardening:** remove unsafe-eval/inline allowances only after replacing any required inline scripts with nonces or hashes and verifying Turnstile, Supabase Auth, Google OAuth and storefront rendering.
