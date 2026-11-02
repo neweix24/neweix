@@ -42,6 +42,36 @@ type Product = {
 };
 
 async function processSearchEmbeddingQueue(env: Env): Promise<void> {
+  if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Search embedding gate is missing Supabase bindings.");
+  }
+  const gateClient = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: leaseToken, error: gateError } = await gateClient.rpc(
+    "neweix_acquire_search_embedding_gate",
+    { p_min_interval_seconds: 30, p_lease_seconds: 600 },
+  );
+  if (gateError) throw new Error(`Search embedding gate failed: ${gateError.message}`);
+  if (typeof leaseToken !== "string") {
+    console.log("[search-cron] batch skipped by global concurrency/rate gate");
+    return;
+  }
+
+  try {
+    await processSearchEmbeddingQueueBatch(env);
+  } finally {
+    const { error: releaseError } = await gateClient.rpc(
+      "neweix_release_search_embedding_gate",
+      { p_lease_token: leaseToken },
+    );
+    if (releaseError) {
+      console.error("[search-cron] global gate release failed", releaseError.message);
+    }
+  }
+}
+
+async function processSearchEmbeddingQueueBatch(env: Env): Promise<void> {
   if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY || !env.AI) {
     throw new Error("Search embedding cron is missing required bindings.");
   }
