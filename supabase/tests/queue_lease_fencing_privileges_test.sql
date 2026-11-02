@@ -1,5 +1,10 @@
 -- Run after all queue lease migrations in a Supabase test database.
 do $test$
+declare
+  v_previous_role text;
+  v_gate_token uuid;
+  v_second_gate_token uuid;
+  v_released boolean;
 begin
   if has_function_privilege('anon', 'public.neweix_claim_customer_notifications(integer)', 'EXECUTE')
      or has_function_privilege('authenticated', 'public.neweix_claim_customer_notifications(integer)', 'EXECUTE')
@@ -33,6 +38,26 @@ begin
      or has_table_privilege('service_role', 'private.search_embedding_processor_gate', 'SELECT') then
     raise exception 'Search queue global rate-gate table must not be directly readable.';
   end if;
+
+  v_previous_role := current_setting('request.jwt.claim.role', true);
+  perform pg_catalog.set_config('request.jwt.claim.role', 'service_role', true);
+  v_gate_token := public.neweix_acquire_search_embedding_gate(30, 600);
+  if v_gate_token is null then
+    raise exception 'Search queue gate did not grant the first lease.';
+  end if;
+  v_second_gate_token := public.neweix_acquire_search_embedding_gate(30, 600);
+  if v_second_gate_token is not null then
+    raise exception 'Search queue gate allowed concurrent leases.';
+  end if;
+  v_released := public.neweix_release_search_embedding_gate(v_gate_token);
+  if v_released is not true then
+    raise exception 'Search queue gate lease could not be released.';
+  end if;
+  v_second_gate_token := public.neweix_acquire_search_embedding_gate(30, 600);
+  if v_second_gate_token is not null then
+    raise exception 'Search queue gate did not enforce its minimum start interval.';
+  end if;
+  perform pg_catalog.set_config('request.jwt.claim.role', coalesce(v_previous_role, ''), true);
 
   if not exists (
     select 1
