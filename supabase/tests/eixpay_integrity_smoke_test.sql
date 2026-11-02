@@ -15,6 +15,7 @@ declare
   v_payload jsonb;
   v_watchdog_result jsonb;
   v_previous_role text;
+  v_previous_claims text;
 begin
   if to_regclass('private.eixpay_config') is null
      or to_regclass('private.eixpay_wallets') is null
@@ -99,8 +100,11 @@ begin
   end if;
 
   v_previous_role := current_setting('request.jwt.claim.role', true);
-  perform pg_catalog.set_config('request.jwt.claim.role', 'service_role', true);
+  v_previous_claims := current_setting('request.jwt.claims', true);
+  perform pg_catalog.set_config('request.jwt.claim.role', '', true);
+  perform pg_catalog.set_config('request.jwt.claims', '{"role":"service_role"}', true);
   v_watchdog_result := public.eixpay_verify_integrity_watchdog();
+  perform pg_catalog.set_config('request.jwt.claims', coalesce(v_previous_claims, ''), true);
   perform pg_catalog.set_config('request.jwt.claim.role', coalesce(v_previous_role, ''), true);
 
   if coalesce((v_watchdog_result->>'valid')::boolean, false) is not true
