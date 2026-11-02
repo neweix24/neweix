@@ -84,6 +84,7 @@ Bangla SMS uses Unicode encoding and can consume multiple SMS parts. Review the 
 
 - `*/5 * * * *`: process customer transactional SMS notifications.
 - `*/15 * * * *`: process search embedding and scheduled social publishing queues.
+- `17 2 * * *` (02:17 UTC daily): verify the complete EixPay SHA-256 integrity chain and store a private verification result. This is database-local tamper evidence, not an external signature.
 
 The jobs are separated so the SMS queue is not unnecessarily invoked twice at timestamps where both cron expressions match.
 
