@@ -78,6 +78,7 @@ begin
     when 'processing' then p_new_status in ('packed', 'shipped', 'cancelled')
     when 'packed' then p_new_status in ('shipped', 'cancelled')
     when 'shipped' then p_new_status in ('delivered', 'returned')
+    when 'delivered' then p_new_status = 'returned'
     else false
   end;
 
