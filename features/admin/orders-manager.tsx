@@ -229,7 +229,10 @@ export default function OrdersManager() {
       setError("Instructions must be 500 characters or fewer.");
       return;
     }
-    if (!window.confirm(`Book order ${order.order_number} with Pathao?\nCOD to collect: ৳${Number(order.total).toLocaleString("en-BD")}`)) return;
+    const codToCollect = order.payment_method === "cod"
+      ? Math.max(0, Number(order.total) - (order.delivery_fee_payment_status === "paid" ? Number(order.delivery_fee) : 0))
+      : 0;
+    if (!window.confirm(`Book order ${order.order_number} with Pathao?\nCOD to collect: ৳${codToCollect.toLocaleString("en-BD")}`)) return;
 
     setBusyId(order.id);
     setError("");
