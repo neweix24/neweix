@@ -1,31 +1,27 @@
 -- Prevent reopening terminal orders and prevent inventory being restored twice.
 -- The order row lock serializes concurrent transitions; terminal states cannot be left.
 
--- The historical migration baseline used an enum containing 'packing',
--- while the live application and Production schema use text with 'processing'
--- and 'packed'. Normalize only enum-backed installations to the app schema.
+-- The historical migration baseline used an enum with 'packing';
+-- add/rename values in-place so triggers depending on orders.status remain intact.
+-- Production already uses text, so this is a no-op on the live schema.
 do $migration$
-declare
-  v_status_type oid;
 begin
-  select a.atttypid
-    into v_status_type
-    from pg_catalog.pg_attribute a
-   where a.attrelid = 'public.orders'::regclass
-     and a.attname = 'status'
-     and not a.attisdropped;
+  if pg_catalog.to_regtype('public.order_status') is not null then
+    if exists (
+      select 1 from pg_catalog.pg_enum e
+      where e.enumtypid = pg_catalog.to_regtype('public.order_status')
+        and e.enumlabel = 'packing'
+    ) and not exists (
+      select 1 from pg_catalog.pg_enum e
+      where e.enumtypid = pg_catalog.to_regtype('public.order_status')
+        and e.enumlabel = 'processing'
+    ) then
+      alter type public.order_status rename value 'packing' to 'processing';
+    end if;
 
-  if v_status_type = pg_catalog.to_regtype('public.order_status') then
-    alter table public.orders alter column status drop default;
-    alter table public.orders
-      alter column status type text
-      using (
-        case status::text
-          when 'packing' then 'processing'
-          else status::text
-        end
-      );
-    alter table public.orders alter column status set default 'pending';
+    alter type public.order_status add value if not exists 'processing';
+    alter type public.order_status add value if not exists 'packed';
+    alter type public.order_status add value if not exists 'returned';
   end if;
 end;
 $migration$;
@@ -141,10 +137,25 @@ begin
      where p.id = item_totals.product_id;
   end if;
 
-  update public.orders
-     set status = p_new_status,
-         updated_at = pg_catalog.now()
-   where id = p_order_id;
+  -- The local baseline uses an enum; Production uses text. Cast only when
+  -- the live column is enum-backed, after the enum migration above has committed.
+  if pg_catalog.to_regtype('public.order_status') is not null
+     and exists (
+       select 1 from pg_catalog.pg_attribute a
+       where a.attrelid = 'public.orders'::regclass
+         and a.attname = 'status'
+         and a.atttypid = pg_catalog.to_regtype('public.order_status')
+         and not a.attisdropped
+     ) then
+    execute
+      'update public.orders set status = $1::public.order_status, updated_at = pg_catalog.now() where id = $2'
+      using p_new_status, p_order_id;
+  else
+    update public.orders
+       set status = p_new_status,
+           updated_at = pg_catalog.now()
+     where id = p_order_id;
+  end if;
 
   -- Production uses audit_logs.actor_id; the historical migration baseline
   -- used actor_user_id. Select the existing column without changing live data.
