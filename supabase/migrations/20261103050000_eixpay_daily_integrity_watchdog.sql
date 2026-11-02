@@ -39,8 +39,7 @@ declare
 begin
   select * into v_state
     from private.eixpay_integrity_chain_state
-   where singleton = true
-   for share;
+   where singleton = true;
 
   if not found then
     return pg_catalog.jsonb_build_object(
@@ -58,6 +57,7 @@ begin
     select sequence, source_table, source_id, source_hash,
            previous_hash, event_hash
       from private.eixpay_integrity_events
+     where sequence <= v_state.last_sequence
      order by sequence asc
   loop
     v_checked := v_checked + 1;
