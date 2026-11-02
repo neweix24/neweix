@@ -22,7 +22,7 @@ Configure these as Worker secrets; never add values to Git:
 - `PATHAO_USERNAME`
 - `PATHAO_PASSWORD`
 - `PATHAO_BASE_URL` (optional; defaults to `https://api-hermes.pathao.com`)
-- `PATHAO_WEBHOOK_SECRET` (required to activate webhook callbacks)
+- `PATHAO_WEBHOOK_SECRET` (the merchant-configured inbound signature secret; required to activate webhook callbacks)
 
 For the webhook secret, generate a long random value locally, then set it in Cloudflare:
 
@@ -42,7 +42,7 @@ Paste the generated value into the Wrangler prompt, then configure the exact sam
 5. Enable the shipment events Pathao makes available and save the configuration.
 6. Verify the integration handshake, then create and track a controlled test consignment.
 
-The endpoint checks the `X-PATHAO-SIGNATURE` header against the configured secret. It does not trust a status, delivery fee or COD amount in the incoming payload. Instead, it fetches the shipment from Pathao before applying a recognized status. This is important because a webhook callback should not be treated as authoritative order data.
+The endpoint checks the `X-PATHAO-SIGNATURE` header against the configured merchant secret and returns Pathao's required `X-Pathao-Merchant-Webhook-Integration-Secret` protocol header. It does not trust a status, delivery fee or COD amount in the incoming payload. Instead, it fetches the shipment from Pathao before applying a recognized status. This is important because a webhook callback should not be treated as authoritative order data.
 
 ### Operational limits
 
