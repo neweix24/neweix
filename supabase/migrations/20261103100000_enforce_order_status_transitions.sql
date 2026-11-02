@@ -26,6 +26,67 @@ begin
 end;
 $migration$;
 
+-- The SMS trigger must compare/format status as text because historical
+-- installations store orders.status as an enum while Production stores text.
+create or replace function private.queue_customer_order_sms()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+begin
+  if new.customer_phone is null
+     or pg_catalog.length(pg_catalog.btrim(new.customer_phone)) < 7 then
+    return new;
+  end if;
+
+  if tg_op = 'INSERT' then
+    insert into private.customer_notification_outbox(
+      order_id, phone, event_type, event_key, message
+    ) values (
+      new.id, new.customer_phone, 'order_created', 'created',
+      'NEWEIX: আপনার অর্ডার ' || new.order_number || ' গ্রহণ করা হয়েছে। মোট ৳' ||
+      pg_catalog.round(new.total)::text || '। ধন্যবাদ।'
+    )
+    on conflict (order_id, event_type, event_key) do nothing;
+    return new;
+  end if;
+
+  if new.status::text is distinct from old.status::text then
+    insert into private.customer_notification_outbox(
+      order_id, phone, event_type, event_key, message
+    ) values (
+      new.id, new.customer_phone, 'order_status', new.status::text,
+      'NEWEIX: অর্ডার ' || new.order_number || ' এর নতুন অবস্থা: ' ||
+      case new.status::text
+        when 'confirmed' then 'নিশ্চিত হয়েছে'
+        when 'processing' then 'প্রসেসিং হচ্ছে'
+        when 'packed' then 'প্যাক করা হয়েছে'
+        when 'shipped' then 'কুরিয়ারে পাঠানো হয়েছে'
+        when 'delivered' then 'ডেলিভারি সম্পন্ন হয়েছে'
+        when 'cancelled' then 'বাতিল হয়েছে'
+        when 'returned' then 'ফেরত এসেছে'
+        else new.status::text
+      end || '।'
+    )
+    on conflict (order_id, event_type, event_key) do nothing;
+  end if;
+
+  if new.payment_status = 'paid'
+     and old.payment_status is distinct from new.payment_status then
+    insert into private.customer_notification_outbox(
+      order_id, phone, event_type, event_key, message
+    ) values (
+      new.id, new.customer_phone, 'payment_confirmed', 'paid',
+      'NEWEIX: অর্ডার ' || new.order_number || ' এর পেমেন্ট নিশ্চিত হয়েছে। ধন্যবাদ।'
+    )
+    on conflict (order_id, event_type, event_key) do nothing;
+  end if;
+
+  return new;
+end;
+$function$;
+
 create or replace function public.admin_update_order_status(
   p_order_id uuid,
   p_new_status text,
