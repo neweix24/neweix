@@ -95,6 +95,26 @@ export default function LoginPage() {
     };
   }, []);
 
+  function getSafeStaffNextPath(): string {
+    const next = new URLSearchParams(window.location.search).get("next");
+    if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
+      return "/admin";
+    }
+
+    try {
+      const target = new URL(next, window.location.origin);
+      if (
+        target.origin !== window.location.origin ||
+        (target.pathname !== "/admin" && !target.pathname.startsWith("/admin/"))
+      ) {
+        return "/admin";
+      }
+      return `${target.pathname}${target.search}${target.hash}`;
+    } catch {
+      return "/admin";
+    }
+  }
+
   function navigateAfterAuth(path: string) {
     window.location.replace(path);
   }
@@ -203,7 +223,7 @@ export default function LoginPage() {
         return;
       }
 
-      navigateAfterAuth("/admin");
+      navigateAfterAuth(getSafeStaffNextPath());
     } catch {
       setMessage("Could not sign in. Check Supabase environment variables and network connectivity.");
     } finally {
