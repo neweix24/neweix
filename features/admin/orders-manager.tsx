@@ -40,6 +40,14 @@ type Order = {
   delivery_fee_payment_transaction_id: string | null;
   delivery_fee_payment_status: string;
   delivery_fee_payment_verified_at: string | null;
+  delivery_provider?: string | null;
+  delivery_status?: string | null;
+  delivery_consignment_id?: string | null;
+  delivery_tracking_code?: string | null;
+  delivery_booked_at?: string | null;
+  delivery_error?: string | null;
+  stock_restored_at?: string | null;
+  stock_restoration_note?: string | null;
   created_at: string;
   order_items: OrderItem[];
 };
@@ -194,6 +202,98 @@ export default function OrdersManager() {
       await loadOrders();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not verify the delivery fee.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function createPathaoShipment(order: Order) {
+    const rawStoreId = window.prompt("Enter the Pathao Merchant Store ID:");
+    if (!rawStoreId) return;
+    const storeId = Number(rawStoreId.trim());
+    if (!Number.isSafeInteger(storeId) || storeId < 1) {
+      setError("Enter a valid Pathao Store ID.");
+      return;
+    }
+    const defaultAddress = [order.shipping_address || order.address, order.shipping_village, order.shipping_union_other || order.shipping_union, order.shipping_upazila, order.shipping_district || order.shipping_city, order.shipping_division].filter(Boolean).join(", ");
+    const recipientAddress = window.prompt(
+      "Enter the full Pathao address (street/area, upazila/police station, district):",
+      defaultAddress,
+    );
+    if (!recipientAddress || recipientAddress.trim().length < 10 || recipientAddress.trim().length > 220) {
+      setError("Enter a complete Pathao address between 10 and 220 characters.");
+      return;
+    }
+    const specialInstruction = window.prompt("Delivery instructions (optional):") || "";
+    if (specialInstruction.length > 500) {
+      setError("Instructions must be 500 characters or fewer.");
+      return;
+    }
+    if (!window.confirm(`Order ${order.order_number} book this shipment with Pathao?\nCOD to collect: ৳${Number(order.total).toLocaleString("bn-BD")}`)) return;
+
+    setBusyId(order.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/pathao", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create_order", orderId: order.id, storeId, recipientAddress: recipientAddress.trim(), specialInstruction }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Pathao booking failed.");
+      setNotice(`${order.order_number}: Pathao Consignment ID ${result.consignmentId} was created.`);
+      await loadOrders();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Pathao booking failed.");
+      await loadOrders();
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function trackPathaoShipment(order: Order) {
+    const consignmentId = order.delivery_consignment_id || order.delivery_tracking_code;
+    if (!consignmentId) return;
+    setBusyId(order.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/pathao?action=track&consignmentId=${encodeURIComponent(consignmentId)}`, {
+        cache: "no-store",
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Tracking information is unavailable.");
+      setNotice(`${order.order_number}: Pathao tracking তথ্য: ${JSON.stringify(result.tracking).slice(0, 700)}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Tracking information is unavailable.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function restockReturnedOrder(order: Order) {
+    const note = window.prompt("Enter the reason for restocking inspected returned items (5–500 characters):");
+    if (!note || note.trim().length < 5 || note.trim().length > 500) {
+      if (note !== null) setError("The reason must be between 5 and 500 characters.");
+      return;
+    }
+    if (!window.confirm(`Order ${order.order_number}have been inspected. Restock them now?`)) return;
+    setBusyId(order.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "restock_returned", orderId: order.id, note: note.trim() }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not restock returned items.");
+      setNotice(`${order.order_number}: Returned items have been restocked.`);
+      await loadOrders();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not restock returned items.");
     } finally {
       setBusyId("");
     }
@@ -439,6 +539,71 @@ export default function OrdersManager() {
                     Saving status...
                   </p>
                 )}
+              </div>
+
+              {order.status === "returned" && (
+                <div className="mt-3 rounded-lg border border-dashed p-3">
+                  {order.stock_restored_at ? (
+                    <p className="text-sm">
+                      Stock restocked: {new Date(order.stock_restored_at).toLocaleString("en-BD")}
+                      {order.stock_restoration_note ? \` · \${order.stock_restoration_note}\` : ""}
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-sm">Inspect the returned products and quantities before adding them back to inventory.</p>
+                      <button
+                        type="button"
+                        onClick={() => void restockReturnedOrder(order)}
+                        disabled={busyId !== "" || statusBusyId !== ""}
+                        className="neweix-button-secondary mt-2 disabled:opacity-50"
+                      >
+                        {busyId === order.id ? "Restocking..." : "Restock inspected returned items"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-3 rounded-lg border border-dashed p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold">Pathao Courier</p>
+                  <span className="text-xs">Status: {order.delivery_status || "not_booked"}</span>
+                </div>
+                {order.delivery_consignment_id && (
+                  <p className="mt-1 break-all text-xs">
+                    Consignment ID: {order.delivery_consignment_id}
+                  </p>
+                )}
+                {order.delivery_error && (
+                  <p role="alert" className="mt-2 text-xs">{order.delivery_error}</p>
+                )}
+                {order.delivery_booked_at && (
+                  <p className="mt-1 text-xs">
+                    Booked: {new Date(order.delivery_booked_at).toLocaleString("en-BD")}
+                  </p>
+                )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(!order.delivery_consignment_id && ["not_booked", "failed"].includes(order.delivery_status || "not_booked")) && (
+                    <button
+                      type="button"
+                      onClick={() => void createPathaoShipment(order)}
+                      disabled={busyId !== "" || statusBusyId !== ""}
+                      className="neweix-button-primary disabled:opacity-50"
+                    >
+                      {busyId === order.id ? "Booking with Pathao..." : "Book with Pathao"}
+                    </button>
+                  )}
+                  {order.delivery_consignment_id && (
+                    <button
+                      type="button"
+                      onClick={() => void trackPathaoShipment(order)}
+                      disabled={busyId !== "" || statusBusyId !== ""}
+                      className="neweix-button-secondary disabled:opacity-50"
+                    >
+                      {busyId === order.id ? "Refreshing tracking..." : "Refresh Pathao Tracking"}
+                    </button>
+                  )}
+                </div>
               </div>
 
               <p className="mt-3 break-words text-sm">
