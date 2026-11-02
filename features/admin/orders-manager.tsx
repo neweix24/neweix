@@ -97,7 +97,7 @@ const nextOrderStatuses: Record<string, readonly string[]> = {
   processing: ["packed", "shipped", "cancelled"],
   packed: ["shipped", "cancelled"],
   shipped: ["delivered", "returned"],
-  delivered: [],
+  delivered: ["returned"],
   returned: [],
   cancelled: [],
 };
@@ -600,7 +600,7 @@ export default function OrdersManager() {
                   </select>
                 </label>
                 <p className="mt-2 text-xs text-slate-500">
-                  Statuses move forward only. Cancelled, delivered, and returned orders are final.
+                  Statuses move forward only. Cancelled and returned orders are final; delivered orders may enter the return workflow.
                 </p>
 
                 {statusBusyId === order.id && (
