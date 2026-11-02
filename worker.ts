@@ -304,6 +304,45 @@ async function processCustomerNotificationQueue(env: Env): Promise<void> {
 }
 
 
+async function processEixPayIntegrityWatchdog(env: Env): Promise<void> {
+  if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("EixPay integrity watchdog is missing Supabase bindings.");
+  }
+
+  const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await supabase.rpc("eixpay_verify_integrity_watchdog");
+  if (error) {
+    throw new Error(`EixPay integrity verification failed: ${error.message}`);
+  }
+
+  const result = data as {
+    valid?: boolean;
+    checked_events?: number;
+    failure_reason?: string | null;
+    first_invalid_sequence?: number | null;
+    watchdog_run_id?: number;
+    independent_signature?: boolean;
+  } | null;
+
+  if (!result?.valid) {
+    console.error("[eixpay-integrity-watchdog] INTEGRITY FAILURE", {
+      checkedEvents: result?.checked_events ?? 0,
+      failureReason: result?.failure_reason ?? "UNKNOWN",
+      firstInvalidSequence: result?.first_invalid_sequence ?? null,
+      watchdogRunId: result?.watchdog_run_id ?? null,
+    });
+    return;
+  }
+
+  console.log("[eixpay-integrity-watchdog] verification passed", {
+    checkedEvents: result.checked_events ?? 0,
+    watchdogRunId: result.watchdog_run_id ?? null,
+    independentSignature: result.independent_signature === true,
+  });
+}
+
 type ScheduledSocialPost = {
   id: string;
   title: string;
@@ -481,6 +520,9 @@ export default {
     if (controller.cron === "*/15 * * * *") {
       tasks.push(processSearchEmbeddingQueue(env));
       tasks.push(processSocialPublishingQueue(env));
+    }
+    if (controller.cron === "17 2 * * *") {
+      tasks.push(processEixPayIntegrityWatchdog(env));
     }
     const results = await Promise.allSettled(tasks);
     for (const result of results) {
