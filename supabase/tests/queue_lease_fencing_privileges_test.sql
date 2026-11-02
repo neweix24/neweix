@@ -108,6 +108,19 @@ begin
 
   if not exists (
     select 1
+      from pg_trigger t
+      join pg_class c on c.oid = t.tgrelid
+      join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public'
+       and c.relname = 'products'
+       and t.tgname = 'products_search_embedding_fenced_write'
+       and not t.tgisinternal
+  ) then
+    raise exception 'Search embedding direct-write guard trigger is missing.';
+  end if;
+
+  if not exists (
+    select 1
       from pg_proc p
       join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public'
