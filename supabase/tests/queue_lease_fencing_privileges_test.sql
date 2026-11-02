@@ -13,6 +13,12 @@ begin
     raise exception 'Search embedding RPC privilege boundary regression.';
   end if;
 
+  if has_function_privilege('anon', 'public.neweix_enqueue_search_embedding_batch(integer,integer)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.neweix_enqueue_search_embedding_batch(integer,integer)', 'EXECUTE')
+     or not has_function_privilege('service_role', 'public.neweix_enqueue_search_embedding_batch(integer,integer)', 'EXECUTE') then
+    raise exception 'Search reindex enqueue RPC privilege boundary regression.';
+  end if;
+
   if not exists (
     select 1
       from pg_proc p
