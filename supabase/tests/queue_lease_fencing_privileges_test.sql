@@ -14,6 +14,24 @@ begin
     raise exception 'Customer SMS queue RPC privilege boundary regression.';
   end if;
 
+  if has_function_privilege('anon', 'public.neweix_complete_customer_notification_v2(uuid,uuid)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.neweix_complete_customer_notification_v2(uuid,uuid)', 'EXECUTE')
+     or not has_function_privilege('service_role', 'public.neweix_complete_customer_notification_v2(uuid,uuid)', 'EXECUTE')
+     or has_function_privilege('anon', 'public.neweix_fail_customer_notification_v2(uuid,uuid,text)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.neweix_fail_customer_notification_v2(uuid,uuid,text)', 'EXECUTE')
+     or not has_function_privilege('service_role', 'public.neweix_fail_customer_notification_v2(uuid,uuid,text)', 'EXECUTE')
+     or has_function_privilege('anon', 'public.neweix_claim_search_embedding_jobs_v2(integer)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.neweix_claim_search_embedding_jobs_v2(integer)', 'EXECUTE')
+     or not has_function_privilege('service_role', 'public.neweix_claim_search_embedding_jobs_v2(integer)', 'EXECUTE')
+     or has_function_privilege('anon', 'public.neweix_complete_search_embedding_job_v2(uuid,uuid)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.neweix_complete_search_embedding_job_v2(uuid,uuid)', 'EXECUTE')
+     or not has_function_privilege('service_role', 'public.neweix_complete_search_embedding_job_v2(uuid,uuid)', 'EXECUTE')
+     or has_function_privilege('anon', 'public.neweix_fail_search_embedding_job_v2(uuid,uuid,text)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.neweix_fail_search_embedding_job_v2(uuid,uuid,text)', 'EXECUTE')
+     or not has_function_privilege('service_role', 'public.neweix_fail_search_embedding_job_v2(uuid,uuid,text)', 'EXECUTE') then
+    raise exception 'Versioned queue RPC privilege boundary regression.';
+  end if;
+
   if has_function_privilege('anon', 'public.neweix_save_search_embedding(uuid,uuid,uuid,extensions.vector,text)', 'EXECUTE')
      or has_function_privilege('authenticated', 'public.neweix_save_search_embedding(uuid,uuid,uuid,extensions.vector,text)', 'EXECUTE')
      or not has_function_privilege('service_role', 'public.neweix_save_search_embedding(uuid,uuid,uuid,extensions.vector,text)', 'EXECUTE') then
