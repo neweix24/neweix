@@ -7,11 +7,8 @@ alter table private.customer_notification_outbox
 alter table private.product_search_embedding_jobs
   add column if not exists lease_token uuid;
 
-drop function if exists public.neweix_claim_customer_notifications(integer);
-drop function if exists public.neweix_complete_customer_notification(uuid);
-drop function if exists public.neweix_fail_customer_notification(uuid, text);
 
-create function public.neweix_claim_customer_notifications(p_limit integer default 10)
+create function public.neweix_claim_customer_notifications_v2(p_limit integer default 10)
 returns table(id uuid, phone text, message text, attempts integer, lease_token uuid)
 language plpgsql
 security definer
@@ -49,7 +46,7 @@ begin
 end;
 $function$;
 
-create function public.neweix_complete_customer_notification(p_id uuid, p_lease_token uuid)
+create function public.neweix_complete_customer_notification_v2(p_id uuid, p_lease_token uuid)
 returns boolean
 language plpgsql
 security definer
@@ -69,7 +66,7 @@ begin
 end;
 $function$;
 
-create function public.neweix_fail_customer_notification(p_id uuid, p_lease_token uuid, p_error text)
+create function public.neweix_fail_customer_notification_v2(p_id uuid, p_lease_token uuid, p_error text)
 returns boolean
 language plpgsql
 security definer
@@ -91,11 +88,8 @@ begin
 end;
 $function$;
 
-drop function if exists public.neweix_claim_search_embedding_jobs(integer);
-drop function if exists public.neweix_complete_search_embedding_job(uuid);
-drop function if exists public.neweix_fail_search_embedding_job(uuid, text);
 
-create function public.neweix_claim_search_embedding_jobs(p_limit integer default 10)
+create function public.neweix_claim_search_embedding_jobs_v2(p_limit integer default 10)
 returns table(job_id uuid, product_id uuid, attempts integer, lease_token uuid)
 language plpgsql
 security definer
@@ -132,7 +126,7 @@ begin
 end;
 $function$;
 
-create function public.neweix_complete_search_embedding_job(p_job_id uuid, p_lease_token uuid)
+create function public.neweix_complete_search_embedding_job_v2(p_job_id uuid, p_lease_token uuid)
 returns boolean
 language plpgsql
 security definer
@@ -150,7 +144,7 @@ begin
 end;
 $function$;
 
-create function public.neweix_fail_search_embedding_job(p_job_id uuid, p_lease_token uuid, p_error text default 'Embedding generation failed')
+create function public.neweix_fail_search_embedding_job_v2(p_job_id uuid, p_lease_token uuid, p_error text default 'Embedding generation failed')
 returns boolean
 language plpgsql
 security definer
@@ -173,18 +167,106 @@ begin
 end;
 $function$;
 
-revoke all on function public.neweix_claim_customer_notifications(integer) from public, anon, authenticated;
-revoke all on function public.neweix_complete_customer_notification(uuid, uuid) from public, anon, authenticated;
-revoke all on function public.neweix_fail_customer_notification(uuid, uuid, text) from public, anon, authenticated;
-revoke all on function public.neweix_claim_search_embedding_jobs(integer) from public, anon, authenticated;
-revoke all on function public.neweix_complete_search_embedding_job(uuid, uuid) from public, anon, authenticated;
-revoke all on function public.neweix_fail_search_embedding_job(uuid, uuid, text) from public, anon, authenticated;
+revoke all on function public.neweix_claim_customer_notifications_v2(integer) from public, anon, authenticated;
+revoke all on function public.neweix_complete_customer_notification_v2(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.neweix_fail_customer_notification_v2(uuid, uuid, text) from public, anon, authenticated;
+revoke all on function public.neweix_claim_search_embedding_jobs_v2(integer) from public, anon, authenticated;
+revoke all on function public.neweix_complete_search_embedding_job_v2(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.neweix_fail_search_embedding_job_v2(uuid, uuid, text) from public, anon, authenticated;
 
+grant execute on function public.neweix_claim_customer_notifications_v2(integer) to service_role;
+grant execute on function public.neweix_complete_customer_notification_v2(uuid, uuid) to service_role;
+grant execute on function public.neweix_fail_customer_notification_v2(uuid, uuid, text) to service_role;
+grant execute on function public.neweix_claim_search_embedding_jobs_v2(integer) to service_role;
+grant execute on function public.neweix_complete_search_embedding_job_v2(uuid, uuid) to service_role;
+grant execute on function public.neweix_fail_search_embedding_job_v2(uuid, uuid, text) to service_role;
+
+
+-- Keep the old signatures callable but inert during rolling deployment.
+-- Older Workers cannot supply fencing tokens, so they must not claim or mutate jobs.
+create or replace function public.neweix_claim_customer_notifications(p_limit integer default 10)
+returns table(id uuid, phone text, message text, attempts integer)
+language plpgsql security definer set search_path = ''
+as $function$
+begin
+  if coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role') is distinct from 'service_role' then
+    raise exception 'service role required' using errcode = '42501';
+  end if;
+  return;
+end;
+$function$;
+
+create or replace function public.neweix_complete_customer_notification(p_id uuid)
+returns void
+language plpgsql security definer set search_path = ''
+as $function$
+begin
+  if coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role') is distinct from 'service_role' then
+    raise exception 'service role required' using errcode = '42501';
+  end if;
+  return;
+end;
+$function$;
+
+create or replace function public.neweix_fail_customer_notification(p_id uuid, p_error text)
+returns void
+language plpgsql security definer set search_path = ''
+as $function$
+begin
+  if coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role') is distinct from 'service_role' then
+    raise exception 'service role required' using errcode = '42501';
+  end if;
+  return;
+end;
+$function$;
+
+create or replace function public.neweix_claim_search_embedding_jobs(p_limit integer default 10)
+returns table(job_id uuid, product_id uuid, attempts integer)
+language plpgsql security definer set search_path = ''
+as $function$
+begin
+  if coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role') is distinct from 'service_role' then
+    raise exception 'service role required' using errcode = '42501';
+  end if;
+  return;
+end;
+$function$;
+
+create or replace function public.neweix_complete_search_embedding_job(p_job_id uuid)
+returns boolean
+language plpgsql security definer set search_path = ''
+as $function$
+begin
+  if coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role') is distinct from 'service_role' then
+    raise exception 'service role required' using errcode = '42501';
+  end if;
+  return false;
+end;
+$function$;
+
+create or replace function public.neweix_fail_search_embedding_job(p_job_id uuid, p_error text default 'Embedding generation failed')
+returns boolean
+language plpgsql security definer set search_path = ''
+as $function$
+begin
+  if coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role') is distinct from 'service_role' then
+    raise exception 'service role required' using errcode = '42501';
+  end if;
+  return false;
+end;
+$function$;
+
+revoke all on function public.neweix_claim_customer_notifications(integer) from public, anon, authenticated;
+revoke all on function public.neweix_complete_customer_notification(uuid) from public, anon, authenticated;
+revoke all on function public.neweix_fail_customer_notification(uuid, text) from public, anon, authenticated;
+revoke all on function public.neweix_claim_search_embedding_jobs(integer) from public, anon, authenticated;
+revoke all on function public.neweix_complete_search_embedding_job(uuid) from public, anon, authenticated;
+revoke all on function public.neweix_fail_search_embedding_job(uuid, text) from public, anon, authenticated;
 grant execute on function public.neweix_claim_customer_notifications(integer) to service_role;
-grant execute on function public.neweix_complete_customer_notification(uuid, uuid) to service_role;
-grant execute on function public.neweix_fail_customer_notification(uuid, uuid, text) to service_role;
+grant execute on function public.neweix_complete_customer_notification(uuid) to service_role;
+grant execute on function public.neweix_fail_customer_notification(uuid, text) to service_role;
 grant execute on function public.neweix_claim_search_embedding_jobs(integer) to service_role;
-grant execute on function public.neweix_complete_search_embedding_job(uuid, uuid) to service_role;
-grant execute on function public.neweix_fail_search_embedding_job(uuid, uuid, text) to service_role;
+grant execute on function public.neweix_complete_search_embedding_job(uuid) to service_role;
+grant execute on function public.neweix_fail_search_embedding_job(uuid, text) to service_role;
 
 commit;
