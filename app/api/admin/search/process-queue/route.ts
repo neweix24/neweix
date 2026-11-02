@@ -43,8 +43,8 @@ export async function POST(request: Request) {
    if (!Array.isArray(vectors) || vectors.length !== activeJobs.length || vectors.some(v => !Array.isArray(v) || v.length !== 1024 || !v.every(Number.isFinite))) {
     for (const job of activeJobs) { await admin.rpc("neweix_fail_search_embedding_job", { p_job_id: job.job_id, p_lease_token: job.lease_token, p_error: "AI returned an invalid embedding response" }); failed++; }
    } else {
-    for (let i = 0; i < activeJobs.length; i++) { const job = activeJobs[i]; const vector = vectors[i]; const { error } = await admin.from("products").update({ search_embedding: "[" + vector.join(",") + "]", search_embedding_model: "@cf/baai/bge-m3", search_embedding_updated_at: new Date().toISOString() }).eq("id", job.product_id).eq("is_active", true);
-     if (error) { await admin.rpc("neweix_fail_search_embedding_job", { p_job_id: job.job_id, p_lease_token: job.lease_token, p_error: error.message }); failed++; } else { await admin.rpc("neweix_complete_search_embedding_job", { p_job_id: job.job_id, p_lease_token: job.lease_token }); indexed++; }
+    for (let i = 0; i < activeJobs.length; i++) { const job = activeJobs[i]; const vector = vectors[i]; const { data: saved, error } = await admin.rpc("neweix_save_search_embedding", { p_job_id: job.job_id, p_product_id: job.product_id, p_lease_token: job.lease_token, p_embedding: "[" + vector.join(",") + "]", p_model: "@cf/baai/bge-m3" });
+     if (error) { await admin.rpc("neweix_fail_search_embedding_job", { p_job_id: job.job_id, p_lease_token: job.lease_token, p_error: error.message }); failed++; } else if (saved === true) { indexed++; } else { failed++; }
     }
    }
   }
