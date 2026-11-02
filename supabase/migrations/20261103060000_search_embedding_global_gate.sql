@@ -29,7 +29,7 @@ declare
   v_gate private.search_embedding_processor_gate%rowtype;
   v_token uuid;
 begin
-  if current_setting('request.jwt.claim.role', true) is distinct from 'service_role' then
+  if coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role') is distinct from 'service_role' then
     raise exception 'service role required' using errcode = '42501';
   end if;
   if p_min_interval_seconds is null or p_min_interval_seconds < 5 or p_min_interval_seconds > 300
@@ -76,7 +76,7 @@ as $function$
 declare
   affected integer;
 begin
-  if current_setting('request.jwt.claim.role', true) is distinct from 'service_role' then
+  if coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role') is distinct from 'service_role' then
     raise exception 'service role required' using errcode = '42501';
   end if;
   update private.search_embedding_processor_gate
