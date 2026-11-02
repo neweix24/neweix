@@ -127,6 +127,26 @@ begin
     raise exception 'COURIER_BOOKING_CANCELLATION_CHANGED_INVENTORY';
   end if;
 
+  -- Even a failed provider request is ambiguous after the booking reservation
+  -- starts; do not restore stock until the Pathao state has been reconciled.
+  update public.orders
+     set delivery_status = 'failed',
+         delivery_consignment_id = null
+   where id = v_booked_order_id;
+
+  begin
+    perform public.admin_update_order_status(v_booked_order_id, 'cancelled', v_actor_id);
+    raise exception 'AMBIGUOUS_PATHAO_TIMEOUT_WAS_CANCELLED';
+  exception
+    when sqlstate '55000' then
+      if sqlerrm <> 'ORDER_DELIVERY_MUST_BE_CANCELLED_FIRST' then raise; end if;
+  end;
+
+  select stock into v_stock from public.products where id = v_product_id;
+  if v_stock <> 12 then
+    raise exception 'AMBIGUOUS_PATHAO_TIMEOUT_CHANGED_INVENTORY';
+  end if;
+
   if has_function_privilege('anon', 'public.admin_update_order_status(uuid,text,uuid)', 'EXECUTE')
      or has_function_privilege('authenticated', 'public.admin_update_order_status(uuid,text,uuid)', 'EXECUTE')
      or not has_function_privilege('service_role', 'public.admin_update_order_status(uuid,text,uuid)', 'EXECUTE') then
