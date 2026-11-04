@@ -29,6 +29,21 @@ declare global {
 
 const TURNSTILE_SITE_KEY = "0x4AAAAAAFtxqj-OF3yfnL11";
 
+function getCustomerAuthErrorMessage(code: string | null): string {
+  switch (code) {
+    case "oauth_failed":
+      return "Google or Facebook sign-in could not be completed. Please try again or use email and password.";
+    case "oauth_start_failed":
+      return "The social sign-in service could not be started. Please try again or use email and password.";
+    case "missing_code":
+      return "The sign-in confirmation was incomplete. Please start again.";
+    case "configuration":
+      return "The sign-in service is temporarily unavailable. Please try again later.";
+    default:
+      return "";
+  }
+}
+
 function CustomerLoginForm() {
   const searchParams = useSearchParams();
 
@@ -36,7 +51,7 @@ function CustomerLoginForm() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [isSignUp, setIsSignUp] = useState(searchParams.get("mode") === "signup");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(() => getCustomerAuthErrorMessage(searchParams.get("error")));
   const [busy, setBusy] = useState(false);
   const [turnstileReady, setTurnstileReady] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
@@ -150,7 +165,18 @@ function CustomerLoginForm() {
 
         resetCaptcha();
         if (error) {
-          setMessage("Could not create the account. Check whether this email address is already in use.");
+          const detail = error.message.toLowerCase();
+          setMessage(
+            error.status === 429
+              ? "Too many sign-up attempts. Please wait before trying again."
+              : detail.includes("captcha")
+                ? "Security verification failed. Please complete the verification again."
+                : detail.includes("already registered") || detail.includes("already exists")
+                  ? "An account already exists with this email address. Please sign in instead."
+                  : detail.includes("password")
+                    ? "Your password does not meet the account security requirements."
+                    : "Your account could not be created. Please check your details and try again."
+          );
           return;
         }
 
@@ -174,7 +200,18 @@ function CustomerLoginForm() {
       resetCaptcha();
 
       if (error || !data.user) {
-        setMessage("The email address or password is incorrect.");
+        const detail = error?.message.toLowerCase() ?? "";
+        setMessage(
+          error?.status === 429
+            ? "Too many sign-in attempts. Please wait a moment and try again."
+            : detail.includes("captcha")
+              ? "Security verification failed. Please complete the verification again."
+              : error?.code === "email_not_confirmed" || detail.includes("email not confirmed")
+                ? "Please confirm your email address using the link we sent before signing in."
+                : error?.status && error.status >= 500
+                  ? "The sign-in service is temporarily unavailable. Please try again later."
+                  : "The email address or password is incorrect."
+        );
         return;
       }
 
