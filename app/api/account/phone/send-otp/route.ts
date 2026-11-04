@@ -11,16 +11,24 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function fail(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
+  return NextResponse.json({ error: message }, {
+    status,
+    headers: { "Cache-Control": "no-store, private, max-age=0" },
+  });
 }
 
 export async function POST(request: Request) {
   const user = await getAuthenticatedCustomer();
   if (!user) return fail("Sign in before verifying your phone number.", 401);
 
+  const rawBody = await request.text();
+  if (new TextEncoder().encode(rawBody).byteLength > 4096) {
+    return fail("The request payload is too large.", 413);
+  }
+
   let body: unknown;
   try {
-    body = await request.json();
+    body = JSON.parse(rawBody);
   } catch {
     return fail("Submit valid information.", 400);
   }
@@ -66,7 +74,7 @@ export async function POST(request: Request) {
       success: true,
       alreadyVerified: true,
       message: "This phone number is already verified.",
-    });
+    }, { headers: { "Cache-Control": "no-store, private, max-age=0" } });
   }
 
   const { data: phoneOwner, error: ownerError } = await supabase
@@ -217,7 +225,7 @@ export async function POST(request: Request) {
       expiresIn: 300,
       resendAfter: 60,
       message: "An OTP has been sent to your phone number.",
-    });
+    }, { headers: { "Cache-Control": "no-store, private, max-age=0" } });
   } catch (error) {
     await supabase
       .from("phone_verification_challenges")
