@@ -444,9 +444,7 @@ export async function POST(request: Request) {
 
     // Cloudflare supplies cf-connecting-ip at the edge. Store only a SHA-256
     // digest in the database; never persist the raw client IP for this limiter.
-    const clientIp =
-      request.headers.get("cf-connecting-ip")?.trim() ||
-      request.headers.get("x-real-ip")?.trim();
+    const clientIp = request.headers.get("cf-connecting-ip")?.trim();
 
     if (!clientIp) {
       console.error("Order API: trusted client IP header is missing.");
