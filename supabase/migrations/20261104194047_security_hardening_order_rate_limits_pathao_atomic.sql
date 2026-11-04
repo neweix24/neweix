@@ -1,5 +1,5 @@
 -- Security hardening: atomic Pathao status transitions and server-side order creation throttling.
--- All rate-limit identifiers are SHA-256 hashes; raw client IPs are never stored.
+-- Rate-limit identifiers are keyed HMAC-SHA-256 digests; raw client IPs are never stored.
 
 create table if not exists private.order_creation_rate_limits (
   ip_hash text primary key
