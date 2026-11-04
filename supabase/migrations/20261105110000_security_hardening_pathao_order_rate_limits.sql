@@ -81,6 +81,7 @@ begin
      or pg_catalog.length(p_consignment_id) < 3
      or pg_catalog.length(p_consignment_id) > 80
      or p_consignment_id !~ '^[A-Za-z0-9-]+$'
+     or p_new_status is null
      or p_new_status not in ('picked_up', 'in_transit', 'delivered', 'returned', 'cancelled', 'failed') then
     raise exception 'INVALID_PATHAO_STATUS_INPUT' using errcode = '22023';
   end if;
