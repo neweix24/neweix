@@ -71,10 +71,39 @@ async function runCheck(label, path, validate) {
 for (const path of publicPages) {
   await runCheck(`Public page ${path}`, path, async (response) => {
     if (response.status !== 200) return { ok: false, reason: `Expected 200, received ${response.status}` };
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("text/html")) {
+      return { ok: false, reason: "Expected an HTML page response" };
+    }
+
+    const csp = response.headers.get("content-security-policy") || "";
+    const scriptDirective = csp.split(";").map((part) => part.trim())
+      .find((part) => part.startsWith("script-src "));
+    const nonceMatch = scriptDirective?.match(/'nonce-([^']+)'/);
+    if (!scriptDirective || !nonceMatch) {
+      return { ok: false, reason: "Missing nonce-based script-src Content Security Policy" };
+    }
+    if (scriptDirective.includes("'unsafe-inline'")) {
+      return { ok: false, reason: "script-src still allows unsafe-inline" };
+    }
+
     const body = await response.text();
-    return body.length > 0
-      ? { ok: true }
-      : { ok: false, reason: "Page returned an empty response body" };
+    if (body.length === 0) {
+      return { ok: false, reason: "Page returned an empty response body" };
+    }
+
+    const scriptTags = [...body.matchAll(/<script\b([^>]*)>/gi)];
+    if (scriptTags.length === 0) {
+      return { ok: false, reason: "No framework script tags found to validate CSP nonces" };
+    }
+    const expectedNonce = nonceMatch[1];
+    const missingNonce = scriptTags.find((match) => {
+      const actualNonce = match[1].match(/\bnonce=["']([^"']+)["']/i)?.[1];
+      return actualNonce !== expectedNonce;
+    });
+    return missingNonce
+      ? { ok: false, reason: "A script tag is missing the matching response nonce" }
+      : { ok: true };
   });
 }
 

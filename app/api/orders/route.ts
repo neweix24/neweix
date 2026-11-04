@@ -442,6 +442,60 @@ export async function POST(request: Request) {
       }
     );
 
+    // Cloudflare supplies cf-connecting-ip at the edge. Store only a keyed
+    // HMAC digest, preventing offline IP guessing from the database alone.
+    const clientIp = request.headers.get("cf-connecting-ip")?.trim();
+
+    if (!clientIp) {
+      console.error("Order API: trusted client IP header is missing.");
+      return errorResponse(
+        "The order service is temporarily unavailable. Please try again shortly.",
+        503,
+      );
+    }
+
+    const ipHmacKey = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(serviceKey),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const ipDigest = await crypto.subtle.sign(
+      "HMAC",
+      ipHmacKey,
+      new TextEncoder().encode(clientIp),
+    );
+    const ipHash = Array.from(new Uint8Array(ipDigest), (byte) =>
+      byte.toString(16).padStart(2, "0"),
+    ).join("");
+
+    const { data: rateLimitAllowed, error: rateLimitError } =
+      await supabase.rpc("check_order_creation_rate_limit", {
+        p_ip_hash: ipHash,
+      });
+
+    if (rateLimitError) {
+      console.error("Order creation rate-limit check failed:", rateLimitError.message);
+      return errorResponse(
+        "The order service is temporarily unavailable. Please try again shortly.",
+        503,
+      );
+    }
+
+    if (rateLimitAllowed !== true) {
+      return NextResponse.json(
+        { error: "Too many order attempts. Please wait 10 minutes before trying again." },
+        {
+          status: 429,
+          headers: {
+            "Cache-Control": "no-store",
+            "Retry-After": "600",
+          },
+        },
+      );
+    }
+
     // Expire eligible unpaid mobile orders first.
     const { error: expiryError } =
       await supabase.rpc(

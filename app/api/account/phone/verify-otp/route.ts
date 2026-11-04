@@ -9,16 +9,24 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function fail(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
+  return NextResponse.json({ error: message }, {
+    status,
+    headers: { "Cache-Control": "no-store, private, max-age=0" },
+  });
 }
 
 export async function POST(request: Request) {
   const user = await getAuthenticatedCustomer();
   if (!user) return fail("ফোন নম্বর যাচাই করতে আগে লগইন করুন।", 401);
 
+  const rawBody = await request.text();
+  if (new TextEncoder().encode(rawBody).byteLength > 4096) {
+    return fail("অনুরোধের তথ্য অনেক বড়।", 413);
+  }
+
   let body: unknown;
   try {
-    body = await request.json();
+    body = JSON.parse(rawBody);
   } catch {
     return fail("সঠিক তথ্য পাঠান।", 400);
   }
@@ -85,7 +93,7 @@ export async function POST(request: Request) {
         success: true,
         phone: challenge.phone,
         message: "আপনার ফোন নম্বর সফলভাবে যাচাই হয়েছে।",
-      });
+      }, { headers: { "Cache-Control": "no-store, private, max-age=0" } });
     case "invalid_otp":
       return fail("OTP সঠিক নয়। আবার চেষ্টা করুন।", 400);
     case "expired":
