@@ -1,58 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-function createRequestNonce(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary);
-}
-
-function buildContentSecurityPolicy(nonce: string): string {
-  return [
-    "default-src 'self'",
-    "base-uri 'self'",
-    "object-src 'none'",
-    "frame-ancestors 'none'",
-    "form-action 'self' https://accounts.google.com",
-    `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com`,
-    "style-src 'self' 'unsafe-inline' https:",
-    "img-src 'self' data: blob: https:",
-    "font-src 'self' data: https:",
-    "connect-src 'self' https://grhybvlhdnzlopwbaqun.supabase.co https://challenges.cloudflare.com wss://grhybvlhdnzlopwbaqun.supabase.co",
-    "frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com https://www.youtube.com https://accounts.google.com",
-    "upgrade-insecure-requests",
-  ].join("; ");
-}
-
-function applySecurityHeaders(response: NextResponse, contentSecurityPolicy: string) {
-  response.headers.set("Content-Security-Policy", contentSecurityPolicy);
-  response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("X-Frame-Options", "DENY");
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  response.headers.set("Strict-Transport-Security", "max-age=31536000");
-  return response;
-}
-
 export async function middleware(request: NextRequest) {
-  const nonce = createRequestNonce();
-  const contentSecurityPolicy = buildContentSecurityPolicy(nonce);
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-nonce", nonce);
-  requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
-
-  const createNextResponse = () => {
-    const cookieHeader = request.cookies.toString();
-    if (cookieHeader) requestHeaders.set("cookie", cookieHeader);
-    else requestHeaders.delete("cookie");
-    return applySecurityHeaders(
-      NextResponse.next({ request: { headers: requestHeaders } }),
-      contentSecurityPolicy,
-    );
-  };
-
-  let response = createNextResponse();
+  let response = NextResponse.next({ request });
 
   // Use one canonical hostname so browser auth cookies are never split between www and apex.
   if (request.nextUrl.hostname === "www.neweix.com") {
@@ -106,7 +56,7 @@ export async function middleware(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = createNextResponse();
+        response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
