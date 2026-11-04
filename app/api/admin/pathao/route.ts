@@ -124,15 +124,18 @@ export async function GET(request: Request) {
       let synced = false;
       if (deliveryStatus) {
         const admin = await createRuntimeServiceClient();
-        const { data: updatedOrders, error: syncError } = await admin
-          .from("orders")
-          .update({ delivery_status: deliveryStatus, delivery_error: null, updated_at: new Date().toISOString() })
-          .eq("delivery_consignment_id", consignmentId)
-          .select("id");
+        const { data: syncResult, error: syncError } = await admin.rpc(
+          "apply_pathao_delivery_status",
+          { p_consignment_id: consignmentId, p_new_status: deliveryStatus },
+        );
         if (syncError) {
           console.error("Pathao tracking sync failed:", syncError.message);
         } else {
-          synced = Boolean(updatedOrders?.length);
+          const result = syncResult as {
+            updated?: boolean;
+            unchanged?: boolean;
+          } | null;
+          synced = result?.updated === true || result?.unchanged === true;
         }
       }
       return NextResponse.json({ success: true, tracking, deliveryStatus, synced }, {
