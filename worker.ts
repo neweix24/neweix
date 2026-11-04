@@ -596,7 +596,11 @@ function applyHtmlContentSecurityPolicy(response: Response): Response {
   const headers = new Headers(rewritten.headers);
   // The HTML body changed, so any origin validators or byte lengths are stale.
   headers.delete("Content-Length");
+  headers.delete("Content-Encoding");
+  headers.delete("Content-MD5");
   headers.delete("ETag");
+  headers.delete("Last-Modified");
+  headers.delete("Accept-Ranges");
   headers.set("Content-Security-Policy", policy);
   headers.set("Cache-Control", "private, no-store, max-age=0");
   headers.set("X-Content-Type-Options", "nosniff");
