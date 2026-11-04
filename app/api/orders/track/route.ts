@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createHash } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
@@ -61,7 +61,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   );
 }
 
-function getClientKey(request: Request): string | null {
+function getClientKey(request: Request, hmacSecret: string): string | null {
   // Prefer Cloudflare's client-IP header.
   const cloudflareIp = request.headers
     .get("cf-connecting-ip")
@@ -76,8 +76,8 @@ function getClientKey(request: Request): string | null {
     return null;
   }
 
-  // Store a hash rather than the raw IP address.
-  return createHash("sha256").update(ip).digest("hex");
+  // A keyed digest prevents offline IP guessing from the database alone.
+  return createHmac("sha256", hmacSecret).update(ip).digest("hex");
 }
 
 export async function POST(request: Request) {
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const clientKey = getClientKey(request);
+    const clientKey = getClientKey(request, serviceRoleKey);
 
     if (!clientKey) {
       return respond(
