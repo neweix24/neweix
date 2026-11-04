@@ -535,8 +535,89 @@ async function processSocialPublishingQueue(env: Env): Promise<void> {
   console.log("[social-publishing-cron] batch complete", { processed: posts.length, published, failed });
 }
 
+type HtmlRewriterElementLike = {
+  setAttribute(name: string, value: string): void;
+};
+
+type HtmlRewriterLike = {
+  on(
+    selector: string,
+    handlers: { element(element: HtmlRewriterElementLike): void },
+  ): HtmlRewriterLike;
+  transform(response: Response): Response;
+};
+
+function applyHtmlContentSecurityPolicy(response: Response): Response {
+  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+  if (!contentType.includes("text/html")) return response;
+
+  const nonceBytes = crypto.getRandomValues(new Uint8Array(18));
+  let nonceBinary = "";
+  for (const byte of nonceBytes) nonceBinary += String.fromCharCode(byte);
+  const nonce = btoa(nonceBinary);
+
+  const policy = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self' https://accounts.google.com",
+    `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com`,
+    "script-src-attr 'none'",
+    "style-src 'self' 'unsafe-inline' https:",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data: https:",
+    "connect-src 'self' https://grhybvlhdnzlopwbaqun.supabase.co https://challenges.cloudflare.com wss://grhybvlhdnzlopwbaqun.supabase.co",
+    "frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com https://www.youtube.com https://accounts.google.com",
+    "worker-src 'self' blob:",
+    "upgrade-insecure-requests",
+  ].join("; ");
+
+  const Rewriter = (globalThis as unknown as {
+    HTMLRewriter?: new () => HtmlRewriterLike;
+  }).HTMLRewriter;
+
+  if (!Rewriter) {
+    console.error("[security] Cloudflare HTMLRewriter is unavailable; refusing to serve unprotected HTML.");
+    return new Response("Security response processing is unavailable.", {
+      status: 503,
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
+
+  const rewritten = new Rewriter()
+    .on("script", {
+      element(element) {
+        element.setAttribute("nonce", nonce);
+      },
+    })
+    .transform(response);
+
+  const headers = new Headers(rewritten.headers);
+  headers.set("Content-Security-Policy", policy);
+  headers.set("Cache-Control", "private, no-store, max-age=0");
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "DENY");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  headers.set("Strict-Transport-Security", "max-age=31536000");
+
+  return new Response(rewritten.body, {
+    status: rewritten.status,
+    statusText: rewritten.statusText,
+    headers,
+  });
+}
+
 export default {
-  fetch: openNextWorker.fetch,
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContextLike,
+  ): Promise<Response> {
+    const response = await openNextWorker.fetch(request, env, ctx);
+    return applyHtmlContentSecurityPolicy(response);
+  },
   async scheduled(
     controller: ScheduledController,
     env: Env,
