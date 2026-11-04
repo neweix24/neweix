@@ -153,23 +153,32 @@ export async function POST(request: Request) {
       return webhookResponse({ accepted: true, synced: true, unchanged: true }, 202);
     }
 
-    const { error: updateError } = await supabase
-      .from("orders")
-      .update({
-        delivery_status: nextStatus,
-        delivery_error: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", order.id)
-      .eq("delivery_provider", "pathao")
-      .eq("delivery_consignment_id", consignmentId);
+    // The database function locks the order row and enforces monotonic status
+    // transitions atomically, so concurrent or replayed callbacks cannot regress it.
+    const { data: syncResult, error: updateError } = await supabase.rpc(
+      "apply_pathao_delivery_status",
+      { p_consignment_id: consignmentId, p_new_status: nextStatus },
+    );
 
     if (updateError) {
       console.error("Pathao webhook order update failed:", updateError.message);
       return webhookResponse({ error: "Unable to update the linked order." }, 503);
     }
 
-    return webhookResponse({ accepted: true, synced: true, deliveryStatus: nextStatus }, 202);
+    const result = syncResult as {
+      updated?: boolean;
+      unchanged?: boolean;
+      reason?: string;
+      delivery_status?: string;
+    } | null;
+
+    return webhookResponse({
+      accepted: true,
+      synced: result?.updated === true || result?.unchanged === true,
+      unchanged: result?.unchanged === true,
+      reason: result?.reason,
+      deliveryStatus: result?.delivery_status ?? nextStatus,
+    }, 202);
   } catch (error) {
     console.error(
       "Pathao webhook processing failed:",
