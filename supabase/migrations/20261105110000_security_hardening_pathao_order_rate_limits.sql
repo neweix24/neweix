@@ -12,6 +12,10 @@ create table if not exists private.order_creation_rate_limits (
 create index if not exists order_creation_rate_limits_updated_at_idx
   on private.order_creation_rate_limits (updated_at);
 
+create index if not exists orders_pathao_consignment_idx
+  on public.orders (delivery_consignment_id)
+  where delivery_provider = 'pathao' and delivery_consignment_id is not null;
+
 alter table private.order_creation_rate_limits enable row level security;
 revoke all on table private.order_creation_rate_limits from public, anon, authenticated;
 grant all on table private.order_creation_rate_limits to service_role;
