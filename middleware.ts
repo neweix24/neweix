@@ -38,13 +38,21 @@ function applySecurityHeaders(response: NextResponse, contentSecurityPolicy: str
 export async function middleware(request: NextRequest) {
   const nonce = createRequestNonce();
   const contentSecurityPolicy = buildContentSecurityPolicy(nonce);
-  request.headers.set("x-nonce", nonce);
-  request.headers.set("Content-Security-Policy", contentSecurityPolicy);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
 
-  let response = applySecurityHeaders(
-    NextResponse.next({ request }),
-    contentSecurityPolicy,
-  );
+  const createNextResponse = () => {
+    const cookieHeader = request.cookies.toString();
+    if (cookieHeader) requestHeaders.set("cookie", cookieHeader);
+    else requestHeaders.delete("cookie");
+    return applySecurityHeaders(
+      NextResponse.next({ request: { headers: requestHeaders } }),
+      contentSecurityPolicy,
+    );
+  };
+
+  let response = createNextResponse();
 
   // Use one canonical hostname so browser auth cookies are never split between www and apex.
   if (request.nextUrl.hostname === "www.neweix.com") {
@@ -98,10 +106,7 @@ export async function middleware(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = applySecurityHeaders(
-          NextResponse.next({ request }),
-          contentSecurityPolicy,
-        );
+        response = createNextResponse();
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
