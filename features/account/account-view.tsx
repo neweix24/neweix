@@ -50,27 +50,27 @@ export default function AccountView() {
           return;
         }
 
-        const { data: profile, error } = await supabase
-          .from("customer_profiles")
-          .select("full_name,date_of_birth,avatar_url,preferred_language")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (error) {
-          throw new Error(
-            "Profile could not be loaded. Check database permissions."
-          );
+        // Profile rows are created and synchronized by a server-only endpoint.
+        // Direct authenticated INSERT is intentionally revoked so customers
+        // cannot forge phone_verified_at or bypass OTP verification.
+        const profileResponse = await fetch("/api/account/profile", {
+          method: "POST",
+          cache: "no-store",
+        });
+        const profileResult = await profileResponse.json().catch(() => null);
+        if (!profileResponse.ok || !profileResult?.success || !profileResult.profile) {
+          throw new Error(profileResult?.error || "Your profile could not be loaded. Please try again.");
         }
 
         if (!active) return;
 
+        const profile = profileResult.profile;
         const metadataName =
           typeof user.user_metadata?.full_name === "string"
             ? user.user_metadata.full_name
             : typeof user.user_metadata?.name === "string"
               ? user.user_metadata.name
               : "";
-
         const rawMetadataAvatar =
           typeof user.user_metadata?.picture === "string"
             ? user.user_metadata.picture
@@ -78,29 +78,13 @@ export default function AccountView() {
               ? user.user_metadata.avatar_url
               : "";
         const metadataAvatar = rawMetadataAvatar.startsWith("https://") ? rawMetadataAvatar : "";
-        const rawLocale = typeof user.user_metadata?.locale === "string" ? user.user_metadata.locale : "";
-        const metadataLanguage = /^[a-z]{2}(-[A-Z]{2})?$/.test(rawLocale) ? rawLocale : null;
-
-        const { error: profileSyncError } = await supabase
-          .from("customer_profiles")
-          .upsert({
-            user_id: user.id,
-            email: user.email ?? null,
-            full_name: profile?.full_name ?? (metadataName || null),
-            avatar_url: profile?.avatar_url ?? (metadataAvatar || null),
-            date_of_birth: profile?.date_of_birth ?? null,
-            preferred_language: profile?.preferred_language ?? metadataLanguage,
-          }, { onConflict: "user_id" });
-        if (profileSyncError) {
-          console.error("Customer account profile sync failed:", profileSyncError.message);
-        }
 
         setEmail(user.email ?? "");
         const isOAuthUser = user.identities?.some((identity: { provider: string }) => identity.provider !== "email") ?? false;
         setEmailVerified(Boolean(isOAuthUser && user.email_confirmed_at));
-        setName(profile?.full_name ?? metadataName);
-        setDateOfBirth(profile?.date_of_birth ?? "");
-        setAvatarUrl(profile?.avatar_url ?? metadataAvatar);
+        setName(profile.full_name ?? metadataName);
+        setDateOfBirth(profile.date_of_birth ?? "");
+        setAvatarUrl(profile.avatar_url ?? metadataAvatar);
 
         const phoneResponse = await fetch("/api/account/phone/status", {
           cache: "no-store",
@@ -160,34 +144,18 @@ export default function AccountView() {
     setSaving(true);
 
     try {
-      const supabase = createBrowserSupabaseClient();
-
-      const {
-        data: { session },
-        error: authError,
-      } = await supabase.auth.getSession();
-      const user = session?.user;
-
-      if (authError || !user) {
-        setErrorMessage("Your session could not be read. Refresh the page or sign in again.");
-        return;
-      }
-
-      const { error } = await supabase
-        .from("customer_profiles")
-        .upsert(
-          {
-            user_id: user.id,
-            full_name: cleanName,
-            date_of_birth: cleanDateOfBirth,
-          },
-          { onConflict: "user_id" }
-        );
-
-      if (error) {
-        throw new Error(
-          "Information was not saved. Check database permissions."
-        );
+      const response = await fetch("/api/account/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          full_name: cleanName,
+          date_of_birth: cleanDateOfBirth,
+        }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || "Information was not saved. Please try again.");
       }
 
       setName(cleanName);
