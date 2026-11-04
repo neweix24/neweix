@@ -223,40 +223,42 @@ export async function GET(request: NextRequest) {
       const rawLocale = typeof metadata.locale === "string" ? metadata.locale : null;
       const preferredLanguage = rawLocale && /^[a-z]{2}(-[A-Z]{2})?$/.test(rawLocale) ? rawLocale : null;
 
-      const { data: existingProfile, error: profileReadError } = await supabase
-        .from("customer_profiles")
-        .select("user_id,full_name,avatar_url,preferred_language")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      try {
+        // customer_profiles intentionally denies INSERT and general UPDATE to
+        // authenticated clients so they cannot forge phone verification.
+        // Profile synchronization therefore runs server-side with service_role,
+        // and never accepts phone or phone_verified_at from OAuth metadata.
+        const admin = createAdminSupabaseClient();
+        const { data: existingProfile, error: profileReadError } = await admin
+          .from("customer_profiles")
+          .select("full_name,avatar_url,preferred_language,date_of_birth")
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-      if (profileReadError) {
-        console.error("Customer OAuth profile lookup failed:", profileReadError.message);
-      } else if (existingProfile) {
-        const { error: profileUpdateError } = await supabase
-          .from("customer_profiles")
-          .update({
-            email: user.email ?? null,
-            avatar_url: avatarUrl ?? existingProfile.avatar_url,
-            preferred_language: preferredLanguage ?? existingProfile.preferred_language,
-            full_name: existingProfile.full_name || metadataName,
-          })
-          .eq("user_id", user.id);
-        if (profileUpdateError) {
-          console.error("Customer OAuth profile sync failed:", profileUpdateError.message);
+        if (profileReadError) {
+          console.error("Customer OAuth profile lookup failed:", profileReadError.message);
+        } else {
+          const { error: profileSyncError } = await admin
+            .from("customer_profiles")
+            .upsert({
+              user_id: user.id,
+              email: user.email ?? null,
+              full_name: existingProfile?.full_name || metadataName,
+              avatar_url: existingProfile?.avatar_url ?? avatarUrl,
+              preferred_language: existingProfile?.preferred_language ?? preferredLanguage,
+              date_of_birth: existingProfile?.date_of_birth ?? null,
+            }, { onConflict: "user_id" });
+
+          if (profileSyncError) {
+            console.error("Customer OAuth profile sync failed:", profileSyncError.message);
+          }
         }
-      } else {
-        const { error: profileInsertError } = await supabase
-          .from("customer_profiles")
-          .insert({
-            user_id: user.id,
-            email: user.email ?? null,
-            full_name: metadataName,
-            avatar_url: avatarUrl,
-            preferred_language: preferredLanguage,
-          });
-        if (profileInsertError) {
-          console.error("Customer OAuth profile creation failed:", profileInsertError.message);
-        }
+      } catch (profileError) {
+        // Profile sync must not discard a successfully exchanged auth session.
+        console.error(
+          "Customer OAuth profile service unavailable:",
+          profileError instanceof Error ? profileError.message : "unknown error"
+        );
       }
     }
   }

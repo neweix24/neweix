@@ -19,7 +19,8 @@ export async function middleware(request: NextRequest) {
       pathname !== "/api/account/phone/send-otp" &&
       pathname !== "/api/account/phone/status" &&
       pathname !== "/api/account/phone/verify-otp" &&
-      pathname !== "/api/account/security/register-device") ||
+      pathname !== "/api/account/security/register-device" &&
+      pathname !== "/api/account/profile") ||
     pathname === "/api/eixpay" ||
     (pathname.startsWith("/api/eixpay/") && pathname !== "/api/eixpay/referral/apply");
   const isCustomerPage =
