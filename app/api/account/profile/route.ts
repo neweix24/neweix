@@ -24,6 +24,9 @@ export async function POST(request: Request) {
 
     let input: Record<string, unknown> = {};
     const rawBody = await request.text();
+    if (new TextEncoder().encode(rawBody).byteLength > 8192) {
+      return fail("Profile request payload is too large.", 413);
+    }
     if (rawBody.trim()) {
       let parsed: unknown;
       try {
