@@ -442,8 +442,8 @@ export async function POST(request: Request) {
       }
     );
 
-    // Cloudflare supplies cf-connecting-ip at the edge. Store only a SHA-256
-    // digest in the database; never persist the raw client IP for this limiter.
+    // Cloudflare supplies cf-connecting-ip at the edge. Store only a keyed
+    // HMAC digest, preventing offline IP guessing from the database alone.
     const clientIp = request.headers.get("cf-connecting-ip")?.trim();
 
     if (!clientIp) {
@@ -454,8 +454,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const ipDigest = await crypto.subtle.digest(
-      "SHA-256",
+    const ipHmacKey = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(serviceKey),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const ipDigest = await crypto.subtle.sign(
+      "HMAC",
+      ipHmacKey,
       new TextEncoder().encode(clientIp),
     );
     const ipHash = Array.from(new Uint8Array(ipDigest), (byte) =>
