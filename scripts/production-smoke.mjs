@@ -92,13 +92,13 @@ for (const path of publicPages) {
       return { ok: false, reason: "Page returned an empty response body" };
     }
 
-    const scriptTags = [...body.matchAll(/<script\\b([^>]*)>/gi)];
+    const scriptTags = [...body.matchAll(/<script\b([^>]*)>/gi)];
     if (scriptTags.length === 0) {
       return { ok: false, reason: "No framework script tags found to validate CSP nonces" };
     }
     const expectedNonce = nonceMatch[1];
     const missingNonce = scriptTags.find((match) => {
-      const actualNonce = match[1].match(/\\bnonce=["']([^"']+)["']/i)?.[1];
+      const actualNonce = match[1].match(/\bnonce=["']([^"']+)["']/i)?.[1];
       return actualNonce !== expectedNonce;
     });
     return missingNonce
