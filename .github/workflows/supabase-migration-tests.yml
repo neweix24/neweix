@@ -88,4 +88,10 @@ jobs:
         run: |
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/order_rate_limit_pathao_atomic_test.sql
 
+      - name: Verify 180-day customer device data retention
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/customer_device_retention_test.sql
+
       # GitHub-hosted runners are ephemeral; Docker containers are discarded after the job.
