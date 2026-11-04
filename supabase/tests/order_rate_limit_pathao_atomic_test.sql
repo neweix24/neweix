@@ -36,6 +36,23 @@ begin
     'pathao', 'booked', v_consignment_id
   );
 
+  begin
+    insert into public.orders (
+      order_number, customer_name, customer_phone, shipping_address,
+      subtotal, delivery_fee, total, payment_method, payment_status, status,
+      delivery_provider, delivery_status, delivery_consignment_id
+    ) values (
+      'TEST-PATHAO-DUP-' || substr(gen_random_uuid()::text, 1, 8),
+      'Test Customer', '+8801700000000', 'Test address, Dhaka',
+      100, 0, 100, 'cod', 'pending', 'shipped',
+      'pathao', 'booked', v_consignment_id
+    );
+    raise exception 'DUPLICATE_PATHAO_CONSIGNMENT_ID_WAS_ACCEPTED';
+  exception
+    when unique_violation then
+      null;
+  end;
+
   v_result := public.apply_pathao_delivery_status(v_consignment_id, 'in_transit');
   if (v_result->>'updated')::boolean is not true then
     raise exception 'PATHAO_STATUS_DID_NOT_ADVANCE_TO_IN_TRANSIT';
