@@ -82,4 +82,10 @@ jobs:
         run: |
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/order_status_transition_smoke_test.sql
 
+      - name: Verify order rate limits and atomic Pathao status transitions
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/order_rate_limit_pathao_atomic_test.sql
+
       # GitHub-hosted runners are ephemeral; Docker containers are discarded after the job.
