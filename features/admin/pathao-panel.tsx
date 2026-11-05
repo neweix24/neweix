@@ -39,6 +39,9 @@ export default function PathaoPanel() {
   const [weight, setWeight] = useState("0.5");
   const [quote, setQuote] = useState<unknown>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+  const [consignmentId, setConsignmentId] = useState("");
+  const [tracking, setTracking] = useState<unknown>(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
 
   async function getJson(url: string) {
     const response = await fetch(url, { cache: "no-store" });
@@ -99,6 +102,26 @@ export default function PathaoPanel() {
     }
   }
 
+
+  async function trackShipment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setTrackingLoading(true);
+    setTracking(null);
+    try {
+      const result = await getJson(`/api/admin/pathao?action=track&consignmentId=${encodeURIComponent(consignmentId.trim())}`);
+      setTracking(result);
+      setMessage(result.synced
+        ? "Pathao status retrieved and NEWEIX order status synchronized."
+        : "Pathao status retrieved. No local status change was needed.");
+      setState("success");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not retrieve Pathao shipment status.");
+      setState("error");
+    } finally {
+      setTrackingLoading(false);
+    }
+  }
+
   async function calculatePrice(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setQuoteLoading(true);
@@ -150,6 +173,19 @@ export default function PathaoPanel() {
       </div>
       <p role="status" className={`mt-3 text-sm ${state === "error" ? "text-red-700" : state === "success" ? "text-green-700" : "text-gray-600"}`}>{message}</p>
       {environment && <p className="mt-1 text-xs text-gray-500">Environment: {environment}</p>}
+
+
+      <form onSubmit={trackShipment} className="mt-5 space-y-3 rounded-xl border border-gray-200 p-4">
+        <div>
+          <h3 className="font-semibold">Shipment Tracking & Status Sync</h3>
+          <p className="mt-1 text-xs text-gray-500">Fetch the latest status from Pathao. NEWEIX applies only supported, valid order-state transitions.</p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input required minLength={3} maxLength={80} value={consignmentId} onChange={(event) => setConsignmentId(event.target.value)} className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm" placeholder="Pathao Consignment ID" />
+          <button type="submit" disabled={trackingLoading || !consignmentId.trim()} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{trackingLoading ? "Checking..." : "Track Shipment"}</button>
+        </div>
+        {tracking !== null && <pre className="max-h-64 overflow-auto rounded-lg bg-gray-50 p-3 text-xs">{JSON.stringify(tracking, null, 2)}</pre>}
+      </form>
 
       <form onSubmit={calculatePrice} className="mt-5 space-y-4 rounded-xl border border-gray-200 p-4">
         <div>
