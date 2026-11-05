@@ -5,7 +5,7 @@ import Link from "next/link";
 import Icon from "@/components/ui/icon";
 
 type ReturnItem = { id: string; quantity: number; order_items?: { product_name?: string; unit_price?: number; quantity?: number } | null };
-type ReturnRequest = { id: string; customer_id: string; order_id: string; status: string; reason: string; customer_note: string; staff_note: string | null; refund_amount: number | null; refund_method: string | null; refund_reference: string | null; created_at: string; orders?: { order_number?: string; customer_name?: string; customer_phone?: string; status?: string; total?: number } | null; customer_return_request_items?: ReturnItem[] };
+type ReturnRequest = { id: string; customer_id: string; order_id: string; status: string; reason: string; customer_note: string; staff_note: string | null; refund_amount: number | null; refund_method: string | null; refund_reference: string | null; stock_restocked_at: string | null; stock_restocked_by: string | null; created_at: string; orders?: { order_number?: string; customer_name?: string; customer_phone?: string; status?: string; total?: number } | null; customer_return_request_items?: ReturnItem[] };
 const labels: Record<string,string> = { requested:"অনুরোধ জমা", approved:"অনুমোদিত", rejected:"প্রত্যাখ্যাত", received:"পণ্য গ্রহণ", refunded:"রিফান্ড সম্পন্ন", closed:"বন্ধ" };
 const next: Record<string,string[]> = { requested:["approved","rejected"], approved:["received","rejected"], received:["refunded","closed"], refunded:["closed"] };
 const money = (n:number) => `৳${Number(n || 0).toLocaleString("en-BD")}`;
@@ -26,6 +26,15 @@ export default function ReturnsManager() {
     catch(e){setError(e instanceof Error?e.message:"তথ্য লোড করা যায়নি।");} finally{setLoading(false);}
   },[]);
   useEffect(()=>{void load();},[load]);
+
+  async function restock(r:ReturnRequest) {
+    setError("");setNotice("");setBusy(r.id);
+    try {
+      const response=await fetch("/api/admin/returns/restock",{method:"POST",headers:{"Content-Type":"application/json"},cache:"no-store",body:JSON.stringify({request_id:r.id,note:notes[r.id]?.trim() || "Return received and inspected."})});
+      const data=await response.json();if(!response.ok)throw new Error(data.error || "স্টক আপডেট করা যায়নি।");
+      setNotice(`অর্ডার #${r.orders?.order_number || r.order_id}: ফেরত পণ্যের স্টক যোগ হয়েছে।`);await load();
+    }catch(e){setError(e instanceof Error?e.message:"স্টক আপডেট করা যায়নি।");}finally{setBusy("");}
+  }
 
   async function update(r:ReturnRequest,status:string) {
     setError("");setNotice("");
@@ -54,7 +63,9 @@ export default function ReturnsManager() {
         <div className="mt-4 space-y-2 border-y border-slate-100 py-3">{(r.customer_return_request_items || []).map(i=><div key={i.id} className="flex justify-between gap-3 text-sm"><span>{i.order_items?.product_name || "পণ্য"} × {i.quantity}</span><span className="font-semibold">{money((i.order_items?.unit_price || 0)*i.quantity)}</span></div>)}</div>
         <p className="mt-3 text-sm"><strong>কারণ:</strong> {r.reason}</p><p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{r.customer_note || "কোনো অতিরিক্ত নোট নেই।"}</p>
         <label className="mt-4 block text-xs font-bold">অ্যাডমিন নোট<textarea rows={2} maxLength={1000} value={notes[r.id] ?? r.staff_note ?? ""} onChange={e=>setNotes(old=>({...old,[r.id]:e.target.value}))} className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm font-normal"/></label>
-        {r.status==="received"&&<div className="mt-3 grid gap-2 sm:grid-cols-3"><label className="text-xs font-bold">রিফান্ড (BDT)<input type="number" min="0" step="1" value={refunds[r.id]?.amount ?? String(r.refund_amount ?? "")} onChange={e=>setRefunds(old=>({...old,[r.id]:{...(old[r.id]||{amount:"",method:"bkash",reference:""}),amount:e.target.value}}))} className="mt-1 w-full rounded-lg border p-2"/></label><label className="text-xs font-bold">পদ্ধতি<select value={refunds[r.id]?.method ?? r.refund_method ?? "bkash"} onChange={e=>setRefunds(old=>({...old,[r.id]:{...(old[r.id]||{amount:"",method:"bkash",reference:""}),method:e.target.value}}))} className="mt-1 w-full rounded-lg border bg-white p-2">{["original","bkash","nagad","rocket","bank","eixon","manual"].map(m=><option key={m} value={m}>{m}</option>)}</select></label><label className="text-xs font-bold">রেফারেন্স<input maxLength={120} value={refunds[r.id]?.reference ?? r.refund_reference ?? ""} onChange={e=>setRefunds(old=>({...old,[r.id]:{...(old[r.id]||{amount:"",method:"bkash",reference:""}),reference:e.target.value}}))} className="mt-1 w-full rounded-lg border p-2"/></label></div>}
+        {r.status==="received"&&<div className="mt-3 space-y-3">
+          {r.stock_restocked_at ? <p className="rounded-lg bg-emerald-50 p-3 text-sm font-bold text-emerald-800">ইনভেন্টরিতে স্টক ফেরত যোগ হয়েছে · {new Date(r.stock_restocked_at).toLocaleString("bn-BD")}</p> : <button type="button" disabled={busy===r.id} onClick={()=>void restock(r)} className="rounded-xl border border-emerald-700 px-4 py-2 text-xs font-extrabold text-emerald-800 disabled:opacity-50">{busy===r.id?"স্টক আপডেট হচ্ছে…":"ফেরত পণ্যের স্টক যোগ করুন"}</button>}
+          <div className="grid gap-2 sm:grid-cols-3"><label className="text-xs font-bold">রিফান্ড (BDT)<input type="number" min="0" step="1" value={refunds[r.id]?.amount ?? String(r.refund_amount ?? "")} onChange={e=>setRefunds(old=>({...old,[r.id]:{...(old[r.id]||{amount:"",method:"bkash",reference:""}),amount:e.target.value}}))} className="mt-1 w-full rounded-lg border p-2"/></label><label className="text-xs font-bold">পদ্ধতি<select value={refunds[r.id]?.method ?? r.refund_method ?? "bkash"} onChange={e=>setRefunds(old=>({...old,[r.id]:{...(old[r.id]||{amount:"",method:"bkash",reference:""}),method:e.target.value}}))} className="mt-1 w-full rounded-lg border bg-white p-2">{["original","bkash","nagad","rocket","bank","eixon","manual"].map(m=><option key={m} value={m}>{m}</option>)}</select></label><label className="text-xs font-bold">রেফারেন্স<input maxLength={120} value={refunds[r.id]?.reference ?? r.refund_reference ?? ""} onChange={e=>setRefunds(old=>({...old,[r.id]:{...(old[r.id]||{amount:"",method:"bkash",reference:""}),reference:e.target.value}}))} className="mt-1 w-full rounded-lg border p-2"/></label></div></div>}
         {next[r.status]?.length>0&&<div className="mt-4 flex flex-wrap gap-2">{next[r.status].map(s=><button key={s} disabled={busy===r.id} onClick={()=>void update(r,s)} className="rounded-xl px-4 py-2 text-xs font-extrabold text-white disabled:opacity-50" style={{background:s==="rejected"?"#b45353":"#28764b"}}>{busy===r.id?"আপডেট হচ্ছে…":labels[s]}</button>)}</div>}
       </article>)}</div>}
       <p className="mt-5 text-xs leading-5 text-slate-500">এই স্ক্রিন রিফান্ডের রেকর্ড সংরক্ষণ করে; কোনো পেমেন্ট গেটওয়ে বা MFS-এ স্বয়ংক্রিয় টাকা পাঠায় না।</p>
