@@ -75,16 +75,9 @@ const statusRank: Record<string, number> = {
 };
 
 export async function POST(request: Request) {
-  const configuredSecret = getServerSetting("PATHAO_WEBHOOK_SECRET");
-  if (!configuredSecret || configuredSecret.length < 24) {
-    return webhookResponse({ error: "Pathao webhook is not configured." }, 503);
-  }
-
-  const signature = request.headers.get("X-PATHAO-SIGNATURE") ?? "";
-  if (!signature || !constantTimeEqual(signature, configuredSecret)) {
-    return webhookResponse({ error: "Invalid Pathao webhook signature." }, 401);
-  }
-
+  // Pathao's integration handshake is a non-mutating protocol check. It must be
+  // answered before merchant-event signature validation because the handshake
+  // request may not include X-PATHAO-SIGNATURE.
   const contentLength = Number(request.headers.get("content-length") ?? 0);
   if (Number.isFinite(contentLength) && contentLength > 32_768) {
     return webhookResponse({ error: "Webhook payload is too large." }, 413);
@@ -108,6 +101,16 @@ export async function POST(request: Request) {
   const event = (payload as Record<string, unknown>).event;
   if (event === "webhook_integration") {
     return webhookResponse({ accepted: true, message: "Pathao webhook integration verified." }, 202);
+  }
+
+  // Authenticate all real shipment notifications after handling the handshake.
+  const configuredSecret = getServerSetting("PATHAO_WEBHOOK_SECRET");
+  if (!configuredSecret || configuredSecret.length < 24) {
+    return webhookResponse({ error: "Pathao webhook is not configured." }, 503);
+  }
+  const signature = request.headers.get("X-PATHAO-SIGNATURE") ?? "";
+  if (!signature || !constantTimeEqual(signature, configuredSecret)) {
+    return webhookResponse({ error: "Invalid Pathao webhook signature." }, 401);
   }
 
   const consignmentId = (payload as Record<string, unknown>).consignment_id;
