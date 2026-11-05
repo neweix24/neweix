@@ -23,7 +23,8 @@ create index if not exists customer_notifications_user_unread_idx
 
 alter table public.customer_notifications enable row level security;
 revoke all on public.customer_notifications from public,anon;
-grant select,update on public.customer_notifications to authenticated;
+grant select on public.customer_notifications to authenticated;
+grant update(read_at) on public.customer_notifications to authenticated;
 
 drop policy if exists customer_notifications_select_own on public.customer_notifications;
 create policy customer_notifications_select_own
