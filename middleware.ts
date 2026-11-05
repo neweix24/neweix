@@ -92,7 +92,8 @@ export async function middleware(request: NextRequest) {
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;
 
-  if (!isApiPath || response.cookies.getAll().length > 0) {
+  const hasAuthenticatedSession = typeof userId === "string" && userId.length > 0;
+  if (!isApiPath || isCustomerProtected || hasAuthenticatedSession || response.cookies.getAll().length > 0) {
     response.headers.set("Cache-Control", "private, no-cache, no-store, must-revalidate, max-age=0");
   }
 
