@@ -322,3 +322,25 @@
 .notificationPanel p{margin:4px 0 0;font-size:13px;font-weight:650}
 .notificationPanel span{color:var(--muted);font-size:11px;line-height:1.6}
 @media(max-width:600px){.quickMenuTrigger,.notificationTrigger{width:38px;height:38px;border-radius:11px}.quickMenuPanel,.notificationPanel{top:calc(100% + 8px)}.notificationPanel{right:46px}}
+
+/* Live customer notification inbox */
+.notificationTrigger{position:relative}
+.notificationTrigger::after{content:"";display:none}
+.notificationHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.notificationHeader strong{font-size:14px}
+.notificationHeader button{border:0;background:transparent;color:var(--lime);font:inherit;font-size:10px;font-weight:800;cursor:pointer}
+.notificationMessage{margin:12px 0 2px;color:var(--muted);font-size:12px;line-height:1.6}
+.notificationEmpty{display:grid;justify-items:center;gap:7px;padding:18px 8px 10px;text-align:center}
+.notificationEmpty svg{color:var(--lime)}
+.notificationEmpty p{margin:0;color:var(--text);font-size:13px;font-weight:750}
+.notificationEmpty span{max-width:220px;color:var(--muted);font-size:11px;line-height:1.6}
+.notificationList{display:grid;max-height:min(390px,65vh);gap:4px;overflow-y:auto;margin:0 -6px;padding:5px 0}
+.notificationItem,.notificationItemUnread{display:flex;align-items:flex-start;gap:10px;padding:11px 8px;border-radius:10px;color:var(--text);text-decoration:none}
+.notificationItem:hover,.notificationItemUnread:hover{background:color-mix(in srgb,var(--lime) 8%,var(--panel))}
+.notificationItemUnread{background:color-mix(in srgb,var(--lime) 6%,var(--panel))}
+.notificationDot{flex:0 0 7px;width:7px;height:7px;margin-top:6px;border-radius:50%;background:transparent}
+.notificationItemUnread .notificationDot{background:var(--lime);box-shadow:0 0 0 3px color-mix(in srgb,var(--lime) 14%,transparent)}
+.notificationCopy{display:grid;min-width:0;gap:4px}
+.notificationCopy b{font-size:11px;font-weight:800}
+.notificationCopy>span{color:var(--muted);font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.notificationCopy time{color:var(--muted);font-size:9px}
