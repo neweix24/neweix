@@ -45,7 +45,10 @@ async function request(path, init = {}) {
     redirect: "manual",
     cache: "no-store",
     signal: AbortSignal.timeout(timeoutMs),
-    headers: { "User-Agent": "NEWEIX-Production-Smoke-Test/1.0" },
+    headers: {
+      "User-Agent": "NEWEIX-Production-Smoke-Test/1.0",
+      ...(init.headers || {}),
+    },
   });
 }
 
