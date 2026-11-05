@@ -299,6 +299,11 @@ export default function AccountView() {
             <span><strong>Wallet · Eixon</strong><small>Manage your wallet, balance and payment methods.</small></span>
             <span className="account-shortcut-arrow" aria-hidden="true">→</span>
           </Link>
+          <Link href="/account/returns" className="account-shortcut">
+            <span className="account-shortcut-icon"><Icon name="refresh" size={21} /></span>
+            <span><strong>Returns &amp; refunds</strong><small>Request a return and track refund progress.</small></span>
+            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
+          </Link>
         </section>
 
         {loading ? (
