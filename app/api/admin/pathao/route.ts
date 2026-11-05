@@ -177,17 +177,27 @@ export async function GET(request: Request) {
         trackingRecord.order_status ??
         ""
       ).toLowerCase();
-      const deliveryStatus = providerStatus.includes("deliver")
-        ? "delivered"
-        : providerStatus.includes("pick")
-          ? "picked_up"
-          : providerStatus.includes("transit") || providerStatus.includes("in transit")
-            ? "in_transit"
-            : providerStatus.includes("return")
-              ? "returned"
-              : providerStatus.includes("cancel")
-                ? "cancelled"
-                : null;
+      const isSpecialOperation =
+        providerStatus.includes("partial") ||
+        providerStatus.includes("exchange") ||
+        providerStatus.includes("returnidcreated") ||
+        providerStatus.includes("returnintransit") ||
+        providerStatus.includes("onhold");
+      const deliveryStatus = isSpecialOperation
+        ? null
+        : providerStatus === "delivered" || providerStatus === "orderdelivered"
+          ? "delivered"
+          : providerStatus === "returned" || providerStatus === "orderreturned" ||
+              providerStatus === "returnedtomerchant" || providerStatus === "orderreturnedtomerchant"
+            ? "returned"
+            : providerStatus.includes("pick")
+              ? "picked_up"
+              : providerStatus.includes("transit") || providerStatus.includes("sortinghub") ||
+                  providerStatus.includes("lastmilehub") || providerStatus.includes("assignedfordelivery")
+                ? "in_transit"
+                : providerStatus.includes("cancel")
+                  ? "cancelled"
+                  : null;
       let synced = false;
       if (deliveryStatus) {
         const admin = await createRuntimeServiceClient();
