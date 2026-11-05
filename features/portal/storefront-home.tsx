@@ -299,10 +299,10 @@ export default function StorefrontHome() {
                   <span className={styles.notificationCopy}><b>{item.title}</b><span>{item.body}</span><time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString(locale === "bn" ? "bn-BD" : "en-BD", { dateStyle: "medium", timeStyle: "short" })}</time></span>
                 </Link>)}</div>}
             </section>}
-            <button type="button" className={styles.quickMenuTrigger} aria-label="Open quick links" aria-haspopup="true" aria-expanded={quickMenuOpen} onClick={() => { setQuickMenuOpen((open) => !open); setNotificationsOpen(false); }}>
-              <Icon name="more-horizontal" size={22} />
+            <button type="button" className={styles.quickMenuTrigger} aria-label="Open navigation menu" aria-haspopup="true" aria-expanded={quickMenuOpen} onClick={() => { setQuickMenuOpen((open) => !open); setNotificationsOpen(false); }}>
+              <Icon name="menu" size={22} />
             </button>
-            {quickMenuOpen && <nav className={styles.quickMenuPanel} aria-label="Quick links">
+            {quickMenuOpen && <nav className={styles.quickMenuPanel} aria-label="Navigation menu">
               <Link href="/products" onClick={() => setQuickMenuOpen(false)}><Icon name="grid" size={17} />{t("productsSearch")}</Link>
               <Link href="/track-order" onClick={() => setQuickMenuOpen(false)}><Icon name="truck" size={17} />{t("trackMyOrder")}</Link>
               <Link href="/wishlist" onClick={() => setQuickMenuOpen(false)}><Icon name="heart" size={17} />{t("wishlist")}<b>{wishlistCount}</b></Link>
