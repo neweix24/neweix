@@ -5,10 +5,11 @@ export type IconName =
   | "plus" | "minus" | "trash" | "check" | "refresh" | "close" | "menu"
   | "home" | "grid" | "star" | "wallet" | "membership" | "globe"
   | "settings" | "map-pin" | "shield" | "help" | "mail" | "logout"
-  | "orders" | "truck" | "gift" | "tag" | "compare" | "chevron-right" | "chevron-left" | "sparkles" | "eye" | "copy" | "send" | "filter" | "edit";
+  | "orders" | "truck" | "gift" | "tag" | "compare" | "chevron-right" | "chevron-left" | "sparkles" | "eye" | "copy" | "send" | "filter" | "edit" | "bell";
 
 const paths: Record<IconName, ReactNode> = {
   search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></>,
+  bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21h4" /></>,
   user: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>,
   cart: <><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 1.9-1.4L22 8H6" /><circle cx="10" cy="21" r="1" /><circle cx="18" cy="21" r="1" /></>,
   heart: <path d="M20.8 8.8c0 5.2-8.8 11-8.8 11s-8.8-5.8-8.8-11A4.8 4.8 0 0 1 12 6.2a4.8 4.8 0 0 1 8.8 2.6Z" />,
