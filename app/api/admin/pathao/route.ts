@@ -311,6 +311,113 @@ export async function POST(request: Request) {
   const input = body as Record<string, unknown>;
 
 
+  if (input.action === "auto_map_district") {
+    const divisionCode = typeof input.divisionCode === "string" ? input.divisionCode.trim() : "";
+    const districtCode = typeof input.districtCode === "string" ? input.districtCode.trim() : "";
+    const cityId = input.pathaoCityId;
+    if (
+      !/^BD-D[0-9]{2}$/.test(divisionCode) ||
+      !/^BD-D[0-9]{2}-Z[0-9]{2}$/.test(districtCode) ||
+      !Number.isSafeInteger(cityId) || Number(cityId) < 1
+    ) {
+      return errorResponse("Select a valid Bangladesh division, district, and Pathao city.", 400);
+    }
+
+    const division = (await import("@/lib/bangladesh-admin")).BANGLADESH_ADMIN_AREAS
+      .find((item) => item.code === divisionCode);
+    const district = division?.districts.find((item) => item.code === districtCode);
+    if (!division || !district || district.upazilas.length === 0) {
+      return errorResponse("The selected Bangladesh district was not found or has no upazilas.", 400);
+    }
+
+    const cities = extractPathaoRows(await getPathaoCities());
+    const city = cities.find((row) => Number(row.city_id) === cityId);
+    if (!city || typeof city.city_name !== "string") {
+      return errorResponse("The selected Pathao city ID was not found in the live Pathao catalog.", 422);
+    }
+
+    const zones = extractPathaoRows(await getPathaoZones(Number(cityId)));
+    const normalize = (value: string) => value.normalize("NFKD")
+      .toLocaleLowerCase("en")
+      .replace(/&/g, "and")
+      .replace(/[^a-z0-9]/g, "");
+    const zoneIndex = new Map<string, Array<{ id: number; name: string }>>();
+    for (const row of zones) {
+      const id = Number(row.zone_id);
+      const name = typeof row.zone_name === "string" ? row.zone_name.trim() : "";
+      if (!Number.isSafeInteger(id) || id < 1 || !name) continue;
+      const key = normalize(name);
+      zoneIndex.set(key, [...(zoneIndex.get(key) ?? []), { id, name }]);
+    }
+
+    const matches = district.upazilas.flatMap((upazila) => {
+      const candidates = zoneIndex.get(normalize(upazila.name)) ?? [];
+      return candidates.length === 1
+        ? [{ upazila, zone: candidates[0] }]
+        : [];
+    });
+    if (matches.length === 0) {
+      return NextResponse.json({
+        success: true,
+        cityName: city.city_name,
+        matchedCount: 0,
+        skippedCount: district.upazilas.length,
+        mappings: [],
+        message: "No unambiguous exact-name Pathao zone matches were found. No mappings were saved.",
+      }, { headers: { "Cache-Control": "private, no-store" } });
+    }
+
+    const admin = await createRuntimeServiceClient();
+    const now = new Date().toISOString();
+    const rows = matches.map(({ upazila, zone }) => ({
+      division_code: divisionCode,
+      district_code: districtCode,
+      upazila_code: upazila.code,
+      pathao_city_id: Number(cityId),
+      pathao_zone_id: zone.id,
+      pathao_city_name: city.city_name as string,
+      pathao_zone_name: zone.name,
+      is_verified: true,
+      is_active: true,
+      verified_at: now,
+      verified_by: staff.userId,
+      updated_at: now,
+    }));
+    const { data: saved, error } = await admin
+      .from("pathao_location_mappings")
+      .upsert(rows, { onConflict: "district_code,upazila_code" })
+      .select("id, division_code, district_code, upazila_code, pathao_city_id, pathao_zone_id, pathao_city_name, pathao_zone_name, is_verified, is_active, verified_at, updated_at");
+    if (error || !saved) {
+      console.error("Pathao automatic location mapping failed:", error?.message);
+      return errorResponse("Could not save automatically matched Pathao locations.", 503);
+    }
+
+    const { error: auditError } = await admin.from("audit_logs").insert({
+      actor_id: staff.userId,
+      action: "pathao.location_mapping.auto_verified",
+      target_type: "pathao_location_mapping",
+      target_id: saved[0]?.id ?? null,
+      details: {
+        division_code: divisionCode,
+        district_code: districtCode,
+        pathao_city_id: Number(cityId),
+        matched_count: saved.length,
+        skipped_count: district.upazilas.length - saved.length,
+        matching_method: "unique_exact_normalized_name",
+      },
+    });
+    if (auditError) console.error("Pathao automatic mapping audit log failed:", auditError.message);
+
+    return NextResponse.json({
+      success: true,
+      cityName: city.city_name,
+      matchedCount: saved.length,
+      skippedCount: district.upazilas.length - saved.length,
+      mappings: saved,
+      message: "Only unique exact-name matches were verified against the live Pathao city/zone catalog and saved.",
+    }, { headers: { "Cache-Control": "private, no-store" } });
+  }
+
   if (input.action === "save_location_mapping") {
     const divisionCode = typeof input.divisionCode === "string" ? input.divisionCode.trim() : "";
     const districtCode = typeof input.districtCode === "string" ? input.districtCode.trim() : "";
