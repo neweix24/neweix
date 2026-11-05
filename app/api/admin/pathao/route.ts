@@ -385,7 +385,7 @@ export async function POST(request: Request) {
       };
     });
 
-    const matchedCount = rowsToInsert.filter((row) => row.matched_order_id !== null).length;
+    const matchedCount = rowsToInsert.filter((row) => row.match_status === "matched").length;
     const mismatchCount = rowsToInsert.filter((row) => row.match_status === "amount_mismatch").length;
     const unmatchedCount = rowsToInsert.filter((row) => row.match_status === "unmatched" || row.match_status === "duplicate").length;
     const { data: importRecord, error: importError } = await admin
