@@ -71,7 +71,6 @@ export default function ProductCatalog() {
   }, [query, categorySlug, minPrice, maxPrice, inStockOnly, sort]);
   const filterKey = filterParams.toString();
   const activeFilterKeyRef = useRef(filterKey);
-  activeFilterKeyRef.current = filterKey;
 
   const loadMoreProducts = useCallback(async () => {
     if (loadingMore || !hasMore) return;
@@ -131,6 +130,7 @@ export default function ProductCatalog() {
 
   useEffect(() => {
     if (!filtersReady) return;
+    activeFilterKeyRef.current = filterKey;
     let active = true;
     const nextUrl = filterKey ? `/products?${filterKey}` : "/products";
     window.history.replaceState(null, "", nextUrl);
