@@ -154,7 +154,7 @@ export default function PathaoPanel() {
       <form onSubmit={calculatePrice} className="mt-5 space-y-4 rounded-xl border border-gray-200 p-4">
         <div>
           <h3 className="font-semibold">Live Delivery Charge Calculator</h3>
-          <p className="mt-1 text-xs text-gray-500">The quote comes from Pathao's price-plan API; it is not a locally estimated fee.</p>
+          <p className="mt-1 text-xs text-gray-500">The quote comes from the Pathao price-plan API; it is not a locally estimated fee.</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-medium">Pickup Store ID
