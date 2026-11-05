@@ -8,6 +8,7 @@ import Icon from "@/components/ui/icon";
 import styles from "./storefront-home.module.css";
 import HomepageYouTubeVideos from "@/features/portal/homepage-youtube-videos";
 import ProductCardActions from "@/features/products/product-card-actions";
+import { mutateSavedProduct } from "@/lib/customer-saved-products";
 import { useLanguage } from "@/components/language-provider";
 import LanguageSwitcher from "@/components/language-switcher";
 
@@ -19,6 +20,16 @@ type Product = {
 type Category = { id: string; name: string; slug: string };
 type CustomerNotification = { id: string; event_type: string; title: string; body: string; href: string; read_at: string | null; created_at: string };
 
+function discountPercentage(price: number, compareAtPrice?: number | null) {
+  if (!compareAtPrice || compareAtPrice <= price || price < 0) return 0;
+  return Math.round(((compareAtPrice - price) / compareAtPrice) * 100);
+}
+function readWishlistIds() {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem("neweix_wishlist") ?? "[]");
+    return Array.isArray(value) ? Array.from(new Set(value.filter((id): id is string => typeof id === "string"))).slice(0, 200) : [];
+  } catch { return []; }
+}
 function money(value: number, locale: string) {
   return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(value);
 }
@@ -50,15 +61,34 @@ export default function StorefrontHome() {
   const [notificationsError, setNotificationsError] = useState("");
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
+  const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cartNotice, setCartNotice] = useState("");
   const quickMenuRef = useRef<HTMLDivElement>(null);
 
+  function toggleHomepageWishlist(productId: string) {
+    const next = wishlistIds.includes(productId)
+      ? wishlistIds.filter((id) => id !== productId)
+      : [...wishlistIds, productId].slice(-200);
+    try {
+      localStorage.setItem("neweix_wishlist", JSON.stringify(next));
+      setWishlistIds(next);
+      setWishlistCount(next.length);
+      window.dispatchEvent(new Event("neweix-wishlist-change"));
+      void mutateSavedProduct("wishlist", productId, next.includes(productId) ? "add" : "remove")
+        .then((result) => { if (!result.ok) setCartNotice(result.error || "Could not sync your wishlist."); });
+    } catch {
+      setCartNotice("Could not save your wishlist. Please try again.");
+    }
+  }
+
   const refreshCounts = useCallback(() => {
     setCartCount(readCartCount());
-    setWishlistCount(readCount("neweix_wishlist"));
+    const savedWishlist = readWishlistIds();
+    setWishlistIds(savedWishlist);
+    setWishlistCount(savedWishlist.length);
   }, []);
 
   useEffect(() => {
@@ -308,7 +338,16 @@ export default function StorefrontHome() {
                 <Link href={`/products/${encodeURIComponent(product.slug)}`} className={styles.productImage}>
                   {product.image_urls?.[0] ? <img src={product.image_urls[0]} alt={product.name} loading="lazy"/> : <Icon name="package" size={42} />}
                   {product.is_featured && <small>{t("featured")}</small>}
+                  {discountPercentage(product.price, product.compare_at_price) > 0 && <span className={styles.discountBadge}>{discountPercentage(product.price, product.compare_at_price)}% OFF</span>}
                 </Link>
+                <button
+                  type="button"
+                  className={styles.homeWishlist}
+                  aria-pressed={wishlistIds.includes(product.id)}
+                  aria-label={wishlistIds.includes(product.id) ? t("removeFromWishlist") : t("addToWishlist")}
+                  title={wishlistIds.includes(product.id) ? t("removeFromWishlist") : t("addToWishlist")}
+                  onClick={() => toggleHomepageWishlist(product.id)}
+                ><Icon name="heart" size={18} /></button>
                 <div className={styles.productInfo}><Link href={`/products/${encodeURIComponent(product.slug)}`}>{product.name}</Link><strong>{money(Number(product.price), locale)}</strong>{product.compare_at_price != null && product.compare_at_price > product.price && <del>{money(Number(product.compare_at_price), locale)}</del>}<span className={product.stock > 0 ? styles.inStock : styles.outStock}>{product.stock > 0 ? t("inStock") : t("outOfStock")}</span><ProductCardActions productId={product.id} stock={product.stock} onNotice={setCartNotice} /></div>
               </article>
             ))}</div>
