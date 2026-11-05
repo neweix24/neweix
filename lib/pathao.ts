@@ -24,7 +24,7 @@ export async function getPathaoStoreId(): Promise<number> {
   const env = context.env as Record<string, unknown>;
   const raw = getEnvValue(env, "PATHAO_STORE_ID");
   const storeId = Number(raw);
-  if (!/^\\d+$/.test(raw) || !Number.isSafeInteger(storeId) || storeId < 1) {
+  if (!/^\d+$/.test(raw) || !Number.isSafeInteger(storeId) || storeId < 1) {
     throw new Error("PATHAO_STORE_ID must be configured as a positive integer.");
   }
   return storeId;
