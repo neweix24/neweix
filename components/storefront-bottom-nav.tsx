@@ -38,9 +38,8 @@ export default function StorefrontBottomNav() {
   const links = [
     { href: "/", label: t("homeNav"), icon: "home" },
     { href: "/products", label: t("productsSearch"), icon: "grid" },
-    { href: "/search", label: t("search"), icon: "search" },
     { href: "/cart", label: t("cart"), icon: "cart" },
-    { href: "/account", label: t("myAccount"), icon: "user" },
+    { href: "/account", label: t("myAccountNav"), icon: "user" },
   ] as const;
 
   return (
