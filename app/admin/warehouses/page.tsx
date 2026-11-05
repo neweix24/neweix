@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/auth";
 import WarehouseManager from "@/features/admin/warehouse-manager";
+import WarehouseOpeningBalanceForm from "@/features/admin/warehouse-opening-balance-form";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function AdminWarehousesPage() {
           </Link>
         </header>
         <WarehouseManager />
+        <div className="mt-6"><WarehouseOpeningBalanceForm /></div>
       </div>
     </main>
   );
