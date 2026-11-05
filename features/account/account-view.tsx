@@ -302,7 +302,6 @@ export default function AccountView() {
                     <Link href="/account/neweix-plus">Neweix+ Membership</Link>
                     <Link href="/eixverse">EixVerse</Link>
                     <span className="account-nav-label">PREFERENCES & PRIVACY</span>
-                    <Link href="/account/theme">Customize your theme</Link>
                     <Link href="/account/privacy">Privacy & preferences</Link>
                     <Link href="/account/data-requests">My data and privacy</Link>
                   </nav>
