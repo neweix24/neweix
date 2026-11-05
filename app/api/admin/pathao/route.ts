@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createRuntimeServiceClient } from "@/lib/supabase/runtime-service-client";
 import {
+  calculatePathaoPrice,
   createPathaoOrder,
+  getPathaoAreas,
   getPathaoCities,
+  getPathaoZones,
   getPathaoConfig,
   getPathaoOrderInfo,
   getPathaoStores,
@@ -90,6 +93,18 @@ export async function GET(request: Request) {
 
     if (action === "cities") {
       return NextResponse.json({ success: true, cities: await getPathaoCities() }, {
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
+
+    if (action === "zones" || action === "areas") {
+      const rawId = params.get(action === "zones" ? "cityId" : "zoneId") || "";
+      const id = Number(rawId);
+      if (!/^\d+$/.test(rawId) || !Number.isSafeInteger(id) || id < 1) {
+        return errorResponse("A valid location ID is required.", 400);
+      }
+      const locations = action === "zones" ? await getPathaoZones(id) : await getPathaoAreas(id);
+      return NextResponse.json({ success: true, locations }, {
         headers: { "Cache-Control": "no-store" },
       });
     }
