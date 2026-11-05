@@ -294,6 +294,11 @@ export default function AccountView() {
             <span><strong>My information</strong><small>Review your personal data and requests.</small></span>
             <span className="account-shortcut-arrow" aria-hidden="true">→</span>
           </Link>
+          <Link href="/account/eixpay" className="account-shortcut">
+            <span className="account-shortcut-icon"><Icon name="wallet" size={21} /></span>
+            <span><strong>Wallet · Eixon</strong><small>Manage your wallet, balance and payment methods.</small></span>
+            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
+          </Link>
         </section>
 
         {loading ? (
@@ -494,7 +499,7 @@ export default function AccountView() {
 
         .account-shortcuts {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 14px;
           margin: 26px 0 22px;
         }
@@ -751,6 +756,12 @@ export default function AccountView() {
           color: var(--danger);
           font: inherit;
           cursor: pointer;
+        }
+
+        @media (max-width: 760px) {
+          .account-shortcuts {
+            grid-template-columns: 1fr;
+          }
         }
 
         @media (max-width: 480px) {
