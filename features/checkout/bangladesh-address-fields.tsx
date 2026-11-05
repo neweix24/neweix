@@ -63,9 +63,7 @@ export default function BangladeshAddressFields({
   const unions = upazila?.unions ?? [];
 
   useEffect(() => {
-    if (districtCode && upazilaCode) {
-      onAddressChangeRef.current?.({ districtCode, upazilaCode });
-    }
+    onAddressChangeRef.current?.({ districtCode, upazilaCode });
   }, [districtCode, upazilaCode]);
 
   function changeDivision(value: string) {
@@ -73,7 +71,6 @@ export default function BangladeshAddressFields({
     setDistrictCode("");
     setUpazilaCode("");
     setUnionCode("");
-    onAddressChange?.({ districtCode: "", upazilaCode: "" });
   }
 
   function changeDistrict(value: string) {
@@ -81,13 +78,11 @@ export default function BangladeshAddressFields({
     setUpazilaCode("");
     setUnionCode("");
     const selected = districts.find((item) => item.code === value);
-    onAddressChange?.({ districtCode: value, upazilaCode: "" });
   }
 
   function changeUpazila(value: string) {
     setUpazilaCode(value);
     setUnionCode("");
-    onAddressChange?.({ districtCode, upazilaCode: value });
   }
 
   return (
