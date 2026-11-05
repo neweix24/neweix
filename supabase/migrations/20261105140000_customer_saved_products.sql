@@ -31,4 +31,36 @@ create policy customer_saved_products_delete_own
   on public.customer_saved_products for delete to authenticated
   using ((select auth.uid()) = user_id);
 
+-- Enforce the four-product comparison limit transactionally, including concurrent requests.
+create or replace function private.enforce_customer_saved_product_limit()
+returns trigger
+language plpgsql
+set search_path = ''
+as $function$
+declare
+  v_count integer;
+begin
+  if new.list_type = 'compare' then
+    perform pg_catalog.pg_advisory_xact_lock(
+      pg_catalog.hashtextextended(new.user_id::text || ':compare', 0)
+    );
+    select count(*)::integer into v_count
+      from public.customer_saved_products
+      where user_id = new.user_id and list_type = 'compare';
+    if v_count >= 4 then
+      raise exception 'A customer can compare up to 4 products.'
+        using errcode = '23514';
+    end if;
+  end if;
+  return new;
+end;
+$function$;
+
+revoke all on function private.enforce_customer_saved_product_limit() from public, anon, authenticated;
+
+drop trigger if exists customer_saved_products_enforce_limit on public.customer_saved_products;
+create trigger customer_saved_products_enforce_limit
+before insert on public.customer_saved_products
+for each row execute function private.enforce_customer_saved_product_limit();
+
 commit;
