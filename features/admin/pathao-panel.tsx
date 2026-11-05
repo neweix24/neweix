@@ -16,6 +16,12 @@ type SettlementImport = {
   unmatched_count: number;
   imported_at: string;
   notes: string | null;
+  expected_payout_amount: number | string | null;
+  actual_received_amount: number | string | null;
+  payout_variance: number | string | null;
+  receipt_reference: string | null;
+  received_at: string | null;
+  reconciliation_status: "pending" | "reconciled" | "variance";
 };
 type SettlementRow = {
   id: string;
@@ -144,6 +150,9 @@ export default function PathaoPanel() {
   const [settlementNotes, setSettlementNotes] = useState("");
   const [settlementBusy, setSettlementBusy] = useState(false);
   const [settlementMessage, setSettlementMessage] = useState("");
+  const [payoutReceivedAmount, setPayoutReceivedAmount] = useState("");
+  const [payoutReceiptReference, setPayoutReceiptReference] = useState("");
+  const [payoutReceiptBusy, setPayoutReceiptBusy] = useState(false);
 
   async function getJson(url: string) {
     const response = await fetch(url, { cache: "no-store" });
@@ -346,6 +355,42 @@ export default function PathaoPanel() {
     }
   }
 
+  async function recordPayoutReceipt(importId: string) {
+    const amount = Number(payoutReceivedAmount);
+    if (!Number.isFinite(amount) || amount < 0 || amount > 100000000 ||
+        payoutReceiptReference.trim().length < 3 || payoutReceiptReference.trim().length > 120) {
+      setSettlementMessage("Enter the actual bank/MFS amount and a valid transaction reference.");
+      return;
+    }
+    setPayoutReceiptBusy(true);
+    setSettlementMessage("");
+    try {
+      const response = await fetch("/api/admin/pathao", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          action: "record_payout_receipt",
+          importId,
+          actualReceivedAmount: Math.round(amount * 100) / 100,
+          receiptReference: payoutReceiptReference.trim(),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not record payout receipt.");
+      setPayoutReceivedAmount("");
+      setPayoutReceiptReference("");
+      await loadSettlementHistory(importId);
+      setSettlementMessage(result.report?.reconciliation_status === "reconciled"
+        ? "Payout receipt recorded. The bank/MFS amount matches the imported Pathao net payout."
+        : "Payout receipt recorded with a variance. Review the difference before closing the report.");
+    } catch (error) {
+      setSettlementMessage(error instanceof Error ? error.message : "Could not record payout receipt.");
+    } finally {
+      setPayoutReceiptBusy(false);
+    }
+  }
+
   async function trackShipment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setTrackingLoading(true);
@@ -539,6 +584,34 @@ export default function PathaoPanel() {
                     <div className="rounded-lg bg-emerald-50 p-3"><p className="text-xs text-gray-500">Matched</p><p className="text-lg font-bold">{selected.matched_count}</p></div>
                     <div className="rounded-lg bg-amber-50 p-3"><p className="text-xs text-gray-500">Amount mismatch</p><p className="text-lg font-bold">{selected.mismatch_count}</p></div>
                     <div className="rounded-lg bg-gray-50 p-3"><p className="text-xs text-gray-500">Unmatched / duplicate</p><p className="text-lg font-bold">{selected.unmatched_count}</p></div>
+                  </div>
+                  <div className="mt-3 rounded-lg border p-3">
+                    <h5 className="text-sm font-semibold">Bank / MFS Payout Reconciliation</h5>
+                    {selected.expected_payout_amount == null ? (
+                      <p className="mt-1 text-xs text-gray-600">This report did not include a Net Payout value for every row. Import a CSV with a mapped Net Payout column to compare the expected transfer with the actual bank/MFS receipt.</p>
+                    ) : selected.actual_received_amount == null ? (
+                      <div className="mt-2 grid gap-3 sm:grid-cols-3">
+                        <div><p className="text-xs text-gray-500">Expected net payout</p><p className="font-bold">{money(selected.expected_payout_amount)}</p></div>
+                        <label className="text-sm font-medium">Actual amount received
+                          <input type="number" min="0" max="100000000" step="0.01" value={payoutReceivedAmount} onChange={(event) => setPayoutReceivedAmount(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2" placeholder="Amount from bank/MFS" />
+                        </label>
+                        <label className="text-sm font-medium">Bank/MFS transaction reference
+                          <input maxLength={120} value={payoutReceiptReference} onChange={(event) => setPayoutReceiptReference(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2" placeholder="Statement reference / Trx ID" />
+                        </label>
+                        <button type="button" onClick={() => void recordPayoutReceipt(selected.id)} disabled={payoutReceiptBusy || !payoutReceivedAmount || payoutReceiptReference.trim().length < 3} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-3">
+                          {payoutReceiptBusy ? "Saving receipt..." : "Record & Compare Payout Receipt"}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mt-2 grid gap-2 sm:grid-cols-4">
+                        <div><p className="text-xs text-gray-500">Expected</p><p className="font-bold">{money(selected.expected_payout_amount)}</p></div>
+                        <div><p className="text-xs text-gray-500">Received</p><p className="font-bold">{money(selected.actual_received_amount)}</p></div>
+                        <div><p className="text-xs text-gray-500">Difference</p><p className="font-bold">{money(selected.payout_variance)}</p></div>
+                        <div><p className="text-xs text-gray-500">Status</p><p className="font-bold capitalize">{selected.reconciliation_status}</p></div>
+                        <p className="text-xs text-gray-500 sm:col-span-4">Receipt reference: {selected.receipt_reference || "—"} · Recorded {selected.received_at ? new Date(selected.received_at).toLocaleString() : "—"}</p>
+                      </div>
+                    )}
+                    <p className="mt-2 text-xs text-gray-500">This records the amount and reference entered by an authorized admin; it does not independently verify the bank/MFS account or contact Pathao Pay.</p>
                   </div>
                   <div className="mt-3 overflow-x-auto">
                     <table className="w-full min-w-[760px] text-left text-xs">
