@@ -28,7 +28,9 @@
 - Creates one fulfillment group per warehouse and matching fulfillment-line records.
 - Writes one inventory movement ledger entry for every reservation slice.
 - If any item is short, the entire transaction rolls back: no partial reservation or fulfillment is left behind.
-- Adds an Admin/Supreme-only endpoint at `POST /api/admin/orders/allocate-warehouse` with Supreme MFA enforcement.
+- Adds an Admin/Supreme-only endpoint at `POST /api/admin/orders/allocate-warehouse` with Supreme MFA enforcement and an allocation control on eligible orders in Admin → Orders.
+- Prevents allocation after an existing courier booking.
+- Cancelling an allocated order releases all warehouse reservations and marks its unbooked fulfillment groups cancelled in the same order-status transaction; booked/dispatched/delivered fulfillment groups block this release path.
 - The endpoint is an explicit admin action; checkout does not call it automatically yet.
 
 ## Important stock safety rule
