@@ -196,6 +196,7 @@ export default function PathaoPanel() {
   const [mappingZoneId, setMappingZoneId] = useState("");
   const [mappingZones, setMappingZones] = useState<LocationOption[]>([]);
   const [mappingZonesLoading, setMappingZonesLoading] = useState(false);
+  const [mappingAutoRunning, setMappingAutoRunning] = useState(false);
 
   async function getJson(url: string) {
     const response = await fetch(url, { cache: "no-store" });
@@ -536,6 +537,40 @@ export default function PathaoPanel() {
     }
   }
 
+  async function autoMapSelectedDistrict() {
+    if (!mappingDivisionCode || !mappingDistrictCode || !mappingCityId) {
+      setMappingMessage("Select a Bangladesh division, district, and Pathao city first.");
+      return;
+    }
+    setMappingAutoRunning(true);
+    setMappingMessage("Checking exact upazila names against the selected live Pathao city zones...");
+    try {
+      const response = await fetch("/api/admin/pathao", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          action: "auto_map_district",
+          divisionCode: mappingDivisionCode,
+          districtCode: mappingDistrictCode,
+          pathaoCityId: Number(mappingCityId),
+        }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Automatic Pathao location mapping failed.");
+      await loadLocationMappings();
+      setMappingMessage(
+        result.matchedCount > 0
+          ? `Automatically verified and saved ${result.matchedCount} exact match(es) for ${selectedMappingDistrict?.name ?? "this district"}. ${result.skippedCount} area(s) were left untouched because no unique exact match was found.`
+          : result.message || "No exact matches found. No mapping was saved."
+      );
+    } catch (error) {
+      setMappingMessage(error instanceof Error ? error.message : "Automatic Pathao location mapping failed.");
+    } finally {
+      setMappingAutoRunning(false);
+    }
+  }
+
   async function saveLocationMapping(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!mappingDivisionCode || !mappingDistrictCode || !mappingUpazilaCode || !mappingCityId || !mappingZoneId) {
@@ -631,6 +666,17 @@ export default function PathaoPanel() {
           </div>
           <button type="button" onClick={() => void loadLocationMappings()} disabled={mappingsLoading} className="rounded-lg border bg-white px-3 py-2 text-xs font-semibold disabled:opacity-50">{mappingsLoading ? "Loading..." : "Refresh Mappings"}</button>
         </div>
+        <button
+          type="button"
+          onClick={() => void autoMapSelectedDistrict()}
+          disabled={mappingAutoRunning || mappingSaving || !mappingDivisionCode || !mappingDistrictCode || !mappingCityId}
+          className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-50"
+        >
+          {mappingAutoRunning ? "Matching verified Pathao zones..." : "Auto-match exact upazila names"}
+        </button>
+        <p className="text-xs leading-5 text-gray-600">
+          Automation only saves a unique exact name match from the selected Pathao city. Ambiguous or unmatched areas are skipped, never guessed.
+        </p>
         <form onSubmit={saveLocationMapping} className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-medium">Bangladesh division
             <select required value={mappingDivisionCode} onChange={(event) => { setMappingDivisionCode(event.target.value); setMappingDistrictCode(""); setMappingUpazilaCode(""); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
