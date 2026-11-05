@@ -83,6 +83,37 @@ export async function GET(request: Request) {
       }, { headers: { "Cache-Control": "no-store" } });
     }
 
+    if (action === "settlement_imports") {
+      const admin = await createRuntimeServiceClient();
+      const { data: imports, error: importsError } = await admin
+        .from("pathao_settlement_imports")
+        .select("id, settlement_reference, settlement_date, source_filename, row_count, matched_count, mismatch_count, unmatched_count, imported_at, notes")
+        .order("imported_at", { ascending: false })
+        .limit(20);
+      if (importsError) {
+        console.error("Pathao settlement import history failed:", importsError.message);
+        return errorResponse("Could not load Pathao settlement history. Verify the database migration.", 503);
+      }
+      const importIds = (imports ?? []).map((item) => item.id);
+      let rows: Array<Record<string, unknown>> = [];
+      if (importIds.length > 0) {
+        const { data, error } = await admin
+          .from("pathao_settlement_rows")
+          .select("id, import_id, source_row_number, source_identifier, consignment_id, merchant_order_id, cod_amount, delivery_charge, discount_amount, net_payout_amount, expected_cod_amount, variance_amount, match_status, matched_order_id")
+          .in("import_id", importIds)
+          .order("source_row_number", { ascending: true })
+          .limit(1000);
+        if (error) {
+          console.error("Pathao settlement rows query failed:", error.message);
+          return errorResponse("Could not load Pathao settlement rows.", 503);
+        }
+        rows = (data ?? []) as Array<Record<string, unknown>>;
+      }
+      return NextResponse.json({ success: true, imports: imports ?? [], rows }, {
+        headers: { "Cache-Control": "private, no-store" },
+      });
+    }
+
     await getPathaoConfig();
 
     if (action === "stores") {
@@ -205,6 +236,207 @@ export async function POST(request: Request) {
   }
 
   const input = body as Record<string, unknown>;
+
+  if (input.action === "import_settlement") {
+    if (staff.role !== "supreme" && staff.role !== "admin") {
+      return errorResponse("Only Supreme/Admin can import Pathao settlement reports.", 403);
+    }
+    if (
+      typeof input.sourceFilename !== "string" ||
+      input.sourceFilename.trim().length < 1 ||
+      input.sourceFilename.trim().length > 255 ||
+      (input.settlementReference != null &&
+        (typeof input.settlementReference !== "string" || input.settlementReference.trim().length > 120)) ||
+      (input.settlementDate != null &&
+        (typeof input.settlementDate !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(input.settlementDate))) ||
+      !Array.isArray(input.rows) || input.rows.length < 1 || input.rows.length > 1000
+    ) {
+      return errorResponse("Settlement report details are invalid. Import 1 to 1,000 mapped rows.", 400);
+    }
+
+    const parsedRows: Array<{
+      source_row_number: number;
+      source_identifier: string;
+      cod_amount: number;
+      delivery_charge: number | null;
+      discount_amount: number | null;
+      net_payout_amount: number | null;
+      raw_row: Record<string, string>;
+    }> = [];
+    for (let index = 0; index < input.rows.length; index += 1) {
+      const value = input.rows[index];
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return errorResponse(`Settlement row ${index + 1} is invalid.`, 400);
+      }
+      const row = value as Record<string, unknown>;
+      const identifier = typeof row.identifier === "string" ? row.identifier.trim() : "";
+      const parseAmount = (candidate: unknown, required: boolean): number | null => {
+        if (candidate == null || candidate === "") return required ? null : null;
+        if (typeof candidate !== "number" || !Number.isFinite(candidate) || candidate < 0 || candidate > 100000000) return null;
+        return Math.round(candidate * 100) / 100;
+      };
+      const codAmount = parseAmount(row.codAmount, true);
+      const deliveryCharge = parseAmount(row.deliveryCharge, false);
+      const discountAmount = parseAmount(row.discountAmount, false);
+      const netPayoutAmount = parseAmount(row.netPayoutAmount, false);
+      if (!identifier || identifier.length > 120 || codAmount === null ||
+          (row.deliveryCharge != null && row.deliveryCharge !== "" && deliveryCharge === null) ||
+          (row.discountAmount != null && row.discountAmount !== "" && discountAmount === null) ||
+          (row.netPayoutAmount != null && row.netPayoutAmount !== "" && netPayoutAmount === null)) {
+        return errorResponse(`Settlement row ${index + 1} has an invalid identifier or amount.`, 400);
+      }
+      const raw = row.raw && typeof row.raw === "object" && !Array.isArray(row.raw)
+        ? row.raw as Record<string, unknown>
+        : {};
+      const safeRaw: Record<string, string> = {};
+      for (const [key, rawValue] of Object.entries(raw).slice(0, 30)) {
+        if (typeof rawValue === "string") safeRaw[key.slice(0, 80)] = rawValue.slice(0, 500);
+      }
+      parsedRows.push({
+        source_row_number: index + 1,
+        source_identifier: identifier,
+        cod_amount: codAmount,
+        delivery_charge: deliveryCharge,
+        discount_amount: discountAmount,
+        net_payout_amount: netPayoutAmount,
+        raw_row: safeRaw,
+      });
+    }
+
+    const reference = typeof input.settlementReference === "string" && input.settlementReference.trim()
+      ? input.settlementReference.trim()
+      : null;
+    const settlementDate = typeof input.settlementDate === "string" ? input.settlementDate : null;
+    const admin = await createRuntimeServiceClient();
+    if (reference) {
+      const { data: existing } = await admin
+        .from("pathao_settlement_imports")
+        .select("id")
+        .eq("settlement_reference", reference)
+        .maybeSingle();
+      if (existing) return errorResponse("This Pathao settlement reference has already been imported.", 409);
+    }
+
+    const identifiers = [...new Set(parsedRows.map((row) => row.source_identifier))];
+    const { data: byConsignment, error: consignmentError } = await admin
+      .from("orders")
+      .select("id, order_number, delivery_consignment_id, total, delivery_fee, delivery_fee_payment_status, payment_method")
+      .eq("delivery_provider", "pathao")
+      .in("delivery_consignment_id", identifiers);
+    if (consignmentError) {
+      console.error("Pathao settlement consignment matching failed:", consignmentError.message);
+      return errorResponse("Could not match Pathao consignments to NEWEIX orders.", 503);
+    }
+    const { data: byOrderNumber, error: orderNumberError } = await admin
+      .from("orders")
+      .select("id, order_number, delivery_consignment_id, total, delivery_fee, delivery_fee_payment_status, payment_method")
+      .eq("delivery_provider", "pathao")
+      .in("order_number", identifiers);
+    if (orderNumberError) {
+      console.error("Pathao settlement order matching failed:", orderNumberError.message);
+      return errorResponse("Could not match Pathao order numbers to NEWEIX orders.", 503);
+    }
+    const orderMap = new Map<string, {
+      id: string; order_number: string; delivery_consignment_id: string | null;
+      total: number | string; delivery_fee: number | string;
+      delivery_fee_payment_status: string | null; payment_method: string;
+    }>();
+    for (const order of [...(byOrderNumber ?? []), ...(byConsignment ?? [])]) {
+      if (order.delivery_consignment_id) orderMap.set(order.delivery_consignment_id, order);
+      orderMap.set(order.order_number, order);
+    }
+
+    const seen = new Set<string>();
+    const rowsToInsert = parsedRows.map((row) => {
+      if (seen.has(row.source_identifier)) {
+        return {
+          ...row, consignment_id: null, merchant_order_id: null, expected_cod_amount: null,
+          variance_amount: null, matched_order_id: null, match_status: "duplicate" as const,
+        };
+      }
+      seen.add(row.source_identifier);
+      const order = orderMap.get(row.source_identifier);
+      if (!order) {
+        return {
+          ...row, consignment_id: null, merchant_order_id: null, expected_cod_amount: null,
+          variance_amount: null, matched_order_id: null, match_status: "unmatched" as const,
+        };
+      }
+      const expected = order.payment_method === "cod"
+        ? Math.max(0, Number(order.total) -
+          (order.delivery_fee_payment_status === "paid" ? Number(order.delivery_fee) : 0))
+        : 0;
+      const variance = Math.round((row.cod_amount - expected) * 100) / 100;
+      return {
+        ...row,
+        consignment_id: order.delivery_consignment_id,
+        merchant_order_id: order.order_number,
+        expected_cod_amount: Math.round(expected * 100) / 100,
+        variance_amount: variance,
+        matched_order_id: order.id,
+        match_status: Math.abs(variance) <= 0.01 ? "matched" as const : "amount_mismatch" as const,
+      };
+    });
+
+    const matchedCount = rowsToInsert.filter((row) => row.matched_order_id !== null).length;
+    const mismatchCount = rowsToInsert.filter((row) => row.match_status === "amount_mismatch").length;
+    const unmatchedCount = rowsToInsert.filter((row) => row.match_status === "unmatched" || row.match_status === "duplicate").length;
+    const { data: importRecord, error: importError } = await admin
+      .from("pathao_settlement_imports")
+      .insert({
+        settlement_reference: reference,
+        settlement_date: settlementDate,
+        source_filename: input.sourceFilename.trim(),
+        imported_by: staff.userId,
+        row_count: rowsToInsert.length,
+        matched_count: matchedCount,
+        mismatch_count: mismatchCount,
+        unmatched_count: unmatchedCount,
+        notes: typeof input.notes === "string" ? input.notes.trim().slice(0, 1000) : null,
+      })
+      .select("id")
+      .single();
+    if (importError || !importRecord) {
+      if (importError?.code === "23505") return errorResponse("This settlement reference has already been imported.", 409);
+      console.error("Pathao settlement import header insert failed:", importError?.message);
+      return errorResponse("Could not save Pathao settlement import.", 503);
+    }
+
+    const { error: rowsError } = await admin
+      .from("pathao_settlement_rows")
+      .insert(rowsToInsert.map((row) => ({ ...row, import_id: importRecord.id })));
+    if (rowsError) {
+      await admin.from("pathao_settlement_imports").delete().eq("id", importRecord.id);
+      console.error("Pathao settlement rows insert failed:", rowsError.message);
+      return errorResponse("Could not save settlement rows. No import was retained.", 503);
+    }
+
+    const { error: auditError } = await admin.from("audit_logs").insert({
+      actor_id: staff.userId,
+      action: "pathao.settlement.imported",
+      target_type: "pathao_settlement_import",
+      target_id: importRecord.id,
+      details: {
+        source_filename: input.sourceFilename.trim(),
+        settlement_reference: reference,
+        row_count: rowsToInsert.length,
+        matched_count: matchedCount,
+        mismatch_count: mismatchCount,
+        unmatched_count: unmatchedCount,
+      },
+    });
+    if (auditError) console.error("Pathao settlement audit log failed:", auditError.message);
+
+    return NextResponse.json({
+      success: true,
+      importId: importRecord.id,
+      rowCount: rowsToInsert.length,
+      matchedCount,
+      mismatchCount,
+      unmatchedCount,
+    }, { headers: { "Cache-Control": "private, no-store" } });
+  }
+
   if (input.action === "calculate_price") {
     const storeId = Number(input.storeId);
     const itemWeightKg = Number(input.itemWeightKg);
