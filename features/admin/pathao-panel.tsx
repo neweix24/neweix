@@ -502,6 +502,73 @@ export default function PathaoPanel() {
     }
   }
 
+  const selectedMappingDivision = BANGLADESH_ADMIN_AREAS.find((item) => item.code === mappingDivisionCode);
+  const selectedMappingDistrict = selectedMappingDivision?.districts.find((item) => item.code === mappingDistrictCode);
+  const selectedMappingUpazila = selectedMappingDistrict?.upazilas.find((item) => item.code === mappingUpazilaCode);
+
+  async function loadLocationMappings() {
+    setMappingsLoading(true);
+    setMappingMessage("");
+    try {
+      const result = await getJson("/api/admin/pathao?action=location_mappings");
+      setMappings(Array.isArray(result.mappings) ? result.mappings as PathaoMapping[] : []);
+      setMappingMessage("Verified delivery-area mappings loaded.");
+    } catch (error) {
+      setMappingMessage(error instanceof Error ? error.message : "Could not load delivery-area mappings.");
+    } finally {
+      setMappingsLoading(false);
+    }
+  }
+
+  async function loadMappingZones(nextCityId: string) {
+    setMappingCityId(nextCityId);
+    setMappingZoneId("");
+    setMappingZones([]);
+    if (!nextCityId) return;
+    setMappingZonesLoading(true);
+    try {
+      const result = await getJson(`/api/admin/pathao?action=zones&cityId=${encodeURIComponent(nextCityId)}`);
+      setMappingZones(extractOptions(result.locations, ["zone_id", "zoneId", "id"], ["zone_name", "zoneName", "name"]));
+    } catch (error) {
+      setMappingMessage(error instanceof Error ? error.message : "Could not load Pathao zones.");
+    } finally {
+      setMappingZonesLoading(false);
+    }
+  }
+
+  async function saveLocationMapping(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!mappingDivisionCode || !mappingDistrictCode || !mappingUpazilaCode || !mappingCityId || !mappingZoneId) {
+      setMappingMessage("Select the Bangladesh area and its matching Pathao city and zone.");
+      return;
+    }
+    setMappingSaving(true);
+    setMappingMessage("");
+    try {
+      const response = await fetch("/api/admin/pathao", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          action: "save_location_mapping",
+          divisionCode: mappingDivisionCode,
+          districtCode: mappingDistrictCode,
+          upazilaCode: mappingUpazilaCode,
+          pathaoCityId: Number(mappingCityId),
+          pathaoZoneId: Number(mappingZoneId),
+        }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Could not verify this Pathao area mapping.");
+      await loadLocationMappings();
+      setMappingMessage("Pathao city/zone mapping verified and saved. Checkout can now quote this upazila.");
+    } catch (error) {
+      setMappingMessage(error instanceof Error ? error.message : "Could not save the Pathao mapping.");
+    } finally {
+      setMappingSaving(false);
+    }
+  }
+
   async function calculatePrice(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setQuoteLoading(true);
@@ -555,6 +622,63 @@ export default function PathaoPanel() {
       {environment && <p className="mt-1 text-xs text-gray-500">Environment: {environment}</p>}
 
 
+
+      <section className="mt-5 space-y-4 rounded-xl border border-amber-200 bg-amber-50/40 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-semibold">Checkout Delivery Area Mapping</h3>
+            <p className="mt-1 max-w-3xl text-xs leading-5 text-gray-600">Checkout only calculates a live Pathao fee for verified Bangladesh upazila → Pathao city/zone mappings. This table starts empty after migration; save each supported upazila here. The API verifies city and zone IDs against Pathao before saving.</p>
+          </div>
+          <button type="button" onClick={() => void loadLocationMappings()} disabled={mappingsLoading} className="rounded-lg border bg-white px-3 py-2 text-xs font-semibold disabled:opacity-50">{mappingsLoading ? "Loading..." : "Refresh Mappings"}</button>
+        </div>
+        <form onSubmit={saveLocationMapping} className="grid gap-3 sm:grid-cols-2">
+          <label className="text-sm font-medium">Bangladesh division
+            <select required value={mappingDivisionCode} onChange={(event) => { setMappingDivisionCode(event.target.value); setMappingDistrictCode(""); setMappingUpazilaCode(""); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+              <option value="">Select division</option>
+              {BANGLADESH_ADMIN_AREAS.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
+            </select>
+          </label>
+          <label className="text-sm font-medium">District
+            <select required value={mappingDistrictCode} onChange={(event) => { setMappingDistrictCode(event.target.value); setMappingUpazilaCode(""); }} disabled={!mappingDivisionCode} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+              <option value="">Select district</option>
+              {(selectedMappingDivision?.districts ?? []).map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
+            </select>
+          </label>
+          <label className="text-sm font-medium">Upazila / area
+            <select required value={mappingUpazilaCode} onChange={(event) => setMappingUpazilaCode(event.target.value)} disabled={!mappingDistrictCode} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+              <option value="">Select upazila</option>
+              {(selectedMappingDistrict?.upazilas ?? []).map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
+            </select>
+          </label>
+          <label className="text-sm font-medium">Pathao city
+            <select required value={mappingCityId} onChange={(event) => { setMappingCityId(event.target.value); setMappingZoneId(""); setMappingZones([]); if (event.target.value) void loadMappingZones(event.target.value); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+              <option value="">Fetch/select Pathao city</option>
+              {cities.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+            {cities.length === 0 && <span className="mt-1 block text-xs text-gray-500">First select “Fetch Cities” above.</span>}
+          </label>
+          <label className="text-sm font-medium">Pathao zone
+            <select required value={mappingZoneId} onChange={(event) => setMappingZoneId(event.target.value)} disabled={!mappingCityId || mappingZonesLoading} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+              <option value="">{mappingZonesLoading ? "Loading zones..." : "Select Pathao zone"}</option>
+              {mappingZones.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+          </label>
+          <button type="submit" disabled={mappingSaving || !selectedMappingUpazila || !mappingCityId || !mappingZoneId} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2">{mappingSaving ? "Verifying & saving..." : "Verify and save area mapping"}</button>
+        </form>
+        {mappingMessage && <p role="status" className="text-xs text-gray-700">{mappingMessage}</p>}
+        <div className="overflow-x-auto rounded-lg border bg-white">
+          <table className="w-full min-w-[680px] text-left text-xs">
+            <thead className="border-b bg-gray-50"><tr><th className="p-2">NEWEIX upazila</th><th className="p-2">Pathao city</th><th className="p-2">Pathao zone</th><th className="p-2">Status</th></tr></thead>
+            <tbody>{mappings.map((item) => {
+              const division = BANGLADESH_ADMIN_AREAS.find((entry) => entry.code === item.division_code);
+              const district = division?.districts.find((entry) => entry.code === item.district_code);
+              const upazila = district?.upazilas.find((entry) => entry.code === item.upazila_code);
+              return <tr key={item.id} className="border-b last:border-0"><td className="p-2">{division?.name ?? item.division_code} / {district?.name ?? item.district_code} / {upazila?.name ?? item.upazila_code}</td><td className="p-2">{item.pathao_city_name} ({item.pathao_city_id})</td><td className="p-2">{item.pathao_zone_name} ({item.pathao_zone_id})</td><td className="p-2">{item.is_active && item.is_verified ? "Verified & active" : "Inactive / unverified"}</td></tr>;
+            })}</tbody>
+          </table>
+          {mappings.length === 0 && <p className="p-3 text-xs text-gray-500">{mappingsLoading ? "Loading mappings..." : "No delivery-area mappings loaded. Refresh to check; add verified upazila mappings above."}</p>}
+        </div>
+      </section>
 
       <section className="mt-5 rounded-xl border border-gray-200 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
