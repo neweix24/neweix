@@ -60,9 +60,11 @@ function cleanString(value: unknown): string | null {
 function extractPathaoFinalPrice(payload: unknown): number | null {
   if (!payload || typeof payload !== "object") return null;
   const record = payload as Record<string, unknown>;
-  const data = record.data;
-  const nested = data && typeof data === "object" ? data as Record<string, unknown> : null;
-  const fee = Number(nested?.final_price ?? record.final_price);
+  const first = record.data;
+  const firstRecord = first && typeof first === "object" ? first as Record<string, unknown> : null;
+  const second = firstRecord?.data;
+  const secondRecord = second && typeof second === "object" ? second as Record<string, unknown> : null;
+  const fee = Number(secondRecord?.final_price ?? firstRecord?.final_price ?? record.final_price);
   return Number.isFinite(fee) && fee >= 0 ? Math.round(fee) : null;
 }
 
