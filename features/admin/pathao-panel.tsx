@@ -678,6 +678,48 @@ export default function PathaoPanel() {
         {quote !== null && <pre className="max-h-64 overflow-auto rounded-lg bg-gray-50 p-3 text-xs">{JSON.stringify(quote, null, 2)}</pre>}
       </form>
 
+      <section className="mt-5 space-y-3 rounded-xl border border-gray-200 p-4">
+        <div>
+          <h3 className="font-semibold">Returns, Reverse Pickup, Exchange & Partial Delivery</h3>
+          <p className="mt-1 text-xs leading-5 text-gray-600">These are supported Pathao merchant operations, but the public merchant API references available to NEWEIX do not document safe create-request endpoints for them. Use the official Merchant Panel workflow below; NEWEIX will not send guessed API requests or change stock/payment records automatically.</p>
+        </div>
+        <a href="https://merchant.pathao.com/courier/" target="_blank" rel="noreferrer" className="inline-flex rounded-lg border px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">Open Pathao Merchant Panel</a>
+        <div className="grid gap-3 md:grid-cols-2">
+          <article className="rounded-lg bg-gray-50 p-3">
+            <h4 className="text-sm font-semibold">Reverse Pickup (delivered by Pathao)</h4>
+            <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs leading-5 text-gray-700">
+              <li>Open Deliveries and find the delivered consignment.</li>
+              <li>Open View → More → Reverse Delivery.</li>
+              <li>Confirm the return request in Pathao and record its return consignment ID in the order notes.</li>
+            </ol>
+            <p className="mt-2 text-xs text-gray-500">For parcels not originally delivered by Pathao, Pathao instructs merchants to create a normal delivery to their store address, enter “Reverse Pickup” in special instructions, and contact their KAM/Support before 4 PM.</p>
+          </article>
+          <article className="rounded-lg bg-gray-50 p-3">
+            <h4 className="text-sm font-semibold">Product Exchange</h4>
+            <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs leading-5 text-gray-700">
+              <li>Open the delivered consignment's View page.</li>
+              <li>Create an Exchange Parcel ID.</li>
+              <li>Arrange the replacement parcel and tell the customer to hand the original item to the courier.</li>
+              <li>Record both consignment IDs and inspect the returned item before updating inventory.</li>
+            </ol>
+          </article>
+          <article className="rounded-lg bg-gray-50 p-3">
+            <h4 className="text-sm font-semibold">Partial Delivery</h4>
+            <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs leading-5 text-gray-700">
+              <li>In Pathao Merchant Panel, open Dashboard → New Deliveries → Partial.</li>
+              <li>Provide Store, customer's phone number and Cash Collection Amount.</li>
+              <li>Complete the partial entry by 9 PM.</li>
+              <li>Verify which items were accepted and returned before changing NEWEIX order quantities or stock.</li>
+            </ol>
+          </article>
+          <article className="rounded-lg bg-gray-50 p-3">
+            <h4 className="text-sm font-semibold">Status safety</h4>
+            <p className="mt-2 text-xs leading-5 text-gray-700">Partial Delivery, Exchange, Return ID Created, Return In Transit and On Hold are not equivalent to Delivered or Returned. NEWEIX now leaves the main order delivery state unchanged for these intermediate/special states rather than incorrectly closing the shipment.</p>
+          </article>
+        </div>
+        <p className="text-xs text-gray-500">Official instructions: <a className="underline" href="https://help.pathao.com/return-product-or-reverse-pickup-entry/" target="_blank" rel="noreferrer">Reverse Pickup</a> · <a className="underline" href="https://help.pathao.com/can-product-exchange-be-delivered/" target="_blank" rel="noreferrer">Exchange</a> · <a className="underline" href="https://help.pathao.com/make-an-entry-for-a-partial-order/" target="_blank" rel="noreferrer">Partial Delivery</a> · <a className="underline" href="https://help.pathao.com/merchant-help-center/" target="_blank" rel="noreferrer">Merchant Help Center</a>.</p>
+      </section>
+
       <div className="mt-5 rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
         <h3 className="text-sm font-bold text-emerald-950">Automatic shipment updates (Webhook)</h3>
         <p className="mt-1 text-xs leading-5 text-emerald-900">Callback URL for Pathao Merchant Panel → Developer API → Webhook Integration:</p>
