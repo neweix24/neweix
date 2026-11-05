@@ -252,7 +252,7 @@ export default function PathaoPanel() {
     try {
       const source = await file.text();
       const firstLine = source.split(/\r?\n/, 1)[0] || "";
-      const delimiter = [",", ";", "\\t"].sort((a, b) =>
+      const delimiter = [",", ";", "\t"].sort((a, b) =>
         firstLine.split(b).length - firstLine.split(a).length
       )[0];
       const parsed = parseDelimitedText(source, delimiter);
@@ -284,15 +284,16 @@ export default function PathaoPanel() {
   async function importSettlementReport() {
     const identifierIndex = Number(identifierColumn);
     const codIndex = Number(codColumn);
-    if (!settlementFileName || !Number.isInteger(identifierIndex) || !Number.isInteger(codIndex) ||
-        identifierColumn === "" || codColumn === "" || identifierIndex === codIndex) {
-      setSettlementMessage("Choose different identifier and COD amount columns before importing.");
-      return;
-    }
     const optionalIndex = (value: string) => value === "" ? -1 : Number(value);
     const chargeIndex = optionalIndex(chargeColumn);
     const discountIndex = optionalIndex(discountColumn);
     const payoutIndex = optionalIndex(payoutColumn);
+    const selectedColumns = [identifierIndex, codIndex, chargeIndex, discountIndex, payoutIndex].filter((index) => index >= 0);
+    if (!settlementFileName || !Number.isInteger(identifierIndex) || !Number.isInteger(codIndex) ||
+        identifierColumn === "" || codColumn === "" || new Set(selectedColumns).size !== selectedColumns.length) {
+      setSettlementMessage("Choose a different column for each mapped field before importing.");
+      return;
+    }
     const rows = settlementCsvRows.map((row) => ({
       identifier: (row[identifierIndex] || "").trim(),
       codAmount: parseMoney(row[codIndex] || ""),
@@ -300,9 +301,15 @@ export default function PathaoPanel() {
       discountAmount: discountIndex >= 0 ? parseMoney(row[discountIndex] || "") : null,
       netPayoutAmount: payoutIndex >= 0 ? parseMoney(row[payoutIndex] || "") : null,
     }));
-    const invalidRow = rows.findIndex((row) => !row.identifier || row.codAmount === null);
+    const invalidRow = rows.findIndex((row, index) => {
+      const source = settlementCsvRows[index];
+      return !row.identifier || row.codAmount === null ||
+        (chargeIndex >= 0 && Boolean(source[chargeIndex]?.trim()) && row.deliveryCharge === null) ||
+        (discountIndex >= 0 && Boolean(source[discountIndex]?.trim()) && row.discountAmount === null) ||
+        (payoutIndex >= 0 && Boolean(source[payoutIndex]?.trim()) && row.netPayoutAmount === null);
+    });
     if (invalidRow >= 0) {
-      setSettlementMessage(`Row ${invalidRow + 2} has a missing identifier or invalid COD amount. Correct the CSV or column mapping.`);
+      setSettlementMessage(`Row ${invalidRow + 2} has a missing identifier or invalid mapped amount. Correct the CSV or column mapping.`);
       return;
     }
     setSettlementBusy(true);
