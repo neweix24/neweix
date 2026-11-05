@@ -91,6 +91,12 @@ export async function POST(request: Request) {
     const { error } = await auth.supabase.from("customer_saved_products")
       .upsert({ user_id: auth.userId, product_id: productId, list_type: listType }, { onConflict: "user_id,list_type,product_id", ignoreDuplicates: true });
     if (error) {
+      if (error.code === "23514") {
+        const message = listType === "compare"
+          ? "You can compare up to 4 products."
+          : "Your wishlist can contain up to 200 products.";
+        return response({ error: message }, 409);
+      }
       console.error("Saved product write failed:", error.message);
       return response({ error: "Could not save this product." }, 500);
     }
