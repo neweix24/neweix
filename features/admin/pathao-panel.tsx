@@ -82,6 +82,16 @@ function money(value: number | string | null | undefined): string {
   return `৳${Number(value).toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+type DeliveryOperation = {
+  id: string;
+  consignment_id: string;
+  operation_type: "reverse_pickup" | "return" | "exchange" | "partial_delivery";
+  operation_status: "requested" | "in_progress" | "completed" | "failed" | "recorded";
+  related_consignment_id: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
 type Shipment = {
   id: string;
   order_number: string;
@@ -132,6 +142,13 @@ export default function PathaoPanel() {
   const [consignmentId, setConsignmentId] = useState("");
   const [tracking, setTracking] = useState<unknown>(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
+  const [deliveryOperations, setDeliveryOperations] = useState<DeliveryOperation[]>([]);
+  const [operationType, setOperationType] = useState<DeliveryOperation["operation_type"]>("reverse_pickup");
+  const [operationStatus, setOperationStatus] = useState<DeliveryOperation["operation_status"]>("recorded");
+  const [relatedConsignmentId, setRelatedConsignmentId] = useState("");
+  const [operationNotes, setOperationNotes] = useState("");
+  const [operationBusy, setOperationBusy] = useState(false);
+  const [operationMessage, setOperationMessage] = useState("");
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [shipmentsLoading, setShipmentsLoading] = useState(false);
   const [settlementImports, setSettlementImports] = useState<SettlementImport[]>([]);
@@ -398,6 +415,7 @@ export default function PathaoPanel() {
     try {
       const result = await getJson(`/api/admin/pathao?action=track&consignmentId=${encodeURIComponent(consignmentId.trim())}`);
       setTracking(result);
+      await loadDeliveryOperations(consignmentId.trim());
       setMessage(result.synced
         ? "Pathao status retrieved and NEWEIX order status synchronized."
         : "Pathao status retrieved. No local status change was needed.");
@@ -407,6 +425,54 @@ export default function PathaoPanel() {
       setState("error");
     } finally {
       setTrackingLoading(false);
+    }
+  }
+
+  async function loadDeliveryOperations(value: string) {
+    if (!/^[A-Za-z0-9-]{3,80}$/.test(value)) {
+      setDeliveryOperations([]);
+      return;
+    }
+    try {
+      const result = await getJson(`/api/admin/pathao?action=delivery_operations&consignmentId=${encodeURIComponent(value)}`);
+      setDeliveryOperations(Array.isArray(result.operations) ? result.operations as DeliveryOperation[] : []);
+    } catch {
+      setDeliveryOperations([]);
+    }
+  }
+
+  async function recordDeliveryOperation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!/^[A-Za-z0-9-]{3,80}$/.test(consignmentId.trim())) {
+      setOperationMessage("Enter and track a valid Pathao Consignment ID first.");
+      return;
+    }
+    setOperationBusy(true);
+    setOperationMessage("");
+    try {
+      const response = await fetch("/api/admin/pathao", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          action: "record_delivery_operation",
+          consignmentId: consignmentId.trim(),
+          operationType,
+          operationStatus,
+          relatedConsignmentId: relatedConsignmentId.trim() || null,
+          notes: operationNotes.trim(),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not record Pathao operation.");
+      setOperationNotes("");
+      setRelatedConsignmentId("");
+      await loadDeliveryOperations(consignmentId.trim());
+      setOperationMessage("Manual Pathao operation recorded in the NEWEIX audit history.");
+    } catch (error) {
+      setOperationMessage(error instanceof Error ? error.message : "Could not record Pathao operation.");
+    } finally {
+      setOperationBusy(false);
     }
   }
 
@@ -646,6 +712,60 @@ export default function PathaoPanel() {
         {tracking !== null && <pre className="max-h-64 overflow-auto rounded-lg bg-gray-50 p-3 text-xs">{JSON.stringify(tracking, null, 2)}</pre>}
       </form>
 
+      <section className="mt-5 space-y-3 rounded-xl border border-gray-200 p-4">
+        <div>
+          <h3 className="font-semibold">NEWEIX Return / Exchange Operation Log</h3>
+          <p className="mt-1 text-xs leading-5 text-gray-600">After completing or requesting the action in Pathao Merchant Panel, record the operation here. This is an internal audit entry only; it does not create or cancel a Pathao request.</p>
+        </div>
+        <form onSubmit={recordDeliveryOperation} className="grid gap-3 sm:grid-cols-2">
+          <label className="text-sm font-medium">Operation
+            <select value={operationType} onChange={(event) => setOperationType(event.target.value as DeliveryOperation["operation_type"])} className="mt-1 w-full rounded-lg border px-3 py-2">
+              <option value="reverse_pickup">Reverse Pickup</option>
+              <option value="return">Return</option>
+              <option value="exchange">Exchange</option>
+              <option value="partial_delivery">Partial Delivery</option>
+            </select>
+          </label>
+          <label className="text-sm font-medium">Operation status
+            <select value={operationStatus} onChange={(event) => setOperationStatus(event.target.value as DeliveryOperation["operation_status"])} className="mt-1 w-full rounded-lg border px-3 py-2">
+              <option value="recorded">Recorded</option>
+              <option value="requested">Requested in Pathao</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+            </select>
+          </label>
+          <label className="text-sm font-medium sm:col-span-2">Related / return / exchange Consignment ID (optional)
+            <input maxLength={80} value={relatedConsignmentId} onChange={(event) => setRelatedConsignmentId(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2" placeholder="New return or exchange parcel ID" />
+          </label>
+          <label className="text-sm font-medium sm:col-span-2">Notes (optional)
+            <textarea maxLength={1000} rows={3} value={operationNotes} onChange={(event) => setOperationNotes(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2" placeholder="Record returned item condition, accepted quantities, collection amount, or Pathao support reference." />
+          </label>
+          <button type="submit" disabled={operationBusy || !consignmentId.trim()} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2">
+            {operationBusy ? "Recording..." : "Save Operation to Audit History"}
+          </button>
+        </form>
+        {operationMessage && <p className="text-xs text-gray-600">{operationMessage}</p>}
+        {deliveryOperations.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-left text-xs">
+              <thead className="border-b text-gray-500"><tr><th className="p-2">Operation</th><th className="p-2">Status</th><th className="p-2">Related ID</th><th className="p-2">Notes</th><th className="p-2">Recorded</th></tr></thead>
+              <tbody>{deliveryOperations.map((item) => (
+                <tr key={item.id} className="border-b last:border-0">
+                  <td className="p-2 font-medium">{item.operation_type.replaceAll("_", " ")}</td>
+                  <td className="p-2">{item.operation_status.replaceAll("_", " ")}</td>
+                  <td className="p-2 font-mono">{item.related_consignment_id || "—"}</td>
+                  <td className="max-w-xs whitespace-pre-wrap p-2">{item.notes || "—"}</td>
+                  <td className="p-2">{new Date(item.created_at).toLocaleString()}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-xs text-gray-500">No manual Pathao operation has been recorded for this consignment yet. Track the shipment to load its history.</p>
+        )}
+      </section>
+
       <form onSubmit={calculatePrice} className="mt-5 space-y-4 rounded-xl border border-gray-200 p-4">
         <div>
           <h3 className="font-semibold">Live Delivery Charge Calculator</h3>
@@ -677,6 +797,48 @@ export default function PathaoPanel() {
         <button type="submit" disabled={quoteLoading || !storeId || !weight} className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{quoteLoading ? "Calculating..." : "Calculate Pathao Charge"}</button>
         {quote !== null && <pre className="max-h-64 overflow-auto rounded-lg bg-gray-50 p-3 text-xs">{JSON.stringify(quote, null, 2)}</pre>}
       </form>
+
+      <section className="mt-5 space-y-3 rounded-xl border border-gray-200 p-4">
+        <div>
+          <h3 className="font-semibold">Returns, Reverse Pickup, Exchange & Partial Delivery</h3>
+          <p className="mt-1 text-xs leading-5 text-gray-600">These are supported Pathao merchant operations, but the public merchant API references available to NEWEIX do not document safe create-request endpoints for them. Use the official Merchant Panel workflow below; NEWEIX will not send guessed API requests or change stock/payment records automatically.</p>
+        </div>
+        <a href="https://merchant.pathao.com/courier/" target="_blank" rel="noreferrer" className="inline-flex rounded-lg border px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50">Open Pathao Merchant Panel</a>
+        <div className="grid gap-3 md:grid-cols-2">
+          <article className="rounded-lg bg-gray-50 p-3">
+            <h4 className="text-sm font-semibold">Reverse Pickup (delivered by Pathao)</h4>
+            <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs leading-5 text-gray-700">
+              <li>Open Deliveries and find the delivered consignment.</li>
+              <li>Open View → More → Reverse Delivery.</li>
+              <li>Confirm the return request in Pathao and record its return consignment ID in the order notes.</li>
+            </ol>
+            <p className="mt-2 text-xs text-gray-500">For parcels not originally delivered by Pathao, Pathao instructs merchants to create a normal delivery to their store address, enter “Reverse Pickup” in special instructions, and contact their KAM/Support before 4 PM.</p>
+          </article>
+          <article className="rounded-lg bg-gray-50 p-3">
+            <h4 className="text-sm font-semibold">Product Exchange</h4>
+            <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs leading-5 text-gray-700">
+              <li>Open the delivered consignment&apos;s View page.</li>
+              <li>Create an Exchange Parcel ID.</li>
+              <li>Arrange the replacement parcel and tell the customer to hand the original item to the courier.</li>
+              <li>Record both consignment IDs and inspect the returned item before updating inventory.</li>
+            </ol>
+          </article>
+          <article className="rounded-lg bg-gray-50 p-3">
+            <h4 className="text-sm font-semibold">Partial Delivery</h4>
+            <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs leading-5 text-gray-700">
+              <li>In Pathao Merchant Panel, open Dashboard → New Deliveries → Partial.</li>
+              <li>Provide Store, customer&apos;s phone number and Cash Collection Amount.</li>
+              <li>Complete the partial entry by 9 PM.</li>
+              <li>Verify which items were accepted and returned before changing NEWEIX order quantities or stock.</li>
+            </ol>
+          </article>
+          <article className="rounded-lg bg-gray-50 p-3">
+            <h4 className="text-sm font-semibold">Status safety</h4>
+            <p className="mt-2 text-xs leading-5 text-gray-700">Partial Delivery, Exchange, Return ID Created, Return In Transit and On Hold are not equivalent to Delivered or Returned. NEWEIX now leaves the main order delivery state unchanged for these intermediate/special states rather than incorrectly closing the shipment.</p>
+          </article>
+        </div>
+        <p className="text-xs text-gray-500">Official instructions: <a className="underline" href="https://help.pathao.com/return-product-or-reverse-pickup-entry/" target="_blank" rel="noreferrer">Reverse Pickup</a> · <a className="underline" href="https://help.pathao.com/can-product-exchange-be-delivered/" target="_blank" rel="noreferrer">Exchange</a> · <a className="underline" href="https://help.pathao.com/make-an-entry-for-a-partial-order/" target="_blank" rel="noreferrer">Partial Delivery</a> · <a className="underline" href="https://help.pathao.com/merchant-help-center/" target="_blank" rel="noreferrer">Merchant Help Center</a>.</p>
+      </section>
 
       <div className="mt-5 rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
         <h3 className="text-sm font-bold text-emerald-950">Automatic shipment updates (Webhook)</h3>
