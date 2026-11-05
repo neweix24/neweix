@@ -93,7 +93,8 @@ begin
     select 1 from pg_indexes
     where schemaname = 'public'
       and tablename = 'department_memberships'
-      and indexdef ilike '%unique (user_id)%'
+      and indexdef ilike '%unique index%'
+      and indexdef ilike '%(user_id)%'
   ) then
     raise exception 'One-department-per-employee uniqueness is missing';
   end if;
