@@ -702,6 +702,7 @@ export default function PathaoPanel() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     let cancelled = false;
     const syncKey = "neweix:pathao-coverage-sync:v1";
@@ -709,7 +710,7 @@ export default function PathaoPanel() {
     async function ensureCoverageMappings() {
       try {
         const result = await getJson("/api/admin/pathao?action=location_mappings");
-        if (cancelled || (Array.isArray(result.mappings) && result.mappings.length > 0)) return;
+        if (cancelled || (Array.isArray(result.mappings) && result.mappings.some((mapping: PathaoMapping) => mapping.is_verified && mapping.is_active))) return;
         if (window.sessionStorage.getItem(syncKey) === "attempted") return;
 
         // The production checkout rejects every upazila while this table is empty.
