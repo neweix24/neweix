@@ -181,7 +181,7 @@ export default function LoginPage() {
       if (
         !profile ||
         profile.is_active !== true ||
-        !["supreme", "admin", "staff"].includes(profile.role)
+        !["supreme", "admin", "manager", "employee", "staff"].includes(profile.role)
       ) {
         await supabase.auth.signOut();
         setMessage("This account is not authorized to access the staff panel.");
@@ -223,7 +223,15 @@ export default function LoginPage() {
         return;
       }
 
-      navigateAfterAuth(getSafeStaffNextPath());
+      if (profile.role === "manager") {
+        navigateAfterAuth("/manager");
+        return;
+      }
+      if (profile.role === "employee") {
+        navigateAfterAuth("/employee");
+        return;
+      }
+      navigateAfterAuth("/admin");
     } catch {
       setMessage("Could not sign in. Check Supabase environment variables and network connectivity.");
     } finally {
