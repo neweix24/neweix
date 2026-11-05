@@ -44,6 +44,7 @@ export default function StorefrontHome() {
   const pathname = usePathname();
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [quickMenuOpen, setQuickMenuOpen] = useState(false);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
@@ -186,7 +187,28 @@ export default function StorefrontHome() {
           <Link href="/" className={styles.brand} aria-label="NEWEIX home">
             <img src="/neweix-logo.svg" alt="NEWEIX" width="148" height="32" />
           </Link>
-          <div className={styles.headerActionsPlaceholder} aria-hidden="true" />
+          <div className={styles.headerQuickMenu}>
+            <button
+              type="button"
+              className={styles.quickMenuTrigger}
+              aria-label="Open quick menu"
+              aria-haspopup="true"
+              aria-expanded={quickMenuOpen}
+              onClick={() => setQuickMenuOpen((open) => !open)}
+            >
+              <span aria-hidden="true">⋮</span>
+            </button>
+            {quickMenuOpen && (
+              <nav className={styles.quickMenuPanel} aria-label="Quick links">
+                <Link href="/products" onClick={() => setQuickMenuOpen(false)}><Icon name="grid" size={17} />{t("productsSearch")}</Link>
+                <Link href="/track-order" onClick={() => setQuickMenuOpen(false)}><Icon name="truck" size={17} />{t("trackMyOrder")}</Link>
+                <Link href="/wishlist" onClick={() => setQuickMenuOpen(false)}><Icon name="heart" size={17} />{t("wishlist")}<b>{wishlistCount}</b></Link>
+                <Link href="/cart" onClick={() => setQuickMenuOpen(false)}><Icon name="cart" size={17} />{t("shoppingCart")}<b>{cartCount}</b></Link>
+                <Link href="/faq" onClick={() => setQuickMenuOpen(false)}><Icon name="help" size={17} />{t("faq")}</Link>
+                <Link href="/contact" onClick={() => setQuickMenuOpen(false)}><Icon name="mail" size={17} />{t("contact")}</Link>
+              </nav>
+            )}
+          </div>
         </div>
         <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
           <label className={styles.srOnly} htmlFor="home-product-search">{t("searchProducts")}</label>
