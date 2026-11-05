@@ -38,9 +38,10 @@ function pause(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function request(path) {
+async function request(path, init = {}) {
   return fetch(new URL(path, baseUrl), {
-    method: "GET",
+    ...init,
+    method: init.method || "GET",
     redirect: "manual",
     cache: "no-store",
     signal: AbortSignal.timeout(timeoutMs),
@@ -48,11 +49,11 @@ async function request(path) {
   });
 }
 
-async function runCheck(label, path, validate) {
+async function runCheck(label, path, validate, init = {}) {
   let lastError = "No response";
   for (let attempt = 1; attempt <= retries; attempt += 1) {
     try {
-      const response = await request(path);
+      const response = await request(path, init);
       const result = await validate(response);
       if (result.ok) {
         process.stdout.write(`PASS  ${label} — HTTP ${response.status}\n`);
