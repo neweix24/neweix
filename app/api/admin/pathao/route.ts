@@ -87,7 +87,7 @@ export async function GET(request: Request) {
       const admin = await createRuntimeServiceClient();
       const { data: imports, error: importsError } = await admin
         .from("pathao_settlement_imports")
-        .select("id, settlement_reference, settlement_date, source_filename, row_count, matched_count, mismatch_count, unmatched_count, imported_at, notes")
+        .select("id, settlement_reference, settlement_date, source_filename, row_count, matched_count, mismatch_count, unmatched_count, imported_at, notes, expected_payout_amount, actual_received_amount, payout_variance, receipt_reference, received_at, reconciliation_status")
         .order("imported_at", { ascending: false })
         .limit(20);
       if (importsError) {
@@ -240,6 +240,70 @@ export async function POST(request: Request) {
 
   const input = body as Record<string, unknown>;
 
+  if (input.action === "record_payout_receipt") {
+    if (
+      typeof input.importId !== "string" || !UUID_REGEX.test(input.importId) ||
+      typeof input.actualReceivedAmount !== "number" || !Number.isFinite(input.actualReceivedAmount) ||
+      input.actualReceivedAmount < 0 || input.actualReceivedAmount > 100000000 ||
+      typeof input.receiptReference !== "string" ||
+      input.receiptReference.trim().length < 3 || input.receiptReference.trim().length > 120
+    ) {
+      return errorResponse("Provide a valid report, received amount, and bank/MFS transaction reference.", 400);
+    }
+    const admin = await createRuntimeServiceClient();
+    const { data: report, error: reportError } = await admin
+      .from("pathao_settlement_imports")
+      .select("id, expected_payout_amount, actual_received_amount")
+      .eq("id", input.importId)
+      .maybeSingle();
+    if (reportError || !report) return errorResponse("Settlement report was not found.", 404);
+    if (report.expected_payout_amount == null) {
+      return errorResponse("This report has no complete Net Payout column. Import a report with Net Payout values before recording receipt reconciliation.", 409);
+    }
+    if (report.actual_received_amount != null) {
+      return errorResponse("A receipt has already been recorded for this report. A second receipt requires a separate report or a reviewed adjustment process.", 409);
+    }
+    const expected = Number(report.expected_payout_amount);
+    const actual = Math.round(input.actualReceivedAmount * 100) / 100;
+    const variance = Math.round((actual - expected) * 100) / 100;
+    const reconciliationStatus = Math.abs(variance) <= 0.01 ? "reconciled" : "variance";
+    const { data: updated, error: updateError } = await admin
+      .from("pathao_settlement_imports")
+      .update({
+        actual_received_amount: actual,
+        payout_variance: variance,
+        receipt_reference: input.receiptReference.trim(),
+        received_at: new Date().toISOString(),
+        received_by: staff.userId,
+        reconciliation_status: reconciliationStatus,
+      })
+      .eq("id", input.importId)
+      .is("actual_received_amount", null)
+      .select("id, expected_payout_amount, actual_received_amount, payout_variance, receipt_reference, received_at, reconciliation_status")
+      .maybeSingle();
+    if (updateError || !updated) {
+      console.error("Pathao payout receipt save failed:", updateError?.message);
+      return errorResponse("Receipt may already have been recorded. Refresh the report before retrying.", 409);
+    }
+    const { error: auditError } = await admin.from("audit_logs").insert({
+      actor_id: staff.userId,
+      action: "pathao.settlement.receipt_recorded",
+      target_type: "pathao_settlement_import",
+      target_id: input.importId,
+      details: {
+        expected_payout_amount: expected,
+        actual_received_amount: actual,
+        payout_variance: variance,
+        receipt_reference: input.receiptReference.trim(),
+        reconciliation_status: reconciliationStatus,
+      },
+    });
+    if (auditError) console.error("Pathao payout receipt audit log failed:", auditError.message);
+    return NextResponse.json({ success: true, report: updated }, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
+
   if (input.action === "import_settlement") {
     if (staff.role !== "supreme" && staff.role !== "admin") {
       return errorResponse("Only Supreme/Admin can import Pathao settlement reports.", 403);
@@ -385,6 +449,10 @@ export async function POST(request: Request) {
       };
     });
 
+    const allRowsHavePayout = rowsToInsert.every((row) => row.net_payout_amount !== null);
+    const expectedPayoutAmount = allRowsHavePayout
+      ? Math.round(rowsToInsert.reduce((sum, row) => sum + Number(row.net_payout_amount), 0) * 100) / 100
+      : null;
     const matchedCount = rowsToInsert.filter((row) => row.match_status === "matched").length;
     const mismatchCount = rowsToInsert.filter((row) => row.match_status === "amount_mismatch").length;
     const unmatchedCount = rowsToInsert.filter((row) => row.match_status === "unmatched" || row.match_status === "duplicate").length;
@@ -399,6 +467,7 @@ export async function POST(request: Request) {
         matched_count: matchedCount,
         mismatch_count: mismatchCount,
         unmatched_count: unmatchedCount,
+        expected_payout_amount: expectedPayoutAmount,
         notes: typeof input.notes === "string" ? input.notes.trim().slice(0, 1000) : null,
       })
       .select("id")
