@@ -231,7 +231,7 @@ export default function LoginPage() {
         navigateAfterAuth("/employee");
         return;
       }
-      navigateAfterAuth("/admin");
+      navigateAfterAuth(getSafeStaffNextPath());
     } catch {
       setMessage("Could not sign in. Check Supabase environment variables and network connectivity.");
     } finally {
