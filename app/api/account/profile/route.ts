@@ -131,6 +131,21 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       profile: saved,
+      // The server-validated Auth user is the source of truth. Do not make
+      // the account page depend on a second browser-side getSession() read.
+      user: {
+        email: user.email ?? null,
+        email_confirmed_at: user.email_confirmed_at ?? null,
+        identities: (user.identities ?? []).map((identity) => ({
+          provider: identity.provider,
+        })),
+        user_metadata: {
+          full_name: typeof metadata.full_name === "string" ? metadata.full_name : null,
+          name: typeof metadata.name === "string" ? metadata.name : null,
+          picture: typeof metadata.picture === "string" ? metadata.picture : null,
+          avatar_url: typeof metadata.avatar_url === "string" ? metadata.avatar_url : null,
+        },
+      },
     }, { headers: responseHeaders });
   } catch (error) {
     console.error(
