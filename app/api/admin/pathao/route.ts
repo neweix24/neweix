@@ -1078,6 +1078,12 @@ export async function POST(request: Request) {
     customer_phone: string;
     shipping_address: string;
     shipping_city: string | null;
+    shipping_division: string | null;
+    shipping_district: string | null;
+    shipping_upazila: string | null;
+    shipping_union: string | null;
+    shipping_union_other: string | null;
+    shipping_village: string | null;
     total: number | string;
     delivery_fee: number | string;
     payment_method: string;
@@ -1152,8 +1158,26 @@ export async function POST(request: Request) {
       (order.delivery_fee_payment_status === "paid" ? Number(order.delivery_fee) : 0))
     : 0;
 
-  const address = recipientAddressOverride || [order.shipping_address, order.shipping_city]
-    .filter((value): value is string => Boolean(value))
+  const addressParts = recipientAddressOverride
+    ? [recipientAddressOverride]
+    : [
+        order.shipping_address,
+        order.shipping_village,
+        order.shipping_union_other || order.shipping_union,
+        order.shipping_upazila,
+        order.shipping_district || order.shipping_city,
+        order.shipping_division,
+      ];
+  const seenAddressParts = new Set<string>();
+  const address = addressParts
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .map((value) => value.trim())
+    .filter((value) => {
+      const normalized = value.toLocaleLowerCase("en");
+      if (seenAddressParts.has(normalized)) return false;
+      seenAddressParts.add(normalized);
+      return true;
+    })
     .join(", ");
   if (address.length < 10 || address.length > 220) {
     await admin.from("orders").update({
