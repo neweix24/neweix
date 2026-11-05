@@ -11,9 +11,11 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 function extractFinalPrice(payload: unknown): number | null {
   if (!payload || typeof payload !== "object") return null;
   const record = payload as Record<string, unknown>;
-  const data = record.data;
-  const nested = data && typeof data === "object" ? data as Record<string, unknown> : null;
-  const value = nested?.final_price ?? record.final_price;
+  const first = record.data;
+  const firstRecord = first && typeof first === "object" ? first as Record<string, unknown> : null;
+  const second = firstRecord?.data;
+  const secondRecord = second && typeof second === "object" ? second as Record<string, unknown> : null;
+  const value = secondRecord?.final_price ?? firstRecord?.final_price ?? record.final_price;
   const fee = Number(value);
   return Number.isFinite(fee) && fee >= 0 ? Math.round(fee) : null;
 }
