@@ -16,7 +16,7 @@ type CreateResult = {
 export default function StaffCreateForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"admin" | "staff">("staff");
+  const [role, setRole] = useState<"admin" | "manager" | "employee">("employee");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
@@ -63,7 +63,7 @@ export default function StaffCreateForm() {
 
       setEmail("");
       setPassword("");
-      setRole("staff");
+      setRole("employee");
     } catch (error) {
       setIsError(true);
       setMessage(
@@ -114,11 +114,12 @@ export default function StaffCreateForm() {
           id="staff-role"
           value={role}
           onChange={(event) =>
-            setRole(event.target.value as "admin" | "staff")
+            setRole(event.target.value as "admin" | "manager" | "employee")
           }
           disabled={loading}
         >
-          <option value="staff">Staff</option>
+          <option value="employee">Employee</option>
+          <option value="manager">Manager</option>
           <option value="admin">Admin</option>
         </select>
       </div>
