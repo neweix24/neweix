@@ -49,16 +49,21 @@ export default function CartView() {
       const normalized = Array.from(merged, ([product_id, quantity]) => ({ product_id, quantity }));
       setCart(normalized);
       localStorage.setItem("neweix_cart", JSON.stringify(normalized));
-      const savedForLaterRaw = localStorage.getItem("neweix_saved_for_later");
-      const savedForLaterParsed: unknown = savedForLaterRaw ? JSON.parse(savedForLaterRaw) : [];
-      if (!Array.isArray(savedForLaterParsed)) throw new Error("Invalid saved items");
-      const savedMerged = new Map<string, number>();
-      for (const item of savedForLaterParsed.filter(isCartItem)) {
-        savedMerged.set(item.product_id, Math.min(100, (savedMerged.get(item.product_id) ?? 0) + item.quantity));
+      try {
+        const savedForLaterRaw = localStorage.getItem("neweix_saved_for_later");
+        const savedForLaterParsed: unknown = savedForLaterRaw ? JSON.parse(savedForLaterRaw) : [];
+        if (!Array.isArray(savedForLaterParsed)) throw new Error("Invalid saved items");
+        const savedMerged = new Map<string, number>();
+        for (const item of savedForLaterParsed.filter(isCartItem)) {
+          savedMerged.set(item.product_id, Math.min(100, (savedMerged.get(item.product_id) ?? 0) + item.quantity));
+        }
+        const normalizedSaved = Array.from(savedMerged, ([product_id, quantity]) => ({ product_id, quantity }));
+        setSavedItems(normalizedSaved);
+        localStorage.setItem("neweix_saved_for_later", JSON.stringify(normalizedSaved));
+      } catch {
+        setSavedItems([]);
+        localStorage.removeItem("neweix_saved_for_later");
       }
-      const normalizedSaved = Array.from(savedMerged, ([product_id, quantity]) => ({ product_id, quantity }));
-      setSavedItems(normalizedSaved);
-      localStorage.setItem("neweix_saved_for_later", JSON.stringify(normalizedSaved));
     } catch {
       setCart([]);
       setError(t("cartReadError"));
