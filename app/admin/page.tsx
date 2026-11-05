@@ -44,11 +44,11 @@ export default async function AdminPage() {
               <span><strong className="block text-lg font-black">Inventory</strong><span className="mt-1 block text-sm" style={{ color: "var(--muted)" }}>Review stock levels and inventory health.</span></span>
               <span className="text-xs font-extrabold" style={{ color: "#28764b" }}>Open workspace →</span>
             </Link>
-            <Link href="/admin/warehouses" className={cardClass} style={cardStyle}>
+            {["supreme", "admin"].includes(staff.role) && <Link href="/admin/warehouses" className={cardClass} style={cardStyle}>
               <span className="grid h-11 w-11 place-items-center rounded-xl" style={{ background: "#eff9e9", color: "#28764b" }}><Icon name="package" size={21} /></span>
               <span><strong className="block text-lg font-black">Warehouses & Dispatch</strong><span className="mt-1 block text-sm" style={{ color: "var(--muted)" }}>Manage Mymensingh, Dhaka and future dispatch locations.</span></span>
               <span className="text-xs font-extrabold" style={{ color: "#28764b" }}>Open workspace →</span>
-            </Link>
+            </Link>}
             <Link href="/admin/categories" className={cardClass} style={cardStyle}>
               <span className="grid h-11 w-11 place-items-center rounded-xl" style={{ background: "#eff9e9", color: "#28764b" }}><Icon name="tag" size={21} /></span>
               <span><strong className="block text-lg font-black">Categories</strong><span className="mt-1 block text-sm" style={{ color: "var(--muted)" }}>Organize the store catalogue.</span></span>
