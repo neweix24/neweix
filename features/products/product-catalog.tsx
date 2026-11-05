@@ -25,6 +25,11 @@ type Product = {
 type Category = { id: string; name: string; slug: string };
 type ApiResponse = { data?: Product[]; hasMore?: boolean; page?: number; total?: number };
 
+function discountPercentage(price: number, compareAtPrice?: number | null) {
+  if (!compareAtPrice || compareAtPrice <= price || price < 0) return 0;
+  return Math.round(((compareAtPrice - price) / compareAtPrice) * 100);
+}
+
 function money(value: number, locale: string) {
   return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", {
     style: "currency",
@@ -305,10 +310,11 @@ export default function ProductCatalog() {
                   <span>NEWEIX</span>
                 )}
                 {product.is_featured && <small>{t("featured")}</small>}
+                {discountPercentage(product.price, product.compare_at_price) > 0 && <span className={styles.discountBadge}>{discountPercentage(product.price, product.compare_at_price)}% OFF</span>}
               </Link>
               <div className={styles.details}>
                 <div className={`${styles.productTools} mb-2 flex flex-wrap gap-2`}>
-                  <button type="button" aria-pressed={wishlist.includes(product.id)} aria-label={wishlist.includes(product.id) ? t("removeFromWishlist") : t("addToWishlist")} title={wishlist.includes(product.id) ? t("removeFromWishlist") : t("addToWishlist")} onClick={() => toggleWishlist(product)} className={styles.iconButton} style={{ borderColor: "var(--border)" }}><Icon name="heart" size={17} /></button>
+                  <button type="button" aria-pressed={wishlist.includes(product.id)} aria-label={wishlist.includes(product.id) ? t("removeFromWishlist") : t("addToWishlist")} title={wishlist.includes(product.id) ? t("removeFromWishlist") : t("addToWishlist")} onClick={() => toggleWishlist(product)} className={`${styles.iconButton} ${styles.wishlistIconButton}`}><Icon name="heart" size={17} /></button>
                   <button type="button" aria-pressed={compareIds.includes(product.id)} aria-label={compareIds.includes(product.id) ? t("removedFromCompare") : t("compare")} title={compareIds.includes(product.id) ? t("removedFromCompare") : t("compare")} onClick={() => toggleCompare(product)} className={styles.iconButton} style={{ borderColor: "var(--border)" }}><Icon name="compare" size={17} /></button>
                   <button type="button" aria-label={t("quickView")} title={t("quickView")} onClick={() => setQuickViewProduct(product)} className={styles.iconButton}><Icon name="eye" size={17} /></button>
                 </div>
