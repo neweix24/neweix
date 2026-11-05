@@ -18,6 +18,7 @@ type Product = {
 };
 type Customer = { name: string; email: string };
 type Category = { id: string; name: string; slug: string };
+type CustomerNotification = { id: string; event_type: string; title: string; body: string; href: string; read_at: string | null; created_at: string };
 
 function money(value: number, locale: string) {
   return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(value);
@@ -46,6 +47,10 @@ export default function StorefrontHome() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [quickMenuOpen, setQuickMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState("");
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
@@ -215,10 +220,18 @@ export default function StorefrontHome() {
             <button type="button" className={styles.notificationTrigger} aria-label="Notifications" aria-haspopup="true" aria-expanded={notificationsOpen} onClick={() => { setNotificationsOpen((open) => !open); setQuickMenuOpen(false); }}>
               <Icon name="bell" size={19} />
             </button>
-            {notificationsOpen && <section className={styles.notificationPanel} aria-label="Notifications">
-              <strong>Notifications</strong>
-              <p>You’re all caught up.</p>
-              <span>New order and offer updates will appear here.</span>
+            {notificationsOpen && <section className={styles.notificationPanel} aria-label="Notifications" aria-busy={notificationsLoading}>
+              <div className={styles.notificationHeader}>
+                <strong>Notifications{unreadNotifications > 0 ? ` (${unreadNotifications})` : ""}</strong>
+                {unreadNotifications > 0 && <button type="button" onClick={() => void markAllNotificationsRead()}>Mark all read</button>}
+              </div>
+              {notificationsLoading ? <p className={styles.notificationMessage}>Loading notifications…</p> :
+                notificationsError ? <p className={styles.notificationMessage} role="status">{notificationsError}</p> :
+                notifications.length === 0 ? <div className={styles.notificationEmpty}><Icon name="bell" size={23} /><p>You’re all caught up.</p><span>Order, payment and delivery updates will appear here.</span></div> :
+                <div className={styles.notificationList}>{notifications.map((item) => <Link key={item.id} href={item.href} className={item.read_at ? styles.notificationItem : styles.notificationItemUnread} onClick={() => { void markNotificationRead(item.id); setNotificationsOpen(false); }}>
+                  <span className={styles.notificationDot} aria-hidden="true" />
+                  <span className={styles.notificationCopy}><b>{item.title}</b><span>{item.body}</span><time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString(locale === "bn" ? "bn-BD" : "en-BD", { dateStyle: "medium", timeStyle: "short" })}</time></span>
+                </Link>)}</div>}
             </section>}
             <button type="button" className={styles.quickMenuTrigger} aria-label="Open quick links" aria-haspopup="true" aria-expanded={quickMenuOpen} onClick={() => { setQuickMenuOpen((open) => !open); setNotificationsOpen(false); }}>
               <Icon name="more-horizontal" size={22} />
