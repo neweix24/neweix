@@ -540,7 +540,13 @@ export default function CheckoutView() {
         <label htmlFor="coupon_code">Coupon code (optional)</label>
         <input id="coupon_code" name="coupon_code" type="text" maxLength={40}
           pattern="[A-Za-z0-9_-]{3,40}" title="Use 3–40 letters, numbers, hyphens, or underscores"
-          autoComplete="off" disabled={submitting} placeholder="Example: SAVE10" style={fieldStyle} />
+          autoComplete="off" disabled={submitting} placeholder="Example: SAVE10" style={fieldStyle}
+          onBlur={(event) => {
+            const form = event.currentTarget.form;
+            const district = form?.elements.namedItem("shipping_district_code") as HTMLInputElement | null;
+            const upazila = form?.elements.namedItem("shipping_upazila_code") as HTMLInputElement | null;
+            void loadDeliveryQuote(district?.value ?? "", upazila?.value ?? "", event.currentTarget.value);
+          }} />
 
         <section className={styles.paymentOptions} aria-labelledby="delivery-heading">
           <h2 id="delivery-heading">Delivery method</h2>
@@ -627,7 +633,7 @@ export default function CheckoutView() {
               <input
                 id={paymentMethod === "cod" ? "delivery_fee_payment_transaction_id" : "payment_transaction_id"}
                 name={paymentMethod === "cod" ? "delivery_fee_payment_transaction_id" : "payment_transaction_id"}
-                required
+                required={paymentMethod !== "cod" || (deliveryFeeQuote ?? 0) > 0}
                 minLength={1}
                 maxLength={120}
                 pattern="[A-Za-z0-9-]+"
