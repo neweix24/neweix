@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import Icon from "@/components/ui/icon";
 
@@ -11,7 +10,6 @@ const CONSENT_VERSION = "2026-10-31";
 type ConsentType = "marketing_email" | "marketing_sms";
 
 export default function CustomerDataControls() {
-  const router = useRouter();
   const [sizes, setSizes] = useState("");
   const [colors, setColors] = useState("");
   const [emailConsent, setEmailConsent] = useState(false);
@@ -31,10 +29,10 @@ export default function CustomerDataControls() {
     async function load() {
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data: authData, error: authError } = await supabase.auth.getUser();
+        const { data: { session }, error: authError } = await supabase.auth.getSession();
 
-        if (authError || !authData.user) {
-          router.replace("/auth/customer-login?next=/account/privacy");
+        if (authError || !session?.user) {
+          setErrorMessage("Your account session is temporarily unavailable. Please refresh this page.");
           return;
         }
 
@@ -42,7 +40,7 @@ export default function CustomerDataControls() {
           supabase
             .from("customer_preferences")
             .select("preferred_sizes, preferred_colors")
-            .eq("user_id", authData.user.id)
+            .eq("user_id", session.user.id)
             .maybeSingle(),
           supabase
             .from("customer_consents")
@@ -125,10 +123,10 @@ export default function CustomerDataControls() {
 
     try {
       const supabase = createBrowserSupabaseClient();
-      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
 
-      if (authError || !authData.user) {
-        router.replace("/auth/customer-login?next=/account/privacy");
+      if (authError || !session?.user) {
+        setErrorMessage("Your account session is temporarily unavailable. Please refresh this page.");
         return;
       }
 
