@@ -274,7 +274,9 @@ export default function CheckoutView() {
       const response = await fetch(`/api/delivery/quote?${params.toString()}`, { cache: "no-store" });
       const result = await response.json().catch(() => null);
       if (!response.ok || !Number.isFinite(Number(result?.delivery_fee))) {
-        throw new Error(result?.error || "Could not calculate the live Pathao delivery fee.");
+        const reference = typeof result?.reference_id === "string" ? result.reference_id : "";
+        const message = result?.error || "Could not calculate the live Pathao delivery fee.";
+        throw new Error(reference ? `${message} Support reference: ${reference}` : message);
       }
       const fee = Number(result.delivery_fee);
       setDeliveryFeeQuote(fee);
