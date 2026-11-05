@@ -173,6 +173,72 @@ export default function StorefrontHome() {
   }, [drawerOpen]);
 
   useEffect(() => {
+    let active = true;
+    fetch("/api/account/notifications", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return await response.json() as { notifications?: CustomerNotification[]; unread_count?: number };
+      })
+      .then((result) => {
+        if (!active || !result) return;
+        setNotifications(Array.isArray(result.notifications) ? result.notifications : []);
+        setUnreadNotifications(Number.isSafeInteger(result.unread_count) ? Math.max(0, result.unread_count ?? 0) : 0);
+      })
+      .catch(() => { /* The inbox retries when opened. */ });
+    return () => { active = false; };
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!notificationsOpen) return;
+    let active = true;
+    setNotificationsLoading(true);
+    setNotificationsError("");
+    fetch("/api/account/notifications", { cache: "no-store" })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(response.status === 401 ? "Sign in to view your notifications." : result.error || "Notifications are unavailable.");
+        return result as { notifications?: CustomerNotification[]; unread_count?: number };
+      })
+      .then((result) => {
+        if (!active) return;
+        setNotifications(Array.isArray(result.notifications) ? result.notifications : []);
+        setUnreadNotifications(Number.isSafeInteger(result.unread_count) ? Math.max(0, result.unread_count ?? 0) : 0);
+      })
+      .catch((error: unknown) => {
+        if (active) setNotificationsError(error instanceof Error ? error.message : "Notifications are unavailable.");
+      })
+      .finally(() => { if (active) setNotificationsLoading(false); });
+    return () => { active = false; };
+  }, [notificationsOpen]);
+
+  async function markNotificationRead(id: string) {
+    const target = notifications.find((item) => item.id === id);
+    if (!target || target.read_at) return;
+    const response = await fetch("/api/account/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (!response.ok) return;
+    const readAt = new Date().toISOString();
+    setNotifications((items) => items.map((item) => item.id === id ? { ...item, read_at: readAt } : item));
+    setUnreadNotifications((count) => Math.max(0, count - 1));
+  }
+
+  async function markAllNotificationsRead() {
+    if (!unreadNotifications) return;
+    const response = await fetch("/api/account/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mark_all_read: true }),
+    });
+    if (!response.ok) return;
+    const readAt = new Date().toISOString();
+    setNotifications((items) => items.map((item) => ({ ...item, read_at: item.read_at ?? readAt })));
+    setUnreadNotifications(0);
+  }
+
+  useEffect(() => {
     if (!quickMenuOpen && !notificationsOpen) return;
     function closeOnOutsideClick(event: globalThis.PointerEvent) {
       if (event.target instanceof Node && !quickMenuRef.current?.contains(event.target)) {
@@ -218,7 +284,7 @@ export default function StorefrontHome() {
           </Link>
           <div ref={quickMenuRef} className={styles.headerQuickMenu}>
             <button type="button" className={styles.notificationTrigger} aria-label="Notifications" aria-haspopup="true" aria-expanded={notificationsOpen} onClick={() => { setNotificationsOpen((open) => !open); setQuickMenuOpen(false); }}>
-              <Icon name="bell" size={19} />
+              <Icon name="bell" size={19} />{unreadNotifications > 0 && <span className={styles.notificationBadge}>{unreadNotifications > 99 ? "99+" : unreadNotifications}</span>}
             </button>
             {notificationsOpen && <section className={styles.notificationPanel} aria-label="Notifications" aria-busy={notificationsLoading}>
               <div className={styles.notificationHeader}>
