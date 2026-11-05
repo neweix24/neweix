@@ -57,6 +57,17 @@ begin
     raise exception 'WAREHOUSE_ALLOCATION_ALREADY_EXISTS' using errcode = '23505';
   end if;
 
+  if exists (
+    select 1 from public.orders o
+    where o.id = p_order_id
+      and (
+        o.delivery_consignment_id is not null
+        or coalesce(o.delivery_status, 'not_booked') not in ('not_booked', 'failed')
+      )
+  ) then
+    raise exception 'WAREHOUSE_ALLOCATION_PATHAO_ALREADY_BOOKED' using errcode = '55000';
+  end if;
+
   if not exists (select 1 from public.order_items oi where oi.order_id = p_order_id) then
     raise exception 'WAREHOUSE_ALLOCATION_ORDER_HAS_NO_ITEMS' using errcode = '22023';
   end if;
