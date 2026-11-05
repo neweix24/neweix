@@ -6,15 +6,16 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const supabase = await createServerSupabaseClient();
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-  if (authError || !authData.user) {
+  const { data: claimsData, error: authError } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub;
+  if (authError || typeof userId !== "string" || !userId) {
     return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
   }
 
   const { data, error } = await supabase
     .from("customer_data_requests")
     .select("id,request_type,status,customer_message,resolution_note,created_at,updated_at,processed_at")
-    .eq("user_id", authData.user.id)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(30);
 
@@ -30,8 +31,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const supabase = await createServerSupabaseClient();
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-  if (authError || !authData.user) {
+  const { data: claimsData, error: authError } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub;
+  if (authError || typeof userId !== "string" || !userId) {
     return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
   }
 
@@ -62,7 +64,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabase
     .from("customer_data_requests")
     .insert({
-      user_id: authData.user.id,
+      user_id: userId,
       request_type: requestType,
       customer_message: message || null,
     })
