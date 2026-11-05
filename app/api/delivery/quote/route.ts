@@ -169,9 +169,9 @@ export async function GET(request: Request) {
     const diagnosticCode =
       /PATHAO_STORE_ID/i.test(providerMessage) ? "PATHAO_STORE_ID_CONFIGURATION" :
       /credentials|PATHAO_BASE_URL/i.test(providerMessage) ? "PATHAO_CREDENTIAL_CONFIGURATION" :
-      /Pathao API \\(401|403\\)/i.test(providerMessage) ? "PATHAO_AUTHORIZATION_FAILED" :
-      /Pathao API \\(5[0-9]{2}\\)/i.test(providerMessage) ? "PATHAO_PROVIDER_UNAVAILABLE" :
-      /Pathao API \\([45][0-9]{2}\\)/i.test(providerMessage) ? "PATHAO_PROVIDER_REQUEST_REJECTED" :
+      /Pathao API \(401|403\)/i.test(providerMessage) ? "PATHAO_AUTHORIZATION_FAILED" :
+      /Pathao API \(5[0-9]{2}\)/i.test(providerMessage) ? "PATHAO_PROVIDER_UNAVAILABLE" :
+      /Pathao API \([45][0-9]{2}\)/i.test(providerMessage) ? "PATHAO_PROVIDER_REQUEST_REJECTED" :
       /Supabase configuration/i.test(providerMessage) ? "SUPABASE_CONFIGURATION" :
       "DELIVERY_QUOTE_INTERNAL_ERROR";
 
