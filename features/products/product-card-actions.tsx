@@ -63,16 +63,30 @@ export default function ProductCardActions({
   }
 
   return (
-    <div className="product-card-actions" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
-      <button className="product-card-action" type="button" disabled={unavailable} onClick={addToCart}
-        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 40, padding: "9px 10px", borderRadius: 10, border: "1px solid var(--page-border, var(--border))", background: "var(--page-panel, var(--surface))", color: "inherit", fontWeight: 700, fontSize: 12, cursor: unavailable ? "not-allowed" : "pointer", opacity: unavailable ? .55 : 1 }}>
-        <Icon name="cart" size={16} /> {t("addToCart")}
+    <div className="product-card-actions" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+      <button
+        className="product-card-action"
+        type="button"
+        disabled={unavailable}
+        onClick={addToCart}
+        aria-label={t("addToCart")}
+        title={t("addToCart")}
+        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 44, minWidth: 44, minHeight: 42, padding: 0, borderRadius: 12, border: "1px solid #d7e4da", background: "#f4f8f4", color: "#236342", cursor: unavailable ? "not-allowed" : "pointer", opacity: unavailable ? .5 : 1 }}
+      >
+        <Icon name="cart" size={19} />
       </button>
-      <button className="product-card-action product-card-action-primary" type="button" disabled={unavailable} onClick={buyNow}
-        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 40, padding: "9px 10px", borderRadius: 10, border: "1px solid var(--page-accent, var(--primary))", background: "var(--page-accent, var(--primary))", color: "var(--accent-ink, #080b09)", fontWeight: 800, fontSize: 12, cursor: unavailable ? "not-allowed" : "pointer", opacity: unavailable ? .55 : 1 }}>
-        <Icon name="sparkles" size={16} /> {t("buyNow")}
+      <button
+        className="product-card-action product-card-action-primary"
+        type="button"
+        disabled={unavailable}
+        onClick={buyNow}
+        aria-label={t("buyNow")}
+        title={t("buyNow")}
+        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 44, minWidth: 44, minHeight: 42, padding: 0, borderRadius: 12, border: "1px solid #176b43", background: "#176b43", color: "#fff", cursor: unavailable ? "not-allowed" : "pointer", opacity: unavailable ? .5 : 1 }}
+      >
+        <Icon name="sparkles" size={18} />
       </button>
-      {message && <p role="status" aria-live="polite" style={{ gridColumn: "1 / -1", margin: 0, fontSize: 12 }}>{message}</p>}
+      {message && <p role="status" aria-live="polite" style={{ margin: 0, fontSize: 11, color: "var(--muted)" }}>{message}</p>}
     </div>
   );
 }

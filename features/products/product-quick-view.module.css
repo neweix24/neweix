@@ -22,3 +22,11 @@
 @keyframes riseIn{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:640px){.backdrop{align-items:end;padding:10px}.dialog{max-height:90dvh;border-radius:22px}.layout{grid-template-columns:1fr}.visual{min-height:240px;max-height:36dvh}.visual img{max-height:36dvh;padding:18px}.content{padding:24px 20px 26px}.content h2{font-size:25px}.description{margin-top:13px;font-size:13px}.actions{margin-top:18px}}
 @media(prefers-reduced-motion:reduce){.backdrop,.dialog{animation:none}}
+
+
+/* Make sale information readable in both light and dark themes. */
+.discount{background:#b42318!important;color:#fff!important;box-shadow:0 5px 16px rgba(180,35,24,.22)}
+.price strong{color:#176b43!important}
+.price del{color:#747b75!important;text-decoration:line-through;text-decoration-thickness:1.5px}
+.actions :global(.product-card-actions){display:flex;align-items:center;gap:10px}
+@media(max-width:640px){.discount{top:14px;left:14px}.price strong{font-size:24px}.price del{font-size:13px}}
