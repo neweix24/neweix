@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import Icon from "@/components/ui/icon";
 import styles from "./product-catalog.module.css";
@@ -21,7 +21,7 @@ type Product = {
 };
 
 type Category = { id: string; name: string; slug: string };
-type ApiResponse = { data?: Product[]; hasMore?: boolean; page?: number };
+type ApiResponse = { data?: Product[]; hasMore?: boolean; page?: number; total?: number };
 
 function money(value: number, locale: string) {
   return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", {
@@ -44,7 +44,10 @@ export default function ProductCatalog() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
   const [nextPage, setNextPage] = useState(2);
+  const [filtersReady, setFiltersReady] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
   const [error, setError] = useState(false);
   const [notice, setNotice] = useState("");
   const [wishlist, setWishlist] = useState<string[]>([]);
@@ -55,36 +58,35 @@ export default function ProductCatalog() {
   // only on later pages.
   const visibleCategories = categories;
 
-  const loadProducts = useCallback(async () => {
-    setLoading(true);
-    setError(false);
-    try {
-      const response = await fetch("/api/products?page=1", { cache: "no-store" });
-      if (!response.ok) throw new Error("Product request failed");
-      const result = (await response.json()) as ApiResponse;
-      if (!Array.isArray(result.data)) throw new Error("Invalid product response");
-      setProducts(result.data.slice(0, 20));
-      setHasMore(result.hasMore === true);
-      setNextPage(2);
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const filterParams = useMemo(() => {
+    const params = new URLSearchParams();
+    const term = query.trim().slice(0, 160);
+    if (term) params.set("search", term);
+    if (categorySlug) params.set("category", categorySlug);
+    if (minPrice.trim()) params.set("minPrice", minPrice.trim());
+    if (maxPrice.trim()) params.set("maxPrice", maxPrice.trim());
+    if (inStockOnly) params.set("inStock", "1");
+    if (sort !== "featured") params.set("sort", sort);
+    return params;
+  }, [query, categorySlug, minPrice, maxPrice, inStockOnly, sort]);
+  const filterKey = filterParams.toString();
+  const activeFilterKeyRef = useRef(filterKey);
 
   const loadMoreProducts = useCallback(async () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
-      const response = await fetch(`/api/products?page=${nextPage}`, { cache: "no-store" });
+      const suffix = filterKey ? `&${filterKey}` : "";
+      const response = await fetch(`/api/products?page=${nextPage}${suffix}`, { cache: "no-store" });
       if (!response.ok) throw new Error("More products request failed");
       const result = (await response.json()) as ApiResponse;
       if (!Array.isArray(result.data)) throw new Error("Invalid product response");
+      if (activeFilterKeyRef.current !== filterKey) return;
       setProducts((current) => {
         const knownIds = new Set(current.map((product) => product.id));
         return [...current, ...result.data!.filter((product) => !knownIds.has(product.id))];
       });
+      setTotal(Number.isFinite(result.total) ? Number(result.total) : 0);
       setHasMore(result.hasMore === true);
       setNextPage((current) => current + 1);
     } catch {
@@ -92,7 +94,7 @@ export default function ProductCatalog() {
     } finally {
       setLoadingMore(false);
     }
-  }, [hasMore, loadingMore, nextPage]);
+  }, [filterKey, hasMore, loadingMore, nextPage]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -103,7 +105,7 @@ export default function ProductCatalog() {
     setMinPrice(params.get("minPrice") ?? "");
     setMaxPrice(params.get("maxPrice") ?? "");
     setInStockOnly(params.get("inStock") === "1");
-    void loadProducts();
+    setFiltersReady(true);
     fetch("/api/categories", { cache: "no-store" })
       .then(async (response) => {
         const result = await response.json();
@@ -124,33 +126,46 @@ export default function ProductCatalog() {
     } catch {
       localStorage.removeItem("neweix_wishlist");
     }
-  }, [loadProducts]);
+  }, []);
 
-  const filtered = useMemo(() => {
-    const term = query.trim().toLocaleLowerCase();
-    const selectedCategory = categories.find((category) => category.slug === categorySlug);
-    const categoryMatches = !categorySlug
-      ? products
-      : selectedCategory
-        ? products.filter((product) => product.category_id === selectedCategory.id)
-        : [];
-    const minimum = minPrice.trim() ? Number(minPrice) : null;
-    const maximum = maxPrice.trim() ? Number(maxPrice) : null;
-    const matches = categoryMatches.filter((product) => {
-      const textMatches = !term || [product.name, product.description ?? ""].some((value) =>
-        value.toLocaleLowerCase().includes(term)
-      );
-      const price = Number(product.price);
-      const minimumMatches = minimum === null || !Number.isFinite(minimum) || price >= minimum;
-      const maximumMatches = maximum === null || !Number.isFinite(maximum) || price <= maximum;
-      const stockMatches = !inStockOnly || Number(product.stock) > 0;
-      return textMatches && minimumMatches && maximumMatches && stockMatches;
-    });
-    if (sort === "price-asc") matches.sort((a, b) => Number(a.price) - Number(b.price));
-    if (sort === "price-desc") matches.sort((a, b) => Number(b.price) - Number(a.price));
-    if (sort === "featured") matches.sort((a, b) => Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured)));
-    return matches;
-  }, [products, query, sort, categories, categorySlug, minPrice, maxPrice, inStockOnly]);
+  useEffect(() => {
+    if (!filtersReady) return;
+    activeFilterKeyRef.current = filterKey;
+    let active = true;
+    const nextUrl = filterKey ? `/products?${filterKey}` : "/products";
+    window.history.replaceState(null, "", nextUrl);
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      setError(false);
+      setProducts([]);
+      setHasMore(false);
+      setTotal(0);
+      setNextPage(2);
+      try {
+        const suffix = filterKey ? `&${filterKey}` : "";
+        const response = await fetch(`/api/products?page=1${suffix}`, { cache: "no-store" });
+        if (!response.ok) throw new Error("Product request failed");
+        const result = (await response.json()) as ApiResponse;
+        if (!Array.isArray(result.data)) throw new Error("Invalid product response");
+        if (!active) return;
+        setProducts(result.data);
+        setTotal(Number.isFinite(result.total) ? Number(result.total) : 0);
+        setHasMore(result.hasMore === true);
+        setNextPage(2);
+      } catch {
+        if (active) setError(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }, 250);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [filtersReady, filterKey, reloadToken, query]);
+
+  const filtered = products;
+  const hasActiveFilters = Boolean(query.trim() || categorySlug || minPrice.trim() || maxPrice.trim() || inStockOnly);
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -233,7 +248,7 @@ export default function ProductCatalog() {
           {visibleCategories.map((category) => <button key={category.id} type="button" aria-pressed={categorySlug === category.slug} className={categorySlug === category.slug ? styles.activeChip : ""} onClick={() => setCategorySlug(category.slug)}><Icon name="tag" size={14} /> {category.name}</button>)}
         </div>}
         <div className={styles.filterPanel}>
-        <div className={styles.filterHeading}><strong>{t("sortProducts")}</strong><span>{products.length}{hasMore ? "+" : ""} {t("resultsFound")}</span></div>
+        <div className={styles.filterHeading}><strong>{t("sortProducts")}</strong><span>{total} {t("resultsFound")}</span></div>
         <div className={styles.filterRow}>
           <label className={styles.priceField}>{t("minPrice")}
             <input aria-label={t("minPrice")} type="number" min="0" inputMode="numeric" placeholder="0" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} />
@@ -253,7 +268,7 @@ export default function ProductCatalog() {
           </select>
         </label>
         </div>
-        <p className={styles.resultSummary} aria-live="polite">{categories.find((category) => category.slug === categorySlug)?.name ? `${categories.find((category) => category.slug === categorySlug)?.name} · ` : ""}{filtered.length}{t("resultsFound")} · {products.length}{hasMore ? "+" : ""} loaded</p>
+        <p className={styles.resultSummary} aria-live="polite">{categories.find((category) => category.slug === categorySlug)?.name ? `${categories.find((category) => category.slug === categorySlug)?.name} · ` : ""}{total} {t("resultsFound")} · {products.length} loaded</p>
       </section>
 
       <section className={styles.catalog} aria-label="Product list">
@@ -267,14 +282,11 @@ export default function ProductCatalog() {
         {!loading && error && (
           <div className={styles.state}>
             <p>{t("productLoadError")}</p>
-            <button type="button" onClick={() => void loadProducts()}><Icon name="refresh" size={16} /> {t("retry")}</button>
+            <button type="button" onClick={() => setReloadToken((value) => value + 1)}><Icon name="refresh" size={16} /> {t("retry")}</button>
           </div>
         )}
-        {!loading && !error && products.length === 0 && (
-          <p className={styles.state}>{t("noProducts")}</p>
-        )}
-        {!loading && !error && products.length > 0 && filtered.length === 0 && (
-          <p className={styles.state}>{t("noMatchingProducts")}</p>
+        {!loading && !error && total === 0 && (
+          <p className={styles.state}>{hasActiveFilters ? t("noMatchingProducts") : t("noProducts")}</p>
         )}
         <div className={styles.grid}>
           {filtered.map((product) => (
