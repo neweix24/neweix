@@ -66,7 +66,7 @@ export async function GET() {
       .from("customer_return_requests")
       .select(`
         id, customer_id, order_id, status, reason, customer_note, staff_note,
-        refund_amount, refund_method, refund_reference, reviewed_by,
+        refund_amount, refund_method, refund_reference, reviewed_by,\n        stock_restocked_at, stock_restocked_by,
         reviewed_at, created_at, updated_at,
         orders(order_number, customer_name, customer_phone, status, total, created_at),
         customer_return_request_items(
