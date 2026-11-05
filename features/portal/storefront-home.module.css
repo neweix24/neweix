@@ -386,3 +386,44 @@
   .page .searchPlaceholder{font-size:11px}
   .page .searchAction{width:32px;height:32px;border-radius:10px}
 }
+
+
+/* Quick links: compact language control and scrollable ten-item menu. */
+.quickMenuPanel {
+  max-height: min(72vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.quickMenuLanguage {
+  display: flex;
+  min-height: 43px;
+  align-items: center;
+  gap: 11px;
+  padding: 7px 11px;
+  border-radius: 10px;
+  color: var(--text);
+}
+.quickMenuLanguage > svg {
+  flex: 0 0 auto;
+  color: var(--lime);
+}
+.quickMenuLanguage label {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+}
+.quickMenuLanguage select {
+  max-width: 130px;
+  min-width: 0;
+  border: 1px solid var(--line) !important;
+  border-radius: 8px;
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  font: inherit;
+  font-size: 12px;
+}

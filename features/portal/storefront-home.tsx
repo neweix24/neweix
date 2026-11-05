@@ -16,7 +16,6 @@ type Product = {
   compare_at_price?: number | null; image_urls: string[] | null;
   stock: number; is_featured?: boolean; category_id?: string | null;
 };
-type Customer = { name: string; email: string };
 type Category = { id: string; name: string; slug: string };
 type CustomerNotification = { id: string; event_type: string; title: string; body: string; href: string; read_at: string | null; created_at: string };
 
@@ -43,21 +42,18 @@ function readCartCount() {
 export default function StorefrontHome() {
   const { t, locale } = useLanguage();
   const pathname = usePathname();
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [quickMenuOpen, setQuickMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState("");
-  const [customer, setCustomer] = useState<Customer | null>(null);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cartNotice, setCartNotice] = useState("");
-  const panelRef = useRef<HTMLElement>(null);
   const quickMenuRef = useRef<HTMLDivElement>(null);
 
   const refreshCounts = useCallback(() => {
@@ -77,28 +73,6 @@ export default function StorefrontHome() {
       window.removeEventListener("neweix-wishlist-change", refresh);
     };
   }, [refreshCounts]);
-
-  useEffect(() => {
-    let active = true;
-    async function loadCustomer() {
-      try {
-        const supabase = createBrowserSupabaseClient();
-        // The storefront only needs the cached browser identity for display.
-        // Avoid a remote /auth/v1/user request during homepage initialization.
-        const { data: { session }, error: sessionError } =
-          await supabase.auth.getSession();
-        const user = sessionError ? null : session?.user ?? null;
-        if (!active) return;
-        if (!user) { setCustomer(null); return; }
-        const { data: profile } = await supabase.from("customer_profiles").select("full_name").eq("user_id", user.id).maybeSingle();
-        if (!active) return;
-        const metadataName = typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : typeof user.user_metadata?.name === "string" ? user.user_metadata.name : "";
-        setCustomer({ name: profile?.full_name || metadataName || "Valued customer", email: user.email ?? "" });
-      } catch { if (active) setCustomer(null); }
-    }
-    void loadCustomer();
-    return () => { active = false; };
-  }, [pathname]);
 
   useEffect(() => {
     let active = true;
@@ -145,30 +119,6 @@ export default function StorefrontHome() {
     void loadProducts();
     return () => { active = false; };
   }, []);
-
-  useEffect(() => {
-    if (!drawerOpen) return;
-    const previous = document.activeElement as HTMLElement | null;
-    const bodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    panelRef.current?.focus();
-    function onKeyDown(event: globalThis.KeyboardEvent) {
-      if (event.key === "Escape") { setDrawerOpen(false); return; }
-      if (event.key !== "Tab" || !panelRef.current) return;
-      const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex="0"]'));
-      if (!focusable.length) { event.preventDefault(); return; }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = bodyOverflow;
-      previous?.focus();
-    };
-  }, [drawerOpen]);
 
   useEffect(() => {
     let active = true;
@@ -259,14 +209,6 @@ export default function StorefrontHome() {
   }, [quickMenuOpen, notificationsOpen]);
 
 
-  async function logout() {
-    const supabase = createBrowserSupabaseClient();
-    const { error } = await supabase.auth.signOut();
-    if (!error) {
-      window.location.replace("/");
-    }
-  }
-
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -294,11 +236,15 @@ export default function StorefrontHome() {
             <button type="button" className={styles.quickMenuTrigger} aria-label="Open navigation menu" aria-haspopup="true" aria-expanded={quickMenuOpen} onClick={() => { setQuickMenuOpen((open) => !open); setNotificationsOpen(false); }}>
               <Icon name="menu" size={22} />
             </button>
-            {quickMenuOpen && <nav className={styles.quickMenuPanel} aria-label="Navigation menu">
-              <Link href="/products" onClick={() => setQuickMenuOpen(false)}><Icon name="grid" size={17} />{t("productsSearch")}</Link>
+            {quickMenuOpen && <nav className={styles.quickMenuPanel} aria-label="Quick links">
+              <Link href="/orders" onClick={() => setQuickMenuOpen(false)}><Icon name="orders" size={17} />{t("myOrders")}</Link>
               <Link href="/track-order" onClick={() => setQuickMenuOpen(false)}><Icon name="truck" size={17} />{t("trackMyOrder")}</Link>
               <Link href="/wishlist" onClick={() => setQuickMenuOpen(false)}><Icon name="heart" size={17} />{t("wishlist")}<b>{wishlistCount}</b></Link>
               <Link href="/cart" onClick={() => setQuickMenuOpen(false)}><Icon name="cart" size={17} />{t("shoppingCart")}<b>{cartCount}</b></Link>
+              <div className={styles.quickMenuLanguage}><Icon name="globe" size={17} /><LanguageSwitcher /></div>
+              <Link href="/account/eixpay" onClick={() => setQuickMenuOpen(false)}><Icon name="wallet" size={17} />Wallet · Eixon</Link>
+              <Link href="/account/neweix-plus" onClick={() => setQuickMenuOpen(false)}><Icon name="membership" size={17} />Neweix+</Link>
+              <Link href="/eixverse" onClick={() => setQuickMenuOpen(false)}><Icon name="globe" size={17} />EixVerse</Link>
               <Link href="/faq" onClick={() => setQuickMenuOpen(false)}><Icon name="help" size={17} />{t("faq")}</Link>
               <Link href="/contact" onClick={() => setQuickMenuOpen(false)}><Icon name="mail" size={17} />{t("contact")}</Link>
             </nav>}
@@ -377,24 +323,9 @@ export default function StorefrontHome() {
         <Link href="/" aria-current="page"><Icon name="home" size={24} />{t("homeNav")}</Link>
         <Link href="/products"><Icon name="grid" size={24} />{t("productsSearch")}</Link>
         <Link href="/cart"><span className={styles.bottomCartIcon}><Icon name="cart" size={24} /><b>{cartCount > 99 ? "99+" : cartCount}</b></span>{t("cart")}</Link>
-        <Link href="/account" onClick={(event) => { event.preventDefault(); setDrawerOpen(true); }} aria-haspopup="dialog" aria-expanded={drawerOpen}><Icon name="user" size={24} />{t("myAccountNav")}</Link>
+        <Link href="/account"><Icon name="user" size={24} />{t("myAccountNav")}</Link>
       </nav>
 
-      {drawerOpen && <div className={styles.overlay} onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerOpen(false); }}>
-        <aside ref={panelRef} className={styles.drawer} role="dialog" aria-modal="true" aria-labelledby="drawer-title" tabIndex={-1}>
-          <div className={styles.drawerHead}><div><span className={styles.eyebrow}>{t("customer")}</span><h2 id="drawer-title">{t("myAccount")}</h2></div><button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close menu"><Icon name="close" size={18} /></button></div>
-          <div className={styles.drawerGroup}>{customer ? <Link href="/account" onClick={() => setDrawerOpen(false)}><Icon name="user" size={17} /> <span>{t("myProfile")}</span></Link> : <Link href="/auth/customer-login?next=/account" onClick={() => setDrawerOpen(false)}><Icon name="user" size={17} /> <span>{t("loginSignup")}</span></Link>}</div>
-          <div className={styles.drawerGroup}><span>{t("myShopping")}</span><Link href="/orders" onClick={() => setDrawerOpen(false)}><Icon name="orders" size={17} /> <span>{t("myOrders")}</span></Link><Link href="/track-order" onClick={() => setDrawerOpen(false)}><Icon name="truck" size={17} /> <span>{t("trackMyOrder")}</span></Link><Link href="/wishlist" onClick={() => setDrawerOpen(false)}><Icon name="heart" size={17} /> <span>{t("wishlist")}</span><b>{wishlistCount}</b></Link><Link href="/cart" onClick={() => setDrawerOpen(false)}><Icon name="cart" size={17} /> <span>{t("shoppingCart")}</span><b>{cartCount}</b></Link></div>
-          <div className={styles.drawerGroup}><span>{t("preferences")}</span><div style={{ padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}><LanguageSwitcher /></div></div>
-          <div className={styles.drawerGroup}><span>{t("accountSettings")}</span><Link href="/account/eixpay" onClick={() => setDrawerOpen(false)}><Icon name="wallet" size={17} /> <span>EixPay Wallet · Eixon</span></Link><Link href="/account/neweix-plus" onClick={() => setDrawerOpen(false)}><Icon name="membership" size={17} /> <span>Neweix+ Membership</span></Link><Link href="/eixverse" onClick={() => setDrawerOpen(false)}><Icon name="globe" size={17} /> <span>EixVerse</span></Link>
-             <Link href="/account/addresses" onClick={() => setDrawerOpen(false)}><Icon name="map-pin" size={17} /> <span>{t("deliveryAddresses")}</span></Link>
-             <Link href="/account/privacy" onClick={() => setDrawerOpen(false)}><Icon name="shield" size={17} /> <span>{t("privacyConsent")}</span></Link>
-             <Link href="/account/data-requests" onClick={() => setDrawerOpen(false)}><Icon name="settings" size={17} /> <span>{t("dataControls")}</span></Link></div>
-          <div className={styles.drawerGroup}><span>{t("helpSupport")}</span><Link href="/faq" onClick={() => setDrawerOpen(false)}><Icon name="help" size={17} /> <span>{t("faq")}</span></Link><Link href="/contact" onClick={() => setDrawerOpen(false)}><Icon name="mail" size={17} /> <span>{t("contact")}</span></Link></div>
-          {customer && <button className={styles.logoutButton} type="button" onClick={() => void logout()}><Icon name="logout" size={17} /> {t("logout")}</button>}
-          <p className={styles.drawerFoot}>{t("footerTagline")}</p>
-        </aside>
-      </div>}
     </div>
   );
 }
