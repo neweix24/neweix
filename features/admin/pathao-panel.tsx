@@ -5,6 +5,77 @@ import Icon from "@/components/ui/icon";
 
 type State = "idle" | "loading" | "success" | "error";
 type LocationOption = { id: number; name: string; available?: boolean };
+type SettlementImport = {
+  id: string;
+  settlement_reference: string | null;
+  settlement_date: string | null;
+  source_filename: string;
+  row_count: number;
+  matched_count: number;
+  mismatch_count: number;
+  unmatched_count: number;
+  imported_at: string;
+  notes: string | null;
+};
+type SettlementRow = {
+  id: string;
+  import_id: string;
+  source_row_number: number;
+  source_identifier: string;
+  cod_amount: number | string;
+  delivery_charge: number | string | null;
+  discount_amount: number | string | null;
+  net_payout_amount: number | string | null;
+  expected_cod_amount: number | string | null;
+  variance_amount: number | string | null;
+  match_status: "matched" | "amount_mismatch" | "unmatched" | "duplicate";
+  merchant_order_id: string | null;
+};
+function parseDelimitedText(input: string, delimiter: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let quoted = false;
+  const source = input.replace(/^\\uFEFF/, "");
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+    if (char === '"') {
+      if (quoted && source[index + 1] === '"') {
+        cell += '"';
+        index += 1;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (char === delimiter && !quoted) {
+      row.push(cell);
+      cell = "";
+    } else if ((char === "\\n" || char === "\\r") && !quoted) {
+      if (char === "\\r" && source[index + 1] === "\\n") index += 1;
+      row.push(cell);
+      if (row.some((value) => value.trim() !== "")) rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+  row.push(cell);
+  if (row.some((value) => value.trim() !== "")) rows.push(row);
+  return rows;
+}
+function parseMoney(value: string): number | null {
+  const cleaned = value.replace(/[৳$\\s,]/g, "").replace(/[()]/g, (part) => part === "(" ? "-" : "");
+  if (!cleaned) return null;
+  const amount = Number(cleaned);
+  return Number.isFinite(amount) && amount >= 0 && amount <= 100000000
+    ? Math.round(amount * 100) / 100
+    : null;
+}
+function money(value: number | string | null | undefined): string {
+  if (value == null || value === "") return "—";
+  return `৳${Number(value).toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 type Shipment = {
   id: string;
   order_number: string;
@@ -57,6 +128,22 @@ export default function PathaoPanel() {
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [shipmentsLoading, setShipmentsLoading] = useState(false);
+  const [settlementImports, setSettlementImports] = useState<SettlementImport[]>([]);
+  const [settlementRows, setSettlementRows] = useState<SettlementRow[]>([]);
+  const [selectedImportId, setSelectedImportId] = useState("");
+  const [settlementFileName, setSettlementFileName] = useState("");
+  const [settlementHeaders, setSettlementHeaders] = useState<string[]>([]);
+  const [settlementCsvRows, setSettlementCsvRows] = useState<string[][]>([]);
+  const [identifierColumn, setIdentifierColumn] = useState("");
+  const [codColumn, setCodColumn] = useState("");
+  const [chargeColumn, setChargeColumn] = useState("");
+  const [discountColumn, setDiscountColumn] = useState("");
+  const [payoutColumn, setPayoutColumn] = useState("");
+  const [settlementReference, setSettlementReference] = useState("");
+  const [settlementDate, setSettlementDate] = useState("");
+  const [settlementNotes, setSettlementNotes] = useState("");
+  const [settlementBusy, setSettlementBusy] = useState(false);
+  const [settlementMessage, setSettlementMessage] = useState("");
 
   async function getJson(url: string) {
     const response = await fetch(url, { cache: "no-store" });
@@ -131,6 +218,129 @@ export default function PathaoPanel() {
       setState("error");
     } finally {
       setShipmentsLoading(false);
+    }
+  }
+
+  async function loadSettlementHistory() {
+    setSettlementBusy(true);
+    setSettlementMessage("");
+    try {
+      const result = await getJson("/api/admin/pathao?action=settlement_imports");
+      const imports = Array.isArray(result.imports) ? result.imports as SettlementImport[] : [];
+      const rows = Array.isArray(result.rows) ? result.rows as SettlementRow[] : [];
+      setSettlementImports(imports);
+      setSettlementRows(rows);
+      if (!selectedImportId && imports[0]) setSelectedImportId(imports[0].id);
+      setSettlementMessage("Settlement import history loaded.");
+    } catch (error) {
+      setSettlementMessage(error instanceof Error ? error.message : "Could not load settlement history.");
+    } finally {
+      setSettlementBusy(false);
+    }
+  }
+
+  async function readSettlementFile(file: File | undefined) {
+    setSettlementMessage("");
+    setSettlementFileName("");
+    setSettlementHeaders([]);
+    setSettlementCsvRows([]);
+    if (!file) return;
+    if (file.size > 1_000_000) {
+      setSettlementMessage("CSV file must be 1 MB or smaller. Split large reports into separate imports.");
+      return;
+    }
+    try {
+      const source = await file.text();
+      const firstLine = source.split(/\\r?\\n/, 1)[0] || "";
+      const delimiter = [",", ";", "\\t"].sort((a, b) =>
+        firstLine.split(b).length - firstLine.split(a).length
+      )[0];
+      const parsed = parseDelimitedText(source, delimiter);
+      if (parsed.length < 2) throw new Error("CSV needs a header and at least one data row.");
+      const headers = parsed[0].map((value, index) => value.trim() || `Column ${index + 1}`);
+      const dataRows = parsed.slice(1).filter((row) => row.some((value) => value.trim() !== ""));
+      if (headers.length < 2 || dataRows.length > 1000) {
+        throw new Error("CSV must have at least two columns and no more than 1,000 data rows.");
+      }
+      const normalized = headers.map((value) => value.toLowerCase().replace(/[^a-z0-9]/g, ""));
+      const findColumn = (candidates: string[]) => {
+        const index = normalized.findIndex((header) => candidates.some((candidate) => header.includes(candidate)));
+        return index >= 0 ? String(index) : "";
+      };
+      setSettlementFileName(file.name);
+      setSettlementHeaders(headers);
+      setSettlementCsvRows(dataRows.map((row) => headers.map((_, index) => row[index] ?? "")));
+      setIdentifierColumn(findColumn(["consignmentid", "consignment", "orderid", "merchantorderid"]));
+      setCodColumn(findColumn(["codamount", "collectableamount", "cod", "amounttocollect"]));
+      setChargeColumn(findColumn(["deliverycharge", "deliveryfee", "charge"]));
+      setDiscountColumn(findColumn(["discount"]));
+      setPayoutColumn(findColumn(["netpayout", "paidamount", "settlementamount", "payout"]));
+      setSettlementMessage(`Loaded ${dataRows.length} rows. Confirm the column mapping before importing.`);
+    } catch (error) {
+      setSettlementMessage(error instanceof Error ? error.message : "Could not read CSV file.");
+    }
+  }
+
+  async function importSettlementReport() {
+    const identifierIndex = Number(identifierColumn);
+    const codIndex = Number(codColumn);
+    if (!settlementFileName || !Number.isInteger(identifierIndex) || !Number.isInteger(codIndex) ||
+        identifierColumn === "" || codColumn === "" || identifierIndex === codIndex) {
+      setSettlementMessage("Choose different identifier and COD amount columns before importing.");
+      return;
+    }
+    const optionalIndex = (value: string) => value === "" ? -1 : Number(value);
+    const chargeIndex = optionalIndex(chargeColumn);
+    const discountIndex = optionalIndex(discountColumn);
+    const payoutIndex = optionalIndex(payoutColumn);
+    const rows = settlementCsvRows.map((row) => {
+      const raw: Record<string, string> = {};
+      settlementHeaders.forEach((header, index) => { raw[header] = row[index] ?? ""; });
+      return {
+        identifier: (row[identifierIndex] || "").trim(),
+        codAmount: parseMoney(row[codIndex] || ""),
+        deliveryCharge: chargeIndex >= 0 ? parseMoney(row[chargeIndex] || "") : null,
+        discountAmount: discountIndex >= 0 ? parseMoney(row[discountIndex] || "") : null,
+        netPayoutAmount: payoutIndex >= 0 ? parseMoney(row[payoutIndex] || "") : null,
+        raw,
+      };
+    });
+    const invalidRow = rows.findIndex((row) => !row.identifier || row.codAmount === null);
+    if (invalidRow >= 0) {
+      setSettlementMessage(`Row ${invalidRow + 2} has a missing identifier or invalid COD amount. Correct the CSV or column mapping.`);
+      return;
+    }
+    setSettlementBusy(true);
+    setSettlementMessage("");
+    try {
+      const response = await fetch("/api/admin/pathao", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          action: "import_settlement",
+          sourceFilename: settlementFileName,
+          settlementReference: settlementReference.trim() || undefined,
+          settlementDate: settlementDate || undefined,
+          notes: settlementNotes.trim() || undefined,
+          rows,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Settlement import failed.");
+      setSettlementMessage(`Imported ${result.rowCount} rows: ${result.matchedCount} matched, ${result.mismatchCount} amount mismatches, ${result.unmatchedCount} unmatched/duplicate.`);
+      setSettlementFileName("");
+      setSettlementHeaders([]);
+      setSettlementCsvRows([]);
+      setSettlementReference("");
+      setSettlementDate("");
+      setSettlementNotes("");
+      await loadSettlementHistory();
+      if (result.importId) setSelectedImportId(result.importId);
+    } catch (error) {
+      setSettlementMessage(error instanceof Error ? error.message : "Settlement import failed.");
+    } finally {
+      setSettlementBusy(false);
     }
   }
 
@@ -232,6 +442,120 @@ export default function PathaoPanel() {
           </div>
         ) : (
           <p className="mt-3 text-sm text-gray-500">{shipmentsLoading ? "Loading shipment history..." : "No Pathao shipments loaded. Select Refresh Shipments to check."}</p>
+        )}
+      </section>
+
+      <section className="mt-5 space-y-4 rounded-xl border border-gray-200 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="font-semibold">COD Settlement Reconciliation</h3>
+            <p className="mt-1 max-w-3xl text-xs leading-5 text-gray-500">
+              Import a CSV exported from Pathao Merchant Panel. Map the identifier and COD amount columns yourself; NEWEIX matches consignment ID or merchant order number and compares COD against the amount expected at booking. This does not mark bank payouts as received.
+            </p>
+          </div>
+          <button type="button" onClick={() => void loadSettlementHistory()} disabled={settlementBusy} className="rounded-lg border px-3 py-2 text-xs font-semibold disabled:opacity-50">
+            {settlementBusy ? "Loading..." : "Load Import History"}
+          </button>
+        </div>
+
+        <label className="block text-sm font-medium">
+          Pathao CSV report
+          <input type="file" accept=".csv,text/csv,.txt,text/plain" onChange={(event) => void readSettlementFile(event.target.files?.[0])} className="mt-1 block w-full rounded-lg border bg-white px-3 py-2 text-sm" />
+        </label>
+        {settlementFileName && <p className="text-xs text-gray-600">{settlementFileName} · {settlementCsvRows.length} rows loaded</p>}
+
+        {settlementHeaders.length > 0 && (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="text-sm font-medium">Identifier column (Consignment ID or NEWEIX Order ID) *
+                <select value={identifierColumn} onChange={(event) => setIdentifierColumn(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2">
+                  <option value="">Choose column</option>{settlementHeaders.map((header, index) => <option key={index} value={index}>{header}</option>)}
+                </select>
+              </label>
+              <label className="text-sm font-medium">COD amount column *
+                <select value={codColumn} onChange={(event) => setCodColumn(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2">
+                  <option value="">Choose column</option>{settlementHeaders.map((header, index) => <option key={index} value={index}>{header}</option>)}
+                </select>
+              </label>
+              <label className="text-sm font-medium">Delivery charge column (optional)
+                <select value={chargeColumn} onChange={(event) => setChargeColumn(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2">
+                  <option value="">Not included</option>{settlementHeaders.map((header, index) => <option key={index} value={index}>{header}</option>)}
+                </select>
+              </label>
+              <label className="text-sm font-medium">Discount column (optional)
+                <select value={discountColumn} onChange={(event) => setDiscountColumn(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2">
+                  <option value="">Not included</option>{settlementHeaders.map((header, index) => <option key={index} value={index}>{header}</option>)}
+                </select>
+              </label>
+              <label className="text-sm font-medium">Net payout column (optional, informational)
+                <select value={payoutColumn} onChange={(event) => setPayoutColumn(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2">
+                  <option value="">Not included</option>{settlementHeaders.map((header, index) => <option key={index} value={index}>{header}</option>)}
+                </select>
+              </label>
+              <label className="text-sm font-medium">Settlement reference (recommended)
+                <input maxLength={120} value={settlementReference} onChange={(event) => setSettlementReference(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2" placeholder="Unique Pathao statement/reference" />
+              </label>
+              <label className="text-sm font-medium">Settlement date (optional)
+                <input type="date" value={settlementDate} onChange={(event) => setSettlementDate(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2" />
+              </label>
+              <label className="text-sm font-medium sm:col-span-2">Notes (optional)
+                <input maxLength={1000} value={settlementNotes} onChange={(event) => setSettlementNotes(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2" placeholder="Report period or internal note" />
+              </label>
+            </div>
+            <div className="overflow-x-auto rounded-lg border">
+              <table className="w-full min-w-[520px] text-left text-xs">
+                <thead className="bg-gray-50"><tr>{settlementHeaders.slice(0, 6).map((header, index) => <th key={index} className="p-2">{header}</th>)}</tr></thead>
+                <tbody>{settlementCsvRows.slice(0, 3).map((row, rowIndex) => <tr key={rowIndex} className="border-t">{settlementHeaders.slice(0, 6).map((_, index) => <td key={index} className="max-w-48 truncate p-2">{row[index] || "—"}</td>)}</tr>)}</tbody>
+              </table>
+            </div>
+            <button type="button" onClick={() => void importSettlementReport()} disabled={settlementBusy || !identifierColumn || !codColumn || settlementCsvRows.length === 0} className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+              {settlementBusy ? "Importing..." : "Import & Reconcile CSV"}
+            </button>
+          </>
+        )}
+        {settlementMessage && <p role="status" className="text-sm text-gray-700">{settlementMessage}</p>}
+
+        {settlementImports.length > 0 && (
+          <div className="space-y-3 border-t pt-4">
+            <h4 className="text-sm font-semibold">Imported Reports</h4>
+            <div className="flex flex-wrap gap-2">
+              {settlementImports.map((item) => (
+                <button key={item.id} type="button" onClick={() => setSelectedImportId(item.id)} className={`rounded-lg border px-3 py-2 text-left text-xs ${selectedImportId === item.id ? "border-emerald-700 bg-emerald-50" : "border-gray-200"}`}>
+                  <span className="block font-semibold">{item.settlement_reference || item.source_filename}</span>
+                  <span className="block text-gray-500">{item.row_count} rows · {item.imported_at ? new Date(item.imported_at).toLocaleDateString() : "—"}</span>
+                </button>
+              ))}
+            </div>
+            {(() => {
+              const selected = settlementImports.find((item) => item.id === selectedImportId) || settlementImports[0];
+              const selectedRows = settlementRows.filter((row) => row.import_id === selected.id);
+              return (
+                <div>
+                  <p className="text-xs text-gray-600">{selected.source_filename} · {selected.settlement_date || "No settlement date"}</p>
+                  <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <div className="rounded-lg bg-gray-50 p-3"><p className="text-xs text-gray-500">Rows</p><p className="text-lg font-bold">{selected.row_count}</p></div>
+                    <div className="rounded-lg bg-emerald-50 p-3"><p className="text-xs text-gray-500">Matched</p><p className="text-lg font-bold">{selected.matched_count}</p></div>
+                    <div className="rounded-lg bg-amber-50 p-3"><p className="text-xs text-gray-500">Amount mismatch</p><p className="text-lg font-bold">{selected.mismatch_count}</p></div>
+                    <div className="rounded-lg bg-gray-50 p-3"><p className="text-xs text-gray-500">Unmatched / duplicate</p><p className="text-lg font-bold">{selected.unmatched_count}</p></div>
+                  </div>
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="w-full min-w-[760px] text-left text-xs">
+                      <thead className="border-b text-gray-500"><tr><th className="p-2">Source ID</th><th className="p-2">NEWEIX Order</th><th className="p-2">COD in CSV</th><th className="p-2">Expected COD</th><th className="p-2">Variance</th><th className="p-2">Net payout*</th><th className="p-2">Result</th></tr></thead>
+                      <tbody>{selectedRows.map((row) => (
+                        <tr key={row.id} className="border-b last:border-0">
+                          <td className="p-2 font-mono">{row.source_identifier}</td><td className="p-2">{row.merchant_order_id || "—"}</td>
+                          <td className="p-2">{money(row.cod_amount)}</td><td className="p-2">{money(row.expected_cod_amount)}</td>
+                          <td className="p-2">{money(row.variance_amount)}</td><td className="p-2">{money(row.net_payout_amount)}</td>
+                          <td className="p-2">{row.match_status.replace("_", " ")}</td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500">* Net payout is stored only as reported in the imported CSV; it is not proof that the bank or MFS transfer was received. Variance = CSV COD amount − NEWEIX expected COD.</p>
+                </div>
+              );
+            })()}
+          </div>
         )}
       </section>
 
