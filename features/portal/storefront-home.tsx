@@ -186,7 +186,7 @@ export default function StorefrontHome() {
           <Link href="/" className={styles.brand} aria-label="NEWEIX home">
             <img src="/neweix-logo.svg" alt="NEWEIX" width="148" height="32" />
           </Link>
-          <div className={styles.headerActionsPlaceholder} aria-hidden="true" />
+          <button className={styles.menuButton} type="button" onClick={() => setDrawerOpen(true)} aria-label="Open quick menu" aria-haspopup="dialog" aria-expanded={drawerOpen}><Icon name="more-vertical" size={22} /></button>
         </div>
         <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
           <label className={styles.srOnly} htmlFor="home-product-search">{t("searchProducts")}</label>
