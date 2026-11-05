@@ -107,6 +107,8 @@ export default function OrdersManager() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState("");
   const [statusBusyId, setStatusBusyId] = useState("");
+  const [allocationBusyId, setAllocationBusyId] = useState("");
+  const [allocatedOrderIds, setAllocatedOrderIds] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
@@ -220,6 +222,48 @@ export default function OrdersManager() {
       setError(err instanceof Error ? err.message : "Could not verify the delivery fee.");
     } finally {
       setBusyId("");
+    }
+  }
+
+  async function allocateWarehouseStock(order: Order) {
+    if (!["confirmed", "processing", "packed"].includes(order.status)) {
+      setError("Only confirmed, processing, or packed orders can be allocated.");
+      return;
+    }
+    if (order.delivery_consignment_id || !["not_booked", "failed"].includes(order.delivery_status || "not_booked")) {
+      setError("This order already has a courier booking or shipment in progress.");
+      return;
+    }
+    if (allocatedOrderIds.includes(order.id)) return;
+
+    const confirmed = window.confirm(
+      `Reserve physical warehouse stock for order ${order.order_number}?\n\nNEWEIX will prefer Mymensingh stock, then use other active warehouses as needed. If stock is short, nothing will be reserved. This action does not book Pathao. Cancelling the order later will release these reservations automatically.`
+    );
+    if (!confirmed) return;
+
+    setAllocationBusyId(order.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/orders/allocate-warehouse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({ order_id: order.id }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not allocate warehouse stock.");
+      const shipments = Array.isArray(result.allocation?.shipments) ? result.allocation.shipments : [];
+      const summary = shipments.map((shipment: { warehouse_name?: string; fulfillment_number?: string }) =>
+        `${shipment.warehouse_name || "Warehouse"} (${shipment.fulfillment_number || "Shipment"})`
+      ).join(", ");
+      setAllocatedOrderIds((current) => [...current, order.id]);
+      setNotice(`${order.order_number}: ${shipments.length} warehouse fulfillment group(s) created. ${summary}`);
+      await loadOrders();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not allocate warehouse stock.");
+    } finally {
+      setAllocationBusyId("");
     }
   }
 
@@ -794,6 +838,29 @@ export default function OrdersManager() {
                         {busyId === order.id ? "Restocking..." : "Restock selected inspected quantities"}
                       </button>
                     </>
+                  )}
+                </div>
+              )}
+
+              {["confirmed", "processing", "packed"].includes(order.status) &&
+                !order.delivery_consignment_id &&
+                ["not_booked", "failed"].includes(order.delivery_status || "not_booked") && (
+                <div className="mt-3 rounded-lg border border-dashed p-3">
+                  <p className="text-sm font-semibold">Warehouse Stock Allocation</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Reserves counted physical stock and creates one fulfillment group per dispatch warehouse. Does not book Pathao.
+                  </p>
+                  {allocatedOrderIds.includes(order.id) ? (
+                    <p className="mt-2 text-sm" role="status">Warehouse stock allocated for this order.</p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => void allocateWarehouseStock(order)}
+                      disabled={allocationBusyId !== "" || busyId !== "" || statusBusyId !== ""}
+                      className="neweix-button-secondary mt-3 disabled:opacity-50"
+                    >
+                      {allocationBusyId === order.id ? "Reserving warehouse stock..." : "Allocate warehouse stock"}
+                    </button>
                   )}
                 </div>
               )}
