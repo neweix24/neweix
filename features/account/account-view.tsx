@@ -32,35 +32,31 @@ export default function AccountView() {
 
     async function loadAccount() {
       try {
-        const supabase = createBrowserSupabaseClient();
-
-        // Middleware has already validated this protected request with getClaims().
-        // Read the browser's established session without starting another /user
-        // request that could race refresh-token rotation.
-        const {
-          data: { session },
-          error: authError,
-        } = await supabase.auth.getSession();
-        const user = session?.user;
-
-        if (authError || !user) {
-          if (active) {
-            setErrorMessage("Your session could not be read. Refresh the page or sign in again.");
-          }
-          return;
-        }
-
-        // Profile rows are created and synchronized by a server-only endpoint.
-        // Direct authenticated INSERT is intentionally revoked so customers
-        // cannot forge phone_verified_at or bypass OTP verification.
+        // Read the customer identity through the same server-side cookie
+        // validation used by protected account APIs. Browser getSession() can
+        // briefly return null after an OAuth redirect while SSR cookies have
+        // already been accepted by middleware.
         const profileResponse = await fetch("/api/account/profile", {
           method: "POST",
           cache: "no-store",
+          credentials: "same-origin",
         });
         const profileResult = await profileResponse.json().catch(() => null);
-        if (!profileResponse.ok || !profileResult?.success || !profileResult.profile) {
-          throw new Error(profileResult?.error || "Your profile could not be loaded. Please try again.");
+        if (
+          !profileResponse.ok ||
+          !profileResult?.success ||
+          !profileResult.profile ||
+          !profileResult.user
+        ) {
+          throw new Error(
+            profileResult?.error ||
+            (profileResponse.status === 401
+              ? "Your sign-in session has expired. Please sign in again."
+              : "Your profile could not be loaded. Please try again.")
+          );
         }
+
+        const user = profileResult.user;
 
         if (!active) return;
 
