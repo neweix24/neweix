@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       if (message.includes("WAREHOUSE_ALLOCATION_ORDER_NOT_FOUND")) return fail("Order not found.", 404);
       if (message.includes("WAREHOUSE_ALLOCATION_ORDER_NOT_READY")) return fail("Only confirmed, processing, or packed orders can be allocated.", 409);
       if (message.includes("WAREHOUSE_ALLOCATION_ALREADY_EXISTS")) return fail("This order already has warehouse fulfillment allocations.", 409);
+      if (message.includes("WAREHOUSE_ALLOCATION_PATHAO_ALREADY_BOOKED")) return fail("This order already has a courier booking or shipment in progress. Do not allocate it through the warehouse workflow.", 409);
       if (message.includes("WAREHOUSE_ALLOCATION_INSUFFICIENT_STOCK")) return fail("Insufficient reconciled stock across active warehouses. No stock was reserved and no shipment was created.", 409);
       if (message.includes("WAREHOUSE_ALLOCATION_PRODUCT_REFERENCE_MISSING")) return fail("An order item no longer references a valid product. Contact support.", 409);
       if (message.includes("WAREHOUSE_ALLOCATION_ACTOR_NOT_AUTHORIZED")) return fail("Your staff permissions do not allow warehouse allocation.", 403);
