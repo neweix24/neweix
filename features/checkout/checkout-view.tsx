@@ -251,21 +251,24 @@ export default function CheckoutView() {
       ? paymentConfig?.paymentMethods?.[mfsMethod]
       : paymentConfig?.paymentMethods?.[paymentMethod];
 
-  async function loadDeliveryQuote(city: string) {
-    const normalizedCity = city.trim();
-    if (normalizedCity.length < 2) {
+  async function loadDeliveryQuote(districtCode: string, upazilaCode: string) {
+    if (!districtCode || !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode)) {
       setDeliveryFeeQuote(null);
       return null;
     }
     setDeliveryQuoteLoading(true);
+    setError("");
     try {
-      const response = await fetch(
-        `/api/delivery/quote?city=${encodeURIComponent(normalizedCity)}&subtotal=${encodeURIComponent(String(total))}`,
-        { cache: "no-store" }
-      );
+      const params = new URLSearchParams({
+        district_code: districtCode,
+        upazila_code: upazilaCode,
+        subtotal: String(Math.round(total)),
+        items: JSON.stringify(cart.map(({ product_id, quantity }) => ({ product_id, quantity }))),
+      });
+      const response = await fetch(`/api/delivery/quote?${params.toString()}`, { cache: "no-store" });
       const result = await response.json().catch(() => null);
       if (!response.ok || !Number.isFinite(Number(result?.delivery_fee))) {
-        throw new Error(result?.error || "Could not calculate the delivery fee.");
+        throw new Error(result?.error || "Could not calculate the live Pathao delivery fee.");
       }
       const fee = Number(result.delivery_fee);
       setDeliveryFeeQuote(fee);
@@ -310,7 +313,10 @@ export default function CheckoutView() {
 
     setSubmitting(true);
     const formData = new FormData(form);
-    const quote = await loadDeliveryQuote(String(formData.get("shipping_city") ?? ""));
+    const quote = await loadDeliveryQuote(
+      String(formData.get("shipping_district_code") ?? ""),
+      String(formData.get("shipping_upazila_code") ?? ""),
+    );
     if (quote === null) {
       setSubmitting(false);
       setError("Could not confirm the delivery fee. Check the city or district and try again.");
@@ -483,7 +489,7 @@ export default function CheckoutView() {
 
         <p><strong>Product subtotal: {formatPrice(total, locale)}</strong></p>
         <p>Delivery: Pathao Courier</p>
-        <p>Delivery fee: {deliveryQuoteLoading ? "Calculating..." : deliveryFeeQuote === null ? "Select your district above to calculate the fee." : formatPrice(deliveryFeeQuote, locale)}</p>
+        <p>Delivery fee: {deliveryQuoteLoading ? "Calculating..." : deliveryFeeQuote === null ? "Select a supported upazila above to calculate the live Pathao fee." : formatPrice(deliveryFeeQuote, locale)}</p>
 
         {missingProducts && <p role="alert">Some product details are unavailable.</p>}
         {stockIssues.length > 0 && <p role="alert">Some products have insufficient stock.</p>}
@@ -523,8 +529,8 @@ export default function CheckoutView() {
           initialUpazila={defaultAddress?.upazila}
           initialVillage={defaultAddress?.area}
           disabled={submitting}
-          onDistrictChange={(districtName) => {
-            if (districtName) void loadDeliveryQuote(districtName);
+          onAddressChange={({ districtCode, upazilaCode }) => {
+            if (districtCode && upazilaCode) void loadDeliveryQuote(districtCode, upazilaCode);
             else setDeliveryFeeQuote(null);
           }}
         />
