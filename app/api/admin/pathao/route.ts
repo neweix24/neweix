@@ -109,6 +109,24 @@ export async function GET(request: Request) {
       });
     }
 
+    if (action === "shipments") {
+      const admin = await createRuntimeServiceClient();
+      const { data: shipments, error } = await admin
+        .from("orders")
+        .select("id, order_number, customer_name, customer_phone, shipping_city, total, delivery_status, delivery_consignment_id, delivery_tracking_code, delivery_booked_at, created_at")
+        .eq("delivery_provider", "pathao")
+        .not("delivery_consignment_id", "is", null)
+        .order("delivery_booked_at", { ascending: false })
+        .limit(50);
+      if (error) {
+        console.error("Pathao shipment history query failed:", error.message);
+        return errorResponse("Could not load Pathao shipment history.", 503);
+      }
+      return NextResponse.json({ success: true, shipments: shipments ?? [] }, {
+        headers: { "Cache-Control": "private, no-store" },
+      });
+    }
+
     if (action === "track") {
       const consignmentId = params.get("consignmentId") || "";
       if (!/^[A-Za-z0-9-]{3,80}$/.test(consignmentId)) {
