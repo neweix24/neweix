@@ -37,7 +37,6 @@ export default function StorefrontNavigation({ children }: { children: React.Rea
   const links: { href: string; label: string; icon: IconName }[] = [
     { href: "/", label: t("homeNav"), icon: "home" },
     { href: "/products", label: t("productsSearch"), icon: "grid" },
-    { href: "/search", label: t("searchProducts"), icon: "search" },
     { href: "/cart", label: t("cart"), icon: "cart" },
     { href: "/account", label: t("myAccountNav"), icon: "user" },
   ];
