@@ -23,7 +23,6 @@ export default function StorefrontNavigation({ children }: { children: React.Rea
   const { t } = useLanguage();
   const [cartCount, setCartCount] = useState(0);
   const isStorefront = !excludedRoots.some((root) => pathname === root || pathname.startsWith(root + "/"));
-  const showSharedHeader = isStorefront && pathname !== "/";
   useEffect(() => {
     const refresh = () => setCartCount(getCartCount());
     refresh();
@@ -44,13 +43,6 @@ export default function StorefrontNavigation({ children }: { children: React.Rea
   ];
   return (
     <div className="neweix-storefront-shell">
-      {showSharedHeader && <header className="neweix-storefront-header">
-        <Link href="/" className="neweix-storefront-brand" aria-label="NEWEIX home"><img src="/neweix-logo.svg" alt="NEWEIX" width="132" height="30" /></Link>
-        <Link href="/products" className="neweix-storefront-search" aria-label={t("searchProducts")}>
-          <Icon name="search" size={19} /><span>{t("searchProducts")}</span>
-          <span className="neweix-storefront-search-arrow"><Icon name="arrow-right" size={17} /></span>
-        </Link>
-      </header>}
       {children}
       <nav className="neweix-storefront-bottom-nav" aria-label="Main navigation">
         {links.map((item) => {
