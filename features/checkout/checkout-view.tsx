@@ -546,7 +546,7 @@ export default function CheckoutView() {
             <input type="radio" name="delivery_method" value="pathao" checked readOnly />
             <span><strong>Pathao Courier</strong> — Home delivery by courier</span>
           </label>
-          <p>The delivery fee is calculated based on the destination. An administrator will review and approve the parcel before booking with Pathao.</p>
+          <p>The live delivery fee is fetched from Pathao using your selected upazila and the verified parcel weight. An administrator will review and approve the parcel before booking.</p>
         </section>
 
         <fieldset className={styles.paymentOptions}>
@@ -609,7 +609,7 @@ export default function CheckoutView() {
             <p role="alert">{paymentConfigError} You can choose Cash on Delivery for now.</p>
           )}
 
-          {selectedMobilePayment?.enabled && (
+          {selectedMobilePayment?.enabled && (paymentMethod !== "cod" || (deliveryFeeQuote ?? 0) > 0) && (
             <div className={styles.paymentDetails}>
               <h3>{selectedMobilePayment.label} Payment</h3>
               <p>Send money to the number below:</p>
