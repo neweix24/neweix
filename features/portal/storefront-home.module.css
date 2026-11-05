@@ -346,3 +346,43 @@
 
 .notificationTrigger{position:relative}
 .notificationBadge{position:absolute;top:-5px;right:-5px;display:grid;min-width:17px;height:17px;place-items:center;padding:0 4px;border:2px solid var(--panel);border-radius:999px;background:var(--danger);color:#fff;font-size:8px;font-weight:900;line-height:1}
+
+
+/* Premium, fully clickable homepage search entry point */
+.page .headerSearch {
+  display:flex;
+  flex:1 1 420px;
+  align-items:center;
+  gap:13px;
+  width:min(100%,560px);
+  min-width:0;
+  max-width:560px;
+  height:54px;
+  margin:0 auto 0 28px;
+  padding:0 7px 0 18px;
+  border:1px solid color-mix(in srgb,var(--lime) 24%,var(--line));
+  border-radius:17px;
+  background:linear-gradient(115deg,var(--panel),color-mix(in srgb,var(--lime) 3%,var(--panel)));
+  box-shadow:0 8px 26px rgba(18,54,36,.07);
+  color:var(--muted);
+  text-decoration:none;
+  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+.page .headerSearch:hover,
+.page .headerSearch:focus-visible {
+  border-color:var(--lime);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--lime) 10%,transparent),0 12px 30px rgba(18,54,36,.10);
+  outline:none;
+  transform:translateY(-1px);
+}
+.page .searchLeadingIcon {display:grid;flex:none;width:34px;height:34px;place-items:center;border-radius:11px;background:color-mix(in srgb,var(--lime) 10%,transparent);color:var(--lime)}
+.page .searchPlaceholder {flex:1;min-width:0;overflow:hidden;color:var(--muted);font-size:13px;text-overflow:ellipsis;white-space:nowrap}
+.page .searchAction {display:grid;flex:none;width:40px;height:40px;place-items:center;border-radius:12px;background:var(--lime);color:var(--accent-ink);transition:transform .18s ease}
+.page .headerSearch:hover .searchAction {transform:translateX(2px)}
+@media(max-width:900px){.page .headerSearch{margin-left:10px}}
+@media(max-width:600px){
+  .page .headerSearch{height:44px;flex:1 1 auto;gap:8px;margin:0 0 0 auto;padding:0 5px 0 10px;border-radius:14px}
+  .page .searchLeadingIcon{width:30px;height:30px}
+  .page .searchPlaceholder{font-size:11px}
+  .page .searchAction{width:32px;height:32px;border-radius:10px}
+}

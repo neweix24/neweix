@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import Icon from "@/components/ui/icon";
 import styles from "./storefront-home.module.css";
@@ -43,7 +43,6 @@ function readCartCount() {
 export default function StorefrontHome() {
   const { t, locale } = useLanguage();
   const pathname = usePathname();
-  const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [quickMenuOpen, setQuickMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -57,7 +56,6 @@ export default function StorefrontHome() {
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [search, setSearch] = useState("");
   const [cartNotice, setCartNotice] = useState("");
   const panelRef = useRef<HTMLElement>(null);
   const quickMenuRef = useRef<HTMLDivElement>(null);
@@ -260,12 +258,6 @@ export default function StorefrontHome() {
     };
   }, [quickMenuOpen, notificationsOpen]);
 
-  function submitSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const term = search.trim();
-    router.push(term ? `/products?search=${encodeURIComponent(term)}` : "/products");
-  }
-
 
   async function logout() {
     const supabase = createBrowserSupabaseClient();
@@ -312,12 +304,11 @@ export default function StorefrontHome() {
             </nav>}
           </div>
         </div>
-        <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
-          <label className={styles.srOnly} htmlFor="home-product-search">{t("searchProducts")}</label>
+        <Link href="/products" className={styles.headerSearch} role="search" aria-label={t("searchProducts")}>
           <span className={styles.searchLeadingIcon} aria-hidden="true"><Icon name="search" size={19} /></span>
-          <input id="home-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("searchProducts")} />
-          <button type="submit" aria-label={t("search")}><Icon name="search" size={18} /><span className={styles.searchButtonLabel}>{t("search")}</span></button>
-        </form>
+          <span className={styles.searchPlaceholder}>{t("searchProducts")}</span>
+          <span className={styles.searchAction} aria-hidden="true"><Icon name="arrow-right" size={18} /></span>
+        </Link>
       </header>
 
       <main className={styles.main}>
