@@ -8,6 +8,7 @@ import {
   getPathaoAreas,
   getPathaoCities,
   getPathaoZones,
+  getPathaoZonesForCities,
   getPathaoConfig,
   getPathaoOrderInfo,
   getPathaoStores,
@@ -414,6 +415,167 @@ export async function POST(request: Request) {
       skippedCount: district.upazilas.length - saved.length,
       mappings: saved,
       message: "Only unique exact-name matches were verified against the live Pathao city/zone catalog and saved.",
+    }, { headers: { "Cache-Control": "private, no-store" } });
+  }
+
+
+  if (input.action === "auto_map_division") {
+    const divisionCode = typeof input.divisionCode === "string" ? input.divisionCode.trim() : "";
+    if (!/^BD-D[0-9]{2}$/.test(divisionCode)) {
+      return errorResponse("Select a valid Bangladesh division.", 400);
+    }
+
+    const division = BANGLADESH_ADMIN_AREAS.find((item) => item.code === divisionCode);
+    if (!division) return errorResponse("The selected Bangladesh division was not found.", 404);
+
+    const normalize = (value: string) => value.normalize("NFKD")
+      .toLocaleLowerCase("en")
+      .replace(/&/g, "and")
+      .replace(/[^a-z0-9]/g, "");
+    const cityAliases: Record<string, string[]> = {
+      comilla: ["cumilla"],
+      chattogram: ["chittagong"],
+      coxsbazar: ["cox's bazar", "coxs bazar"],
+      barisal: ["barishal"],
+      jashore: ["jessore"],
+      bogura: ["bogra"],
+      moulvibazar: ["maulvibazar"],
+    };
+    const cities = extractPathaoRows(await getPathaoCities());
+    const cityMatches = division.districts.map((district) => {
+      const districtKey = normalize(district.name);
+      const aliases = new Set([districtKey, ...(cityAliases[districtKey] ?? []).map(normalize)]);
+      const matches = cities.filter((row) =>
+        typeof row.city_name === "string" &&
+        aliases.has(normalize(row.city_name)) &&
+        Number.isSafeInteger(Number(row.city_id)) &&
+        Number(row.city_id) > 0
+      );
+      return {
+        district,
+        city: matches.length === 1 ? matches[0] : null,
+        cityStatus: matches.length === 0 ? "city_not_found" : matches.length > 1 ? "city_ambiguous" : "matched",
+      };
+    });
+
+    const uniqueCityIds = [...new Set(cityMatches.flatMap(({ city }) =>
+      city ? [Number(city.city_id)] : []
+    ))];
+    const zoneResults = await getPathaoZonesForCities(uniqueCityIds);
+    const zonesByCity = new Map(zoneResults.map((item) => [item.cityId, item]));
+
+    const now = new Date().toISOString();
+    const rows: Array<Record<string, unknown>> = [];
+    const districtResults = cityMatches.map(({ district, city, cityStatus }) => {
+      if (!city) {
+        return {
+          districtCode: district.code,
+          districtName: district.name,
+          status: cityStatus,
+          pathaoCityName: null,
+          totalUpazilas: district.upazilas.length,
+          matchedUpazilas: 0,
+          skippedUpazilas: district.upazilas.map((item) => item.name),
+        };
+      }
+
+      const cityId = Number(city.city_id);
+      const zoneResult = zonesByCity.get(cityId);
+      if (!zoneResult || zoneResult.error) {
+        return {
+          districtCode: district.code,
+          districtName: district.name,
+          status: "zones_unavailable",
+          pathaoCityName: String(city.city_name),
+          totalUpazilas: district.upazilas.length,
+          matchedUpazilas: 0,
+          skippedUpazilas: district.upazilas.map((item) => item.name),
+          error: zoneResult?.error ?? "Pathao returned no zone response.",
+        };
+      }
+
+      const zones = extractPathaoRows(zoneResult.payload);
+      const zoneIndex = new Map<string, Array<{ id: number; name: string }>>();
+      for (const row of zones) {
+        const id = Number(row.zone_id);
+        const name = typeof row.zone_name === "string" ? row.zone_name.trim() : "";
+        if (!Number.isSafeInteger(id) || id < 1 || !name) continue;
+        const key = normalize(name);
+        zoneIndex.set(key, [...(zoneIndex.get(key) ?? []), { id, name }]);
+      }
+
+      const matched = district.upazilas.flatMap((upazila) => {
+        const candidates = zoneIndex.get(normalize(upazila.name)) ?? [];
+        return candidates.length === 1 ? [{ upazila, zone: candidates[0] }] : [];
+      });
+
+      for (const { upazila, zone } of matched) {
+        rows.push({
+          division_code: divisionCode,
+          district_code: district.code,
+          upazila_code: upazila.code,
+          pathao_city_id: cityId,
+          pathao_zone_id: zone.id,
+          pathao_city_name: String(city.city_name),
+          pathao_zone_name: zone.name,
+          is_verified: true,
+          is_active: true,
+          verified_at: now,
+          verified_by: staff.userId,
+          updated_at: now,
+        });
+      }
+
+      return {
+        districtCode: district.code,
+        districtName: district.name,
+        status: matched.length === district.upazilas.length ? "fully_mapped" : matched.length > 0 ? "partially_mapped" : "no_exact_zone_match",
+        pathaoCityName: String(city.city_name),
+        totalUpazilas: district.upazilas.length,
+        matchedUpazilas: matched.length,
+        skippedUpazilas: district.upazilas
+          .filter((upazila) => !matched.some((item) => item.upazila.code === upazila.code))
+          .map((item) => item.name),
+      };
+    });
+
+    let savedCount = 0;
+    if (rows.length > 0) {
+      const admin = await createRuntimeServiceClient();
+      const { data: saved, error } = await admin
+        .from("pathao_location_mappings")
+        .upsert(rows, { onConflict: "district_code,upazila_code" })
+        .select("id");
+      if (error || !saved) {
+        console.error("Pathao division coverage sync failed:", error?.message);
+        return errorResponse("Could not save exact Pathao location matches for this division.", 503);
+      }
+      savedCount = saved.length;
+
+      const { error: auditError } = await admin.from("audit_logs").insert({
+        actor_id: staff.userId,
+        action: "pathao.location_mapping.division_synced",
+        target_type: "pathao_location_mapping",
+        details: {
+          division_code: divisionCode,
+          district_count: districtResults.length,
+          matched_upazila_count: savedCount,
+          skipped_upazila_count: districtResults.reduce((sum, item) => sum + item.skippedUpazilas.length, 0),
+          matching_method: "unique_exact_normalized_city_and_zone_name",
+        },
+      });
+      if (auditError) console.error("Pathao division sync audit log failed:", auditError.message);
+    }
+
+    return NextResponse.json({
+      success: true,
+      divisionCode,
+      divisionName: division.name,
+      districtCount: districtResults.length,
+      matchedUpazilaCount: savedCount,
+      skippedUpazilaCount: districtResults.reduce((sum, item) => sum + item.skippedUpazilas.length, 0),
+      districts: districtResults,
+      message: "Only unique exact Pathao city and zone name matches were saved. Missing or ambiguous locations were left unmapped for manual review.",
     }, { headers: { "Cache-Control": "private, no-store" } });
   }
 
@@ -916,6 +1078,12 @@ export async function POST(request: Request) {
     customer_phone: string;
     shipping_address: string;
     shipping_city: string | null;
+    shipping_division: string | null;
+    shipping_district: string | null;
+    shipping_upazila: string | null;
+    shipping_union: string | null;
+    shipping_union_other: string | null;
+    shipping_village: string | null;
     total: number | string;
     delivery_fee: number | string;
     payment_method: string;
@@ -990,8 +1158,26 @@ export async function POST(request: Request) {
       (order.delivery_fee_payment_status === "paid" ? Number(order.delivery_fee) : 0))
     : 0;
 
-  const address = recipientAddressOverride || [order.shipping_address, order.shipping_city]
-    .filter((value): value is string => Boolean(value))
+  const addressParts = recipientAddressOverride
+    ? [recipientAddressOverride]
+    : [
+        order.shipping_address,
+        order.shipping_village,
+        order.shipping_union_other || order.shipping_union,
+        order.shipping_upazila,
+        order.shipping_district || order.shipping_city,
+        order.shipping_division,
+      ];
+  const seenAddressParts = new Set<string>();
+  const address = addressParts
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .map((value) => value.trim())
+    .filter((value) => {
+      const normalized = value.toLocaleLowerCase("en");
+      if (seenAddressParts.has(normalized)) return false;
+      seenAddressParts.add(normalized);
+      return true;
+    })
     .join(", ");
   if (address.length < 10 || address.length > 220) {
     await admin.from("orders").update({

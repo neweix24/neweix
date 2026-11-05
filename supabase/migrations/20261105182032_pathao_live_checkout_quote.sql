@@ -22,7 +22,7 @@ drop function if exists public.create_order_with_prepaid_delivery(
   text,text,text,text,text,text,text,text,text,text
 );
 
-create function public.create_order_with_prepaid_delivery(
+create or replace function public.create_order_with_prepaid_delivery(
   p_customer_name text,
   p_customer_phone text,
   p_customer_email text,

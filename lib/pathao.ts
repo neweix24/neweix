@@ -281,6 +281,51 @@ export async function getPathaoZones(cityId: number) {
   );
 }
 
+export type PathaoCityZonesResult = {
+  cityId: number;
+  payload?: unknown;
+  error?: string;
+};
+
+/**
+ * Load zones for a small city batch using one merchant token. This avoids
+ * re-authenticating once per district during the 64-district coverage sync.
+ */
+export async function getPathaoZonesForCities(cityIds: number[]): Promise<PathaoCityZonesResult[]> {
+  const uniqueIds = [...new Set(cityIds)];
+  if (uniqueIds.length > 16 || uniqueIds.some((id) => !Number.isSafeInteger(id) || id < 1)) {
+    throw new Error("Pathao zone batch must contain at most 16 valid city IDs.");
+  }
+  if (uniqueIds.length === 0) return [];
+
+  return withPathaoToken(async (config, token) => {
+    const results: PathaoCityZonesResult[] = new Array(uniqueIds.length);
+    let cursor = 0;
+    const worker = async () => {
+      while (true) {
+        const index = cursor++;
+        if (index >= uniqueIds.length) return;
+        const cityId = uniqueIds[index];
+        try {
+          const payload = await pathaoRequest<unknown>(
+            config,
+            `/aladdin/api/v1/cities/${cityId}/zone-list`,
+            token,
+          );
+          results[index] = { cityId, payload };
+        } catch (error) {
+          results[index] = {
+            cityId,
+            error: error instanceof Error ? error.message : "Pathao zone lookup failed.",
+          };
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(4, uniqueIds.length) }, () => worker()));
+    return results;
+  });
+}
+
 export async function getPathaoAreas(zoneId: number) {
   if (!Number.isSafeInteger(zoneId) || zoneId < 1) throw new Error("Invalid Pathao zone ID.");
   return withPathaoToken((config, token) =>

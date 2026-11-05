@@ -107,6 +107,17 @@ type DeliveryOperation = {
   created_at: string;
 };
 
+type CoverageDistrictResult = {
+  divisionName: string;
+  districtCode: string;
+  districtName: string;
+  status: string;
+  pathaoCityName: string | null;
+  totalUpazilas: number;
+  matchedUpazilas: number;
+  skippedUpazilas: string[];
+};
+
 type Shipment = {
   id: string;
   order_number: string;
@@ -197,6 +208,8 @@ export default function PathaoPanel() {
   const [mappingZones, setMappingZones] = useState<LocationOption[]>([]);
   const [mappingZonesLoading, setMappingZonesLoading] = useState(false);
   const [mappingAutoRunning, setMappingAutoRunning] = useState(false);
+  const [coverageSyncRunning, setCoverageSyncRunning] = useState(false);
+  const [coverageSyncResults, setCoverageSyncResults] = useState<CoverageDistrictResult[]>([]);
 
   async function getJson(url: string) {
     const response = await fetch(url, { cache: "no-store" });
@@ -571,6 +584,59 @@ export default function PathaoPanel() {
     }
   }
 
+
+  async function autoMapAllDistricts() {
+    setCoverageSyncRunning(true);
+    setCoverageSyncResults([]);
+    setMappingMessage("Reading the live Pathao city and zone catalog. Exact unique matches only will be saved.");
+    const accumulated: CoverageDistrictResult[] = [];
+    let mappedUpazilas = 0;
+    try {
+      for (const division of BANGLADESH_ADMIN_AREAS) {
+        const response = await fetch("/api/admin/pathao", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({ action: "auto_map_division", divisionCode: division.code }),
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok) {
+          for (const district of division.districts) {
+            accumulated.push({
+              divisionName: division.name,
+              districtCode: district.code,
+              districtName: district.name,
+              status: "sync_error",
+              pathaoCityName: null,
+              totalUpazilas: district.upazilas.length,
+              matchedUpazilas: 0,
+              skippedUpazilas: district.upazilas.map((item) => item.name),
+            });
+          }
+        } else {
+          const rows = Array.isArray(result?.districts) ? result.districts : [];
+          for (const row of rows) {
+            accumulated.push({ ...row, divisionName: division.name } as CoverageDistrictResult);
+          }
+          mappedUpazilas += Number(result?.matchedUpazilaCount ?? 0);
+        }
+        setCoverageSyncResults([...accumulated]);
+        setMappingMessage(`Checked ${accumulated.length}/64 districts. ${mappedUpazilas} exact upazila mappings saved so far.`);
+      }
+      await loadLocationMappings();
+      const fullyMapped = accumulated.filter((item) => item.status === "fully_mapped").length;
+      const partiallyMapped = accumulated.filter((item) => item.status === "partially_mapped").length;
+      const unmapped = accumulated.filter((item) =>
+        !["fully_mapped", "partially_mapped"].includes(item.status)
+      ).length;
+      setMappingMessage(`Coverage scan finished: ${fullyMapped} districts fully mapped, ${partiallyMapped} partially mapped, ${unmapped} need manual review. ${mappedUpazilas} verified upazila mappings saved. No ambiguous or non-exact names were guessed.`);
+    } catch (error) {
+      setMappingMessage(error instanceof Error ? error.message : "Pathao 64-district coverage scan failed.");
+    } finally {
+      setCoverageSyncRunning(false);
+    }
+  }
+
   async function saveLocationMapping(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!mappingDivisionCode || !mappingDistrictCode || !mappingUpazilaCode || !mappingCityId || !mappingZoneId) {
@@ -675,7 +741,32 @@ export default function PathaoPanel() {
           {mappingAutoRunning ? "Matching verified Pathao zones..." : "Auto-match exact upazila names"}
         </button>
         <p className="text-xs leading-5 text-gray-600">
-          Automation only saves a unique exact name match from the selected Pathao city. Ambiguous or unmatched areas are skipped, never guessed.
+          Pathao officially reports home delivery across all 64 districts. This scan matches NEWEIX districts and upazilas to the live merchant API catalog; it saves only unique exact city/zone matches and leaves uncertain areas for manual review.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => void autoMapAllDistricts()} disabled={coverageSyncRunning || mappingAutoRunning || mappingSaving} className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+            {coverageSyncRunning ? "Scanning 64 districts..." : "Sync Pathao coverage for all 64 districts"}
+          </button>
+          <span className="text-xs text-gray-600">Eight divisions · live City/Zone catalog · no guessed mappings</span>
+        </div>
+        {coverageSyncResults.length > 0 && (
+          <div className="overflow-x-auto rounded-lg border bg-white">
+            <table className="w-full min-w-[760px] text-left text-xs">
+              <thead className="border-b bg-gray-50"><tr><th className="p-2">Division</th><th className="p-2">District</th><th className="p-2">Pathao city</th><th className="p-2">Upazila mapping</th><th className="p-2">Result</th></tr></thead>
+              <tbody>{coverageSyncResults.map((item) => (
+                <tr key={item.districtCode} className="border-b last:border-0">
+                  <td className="p-2">{item.divisionName}</td>
+                  <td className="p-2 font-medium">{item.districtName}</td>
+                  <td className="p-2">{item.pathaoCityName ?? "Not matched"}</td>
+                  <td className="p-2">{item.matchedUpazilas}/{item.totalUpazilas}</td>
+                  <td className="p-2">{item.status === "fully_mapped" ? "Fully mapped" : item.status === "partially_mapped" ? `Partial · ${item.skippedUpazilas.length} need review` : item.status === "sync_error" ? "Sync error" : item.status === "city_not_found" ? "City not found" : item.status === "city_ambiguous" ? "Ambiguous city" : item.status === "zones_unavailable" ? "Zones unavailable" : "No exact zone match"}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-xs leading-5 text-gray-600">
+          The selected-district matcher below is available for manual correction. Ambiguous or unmatched areas are skipped, never guessed.
         </p>
         <form onSubmit={saveLocationMapping} className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-medium">Bangladesh division
