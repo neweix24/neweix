@@ -246,17 +246,29 @@ export async function POST(request: Request) {
 
     // Link a newly created Manager to its approved nomination.
     if (role === "manager" && approvedNominationId) {
-      const { error: nominationUpdateError } = await adminClient
+      const { data: linkedNomination, error: nominationUpdateError } = await adminClient
         .from("staff_manager_nominations")
         .update({ provisioned_user_id: created.user.id, provisioned_at: new Date().toISOString() })
         .eq("id", approvedNominationId)
         .eq("status", "approved")
-        .is("provisioned_user_id", null);
+        .is("provisioned_user_id", null)
+        .select("id")
+        .maybeSingle();
 
-      if (nominationUpdateError) {
-        await adminClient.from("staff_profiles").delete().eq("user_id", created.user.id);
-        await adminClient.auth.admin.deleteUser(created.user.id);
-        return errorResponse("Manager nomination link failed; new account was rolled back.", 500);
+      // A zero-row compare-and-set is also a failure: the nomination may have
+      // been rejected or provisioned after the initial lookup.
+      if (nominationUpdateError || !linkedNomination) {
+        const { error: profileRollbackError } = await adminClient
+          .from("staff_profiles").delete().eq("user_id", created.user.id);
+        const { error: authRollbackError } = await adminClient.auth.admin.deleteUser(created.user.id);
+        if (profileRollbackError || authRollbackError) {
+          console.error("Manager provisioning rollback incomplete.", {
+            profileRollbackError: profileRollbackError?.message,
+            authRollbackError: authRollbackError?.message,
+          });
+          return errorResponse("Manager provisioning did not complete. Verify the new Auth user and staff profile before retrying.", 500);
+        }
+        return errorResponse("The Manager nomination is no longer approved or has already been used. The new account was rolled back.", 409);
       }
     }
 
