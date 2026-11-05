@@ -74,10 +74,6 @@ function extractPathaoRows(payload: unknown): Array<Record<string, unknown>> {
   return [];
 }
 
-function normalizeLocationName(value: string): string {
-  return value.normalize("NFKC").trim().toLocaleLowerCase().replace(/\\s+/g, " ");
-}
-
 function normalizePathaoPhone(value: string) {
   const digits = value.replace(/\D/g, "");
   const local = digits.startsWith("880") ? `0${digits.slice(3)}` : digits;
