@@ -6,7 +6,7 @@ import Icon from "@/components/ui/icon";
 
 type OrderItem = { id: string; product_name: string; quantity: number; unit_price: number };
 type Order = { id: string; order_number: string; status: string; total: number; created_at: string; order_items: OrderItem[] };
-type ReturnRequest = { id: string; order_id: string; status: string; reason: string; customer_note: string; refund_amount: number | null; refund_method: string | null; created_at: string; orders?: { order_number?: string; status?: string } | null; customer_return_request_items?: Array<{ quantity: number; order_items?: { product_name?: string } | null }> };
+type ReturnRequest = { id: string; order_id: string; status: string; reason: string; customer_note: string; staff_note?: string | null; refund_amount: number | null; refund_method: string | null; created_at: string; orders?: { order_number?: string; status?: string } | null; customer_return_request_items?: Array<{ quantity: number; order_items?: { product_name?: string } | null }> };
 
 const reasons = [
   ["damaged", "পণ্য ক্ষতিগ্রস্ত"],
