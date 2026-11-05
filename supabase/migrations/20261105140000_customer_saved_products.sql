@@ -40,9 +40,17 @@ as $function$
 declare
   v_count integer;
 begin
-  -- Ignore duplicate inserts before enforcing the cap. PostgreSQL runs BEFORE
-  -- INSERT triggers before ON CONFLICT DO NOTHING, so without this guard a
-  -- customer with four saved items could not idempotently save an existing one.
+  if new.list_type = 'compare' then
+    -- Serialize all compare-list writes for this user before checking for a
+    -- duplicate or counting rows. This also makes concurrent duplicate adds
+    -- idempotent when the list is already at its four-item limit.
+    perform pg_catalog.pg_advisory_xact_lock(
+      pg_catalog.hashtextextended(new.user_id::text || ':compare', 0)
+    );
+  end if;
+
+  -- BEFORE INSERT runs before ON CONFLICT DO NOTHING. Returning NULL for an
+  -- existing row makes repeat adds safe and avoids a false limit error.
   if exists (
     select 1
       from public.customer_saved_products
@@ -54,9 +62,6 @@ begin
   end if;
 
   if new.list_type = 'compare' then
-    perform pg_catalog.pg_advisory_xact_lock(
-      pg_catalog.hashtextextended(new.user_id::text || ':compare', 0)
-    );
     select count(*)::integer into v_count
       from public.customer_saved_products
       where user_id = new.user_id and list_type = 'compare';
