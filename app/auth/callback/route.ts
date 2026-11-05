@@ -94,12 +94,14 @@ export async function GET(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet, cacheHeaders) {
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
-        // @supabase/ssr 0.7 does not expose cache headers through setAll.
-        response.headers.set("Cache-Control", "private, no-store, max-age=0");
+        for (const [name, value] of Object.entries(cacheHeaders)) {
+          response.headers.set(name, value);
+        }
+        response.headers.set("Cache-Control", "private, no-cache, no-store, must-revalidate, max-age=0");
         response.headers.set("Expires", "0");
         response.headers.set("Pragma", "no-cache");
       },

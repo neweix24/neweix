@@ -23,7 +23,7 @@ function safeNextPath(value: string | null): string {
   }
 }
 
-function applyPendingCookies(response: NextResponse, cookies: PendingCookie[]) {
+function applyPendingCookies(response: NextResponse, cookies: PendingCookie[], cacheHeaders: Record<string, string>) {
   for (const cookie of cookies) {
     const isPkceVerifier = cookie.name.endsWith("-code-verifier");
     const originalOptions =
@@ -42,6 +42,9 @@ function applyPendingCookies(response: NextResponse, cookies: PendingCookie[]) {
       : originalOptions;
 
     response.cookies.set(cookie.name, cookie.value, options as never);
+  }
+  for (const [name, value] of Object.entries(cacheHeaders)) {
+    response.headers.set(name, value);
   }
 }
 
@@ -66,6 +69,7 @@ export async function GET(request: NextRequest) {
   callbackUrl.searchParams.set("next", next);
 
   const pendingCookies: PendingCookie[] = [];
+  const pendingCacheHeaders: Record<string, string> = {};
   const supabase = createServerClient(supabaseUrl, anonKey, {
     cookieOptions: {
       path: "/",
@@ -78,8 +82,9 @@ export async function GET(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet, cacheHeaders) {
         pendingCookies.push(...cookiesToSet);
+        Object.assign(pendingCacheHeaders, cacheHeaders);
       },
     },
   });
@@ -97,13 +102,13 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.redirect(
       new URL("/auth/customer-login?error=oauth_start_failed", request.url),
     );
-    applyPendingCookies(response, pendingCookies);
+    applyPendingCookies(response, pendingCookies, pendingCacheHeaders);
     response.headers.set("Cache-Control", "private, no-store");
     return response;
   }
 
   const response = NextResponse.redirect(data.url, 302);
-  applyPendingCookies(response, pendingCookies);
+  applyPendingCookies(response, pendingCookies, pendingCacheHeaders);
   response.headers.set("Cache-Control", "private, no-store");
   response.headers.set("Referrer-Policy", "no-referrer");
   return response;
