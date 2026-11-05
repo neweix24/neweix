@@ -54,6 +54,7 @@ export default function StorefrontHome() {
   const [search, setSearch] = useState("");
   const [cartNotice, setCartNotice] = useState("");
   const panelRef = useRef<HTMLElement>(null);
+  const quickMenuRef = useRef<HTMLDivElement>(null);
 
   const refreshCounts = useCallback(() => {
     setCartCount(readCartCount());
@@ -142,6 +143,24 @@ export default function StorefrontHome() {
   }, []);
 
   useEffect(() => {
+    if (!quickMenuOpen) return;
+    function closeOnOutsideClick(event: globalThis.PointerEvent) {
+      if (event.target instanceof Node && !quickMenuRef.current?.contains(event.target)) {
+        setQuickMenuOpen(false);
+      }
+    }
+    function closeOnEscape(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") setQuickMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [quickMenuOpen]);
+
+  useEffect(() => {
     if (!drawerOpen) return;
     const previous = document.activeElement as HTMLElement | null;
     const bodyOverflow = document.body.style.overflow;
@@ -187,7 +206,7 @@ export default function StorefrontHome() {
           <Link href="/" className={styles.brand} aria-label="NEWEIX home">
             <img src="/neweix-logo.svg" alt="NEWEIX" width="148" height="32" />
           </Link>
-          <div className={styles.headerQuickMenu}>
+          <div ref={quickMenuRef} className={styles.headerQuickMenu}>
             <button
               type="button"
               className={styles.quickMenuTrigger}
