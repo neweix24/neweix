@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import Icon from "@/components/ui/icon";
 import styles from "./product-catalog.module.css";
@@ -70,6 +70,8 @@ export default function ProductCatalog() {
     return params;
   }, [query, categorySlug, minPrice, maxPrice, inStockOnly, sort]);
   const filterKey = filterParams.toString();
+  const activeFilterKeyRef = useRef(filterKey);
+  activeFilterKeyRef.current = filterKey;
 
   const loadMoreProducts = useCallback(async () => {
     if (loadingMore || !hasMore) return;
@@ -80,6 +82,7 @@ export default function ProductCatalog() {
       if (!response.ok) throw new Error("More products request failed");
       const result = (await response.json()) as ApiResponse;
       if (!Array.isArray(result.data)) throw new Error("Invalid product response");
+      if (activeFilterKeyRef.current !== filterKey) return;
       setProducts((current) => {
         const knownIds = new Set(current.map((product) => product.id));
         return [...current, ...result.data!.filter((product) => !knownIds.has(product.id))];
@@ -129,6 +132,8 @@ export default function ProductCatalog() {
   useEffect(() => {
     if (!filtersReady) return;
     let active = true;
+    const nextUrl = filterKey ? `/products?${filterKey}` : "/products";
+    window.history.replaceState(null, "", nextUrl);
     const timer = window.setTimeout(async () => {
       setLoading(true);
       setError(false);
@@ -152,7 +157,7 @@ export default function ProductCatalog() {
       } finally {
         if (active) setLoading(false);
       }
-    }, query.trim() ? 280 : 0);
+    }, 250);
     return () => {
       active = false;
       window.clearTimeout(timer);
