@@ -55,8 +55,17 @@ export default function ProductCardActions({
   function buyNow() {
     if (unavailable) return notify(t("unavailable"));
     try {
-      localStorage.setItem("neweix_buy_now", JSON.stringify([{ product_id: productId, quantity: 1 }]));
-      router.push("/checkout?buyNow=1");
+      const parsed: unknown = JSON.parse(localStorage.getItem("neweix_cart") ?? "[]");
+      if (!Array.isArray(parsed)) throw new Error("Invalid cart");
+      const quantities = new Map<string, number>();
+      for (const value of parsed.filter(isCartItem)) {
+        quantities.set(value.product_id, Math.min(100, (quantities.get(value.product_id) ?? 0) + value.quantity));
+      }
+      const current = quantities.get(productId) ?? 0;
+      quantities.set(productId, current > 0 ? Math.min(current, Number(stock), 100) : 1);
+      localStorage.setItem("neweix_cart", JSON.stringify(Array.from(quantities, ([product_id, quantity]) => ({ product_id, quantity }))));
+      window.dispatchEvent(new Event("neweix-cart-change"));
+      router.push("/cart");
     } catch {
       notify(t("buyNowError"));
     }
