@@ -83,6 +83,39 @@ export default function WarehouseManager() {
     }
   }
 
+
+  async function configureOrigin(warehouse: Warehouse) {
+    const address = window.prompt("Enter the actual dispatch address:", warehouse.address ?? "");
+    if (address === null) return;
+    const storeValue = window.prompt("Enter this origin's Pathao Store ID:", warehouse.pathao_store_id ? String(warehouse.pathao_store_id) : "");
+    if (storeValue === null) return;
+    const contactPhone = window.prompt("Enter warehouse contact phone:", warehouse.contact_phone ?? "");
+    if (contactPhone === null) return;
+    const storeId = storeValue.trim() ? Number(storeValue.trim()) : null;
+    if (storeId !== null && (!Number.isSafeInteger(storeId) || storeId < 1)) {
+      setError("Pathao Store ID must be a positive integer.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await fetch("/api/admin/warehouses", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: warehouse.id, address: address.trim(), pathao_store_id: storeId, contact_phone: contactPhone.trim() }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not update dispatch origin.");
+      setMessage("Dispatch address and Pathao Store ID saved.");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not update dispatch origin.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const inputClass = "w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500";
   return (
     <div className="space-y-6">
@@ -110,9 +143,12 @@ export default function WarehouseManager() {
                 <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
                   {warehouse.address || "Dispatch address not configured"} · Pathao Store: {warehouse.pathao_store_id ?? "Not configured"}
                 </p>
-                <button type="button" onClick={() => void toggleWarehouse(warehouse)} className="mt-3 rounded-lg border px-3 py-2 text-xs font-semibold">
-                  {warehouse.is_active ? "Deactivate location" : "Activate location"}
-                </button>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => void configureOrigin(warehouse)} disabled={saving} className="rounded-lg border px-3 py-2 text-xs font-semibold">Configure dispatch origin</button>
+                  <button type="button" onClick={() => void toggleWarehouse(warehouse)} className="rounded-lg border px-3 py-2 text-xs font-semibold">
+                    {warehouse.is_active ? "Deactivate location" : "Activate location"}
+                  </button>
+                </div>
                 {warehouse.is_primary && <p className="mt-2 text-xs font-semibold text-emerald-700">Primary business headquarters</p>}
               </article>
             ))}
