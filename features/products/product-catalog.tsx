@@ -21,7 +21,7 @@ type Product = {
 };
 
 type Category = { id: string; name: string; slug: string };
-type ApiResponse = { data?: Product[] };
+type ApiResponse = { data?: Product[]; hasMore?: boolean; page?: number };
 
 function money(value: number, locale: string) {
   return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", {
@@ -42,6 +42,9 @@ export default function ProductCatalog() {
   const [maxPrice, setMaxPrice] = useState("");
   const [inStockOnly, setInStockOnly] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [nextPage, setNextPage] = useState(2);
   const [error, setError] = useState(false);
   const [notice, setNotice] = useState("");
   const [wishlist, setWishlist] = useState<string[]>([]);
@@ -56,17 +59,40 @@ export default function ProductCatalog() {
     setLoading(true);
     setError(false);
     try {
-      const response = await fetch("/api/products", { cache: "no-store" });
+      const response = await fetch("/api/products?page=1", { cache: "no-store" });
       if (!response.ok) throw new Error("Product request failed");
       const result = (await response.json()) as ApiResponse;
       if (!Array.isArray(result.data)) throw new Error("Invalid product response");
-      setProducts(result.data);
+      setProducts(result.data.slice(0, 20));
+      setHasMore(result.hasMore === true);
+      setNextPage(2);
     } catch {
       setError(true);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const loadMoreProducts = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const response = await fetch(`/api/products?page=${nextPage}`, { cache: "no-store" });
+      if (!response.ok) throw new Error("More products request failed");
+      const result = (await response.json()) as ApiResponse;
+      if (!Array.isArray(result.data)) throw new Error("Invalid product response");
+      setProducts((current) => {
+        const knownIds = new Set(current.map((product) => product.id));
+        return [...current, ...result.data!.filter((product) => !knownIds.has(product.id))];
+      });
+      setHasMore(result.hasMore === true);
+      setNextPage((current) => current + 1);
+    } catch {
+      setNotice("Could not load more products. Please try again.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasMore, loadingMore, nextPage]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -207,7 +233,7 @@ export default function ProductCatalog() {
           {visibleCategories.map((category) => <button key={category.id} type="button" aria-pressed={categorySlug === category.slug} className={categorySlug === category.slug ? styles.activeChip : ""} onClick={() => setCategorySlug(category.slug)}><Icon name="tag" size={14} /> {category.name}</button>)}
         </div>}
         <div className={styles.filterPanel}>
-        <div className={styles.filterHeading}><strong>{t("sortProducts")}</strong><span>{filtered.length} {t("resultsFound")}</span></div>
+        <div className={styles.filterHeading}><strong>{t("sortProducts")}</strong><span>{products.length}{hasMore ? "+" : ""} {t("resultsFound")}</span></div>
         <div className={styles.filterRow}>
           <label className={styles.priceField}>{t("minPrice")}
             <input aria-label={t("minPrice")} type="number" min="0" inputMode="numeric" placeholder="0" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} />
@@ -227,7 +253,7 @@ export default function ProductCatalog() {
           </select>
         </label>
         </div>
-        <p className={styles.resultSummary} aria-live="polite">{categories.find((category) => category.slug === categorySlug)?.name ? `${categories.find((category) => category.slug === categorySlug)?.name} · ` : ""}{filtered.length}{t("resultsFound")}</p>
+        <p className={styles.resultSummary} aria-live="polite">{categories.find((category) => category.slug === categorySlug)?.name ? `${categories.find((category) => category.slug === categorySlug)?.name} · ` : ""}{filtered.length}{t("resultsFound")} · {products.length}{hasMore ? "+" : ""} loaded</p>
       </section>
 
       <section className={styles.catalog} aria-label="Product list">
@@ -286,6 +312,13 @@ export default function ProductCatalog() {
             </article>
           ))}
         </div>
+        {!loading && !error && hasMore && (
+          <div className={styles.state}>
+            <button type="button" onClick={() => void loadMoreProducts()} disabled={loadingMore}>
+              {loadingMore ? "Loading…" : "Load 20 more products"}
+            </button>
+          </div>
+        )}
       </section>
     </main>
   );
