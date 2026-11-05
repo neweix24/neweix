@@ -7,7 +7,7 @@ export default function ServiceWorkerRegister() {
     if (!("serviceWorker" in navigator) || !window.isSecureContext) return;
 
     void navigator.serviceWorker
-      .register("/supreme/sw.js", { scope: "/supreme/", updateViaCache: "none" })
+      .register("/supreme/sw.js", { scope: "/supreme", updateViaCache: "none" })
       .catch((error: unknown) => {
         console.error("NEWEIX Supreme service worker registration failed:", error);
       });
