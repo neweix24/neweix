@@ -187,6 +187,31 @@ export async function POST(request: Request) {
   }
 
   const input = body as Record<string, unknown>;
+  if (input.action === "calculate_price") {
+    const storeId = Number(input.storeId);
+    const itemWeightKg = Number(input.itemWeightKg);
+    const recipientCity = input.recipientCity == null ? undefined : Number(input.recipientCity);
+    const recipientZone = input.recipientZone == null ? undefined : Number(input.recipientZone);
+    if (!Number.isSafeInteger(storeId) || storeId < 1 ||
+        !Number.isFinite(itemWeightKg) || itemWeightKg <= 0 || itemWeightKg > 10 ||
+        (recipientCity !== undefined && (!Number.isSafeInteger(recipientCity) || recipientCity < 1)) ||
+        (recipientZone !== undefined && (!Number.isSafeInteger(recipientZone) || recipientZone < 1))) {
+      return errorResponse("Invalid Pathao price calculation details.", 400);
+    }
+    try {
+      const quote = await calculatePathaoPrice({
+        storeId, itemType: 2, deliveryType: 48, itemWeightKg, recipientCity, recipientZone,
+      });
+      return NextResponse.json({ success: true, quote }, {
+        headers: { "Cache-Control": "no-store" },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Pathao price calculation failed.";
+      console.error("Pathao price calculation failed:", message);
+      return errorResponse("Pathao could not calculate this delivery price. Verify store, city, zone and parcel details.", 502);
+    }
+  }
+
   if (input.action !== "create_order" ||
       typeof input.orderId !== "string" ||
       !UUID_REGEX.test(input.orderId) ||
