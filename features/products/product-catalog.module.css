@@ -117,3 +117,12 @@
 @media(max-width:1000px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:760px){.filterPanel{grid-template-columns:1fr}.sortControl{min-width:0}.filterPanel .filterRow{gap:10px}.filterPanel .priceField{flex:1;min-width:110px}.filterPanel .priceField input{width:100%}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.details{padding:12px}.bottom{align-items:stretch}}
 @media(max-width:420px){.intro h1{font-size:36px}.filterPanel{padding:12px}.filterPanel .filterRow{display:grid;grid-template-columns:1fr 1fr}.filterPanel .stockFilter,.filterPanel .clearFilters{grid-column:1/-1}.categoryChips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:5px}.categoryChips button{flex:none}}
+
+
+/* Catalog category navigation refinement */
+.categoryChips{gap:10px;margin-top:20px;padding:2px 1px 7px}
+.categoryChips button{min-height:40px;padding:9px 15px;border-radius:999px;white-space:nowrap;transition:background .18s ease,border-color .18s ease,transform .18s ease}
+.categoryChips button:hover{transform:translateY(-1px)}
+.categoryChips button:focus-visible,.clearFilters:focus-visible,.searchSubmit:focus-visible{outline:3px solid var(--brand-lime-soft);outline-offset:2px}
+.categoryChips .activeChip{box-shadow:0 5px 14px rgba(0,0,0,.12)}
+@media(max-width:640px){.categoryChips{margin-inline:-2px;scrollbar-width:thin;overscroll-behavior-x:contain}.categoryChips button{min-height:38px;padding-inline:13px}}
