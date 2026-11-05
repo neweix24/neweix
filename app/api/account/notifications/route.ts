@@ -26,23 +26,29 @@ export async function GET() {
     const auth = await authenticatedClient();
     if (!auth) return noStore({ error: "Sign in to view notifications." }, 401);
 
-    const { data, error } = await auth.supabase
-      .from("customer_notifications")
-      .select("id,event_type,title,body,href,read_at,created_at")
-      .eq("user_id", auth.userId)
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: false })
-      .limit(30);
+    const [listResult, unreadResult] = await Promise.all([
+      auth.supabase
+        .from("customer_notifications")
+        .select("id,event_type,title,body,href,read_at,created_at")
+        .eq("user_id", auth.userId)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(30),
+      auth.supabase
+        .from("customer_notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", auth.userId)
+        .is("read_at", null),
+    ]);
 
-    if (error) {
-      console.error("Customer notifications query failed:", error.message);
+    if (listResult.error || unreadResult.error) {
+      console.error("Customer notifications query failed:", listResult.error?.message ?? unreadResult.error?.message);
       return noStore({ error: "Could not load notifications right now." }, 500);
     }
 
-    const notifications = data ?? [];
     return noStore({
-      notifications,
-      unread_count: notifications.reduce((count, item) => count + (item.read_at ? 0 : 1), 0),
+      notifications: listResult.data ?? [],
+      unread_count: unreadResult.count ?? 0,
     });
   } catch (error) {
     console.error("Customer notifications API failed:", error);
