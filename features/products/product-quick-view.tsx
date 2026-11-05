@@ -95,7 +95,7 @@ export default function ProductQuickView({
             ) : (
               <span>NEWEIX</span>
             )}
-            {discount > 0 && <span className={styles.discount}>{discount}% OFF</span>}
+            {discount > 0 && <span className={styles.discount}>{discount}% {locale === "bn" ? "ছাড়" : "OFF"}</span>}
           </div>
           <div className={styles.content}>
             <span className={product.stock > 0 ? styles.available : styles.unavailable}>
