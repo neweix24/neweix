@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
@@ -90,7 +89,6 @@ function sanitizeTheme(value: unknown): ThemeSettings {
 }
 
 export default function CustomerThemePage() {
-  const router = useRouter();
   const [theme, setTheme] = useState<ThemeSettings>(INITIAL_THEME);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -103,11 +101,12 @@ export default function CustomerThemePage() {
     async function loadTheme() {
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data: { user }, error: authError } =
-          await supabase.auth.getUser();
+        const { data: { session }, error: sessionError } =
+          await supabase.auth.getSession();
+        const user = session?.user;
 
-        if (authError || !user) {
-          router.replace("/auth/customer-login?next=/account/theme");
+        if (sessionError || !user) {
+          setErrorMessage("Your account session is temporarily unavailable. Please refresh this page.");
           return;
         }
 
@@ -162,11 +161,12 @@ export default function CustomerThemePage() {
 
     try {
       const supabase = createBrowserSupabaseClient();
-      const { data: { user }, error: authError } =
-        await supabase.auth.getUser();
+      const { data: { session }, error: sessionError } =
+        await supabase.auth.getSession();
+      const user = session?.user;
 
-      if (authError || !user) {
-        router.replace("/auth/customer-login?next=/account/theme");
+      if (sessionError || !user) {
+        setErrorMessage("Your account session is temporarily unavailable. Please refresh this page.");
         return;
       }
 
