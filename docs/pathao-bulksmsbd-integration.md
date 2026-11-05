@@ -54,6 +54,10 @@ Configure the same merchant webhook signature secret in Cloudflare with `npx wra
 - No real parcel has been booked by this repository change. Verify a controlled test order in the Pathao Merchant Panel before enabling routine use.
 - If a booking request times out, check the Pathao Merchant Panel before retrying; the request may have succeeded upstream even when NEWEIX did not receive the response.
 
+## Pathao 64-district coverage
+
+See [Pathao 64-district coverage and NEWEIX integration](pathao-64-district-coverage.md) for the official coverage statement, district register, exact mapping process and live booking-address behavior.
+
 ## BulkSMSBD
 
 ### Existing server-side capabilities
