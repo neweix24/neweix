@@ -110,8 +110,8 @@ export async function GET(request: Request) {
     if (typeof maxPrice === "number") query = query.lte("price", maxPrice);
     if (inStockOnly) query = query.gt("stock", 0);
 
-    if (sort === "price-asc") query = query.order("price", { ascending: true });
-    else if (sort === "price-desc") query = query.order("price", { ascending: false });
+    if (sort === "price-asc") query = query.order("price", { ascending: true }).order("created_at", { ascending: false });
+    else if (sort === "price-desc") query = query.order("price", { ascending: false }).order("created_at", { ascending: false });
     else query = query.order("is_featured", { ascending: false }).order("created_at", { ascending: false });
 
     const from = (page - 1) * PAGE_SIZE;
