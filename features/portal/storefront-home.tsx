@@ -214,7 +214,20 @@ export default function StorefrontHome() {
         <section className={styles.productSection} aria-labelledby="featured-title">
           <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>DISCOVER NEWEIX</span><h2 id="featured-title">{t("picksForYou")}</h2><p>{t("chooseFromStore")}</p></div><Link href="/products">{t("viewAllProducts")} <Icon name="arrow-right" size={16} /></Link></div>
           {cartNotice && <p className={styles.cartNotice} role="status">{cartNotice}<button type="button" onClick={() => setCartNotice("")} aria-label={t("closeMessage")}><Icon name="close" size={17} /></button></p>}
-          {productsLoading ? <p className={styles.state} role="status">{t("loadingProducts")}</p> : products.length ? (
+          {productsLoading ? (
+            <div className={styles.productGrid} role="status" aria-label="Loading featured products" aria-busy="true">
+              {Array.from({ length: 8 }, (_, index) => (
+                <article className={styles.productCard} key={`product-skeleton-${index}`}>
+                  <div className={styles.productImage} aria-hidden="true" style={{ aspectRatio: "4 / 3", minHeight: 150, borderRadius: 12, background: "linear-gradient(100deg, #edf2ed 20%, #f7faf7 38%, #edf2ed 56%)" }} />
+                  <div className={styles.productInfo}>
+                    <span aria-hidden="true" style={{ display: "block", width: "78%", height: 14, margin: "4px 0 12px", borderRadius: 8, background: "#edf2ed" }} />
+                    <span aria-hidden="true" style={{ display: "block", width: "42%", height: 17, marginBottom: 12, borderRadius: 8, background: "#edf2ed" }} />
+                    <span aria-hidden="true" style={{ display: "block", width: "100%", height: 38, borderRadius: 10, background: "#f1f5f1" }} />
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : products.length ? (
             <div className={styles.productGrid}>{products.map((product) => (
               <article className={styles.productCard} key={product.id}>
                 <Link href={`/products/${encodeURIComponent(product.slug)}`} className={styles.productImage}>
