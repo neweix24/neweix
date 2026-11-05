@@ -278,28 +278,22 @@ export default function AccountView() {
           View and update your personal information.
         </p>
 
-        <section className="account-shortcuts" aria-label="Account settings">
-          <Link href="/account/addresses" className="account-shortcut">
-            <span className="account-shortcut-icon"><Icon name="truck" size={21} /></span>
-            <span><strong>Delivery information</strong><small>Manage your delivery addresses and details.</small></span>
-            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
-          </Link>
-          <Link href="/account/privacy" className="account-shortcut">
-            <span className="account-shortcut-icon"><Icon name="shield" size={21} /></span>
-            <span><strong>Privacy &amp; consent</strong><small>Control your privacy choices and consent.</small></span>
-            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
-          </Link>
-          <Link href="/account/data-requests" className="account-shortcut">
-            <span className="account-shortcut-icon"><Icon name="user" size={21} /></span>
-            <span><strong>My information</strong><small>Review your personal data and requests.</small></span>
-            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
-          </Link>
-          <Link href="/account/eixpay" className="account-shortcut">
-            <span className="account-shortcut-icon"><Icon name="wallet" size={21} /></span>
-            <span><strong>Wallet · Eixon</strong><small>Manage your wallet, balance and payment methods.</small></span>
-            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
-          </Link>
-        </section>
+        <nav className="account-shortcuts" aria-label="Account menu">
+          <Link href="/orders" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="orders" size={21} /></span><strong>My orders</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/track-order" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="truck" size={21} /></span><strong>Track order</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/wishlist" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="heart" size={21} /></span><strong>Wishlist</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/compare" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="compare" size={21} /></span><strong>Compare products</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/cart" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="cart" size={21} /></span><strong>Shopping cart</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/account/addresses" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="map-pin" size={21} /></span><strong>Delivery addresses</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/account/eixpay" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="wallet" size={21} /></span><strong>Wallet · Eixon</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/account/neweix-plus" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="membership" size={21} /></span><strong>Neweix+ membership</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/eixverse" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="globe" size={21} /></span><strong>EixVerse</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/account/theme" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="settings" size={21} /></span><strong>Appearance</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/account/privacy" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="shield" size={21} /></span><strong>Privacy &amp; consent</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/account/data-requests" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="user" size={21} /></span><strong>Personal data</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/faq" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="help" size={21} /></span><strong>Help &amp; FAQ</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/contact" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="mail" size={21} /></span><strong>Contact support</strong><Icon name="chevron-right" size={18} /></Link>
+        </nav>
 
         {loading ? (
           <p role="status">Loading account…</p>
@@ -538,15 +532,14 @@ export default function AccountView() {
           color: #285c3b;
         }
 
-        .account-shortcut > span:nth-child(2) {
+        .account-shortcut > strong {
           display: grid;
           min-width: 0;
           gap: 5px;
         }
 
-        .account-shortcut strong { font-size: 14px; font-weight: 800; }
-        .account-shortcut small { color: var(--muted); font-size: 12px; line-height: 1.5; }
-        .account-shortcut-arrow { margin-left: auto; color: var(--primary); font-size: 20px; }
+        .account-shortcut strong { flex: 1; min-width: 0; font-size: 14px; font-weight: 800; }
+        .account-shortcut > svg { flex: 0 0 auto; margin-left: auto; color: var(--primary); }
 
         .account-main-panel {
           min-width: 0;
