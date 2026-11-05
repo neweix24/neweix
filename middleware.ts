@@ -29,10 +29,13 @@ export async function middleware(request: NextRequest) {
     pathname === "/wishlist" || pathname.startsWith("/wishlist/") ||
     pathname === "/eixverse" || pathname.startsWith("/eixverse/");
   const isCustomerProtected = isCustomerPage || isCustomerApi;
+  const isCustomerLoginPath = pathname === "/auth/customer-login";
 
-  // Avoid rotating Supabase refresh tokens on every public storefront request.
-  // Refresh and validate sessions only on routes that actually require authentication.
-  if (!isAdminPath && !isSupremePath && !isCustomerProtected) {
+  // Validate sessions on protected routes and the customer login route.
+  // This lets an already-authenticated customer safely return from browser
+  // history without seeing the sign-in form again, while public storefront
+  // pages remain free of unnecessary auth refresh requests.
+  if (!isAdminPath && !isSupremePath && !isCustomerProtected && !isCustomerLoginPath) {
     return response;
   }
 
@@ -70,18 +73,29 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Validate the session only for protected customer and workspace routes.
+  // Validate signed claims and allow Supabase SSR to refresh expired sessions.
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;
 
-  // Public storefront routes also pass through getClaims() so an expired
-  // access token can be refreshed and its cookies returned to the browser.
-  // Authorization redirects and profile checks remain limited to protected routes.
+  response.headers.set("Cache-Control", "private, no-store");
+
+  // A valid customer session should never be shown the customer sign-in form.
+  // Replace the login history entry with the storefront so Back cannot reopen
+  // a stale login screen after a successful sign-in.
+  if (isCustomerLoginPath && !claimsError && typeof userId === "string" && userId) {
+    const destination = request.nextUrl.clone();
+    destination.pathname = "/";
+    destination.search = "";
+    const redirectResponse = NextResponse.redirect(destination);
+    response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
+    redirectResponse.headers.set("Cache-Control", "private, no-store");
+    return redirectResponse;
+  }
+
+  // The remaining public routes do not need authorization checks.
   if (!isAdminPath && !isSupremePath && !isCustomerProtected) {
     return response;
   }
-
-  response.headers.set("Cache-Control", "private, no-store");
 
   // Require verified customer phone numbers before protected account features are accessible.
   if (isCustomerProtected) {
