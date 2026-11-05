@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createRuntimeServiceClient } from "@/lib/supabase/runtime-service-client";
-import { resolveBangladeshAddress } from "@/lib/bangladesh-admin";
+import { BANGLADESH_ADMIN_AREAS, resolveBangladeshAddress } from "@/lib/bangladesh-admin";
 import {
   calculatePathaoPrice,
   createPathaoOrder,
@@ -323,8 +323,7 @@ export async function POST(request: Request) {
       return errorResponse("Select a valid Bangladesh division, district, and Pathao city.", 400);
     }
 
-    const division = (await import("@/lib/bangladesh-admin")).BANGLADESH_ADMIN_AREAS
-      .find((item) => item.code === divisionCode);
+    const division = BANGLADESH_ADMIN_AREAS.find((item) => item.code === divisionCode);
     const district = division?.districts.find((item) => item.code === districtCode);
     if (!division || !district || district.upazilas.length === 0) {
       return errorResponse("The selected Bangladesh district was not found or has no upazilas.", 400);
