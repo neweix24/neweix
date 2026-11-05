@@ -13,10 +13,13 @@ const statusLabels: Record<string, string> = { pending: "Pending", confirmed: "C
 
 export default async function OrdersPage() {
   const supabase = await createServerSupabaseClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) redirect("/auth/customer-login?next=/orders");
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub;
+  if (claimsError || typeof userId !== "string" || !userId) {
+    redirect("/auth/customer-login?next=/orders");
+  }
 
-  const { data: orders, error } = await supabase.from("orders").select("id, order_number, status, payment_status, subtotal, delivery_fee, discount, total, created_at, order_items(id, product_name, quantity, unit_price, line_total)").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(50);
+  const { data: orders, error } = await supabase.from("orders").select("id, order_number, status, payment_status, subtotal, delivery_fee, discount, total, created_at, order_items(id, product_name, quantity, unit_price, line_total)").eq("customer_id", userId).order("created_at", { ascending: false }).limit(50);
 
   return (
     <main className="min-h-screen px-4 py-10 sm:px-6" style={{ background: "var(--bg)", color: "var(--ink)" }}>
