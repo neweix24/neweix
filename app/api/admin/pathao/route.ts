@@ -285,13 +285,6 @@ export async function POST(request: Request) {
           (row.netPayoutAmount != null && row.netPayoutAmount !== "" && netPayoutAmount === null)) {
         return errorResponse(`Settlement row ${index + 1} has an invalid identifier or amount.`, 400);
       }
-      const raw = row.raw && typeof row.raw === "object" && !Array.isArray(row.raw)
-        ? row.raw as Record<string, unknown>
-        : {};
-      const safeRaw: Record<string, string> = {};
-      for (const [key, rawValue] of Object.entries(raw).slice(0, 30)) {
-        if (typeof rawValue === "string") safeRaw[key.slice(0, 80)] = rawValue.slice(0, 500);
-      }
       parsedRows.push({
         source_row_number: index + 1,
         source_identifier: identifier,
@@ -299,7 +292,7 @@ export async function POST(request: Request) {
         delivery_charge: deliveryCharge,
         discount_amount: discountAmount,
         net_payout_amount: netPayoutAmount,
-        raw_row: safeRaw,
+        raw_row: {},
       });
     }
 
@@ -318,23 +311,34 @@ export async function POST(request: Request) {
     }
 
     const identifiers = [...new Set(parsedRows.map((row) => row.source_identifier))];
-    const { data: byConsignment, error: consignmentError } = await admin
-      .from("orders")
-      .select("id, order_number, delivery_consignment_id, total, delivery_fee, delivery_fee_payment_status, payment_method")
-      .eq("delivery_provider", "pathao")
-      .in("delivery_consignment_id", identifiers);
-    if (consignmentError) {
-      console.error("Pathao settlement consignment matching failed:", consignmentError.message);
-      return errorResponse("Could not match Pathao consignments to NEWEIX orders.", 503);
-    }
-    const { data: byOrderNumber, error: orderNumberError } = await admin
-      .from("orders")
-      .select("id, order_number, delivery_consignment_id, total, delivery_fee, delivery_fee_payment_status, payment_method")
-      .eq("delivery_provider", "pathao")
-      .in("order_number", identifiers);
-    if (orderNumberError) {
-      console.error("Pathao settlement order matching failed:", orderNumberError.message);
-      return errorResponse("Could not match Pathao order numbers to NEWEIX orders.", 503);
+    const byConsignment: Array<{
+      id: string; order_number: string; delivery_consignment_id: string | null;
+      total: number | string; delivery_fee: number | string;
+      delivery_fee_payment_status: string | null; payment_method: string;
+    }> = [];
+    const byOrderNumber: typeof byConsignment = [];
+    for (let offset = 0; offset < identifiers.length; offset += 100) {
+      const batch = identifiers.slice(offset, offset + 100);
+      const { data: consignmentRows, error: consignmentError } = await admin
+        .from("orders")
+        .select("id, order_number, delivery_consignment_id, total, delivery_fee, delivery_fee_payment_status, payment_method")
+        .eq("delivery_provider", "pathao")
+        .in("delivery_consignment_id", batch);
+      if (consignmentError) {
+        console.error("Pathao settlement consignment matching failed:", consignmentError.message);
+        return errorResponse("Could not match Pathao consignments to NEWEIX orders.", 503);
+      }
+      byConsignment.push(...(consignmentRows ?? []));
+      const { data: orderRows, error: orderNumberError } = await admin
+        .from("orders")
+        .select("id, order_number, delivery_consignment_id, total, delivery_fee, delivery_fee_payment_status, payment_method")
+        .eq("delivery_provider", "pathao")
+        .in("order_number", batch);
+      if (orderNumberError) {
+        console.error("Pathao settlement order matching failed:", orderNumberError.message);
+        return errorResponse("Could not match Pathao order numbers to NEWEIX orders.", 503);
+      }
+      byOrderNumber.push(...(orderRows ?? []));
     }
     const orderMap = new Map<string, {
       id: string; order_number: string; delivery_consignment_id: string | null;
