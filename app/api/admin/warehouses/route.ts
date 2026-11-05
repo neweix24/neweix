@@ -1,5 +1,3 @@
-"use server";
-
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createRuntimeServiceClient } from "@/lib/supabase/runtime-service-client";
