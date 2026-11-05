@@ -221,16 +221,17 @@ export default function PathaoPanel() {
     }
   }
 
-  async function loadSettlementHistory() {
+  async function loadSettlementHistory(importId?: string) {
     setSettlementBusy(true);
     setSettlementMessage("");
     try {
-      const result = await getJson("/api/admin/pathao?action=settlement_imports");
+      const query = importId ? `&importId=${encodeURIComponent(importId)}` : "";
+      const result = await getJson(`/api/admin/pathao?action=settlement_imports${query}`);
       const imports = Array.isArray(result.imports) ? result.imports as SettlementImport[] : [];
       const rows = Array.isArray(result.rows) ? result.rows as SettlementRow[] : [];
       setSettlementImports(imports);
       setSettlementRows(rows);
-      if (!selectedImportId && imports[0]) setSelectedImportId(imports[0].id);
+      setSelectedImportId(typeof result.selectedImportId === "string" ? result.selectedImportId : "");
       setSettlementMessage("Settlement import history loaded.");
     } catch (error) {
       setSettlementMessage(error instanceof Error ? error.message : "Could not load settlement history.");
@@ -337,8 +338,7 @@ export default function PathaoPanel() {
       setSettlementReference("");
       setSettlementDate("");
       setSettlementNotes("");
-      await loadSettlementHistory();
-      if (result.importId) setSelectedImportId(result.importId);
+      await loadSettlementHistory(result.importId);
     } catch (error) {
       setSettlementMessage(error instanceof Error ? error.message : "Settlement import failed.");
     } finally {
@@ -522,7 +522,7 @@ export default function PathaoPanel() {
             <h4 className="text-sm font-semibold">Imported Reports</h4>
             <div className="flex flex-wrap gap-2">
               {settlementImports.map((item) => (
-                <button key={item.id} type="button" onClick={() => setSelectedImportId(item.id)} className={`rounded-lg border px-3 py-2 text-left text-xs ${selectedImportId === item.id ? "border-emerald-700 bg-emerald-50" : "border-gray-200"}`}>
+                <button key={item.id} type="button" onClick={() => void loadSettlementHistory(item.id)} className={`rounded-lg border px-3 py-2 text-left text-xs ${selectedImportId === item.id ? "border-emerald-700 bg-emerald-50" : "border-gray-200"}`}>
                   <span className="block font-semibold">{item.settlement_reference || item.source_filename}</span>
                   <span className="block text-gray-500">{item.row_count} rows · {item.imported_at ? new Date(item.imported_at).toLocaleDateString() : "—"}</span>
                 </button>
