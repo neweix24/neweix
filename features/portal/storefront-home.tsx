@@ -182,18 +182,17 @@ export default function StorefrontHome() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link href="/" className={styles.brand} aria-label="NEWEIX home"><svg viewBox="0 0 148 30" role="img" aria-label="neweix" focusable="false"><text x="0" y="23" >neweix</text></svg></Link>
+        <div className={styles.headerTop}>
+          <Link href="/" className={styles.brand} aria-label="NEWEIX home">
+            <img src="/neweix-logo.svg" alt="NEWEIX" width="148" height="32" />
+          </Link>
+          <div className={styles.headerActionsPlaceholder} aria-hidden="true" />
+        </div>
         <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
           <label className={styles.srOnly} htmlFor="home-product-search">{t("searchProducts")}</label>
           <input id="home-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("searchProducts")} />
           <button type="submit" aria-label={t("search")}><Icon name="search" size={19} /></button>
         </form>
-        <nav className={styles.desktopNav} aria-label="Main navigation">
-          <Link href="/products">{t("products")}</Link>
-          <Link href="/track-order">{t("trackOrder")}</Link>
-          <Link href="/wishlist">{t("wishlist")}</Link>
-          <Link href="/cart" className={styles.cartLink}>{t("cart")} <span>{cartCount}</span></Link>
-        </nav>
       </header>
 
       <main className={styles.main}>
