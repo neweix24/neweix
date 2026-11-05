@@ -278,34 +278,29 @@ export default function AccountView() {
           View and update your personal information.
         </p>
 
+        <section className="account-shortcuts" aria-label="Account settings">
+          <Link href="/account/addresses" className="account-shortcut">
+            <span className="account-shortcut-icon"><Icon name="truck" size={21} /></span>
+            <span><strong>Delivery information</strong><small>Manage your delivery addresses and details.</small></span>
+            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
+          </Link>
+          <Link href="/account/privacy" className="account-shortcut">
+            <span className="account-shortcut-icon"><Icon name="shield" size={21} /></span>
+            <span><strong>Privacy &amp; consent</strong><small>Control your privacy choices and consent.</small></span>
+            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
+          </Link>
+          <Link href="/account/data-requests" className="account-shortcut">
+            <span className="account-shortcut-icon"><Icon name="user" size={21} /></span>
+            <span><strong>My information</strong><small>Review your personal data and requests.</small></span>
+            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
+          </Link>
+        </section>
+
         {loading ? (
           <p role="status">Loading account…</p>
         ) : (
           <>
-            <div className={phoneVerified ? "account-layout" : "account-layout account-layout-locked"}>
-              <aside className="account-sidebar" aria-label="My account navigation">
-                  <div className="sidebar-heading">
-                    <span className="sidebar-kicker">CUSTOMER SPACE</span>
-                    <h2>My account</h2>
-                    <p>Manage your shopping and preferences.</p>
-                  </div>
-                  <nav className="account-links" aria-label="Account sections">
-                    <Link className="account-nav-overview" href="#account-overview" aria-current="page">Account overview</Link>
-                    <span className="account-nav-label">SHOPPING</span>
-                    <Link href="/orders">My orders</Link>
-                    <Link href="/wishlist">Wishlist</Link>
-                    <Link href="/cart">Shopping cart</Link>
-                    <Link href="/account/addresses">Delivery information</Link>
-                    <span className="account-nav-label">NEWEIX SERVICES</span>
-                    <Link href="/account/eixpay">EixPay Wallet · Eixon</Link>
-                    <Link href="/account/neweix-plus">Neweix+ Membership</Link>
-                    <Link href="/eixverse">EixVerse</Link>
-                    <span className="account-nav-label">PREFERENCES & PRIVACY</span>
-                    <Link href="/account/privacy">Privacy & consent</Link>
-                    <Link href="/account/data-requests">My information</Link>
-                  </nav>
-                </aside>
-              <section className="account-main-panel" id="account-overview" aria-label="Account overview">
+            <section className="account-main-panel" id="account-overview" aria-label="Account overview">
             <div className="account-email">
               {avatarUrl && (
                 <img src={avatarUrl} alt="Profile picture" width={64} height={64}
@@ -445,8 +440,7 @@ export default function AccountView() {
               )}
             </form>
 
-              </section>
-            </div>
+            </section>
 
             <button
               className="logout"
@@ -498,20 +492,57 @@ export default function AccountView() {
           margin: 42px auto 0;
         }
 
-        .account-layout {
+        .account-shortcuts {
           display: grid;
-          grid-template-columns: 260px minmax(0, 1fr);
-          align-items: start;
-          gap: 22px;
-          margin-top: 26px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+          margin: 26px 0 22px;
         }
 
-        .account-layout-locked {
-          grid-template-columns: minmax(0, 820px);
-          justify-content: center;
+        .account-shortcut {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+          padding: 17px;
+          border: 1px solid #e0eae0;
+          border-radius: 16px;
+          background: rgba(255,255,255,.97);
+          box-shadow: 0 10px 28px rgba(45,110,65,.05);
+          color: var(--ink);
+          text-decoration: none;
+          transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
         }
 
-        .account-sidebar,
+        .account-shortcut:hover,
+        .account-shortcut:focus-visible {
+          transform: translateY(-2px);
+          border-color: #b9dcae;
+          box-shadow: 0 14px 32px rgba(45,110,65,.1);
+          outline: none;
+        }
+
+        .account-shortcut-icon {
+          display: grid;
+          flex: 0 0 42px;
+          width: 42px;
+          height: 42px;
+          place-items: center;
+          border-radius: 12px;
+          background: #f0faeb;
+          color: #285c3b;
+        }
+
+        .account-shortcut > span:nth-child(2) {
+          display: grid;
+          min-width: 0;
+          gap: 5px;
+        }
+
+        .account-shortcut strong { font-size: 14px; font-weight: 800; }
+        .account-shortcut small { color: var(--muted); font-size: 12px; line-height: 1.5; }
+        .account-shortcut-arrow { margin-left: auto; color: var(--primary); font-size: 20px; }
+
         .account-main-panel {
           min-width: 0;
           padding: clamp(18px, 2.6vw, 28px);
@@ -519,38 +550,6 @@ export default function AccountView() {
           border-radius: 22px;
           background: rgba(255,255,255,.97);
           box-shadow: 0 14px 38px rgba(45,110,65,.07);
-        }
-
-        .account-sidebar {
-          position: sticky;
-          top: 20px;
-        }
-
-        .sidebar-heading {
-          padding: 2px 4px 18px;
-          border-bottom: 1px solid var(--border);
-        }
-
-        .sidebar-kicker,
-        .account-nav-label {
-          color: var(--muted);
-          font-size: 10px;
-          font-weight: 800;
-          letter-spacing: 1.4px;
-        }
-
-        .sidebar-heading h2 {
-          margin: 8px 0 5px;
-          color: var(--ink);
-          font-size: 21px;
-          font-weight: 850;
-        }
-
-        .sidebar-heading p {
-          margin: 0;
-          color: var(--muted);
-          font-size: 12px;
-          line-height: 1.6;
         }
 
         .account-eyebrow {
@@ -740,89 +739,6 @@ export default function AccountView() {
         .error {
           color: var(--danger);
           font-size: 14px;
-        }
-
-        .account-links {
-          display: grid;
-          gap: 6px;
-          margin-top: 16px;
-        }
-
-        .account-nav-label {
-          margin: 15px 8px 3px;
-        }
-
-        .account-links a {
-          display: flex;
-          align-items: center;
-          min-height: 43px;
-          padding: 10px 12px;
-          border: 1px solid transparent;
-          border-radius: 10px;
-          background: transparent;
-          color: #285c3b;
-          font-size: 13px;
-          font-weight: 700;
-          line-height: 1.4;
-          text-decoration: none;
-          transition: border-color .18s ease, background .18s ease, color .18s ease;
-        }
-
-        .account-links a:hover,
-        .account-links a:focus-visible {
-          border-color: #d8ebd1;
-          background: #f2ffec;
-          color: #174d2d;
-          outline: none;
-        }
-
-        .account-links .account-nav-overview {
-          border-color: #d8ebd1;
-          background: #f2ffec;
-          color: #174d2d;
-        }
-
-        @media (max-width: 820px) {
-          .account-layout {
-            grid-template-columns: minmax(0, 1fr);
-            gap: 14px;
-          }
-
-          .account-sidebar {
-            position: static;
-            padding: 16px;
-          }
-
-          .sidebar-heading {
-            padding-bottom: 12px;
-          }
-
-          .account-links {
-            display: flex;
-            gap: 7px;
-            margin-top: 12px;
-            padding-bottom: 3px;
-            overflow-x: auto;
-            overscroll-behavior-x: contain;
-            scrollbar-width: thin;
-          }
-
-          .account-nav-label {
-            display: none;
-          }
-
-          .account-links a {
-            flex: 0 0 auto;
-            min-height: 40px;
-            padding: 9px 12px;
-            border-color: #e5eee3;
-            background: #fbfef9;
-            white-space: nowrap;
-          }
-
-          .account-main-panel {
-            padding: 20px;
-          }
         }
 
         .account-home:hover { text-decoration: underline; }
