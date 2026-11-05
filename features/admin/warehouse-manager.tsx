@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 type Warehouse = {
   id: string; code: string; name: string; city: string; district: string; division: string;
@@ -22,7 +22,7 @@ export default function WarehouseManager() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -35,11 +35,11 @@ export default function WarehouseManager() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [load]);
 
-  async function createWarehouse(event: React.FormEvent<HTMLFormElement>) {
+  async function createWarehouse(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
     setError("");
