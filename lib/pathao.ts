@@ -304,19 +304,6 @@ export async function calculatePathaoPrice(input: PathaoPriceInput) {
   );
 }
 
-export async function cancelPathaoOrder(consignmentId: string) {
-  if (!/^[A-Za-z0-9-]{3,80}$/.test(consignmentId)) {
-    throw new Error("Pathao consignment ID is invalid.");
-  }
-  return withPathaoToken((config, token) =>
-    pathaoMutation<unknown>(
-      config,
-      `/aladdin/api/v1/orders/${encodeURIComponent(consignmentId)}/cancel`,
-      token,
-    ),
-  );
-}
-
 export async function createPathaoBulkOrders(orders: PathaoCreateOrderInput[]) {
   if (!Array.isArray(orders) || orders.length < 1 || orders.length > 50) {
     throw new Error("Bulk booking supports between 1 and 50 orders per request.");
