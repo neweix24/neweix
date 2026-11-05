@@ -293,18 +293,13 @@ export default function PathaoPanel() {
     const chargeIndex = optionalIndex(chargeColumn);
     const discountIndex = optionalIndex(discountColumn);
     const payoutIndex = optionalIndex(payoutColumn);
-    const rows = settlementCsvRows.map((row) => {
-      const raw: Record<string, string> = {};
-      settlementHeaders.forEach((header, index) => { raw[header] = row[index] ?? ""; });
-      return {
-        identifier: (row[identifierIndex] || "").trim(),
-        codAmount: parseMoney(row[codIndex] || ""),
-        deliveryCharge: chargeIndex >= 0 ? parseMoney(row[chargeIndex] || "") : null,
-        discountAmount: discountIndex >= 0 ? parseMoney(row[discountIndex] || "") : null,
-        netPayoutAmount: payoutIndex >= 0 ? parseMoney(row[payoutIndex] || "") : null,
-        raw,
-      };
-    });
+    const rows = settlementCsvRows.map((row) => ({
+      identifier: (row[identifierIndex] || "").trim(),
+      codAmount: parseMoney(row[codIndex] || ""),
+      deliveryCharge: chargeIndex >= 0 ? parseMoney(row[chargeIndex] || "") : null,
+      discountAmount: discountIndex >= 0 ? parseMoney(row[discountIndex] || "") : null,
+      netPayoutAmount: payoutIndex >= 0 ? parseMoney(row[payoutIndex] || "") : null,
+    }));
     const invalidRow = rows.findIndex((row) => !row.identifier || row.codAmount === null);
     if (invalidRow >= 0) {
       setSettlementMessage(`Row ${invalidRow + 2} has a missing identifier or invalid COD amount. Correct the CSV or column mapping.`);
