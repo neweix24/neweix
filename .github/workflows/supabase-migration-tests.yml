@@ -94,4 +94,10 @@ jobs:
         run: |
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/customer_device_retention_test.sql
 
+      - name: Verify customer in-app notification permissions
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/customer_in_app_notifications_test.sql
+
       # GitHub-hosted runners are ephemeral; Docker containers are discarded after the job.
