@@ -39,18 +39,16 @@ set search_path = ''
 as $function$
 declare
   v_count integer;
+  v_limit integer;
 begin
-  if new.list_type = 'compare' then
-    -- Serialize all compare-list writes for this user before checking for a
-    -- duplicate or counting rows. This also makes concurrent duplicate adds
-    -- idempotent when the list is already at its four-item limit.
-    perform pg_catalog.pg_advisory_xact_lock(
-      pg_catalog.hashtextextended(new.user_id::text || ':compare', 0)
-    );
-  end if;
+  -- Serialize writes per customer and list type so concurrent requests cannot
+  -- exceed either the wishlist or comparison limit.
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(new.user_id::text || ':' || new.list_type, 0)
+  );
 
   -- BEFORE INSERT runs before ON CONFLICT DO NOTHING. Returning NULL for an
-  -- existing row makes repeat adds safe and avoids a false limit error.
+  -- existing row makes repeat adds safe, including at the list limit.
   if exists (
     select 1
       from public.customer_saved_products
@@ -61,14 +59,13 @@ begin
     return null;
   end if;
 
-  if new.list_type = 'compare' then
-    select count(*)::integer into v_count
-      from public.customer_saved_products
-      where user_id = new.user_id and list_type = 'compare';
-    if v_count >= 4 then
-      raise exception 'A customer can compare up to 4 products.'
-        using errcode = '23514';
-    end if;
+  v_limit := case when new.list_type = 'compare' then 4 else 200 end;
+  select count(*)::integer into v_count
+    from public.customer_saved_products
+    where user_id = new.user_id and list_type = new.list_type;
+  if v_count >= v_limit then
+    raise exception 'Saved product list limit reached.'
+      using errcode = '23514';
   end if;
   return new;
 end;
