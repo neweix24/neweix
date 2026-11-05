@@ -5,6 +5,7 @@ import Link from "next/link";
 import Icon from "@/components/ui/icon";
 import styles from "./product-catalog.module.css";
 import ProductCardActions from "@/features/products/product-card-actions";
+import ProductQuickView from "@/features/products/product-quick-view";
 import { useLanguage } from "@/components/language-provider";
 
 type Product = {
@@ -52,6 +53,7 @@ export default function ProductCatalog() {
   const [notice, setNotice] = useState("");
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
   // Show every active category returned by the categories API. Deriving this
   // list from the first product page hid categories whose products appeared
@@ -181,6 +183,8 @@ export default function ProductCatalog() {
     window.history.replaceState(null, "", nextUrl);
   }
 
+  const closeQuickView = useCallback(() => setQuickViewProduct(null), []);
+
   function toggleWishlist(product: Product) {
     const next = wishlist.includes(product.id) ? wishlist.filter((id) => id !== product.id) : [...wishlist, product.id].slice(-200);
     try {
@@ -303,6 +307,7 @@ export default function ProductCatalog() {
                 <div className="mb-2 flex flex-wrap gap-2">
                   <button type="button" aria-pressed={wishlist.includes(product.id)} aria-label={wishlist.includes(product.id) ? t("removeFromWishlist") : t("addToWishlist")} title={wishlist.includes(product.id) ? t("removeFromWishlist") : t("addToWishlist")} onClick={() => toggleWishlist(product)} className={styles.iconButton} style={{ borderColor: "var(--border)" }}><Icon name="heart" size={17} /></button>
                   <button type="button" aria-pressed={compareIds.includes(product.id)} aria-label={compareIds.includes(product.id) ? t("removedFromCompare") : t("compare")} title={compareIds.includes(product.id) ? t("removedFromCompare") : t("compare")} onClick={() => toggleCompare(product)} className={styles.iconButton} style={{ borderColor: "var(--border)" }}><Icon name="compare" size={17} /></button>
+                  <button type="button" aria-label="Quick view" title="Quick view" onClick={() => setQuickViewProduct(product)} className={styles.iconButton}><Icon name="eye" size={17} /></button>
                 </div>
                 <span className={product.stock > 0 ? styles.inStock : styles.outOfStock}>
                   {product.stock > 0 ? t("inStock") : t("outOfStock")}
@@ -332,6 +337,9 @@ export default function ProductCatalog() {
           </div>
         )}
       </section>
+      {quickViewProduct && (
+        <ProductQuickView product={quickViewProduct} onClose={closeQuickView} onNotice={setNotice} />
+      )}
     </main>
   );
 }
