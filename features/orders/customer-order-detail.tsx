@@ -99,7 +99,7 @@ export default function CustomerOrderDetail({ orderId }: { orderId: string }) {
           return;
         }
         setOrder(result.order);
-      } catch (cause) {
+      } catch {
         if (!controller.signal.aborted) {
           setError("Could not connect to the server. Please try again.");
         }
