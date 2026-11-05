@@ -325,7 +325,6 @@
 
 /* Live customer notification inbox */
 .notificationTrigger{position:relative}
-.notificationTrigger::after{content:"";display:none}
 .notificationHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--line)}
 .notificationHeader strong{font-size:14px}
 .notificationHeader button{border:0;background:transparent;color:var(--lime);font:inherit;font-size:10px;font-weight:800;cursor:pointer}
