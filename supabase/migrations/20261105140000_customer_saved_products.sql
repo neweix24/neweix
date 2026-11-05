@@ -40,6 +40,19 @@ as $function$
 declare
   v_count integer;
 begin
+  -- Ignore duplicate inserts before enforcing the cap. PostgreSQL runs BEFORE
+  -- INSERT triggers before ON CONFLICT DO NOTHING, so without this guard a
+  -- customer with four saved items could not idempotently save an existing one.
+  if exists (
+    select 1
+      from public.customer_saved_products
+      where user_id = new.user_id
+        and list_type = new.list_type
+        and product_id = new.product_id
+  ) then
+    return null;
+  end if;
+
   if new.list_type = 'compare' then
     perform pg_catalog.pg_advisory_xact_lock(
       pg_catalog.hashtextextended(new.user_id::text || ':compare', 0)
