@@ -1,10 +1,10 @@
-import { redirect } from "next/navigation";
 import NeweixPlus from "@/features/eixpay/neweix-plus";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+
 export const dynamic = "force-dynamic";
-export default async function NeweixPlusPage() {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) redirect("/auth/customer-login?next=/account/neweix-plus");
+
+// Customer authentication and verified-phone enforcement are centralized in
+// middleware. Avoid a second server-component Auth lookup that can race with
+// Supabase refresh-token rotation during App Router navigation.
+export default function NeweixPlusPage() {
   return <NeweixPlus />;
 }

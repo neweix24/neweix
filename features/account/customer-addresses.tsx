@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import Icon from "@/components/ui/icon";
 
@@ -18,7 +17,6 @@ const emptyForm = {
 };
 
 export default function CustomerAddresses() {
-  const router = useRouter();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -29,9 +27,9 @@ export default function CustomerAddresses() {
 
   async function loadAddresses() {
     const supabase = createBrowserSupabaseClient();
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData.user) {
-      router.replace("/auth/customer-login?next=/account/addresses");
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    if (authError || !session?.user) {
+      setErrorMessage("Your account session is temporarily unavailable. Please refresh this page.");
       return;
     }
     const { data, error } = await supabase.from("customer_addresses")
@@ -86,19 +84,19 @@ export default function CustomerAddresses() {
     }
     try {
       const supabase = createBrowserSupabaseClient();
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      if (authError || !authData.user) {
-        router.replace("/auth/customer-login?next=/account/addresses"); return;
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      if (authError || !session?.user) {
+        setErrorMessage("Your account session is temporarily unavailable. Please refresh this page."); return;
       }
       if (payload.is_default) {
         const { error: clearError } = await supabase.from("customer_addresses")
-          .update({ is_default: false }).eq("user_id", authData.user.id);
+          .update({ is_default: false }).eq("user_id", session.user.id);
         if (clearError) throw clearError;
       }
       const result = editingId
         ? await supabase.from("customer_addresses").update(payload)
-            .eq("id", editingId).eq("user_id", authData.user.id)
-        : await supabase.from("customer_addresses").insert({ ...payload, user_id: authData.user.id });
+            .eq("id", editingId).eq("user_id", session.user.id)
+        : await supabase.from("customer_addresses").insert({ ...payload, user_id: session.user.id });
       if (result.error) throw result.error;
       await loadAddresses(); resetForm(); setMessage("Address saved.");
     } catch (err) {
@@ -111,12 +109,12 @@ export default function CustomerAddresses() {
     setErrorMessage(""); setMessage("");
     try {
       const supabase = createBrowserSupabaseClient();
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      if (authError || !authData.user) {
-        router.replace("/auth/customer-login?next=/account/addresses"); return;
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      if (authError || !session?.user) {
+        setErrorMessage("Your account session is temporarily unavailable. Please refresh this page."); return;
       }
       const { error } = await supabase.from("customer_addresses").delete()
-        .eq("id", id).eq("user_id", authData.user.id);
+        .eq("id", id).eq("user_id", session.user.id);
       if (error) throw error;
       await loadAddresses(); if (editingId === id) resetForm();
       setMessage("Address deleted.");
