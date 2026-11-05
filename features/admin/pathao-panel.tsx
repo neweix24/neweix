@@ -5,6 +5,19 @@ import Icon from "@/components/ui/icon";
 
 type State = "idle" | "loading" | "success" | "error";
 type LocationOption = { id: number; name: string; available?: boolean };
+type Shipment = {
+  id: string;
+  order_number: string;
+  customer_name: string;
+  customer_phone: string | null;
+  shipping_city: string | null;
+  total: number | string;
+  delivery_status: string | null;
+  delivery_consignment_id: string | null;
+  delivery_tracking_code: string | null;
+  delivery_booked_at: string | null;
+  created_at: string;
+};
 
 function extractOptions(payload: unknown, idKeys: string[], nameKeys: string[]): LocationOption[] {
   if (!payload || typeof payload !== "object") return [];
@@ -41,7 +54,7 @@ export default function PathaoPanel() {
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [consignmentId, setConsignmentId] = useState("");
   const [tracking, setTracking] = useState<unknown>(null);
-  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingLoading, setTrackingLoading] = useState(false);\n  const [shipments, setShipments] = useState<Shipment[]>([]);\n  const [shipmentsLoading, setShipmentsLoading] = useState(false);
 
   async function getJson(url: string) {
     const response = await fetch(url, { cache: "no-store" });
@@ -102,6 +115,22 @@ export default function PathaoPanel() {
     }
   }
 
+
+
+  async function loadShipments() {
+    setShipmentsLoading(true);
+    try {
+      const result = await getJson("/api/admin/pathao?action=shipments");
+      setShipments(Array.isArray(result.shipments) ? result.shipments as Shipment[] : []);
+      setMessage("Recent Pathao shipments loaded.");
+      setState("success");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not load Pathao shipments.");
+      setState("error");
+    } finally {
+      setShipmentsLoading(false);
+    }
+  }
 
   async function trackShipment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -174,6 +203,35 @@ export default function PathaoPanel() {
       <p role="status" className={`mt-3 text-sm ${state === "error" ? "text-red-700" : state === "success" ? "text-green-700" : "text-gray-600"}`}>{message}</p>
       {environment && <p className="mt-1 text-xs text-gray-500">Environment: {environment}</p>}
 
+
+
+      <section className="mt-5 rounded-xl border border-gray-200 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-semibold">Recent Pathao Shipments</h3>
+            <p className="mt-1 text-xs text-gray-500">Latest 50 booked consignments saved in NEWEIX.</p>
+          </div>
+          <button type="button" onClick={() => void loadShipments()} disabled={shipmentsLoading} className="rounded-lg border px-4 py-2 text-sm font-semibold disabled:opacity-50">{shipmentsLoading ? "Loading..." : "Refresh Shipments"}</button>
+        </div>
+        {shipments.length > 0 ? (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[680px] text-left text-sm">
+              <thead><tr className="border-b text-xs text-gray-500"><th className="p-2">Order</th><th className="p-2">Customer</th><th className="p-2">Consignment</th><th className="p-2">Status</th><th className="p-2">Booked</th></tr></thead>
+              <tbody>{shipments.map((shipment) => (
+                <tr key={shipment.id} className="border-b last:border-0">
+                  <td className="p-2"><span className="font-semibold">{shipment.order_number}</span><span className="block text-xs text-gray-500">BDT {Number(shipment.total).toLocaleString("en-BD")}</span></td>
+                  <td className="p-2">{shipment.customer_name}<span className="block text-xs text-gray-500">{shipment.customer_phone || "—"}</span></td>
+                  <td className="p-2"><button type="button" onClick={() => setConsignmentId(shipment.delivery_consignment_id || "")} className="font-mono text-xs text-blue-700 underline">{shipment.delivery_consignment_id || shipment.delivery_tracking_code || "—"}</button></td>
+                  <td className="p-2">{shipment.delivery_status || "—"}</td>
+                  <td className="p-2 text-xs text-gray-500">{shipment.delivery_booked_at ? new Date(shipment.delivery_booked_at).toLocaleString() : "—"}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-gray-500">{shipmentsLoading ? "Loading shipment history..." : "No Pathao shipments loaded. Select Refresh Shipments to check."}</p>
+        )}
+      </section>
 
       <form onSubmit={trackShipment} className="mt-5 space-y-3 rounded-xl border border-gray-200 p-4">
         <div>
