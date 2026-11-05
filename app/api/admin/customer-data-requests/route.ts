@@ -88,7 +88,12 @@ export async function PATCH(request: Request) {
     if (current.status === "completed" || current.status === "rejected") {
       return NextResponse.json({ error: "A finalized request cannot be changed." }, { status: 409 });
     }
+    if (current.status === status) {
+      return NextResponse.json({ error: "The request already has this status." }, { status: 409 });
+    }
 
+    // Compare-and-set prevents two simultaneous Supreme actions from overwriting
+    // one another after both have read the same previous status.
     const { data, error } = await admin
       .from("customer_data_requests")
       .update({
@@ -98,9 +103,16 @@ export async function PATCH(request: Request) {
         processed_at: status === "completed" || status === "rejected" ? new Date().toISOString() : null,
       })
       .eq("id", id)
+      .eq("status", current.status)
       .select("id,user_id,request_type,status,resolution_note,processed_at,updated_at")
-      .single();
+      .maybeSingle();
     if (error) throw error;
+    if (!data) {
+      return NextResponse.json(
+        { error: "This request was updated by another action. Refresh and review its latest status." },
+        { status: 409 }
+      );
+    }
 
     const { error: auditError } = await admin.from("audit_logs").insert({
       actor_id: actor.user.id,
