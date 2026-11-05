@@ -26,7 +26,8 @@ export async function middleware(request: NextRequest) {
   const isCustomerPage =
     pathname === "/account" || pathname.startsWith("/account/") ||
     pathname === "/orders" || pathname.startsWith("/orders/") ||
-    pathname === "/wishlist" || pathname.startsWith("/wishlist/");
+    pathname === "/wishlist" || pathname.startsWith("/wishlist/") ||
+    pathname === "/eixverse" || pathname.startsWith("/eixverse/");
   const isCustomerProtected = isCustomerPage || isCustomerApi;
 
   // Avoid rotating Supabase refresh tokens on every public storefront request.
