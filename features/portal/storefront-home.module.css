@@ -300,3 +300,7 @@
     transition: none;
   }
 }
+
+
+/* Accessible three-dot quick menu trigger */
+.menuButton{display:grid;flex:0 0 42px;width:42px;height:42px;place-items:center;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);cursor:pointer;transition:background .18s ease,border-color .18s ease,transform .18s ease}.menuButton:hover{border-color:var(--lime);background:color-mix(in srgb,var(--lime) 9%,var(--panel));transform:translateY(-1px)}.menuButton:focus-visible{outline:2px solid var(--lime);outline-offset:3px}@media(max-width:600px){.menuButton{flex-basis:38px;width:38px;height:38px}}

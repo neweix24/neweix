@@ -88,16 +88,20 @@ export default function CustomerAddresses() {
       if (authError || !session?.user) {
         setErrorMessage("Your account session is temporarily unavailable. Please refresh this page."); return;
       }
-      if (payload.is_default) {
-        const { error: clearError } = await supabase.from("customer_addresses")
-          .update({ is_default: false }).eq("user_id", session.user.id);
-        if (clearError) throw clearError;
-      }
-      const result = editingId
-        ? await supabase.from("customer_addresses").update(payload)
-            .eq("id", editingId).eq("user_id", session.user.id)
-        : await supabase.from("customer_addresses").insert({ ...payload, user_id: session.user.id });
-      if (result.error) throw result.error;
+      const { error: saveError } = await supabase.rpc("customer_save_address", {
+        p_address_id: editingId,
+        p_label: payload.label,
+        p_recipient_name: payload.recipient_name,
+        p_phone: payload.phone,
+        p_address_line: payload.address_line,
+        p_area: payload.area,
+        p_upazila: payload.upazila,
+        p_district: payload.district,
+        p_division: payload.division,
+        p_postal_code: payload.postal_code,
+        p_is_default: payload.is_default,
+      });
+      if (saveError) throw saveError;
       await loadAddresses(); resetForm(); setMessage("Address saved.");
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Could not save the address.");
@@ -113,8 +117,9 @@ export default function CustomerAddresses() {
       if (authError || !session?.user) {
         setErrorMessage("Your account session is temporarily unavailable. Please refresh this page."); return;
       }
-      const { error } = await supabase.from("customer_addresses").delete()
-        .eq("id", id).eq("user_id", session.user.id);
+      const { error } = await supabase.rpc("customer_delete_address", {
+        p_address_id: id,
+      });
       if (error) throw error;
       await loadAddresses(); if (editingId === id) resetForm();
       setMessage("Address deleted.");

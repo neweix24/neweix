@@ -282,6 +282,32 @@ export default function AccountView() {
           <p role="status">Loading account…</p>
         ) : (
           <>
+            <div className={phoneVerified ? "account-layout" : "account-layout account-layout-locked"}>
+              {phoneVerified && (
+                <aside className="account-sidebar" aria-label="My account navigation">
+                  <div className="sidebar-heading">
+                    <span className="sidebar-kicker">CUSTOMER SPACE</span>
+                    <h2>My account</h2>
+                    <p>Manage your shopping and preferences.</p>
+                  </div>
+                  <nav className="account-links" aria-label="Account sections">
+                    <Link className="account-nav-overview" href="#account-overview" aria-current="page">Account overview</Link>
+                    <span className="account-nav-label">SHOPPING</span>
+                    <Link href="/orders">My orders</Link>
+                    <Link href="/wishlist">Wishlist</Link>
+                    <Link href="/cart">Shopping cart</Link>
+                    <Link href="/account/addresses">Delivery addresses</Link>
+                    <span className="account-nav-label">NEWEIX SERVICES</span>
+                    <Link href="/account/eixpay">EixPay Wallet · Eixon</Link>
+                    <Link href="/account/neweix-plus">Neweix+ Membership</Link>
+                    <Link href="/eixverse">EixVerse</Link>
+                    <span className="account-nav-label">PREFERENCES & PRIVACY</span>
+                    <Link href="/account/privacy">Privacy & preferences</Link>
+                    <Link href="/account/data-requests">My data and privacy</Link>
+                  </nav>
+                </aside>
+              )}
+              <section className="account-main-panel" id="account-overview" aria-label="Account overview">
             <div className="account-email">
               {avatarUrl && (
                 <img src={avatarUrl} alt="Profile picture" width={64} height={64}
@@ -421,20 +447,8 @@ export default function AccountView() {
               )}
             </form>
 
-            {phoneVerified && (
-              <nav className="account-links" aria-label="Account links">
-                <Link href="/account/eixpay">EixPay Wallet · Eixon</Link>
-                <Link href="/account/neweix-plus">Neweix+ Membership</Link>
-                <Link href="/eixverse">EixVerse</Link>
-                <Link href="/orders">My orders</Link>
-                <Link href="/wishlist">Wishlist</Link>
-                <Link href="/cart">Shopping cart</Link>
-                <Link href="/account/theme">🎨 Customize your theme</Link>
-                <Link href="/account/addresses">My addresses</Link>
-                <Link href="/account/privacy">Privacy & preferences</Link>
-                <Link href="/account/data-requests">My data and privacy</Link>
-              </nav>
-            )}
+              </section>
+            </div>
 
             <button
               className="logout"
@@ -453,7 +467,6 @@ export default function AccountView() {
           min-height: 100vh;
           padding: 0 20px 72px;
           background: radial-gradient(ellipse at 85% 0%, rgba(182,255,74,.14), transparent 38%), linear-gradient(145deg, #fbfff7, #f3fff5 58%, #f5fbff);
-          color: var(--ink);
           color: var(--ink);
         }
 
@@ -483,13 +496,63 @@ export default function AccountView() {
 
         .account-content {
           box-sizing: border-box;
-          max-width: 820px;
+          max-width: 1180px;
           margin: 42px auto 0;
-          padding: clamp(22px, 4vw, 38px);
+        }
+
+        .account-layout {
+          display: grid;
+          grid-template-columns: 260px minmax(0, 1fr);
+          align-items: start;
+          gap: 22px;
+          margin-top: 26px;
+        }
+
+        .account-layout-locked {
+          grid-template-columns: minmax(0, 820px);
+          justify-content: center;
+        }
+
+        .account-sidebar,
+        .account-main-panel {
+          min-width: 0;
+          padding: clamp(18px, 2.6vw, 28px);
           border: 1px solid #e0eae0;
-          border-radius: 26px;
-          background: rgba(255,255,255,.96);
-          box-shadow: 0 18px 48px rgba(45,110,65,.08);
+          border-radius: 22px;
+          background: rgba(255,255,255,.97);
+          box-shadow: 0 14px 38px rgba(45,110,65,.07);
+        }
+
+        .account-sidebar {
+          position: sticky;
+          top: 20px;
+        }
+
+        .sidebar-heading {
+          padding: 2px 4px 18px;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-kicker,
+        .account-nav-label {
+          color: var(--muted);
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 1.4px;
+        }
+
+        .sidebar-heading h2 {
+          margin: 8px 0 5px;
+          color: var(--ink);
+          font-size: 21px;
+          font-weight: 850;
+        }
+
+        .sidebar-heading p {
+          margin: 0;
+          color: var(--muted);
+          font-size: 12px;
+          line-height: 1.6;
         }
 
         .account-eyebrow {
@@ -683,32 +746,85 @@ export default function AccountView() {
 
         .account-links {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-          gap: 10px;
-          margin-top: 26px;
-          padding-top: 22px;
-          border-top: 1px solid var(--border);
+          gap: 6px;
+          margin-top: 16px;
+        }
+
+        .account-nav-label {
+          margin: 15px 8px 3px;
         }
 
         .account-links a {
           display: flex;
           align-items: center;
-          min-height: 48px;
-          padding: 12px 14px;
-          border: 1px solid #e5eee3;
-          border-radius: 12px;
-          background: #fbfef9;
+          min-height: 43px;
+          padding: 10px 12px;
+          border: 1px solid transparent;
+          border-radius: 10px;
+          background: transparent;
           color: #285c3b;
           font-size: 13px;
-          font-weight: 750;
+          font-weight: 700;
+          line-height: 1.4;
           text-decoration: none;
-          transition: border-color .18s ease, transform .18s ease, background .18s ease;
+          transition: border-color .18s ease, background .18s ease, color .18s ease;
         }
 
-        .account-links a:hover {
-          border-color: #9acb91;
+        .account-links a:hover,
+        .account-links a:focus-visible {
+          border-color: #d8ebd1;
           background: #f2ffec;
-          transform: translateY(-1px);
+          color: #174d2d;
+          outline: none;
+        }
+
+        .account-links .account-nav-overview {
+          border-color: #d8ebd1;
+          background: #f2ffec;
+          color: #174d2d;
+        }
+
+        @media (max-width: 820px) {
+          .account-layout {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 14px;
+          }
+
+          .account-sidebar {
+            position: static;
+            padding: 16px;
+          }
+
+          .sidebar-heading {
+            padding-bottom: 12px;
+          }
+
+          .account-links {
+            display: flex;
+            gap: 7px;
+            margin-top: 12px;
+            padding-bottom: 3px;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            scrollbar-width: thin;
+          }
+
+          .account-nav-label {
+            display: none;
+          }
+
+          .account-links a {
+            flex: 0 0 auto;
+            min-height: 40px;
+            padding: 9px 12px;
+            border-color: #e5eee3;
+            background: #fbfef9;
+            white-space: nowrap;
+          }
+
+          .account-main-panel {
+            padding: 20px;
+          }
         }
 
         .account-home:hover { text-decoration: underline; }
@@ -726,7 +842,11 @@ export default function AccountView() {
         @media (max-width: 480px) {
           .account-content {
             margin-top: 26px;
-            padding: 22px;
+          }
+
+          .account-main-panel {
+            padding: 18px;
+            border-radius: 18px;
           }
 
           .account-header {
