@@ -1,39 +1,14 @@
-import Link from "next/link";
 import { requireStaff } from "@/lib/auth";
-import Icon from "@/components/ui/icon";
 import SupremeDashboard from "@/features/supreme/supreme-dashboard";
 
 export const dynamic = "force-dynamic";
 
 export default async function SupremePage() {
-  const staff = await requireStaff(["supreme"]);
+  // Keep the page-level gate in addition to the protected Supreme layout.
+  await requireStaff(["supreme"]);
 
   return (
     <main className="min-h-screen" style={{ background: "var(--bg)", color: "var(--ink)" }}>
-      <header className="border-b px-4 py-4 sm:px-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="eyebrow">NEWEIX · SUPREME CONTROL</p>
-            <p className="mt-1 text-sm">Signed-in role: <strong style={{ color: "var(--primary)" }}>{staff.role}</strong></p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <Link href="/supreme/staff" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="user" size={15} /> Staff Management</Link>
-            <Link href="/admin/workforce" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="grid" size={15} /> Department Management</Link>
-            <Link href="/supreme/manager-nominations" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="check" size={15} /> Manager Nominations</Link>
-            <Link href="/supreme/eixverse" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="gift" size={15} /> Campaigns & Missions</Link>
-            <Link href="/supreme/eixpay" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="wallet" size={15} /> EixPay Control</Link>
-            <Link href="/supreme/reviews" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="check" size={15} /> Review Moderation</Link>
-            <Link href="/supreme/audit-logs" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="orders" size={15} /> Audit Logs</Link>
-            <Link href="/supreme/system" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="settings" size={15} /> System Monitor</Link>
-            <Link href="/" className="text-sm font-semibold underline underline-offset-4" style={{ color: "var(--primary)" }}><Icon name="globe" size={15} /> Storefront</Link>
-            <form action="/auth/logout" method="post">
-              <button type="submit" className="rounded-xl border px-4 py-2 text-sm font-semibold" style={{ borderColor: "var(--border)" }}>
-                <Icon name="logout" size={16} /> Log Out
-              </button>
-            </form>
-          </div>
-        </div>
-      </header>
       <SupremeDashboard />
     </main>
   );
