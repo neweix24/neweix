@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import Icon from "@/components/ui/icon";
+import Icon, { type IconName } from "@/components/ui/icon";
 import { useLanguage } from "@/components/language-provider";
 
 function getCartCount() {
@@ -35,7 +35,7 @@ export default function StorefrontNavigation({ children }: { children: React.Rea
     };
   }, [pathname]);
   if (!isStorefront) return <>{children}</>;
-  const links = [
+  const links: { href: string; label: string; icon: IconName }[] = [
     { href: "/", label: t("homeNav"), icon: "home" },
     { href: "/products", label: t("productsSearch"), icon: "grid" },
     { href: "/search", label: t("searchProducts"), icon: "search" },
