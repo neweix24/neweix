@@ -1,0 +1,57 @@
+name: Warehouse allocation database tests
+
+on:
+  push:
+    branches: ["feat/atomic-warehouse-order-allocation"]
+  pull_request:
+    branches: ["feat/warehouse-stock-reconciliation", "main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: warehouse-allocation-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  postgres-warehouse-allocation:
+    name: Apply migrations and test warehouse allocation
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.81.3
+
+      - name: Start disposable PostgreSQL
+        run: supabase start -x gotrue,realtime,storage-api,imgproxy,kong,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Apply every SQL migration in order
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          duplicate_versions="$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\\n' | sed -E 's/^([0-9]{14})_.*/\\1/' | sort | uniq -d)"
+          if [ -n "$duplicate_versions" ]; then
+            echo "::error::Duplicate migration version(s): $duplicate_versions"
+            exit 1
+          fi
+          while IFS= read -r migration; do
+            echo "Applying $migration"
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$migration"
+          done < <(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | sort)
+
+      - name: Verify multi-warehouse foundation
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/multi_warehouse_foundation_test.sql
+
+      - name: Verify atomic split allocation, rollback and cancellation release
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/atomic_warehouse_order_allocation_test.sql
