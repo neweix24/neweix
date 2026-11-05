@@ -14,6 +14,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
   const isSupremePath = pathname === "/supreme" || pathname.startsWith("/supreme/");
+  const isApiPath = pathname.startsWith("/api/");
   const isCustomerApi =
     (pathname.startsWith("/api/account/") &&
       pathname !== "/api/account/phone/send-otp" &&
@@ -31,11 +32,12 @@ export async function middleware(request: NextRequest) {
   const isCustomerProtected = isCustomerPage || isCustomerApi;
   const isCustomerLoginPath = pathname === "/auth/customer-login";
 
-  // Validate sessions on protected routes and the customer login route.
-  // This lets an already-authenticated customer safely return from browser
-  // history without seeing the sign-in form again, while public storefront
-  // pages remain free of unnecessary auth refresh requests.
-  if (!isAdminPath && !isSupremePath && !isCustomerProtected && !isCustomerLoginPath) {
+  // Refresh a present session before every API handler as well as protected
+  // pages. API handlers may create their own server client; passing the
+  // refreshed request cookies prevents those handlers from trying to rotate
+  // the same stale refresh token again. Public APIs remain publicly accessible.
+  // Public storefront pages avoid an auth lookup unless they need route gating.
+  if (!isAdminPath && !isSupremePath && !isCustomerProtected && !isCustomerLoginPath && !isApiPath) {
     return response;
   }
 
@@ -86,7 +88,9 @@ export async function middleware(request: NextRequest) {
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;
 
-  response.headers.set("Cache-Control", "private, no-store");
+  if (!isApiPath || response.cookies.getAll().length > 0) {
+    response.headers.set("Cache-Control", "private, no-cache, no-store, must-revalidate, max-age=0");
+  }
 
   // Preserve Supabase's refreshed auth cookies and cache headers on
   // redirects returned after session validation.
