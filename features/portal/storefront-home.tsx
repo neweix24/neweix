@@ -18,6 +18,7 @@ type Product = {
 };
 type Customer = { name: string; email: string };
 type Category = { id: string; name: string; slug: string };
+type CustomerNotification = { id: string; event_type: string; title: string; body: string; href: string; read_at: string | null; created_at: string };
 
 function money(value: number, locale: string) {
   return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(value);
@@ -44,6 +45,12 @@ export default function StorefrontHome() {
   const pathname = usePathname();
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [quickMenuOpen, setQuickMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState("");
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
@@ -53,6 +60,7 @@ export default function StorefrontHome() {
   const [search, setSearch] = useState("");
   const [cartNotice, setCartNotice] = useState("");
   const panelRef = useRef<HTMLElement>(null);
+  const quickMenuRef = useRef<HTMLDivElement>(null);
 
   const refreshCounts = useCallback(() => {
     setCartCount(readCartCount());
@@ -164,6 +172,94 @@ export default function StorefrontHome() {
     };
   }, [drawerOpen]);
 
+  useEffect(() => {
+    let active = true;
+    fetch("/api/account/notifications", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return await response.json() as { notifications?: CustomerNotification[]; unread_count?: number };
+      })
+      .then((result) => {
+        if (!active || !result) return;
+        setNotifications(Array.isArray(result.notifications) ? result.notifications : []);
+        setUnreadNotifications(Number.isSafeInteger(result.unread_count) ? Math.max(0, result.unread_count ?? 0) : 0);
+      })
+      .catch(() => { /* The inbox retries when opened. */ });
+    return () => { active = false; };
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!notificationsOpen) return;
+    let active = true;
+    setNotificationsLoading(true);
+    setNotificationsError("");
+    fetch("/api/account/notifications", { cache: "no-store" })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(response.status === 401 ? "Sign in to view your notifications." : result.error || "Notifications are unavailable.");
+        return result as { notifications?: CustomerNotification[]; unread_count?: number };
+      })
+      .then((result) => {
+        if (!active) return;
+        setNotifications(Array.isArray(result.notifications) ? result.notifications : []);
+        setUnreadNotifications(Number.isSafeInteger(result.unread_count) ? Math.max(0, result.unread_count ?? 0) : 0);
+      })
+      .catch((error: unknown) => {
+        if (active) setNotificationsError(error instanceof Error ? error.message : "Notifications are unavailable.");
+      })
+      .finally(() => { if (active) setNotificationsLoading(false); });
+    return () => { active = false; };
+  }, [notificationsOpen]);
+
+  async function markNotificationRead(id: string) {
+    const target = notifications.find((item) => item.id === id);
+    if (!target || target.read_at) return;
+    const response = await fetch("/api/account/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (!response.ok) return;
+    const readAt = new Date().toISOString();
+    setNotifications((items) => items.map((item) => item.id === id ? { ...item, read_at: readAt } : item));
+    setUnreadNotifications((count) => Math.max(0, count - 1));
+  }
+
+  async function markAllNotificationsRead() {
+    if (!unreadNotifications) return;
+    const response = await fetch("/api/account/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mark_all_read: true }),
+    });
+    if (!response.ok) return;
+    const readAt = new Date().toISOString();
+    setNotifications((items) => items.map((item) => ({ ...item, read_at: item.read_at ?? readAt })));
+    setUnreadNotifications(0);
+  }
+
+  useEffect(() => {
+    if (!quickMenuOpen && !notificationsOpen) return;
+    function closeOnOutsideClick(event: globalThis.PointerEvent) {
+      if (event.target instanceof Node && !quickMenuRef.current?.contains(event.target)) {
+        setQuickMenuOpen(false);
+        setNotificationsOpen(false);
+      }
+    }
+    function closeOnEscape(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        setQuickMenuOpen(false);
+        setNotificationsOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [quickMenuOpen, notificationsOpen]);
+
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const term = search.trim();
@@ -186,7 +282,36 @@ export default function StorefrontHome() {
           <Link href="/" className={styles.brand} aria-label="NEWEIX home">
             <img src="/neweix-logo.svg" alt="NEWEIX" width="148" height="32" />
           </Link>
-          <button className={styles.menuButton} type="button" onClick={() => setDrawerOpen(true)} aria-label="Open quick menu" aria-haspopup="dialog" aria-expanded={drawerOpen}><Icon name="more-vertical" size={22} /></button>
+          <div ref={quickMenuRef} className={styles.headerQuickMenu}>
+            <button type="button" className={styles.notificationTrigger} aria-label="Notifications" aria-haspopup="true" aria-expanded={notificationsOpen} onClick={() => { setNotificationsOpen((open) => !open); setQuickMenuOpen(false); }}>
+              <Icon name="bell" size={19} />{unreadNotifications > 0 && <span className={styles.notificationBadge}>{unreadNotifications > 99 ? "99+" : unreadNotifications}</span>}
+            </button>
+            {notificationsOpen && <section className={styles.notificationPanel} aria-label="Notifications" aria-busy={notificationsLoading}>
+              <div className={styles.notificationHeader}>
+                <strong>Notifications{unreadNotifications > 0 ? ` (${unreadNotifications})` : ""}</strong>
+                {unreadNotifications > 0 && <button type="button" onClick={() => void markAllNotificationsRead()}>Mark all read</button>}
+              </div>
+              {notificationsLoading ? <p className={styles.notificationMessage}>Loading notifications…</p> :
+                notificationsError ? <p className={styles.notificationMessage} role="status">{notificationsError}</p> :
+                notifications.length === 0 ? <div className={styles.notificationEmpty}><Icon name="bell" size={23} /><p>You’re all caught up.</p><span>Order, payment and delivery updates will appear here.</span></div> :
+                <div className={styles.notificationList}>{notifications.map((item) => <Link key={item.id} href={item.href} className={item.read_at ? styles.notificationItem : styles.notificationItemUnread} onClick={() => { void markNotificationRead(item.id); setNotificationsOpen(false); }}>
+                  <span className={styles.notificationDot} aria-hidden="true" />
+                  <span className={styles.notificationCopy}><b>{item.title}</b><span>{item.body}</span><time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString(locale === "bn" ? "bn-BD" : "en-BD", { dateStyle: "medium", timeStyle: "short" })}</time></span>
+                </Link>)}</div>}
+            </section>}
+            <button type="button" className={styles.quickMenuTrigger} aria-label="Open quick links" aria-haspopup="true" aria-expanded={quickMenuOpen} onClick={() => { setQuickMenuOpen((open) => !open); setNotificationsOpen(false); }}>
+              <Icon name="more-horizontal" size={22} />
+            </button>
+            {quickMenuOpen && <nav className={styles.quickMenuPanel} aria-label="Quick links">
+              <Link href="/products" onClick={() => setQuickMenuOpen(false)}><Icon name="grid" size={17} />{t("productsSearch")}</Link>
+              <Link href="/track-order" onClick={() => setQuickMenuOpen(false)}><Icon name="truck" size={17} />{t("trackMyOrder")}</Link>
+              <Link href="/wishlist" onClick={() => setQuickMenuOpen(false)}><Icon name="heart" size={17} />{t("wishlist")}<b>{wishlistCount}</b></Link>
+              <Link href="/cart" onClick={() => setQuickMenuOpen(false)}><Icon name="cart" size={17} />{t("shoppingCart")}<b>{cartCount}</b></Link>
+              <Link href="/faq" onClick={() => setQuickMenuOpen(false)}><Icon name="help" size={17} />{t("faq")}</Link>
+              <Link href="/contact" onClick={() => setQuickMenuOpen(false)}><Icon name="mail" size={17} />{t("contact")}</Link>
+            </nav>}
+          </div>
+          <button className={styles.menuButton} type="button" onClick={() => setDrawerOpen(true)} aria-label="Open My Account" aria-haspopup="dialog" aria-expanded={drawerOpen}><Icon name="user" size={21} /></button>
         </div>
         <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
           <label className={styles.srOnly} htmlFor="home-product-search">{t("searchProducts")}</label>

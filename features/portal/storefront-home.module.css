@@ -304,3 +304,45 @@
 
 /* Accessible three-dot quick menu trigger */
 .menuButton{display:grid;flex:0 0 42px;width:42px;height:42px;place-items:center;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);cursor:pointer;transition:background .18s ease,border-color .18s ease,transform .18s ease}.menuButton:hover{border-color:var(--lime);background:color-mix(in srgb,var(--lime) 9%,var(--panel));transform:translateY(-1px)}.menuButton:focus-visible{outline:2px solid var(--lime);outline-offset:3px}@media(max-width:600px){.menuButton{flex-basis:38px;width:38px;height:38px}}
+
+
+/* Homepage quick links and notification popover */
+.headerQuickMenu{position:relative;display:flex;flex:0 0 auto;align-items:center;gap:8px}
+.quickMenuTrigger,.notificationTrigger{position:relative;display:grid;width:42px;height:42px;place-items:center;border:1px solid var(--line);border-radius:13px;background:var(--panel);color:var(--text);cursor:pointer;box-shadow:0 5px 16px rgba(18,42,28,.06)}
+.quickMenuTrigger:hover,.quickMenuTrigger[aria-expanded="true"],.notificationTrigger:hover,.notificationTrigger[aria-expanded="true"]{border-color:var(--lime);color:var(--lime);background:color-mix(in srgb,var(--lime) 7%,var(--panel))}
+.quickMenuTrigger:focus-visible,.notificationTrigger:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+.quickMenuPanel,.notificationPanel{position:absolute;z-index:1200;top:calc(100% + 10px);right:0;border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--text);box-shadow:0 18px 48px rgba(18,32,24,.16)}
+.quickMenuPanel{display:grid;width:min(250px,calc(100vw - 28px));gap:4px;padding:9px}
+.quickMenuPanel a{display:flex;min-height:43px;align-items:center;gap:11px;padding:9px 11px;border-radius:10px;color:var(--text);font-size:13px;font-weight:650;text-decoration:none}
+.quickMenuPanel a:hover,.quickMenuPanel a:focus-visible{outline:none;background:color-mix(in srgb,var(--lime) 9%,var(--panel));color:var(--lime)}
+.quickMenuPanel a svg{flex:0 0 auto;color:var(--lime)}
+.quickMenuPanel a b{margin-left:auto;color:var(--lime);font-size:11px}
+.notificationPanel{right:50px;display:grid;width:min(280px,calc(100vw - 28px));gap:8px;padding:17px}
+.notificationPanel strong{font-size:14px}
+.notificationPanel p{margin:4px 0 0;font-size:13px;font-weight:650}
+.notificationPanel span{color:var(--muted);font-size:11px;line-height:1.6}
+@media(max-width:600px){.quickMenuTrigger,.notificationTrigger{width:38px;height:38px;border-radius:11px}.quickMenuPanel,.notificationPanel{top:calc(100% + 8px)}.notificationPanel{right:46px}}
+
+/* Live customer notification inbox */
+.notificationTrigger{position:relative}
+.notificationHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.notificationHeader strong{font-size:14px}
+.notificationHeader button{border:0;background:transparent;color:var(--lime);font:inherit;font-size:10px;font-weight:800;cursor:pointer}
+.notificationMessage{margin:12px 0 2px;color:var(--muted);font-size:12px;line-height:1.6}
+.notificationEmpty{display:grid;justify-items:center;gap:7px;padding:18px 8px 10px;text-align:center}
+.notificationEmpty svg{color:var(--lime)}
+.notificationEmpty p{margin:0;color:var(--text);font-size:13px;font-weight:750}
+.notificationEmpty span{max-width:220px;color:var(--muted);font-size:11px;line-height:1.6}
+.notificationList{display:grid;max-height:min(390px,65vh);gap:4px;overflow-y:auto;margin:0 -6px;padding:5px 0}
+.notificationItem,.notificationItemUnread{display:flex;align-items:flex-start;gap:10px;padding:11px 8px;border-radius:10px;color:var(--text);text-decoration:none}
+.notificationItem:hover,.notificationItemUnread:hover{background:color-mix(in srgb,var(--lime) 8%,var(--panel))}
+.notificationItemUnread{background:color-mix(in srgb,var(--lime) 6%,var(--panel))}
+.notificationDot{flex:0 0 7px;width:7px;height:7px;margin-top:6px;border-radius:50%;background:transparent}
+.notificationItemUnread .notificationDot{background:var(--lime);box-shadow:0 0 0 3px color-mix(in srgb,var(--lime) 14%,transparent)}
+.notificationCopy{display:grid;min-width:0;gap:4px}
+.notificationCopy b{font-size:11px;font-weight:800}
+.notificationCopy>span{color:var(--muted);font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.notificationCopy time{color:var(--muted);font-size:9px}
+
+.notificationTrigger{position:relative}
+.notificationBadge{position:absolute;top:-5px;right:-5px;display:grid;min-width:17px;height:17px;place-items:center;padding:0 4px;border:2px solid var(--panel);border-radius:999px;background:var(--danger);color:#fff;font-size:8px;font-weight:900;line-height:1}
