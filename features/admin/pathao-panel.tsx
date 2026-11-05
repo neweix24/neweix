@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Icon from "@/components/ui/icon";
 import { BANGLADESH_ADMIN_AREAS } from "@/lib/bangladesh-admin";
 
@@ -701,6 +701,31 @@ export default function PathaoPanel() {
       setQuoteLoading(false);
     }
   }
+
+  useEffect(() => {
+    let cancelled = false;
+    const syncKey = "neweix:pathao-coverage-sync:v1";
+
+    async function ensureCoverageMappings() {
+      try {
+        const result = await getJson("/api/admin/pathao?action=location_mappings");
+        if (cancelled || (Array.isArray(result.mappings) && result.mappings.length > 0)) return;
+        if (window.sessionStorage.getItem(syncKey) === "attempted") return;
+
+        // The production checkout rejects every upazila while this table is empty.
+        // Run the existing conservative live-catalog matcher once per browser session.
+        window.sessionStorage.setItem(syncKey, "attempted");
+        await autoMapAllDistricts();
+      } catch {
+        // Keep the manual sync control available; do not block the admin panel.
+      }
+    }
+
+    void ensureCoverageMappings();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <section className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
