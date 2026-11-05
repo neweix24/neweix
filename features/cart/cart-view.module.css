@@ -55,3 +55,15 @@
 @media(max-width:850px){.layout{grid-template-columns:minmax(0,1fr) 300px}.item{grid-template-columns:84px minmax(0,1fr)}.image,.imageFallback{width:84px;height:84px}.lineTotal{grid-column:2;justify-self:start;padding-top:0}}
 @media(max-width:680px){.page{padding:20px 12px 52px}.header{padding:22px 18px;border-radius:20px}.layout{grid-template-columns:1fr}.summary{position:static;order:-1}.items{padding:15px}.trustRow{gap:9px 14px;padding:14px 3px 18px}.trustRow span{font-size:11px}.item{grid-template-columns:76px minmax(0,1fr);gap:12px;padding:15px 0}.image,.imageFallback{width:76px;height:76px;border-radius:12px}.lineTotal{grid-column:2}.details h3{font-size:14px}.controls{gap:10px}.summary{padding:19px}}
 @media(prefers-reduced-motion:no-preference){.checkout,.primaryAction,.continue{transition:transform .18s ease,box-shadow .18s ease}.checkout:hover,.primaryAction:hover{transform:translateY(-1px);box-shadow:0 13px 26px rgba(67,172,104,.22)}}
+
+.saveLater,.restore{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:6px 10px;border:1px solid #dce9dc;border-radius:9px;background:#f7fcf4;color:#326746;font-size:12px;font-weight:800;cursor:pointer}
+.saveLater:hover,.restore:hover:not(:disabled){border-color:#9dcca6;background:#eff9e9}
+.restore:disabled{opacity:.45;cursor:not-allowed}
+.savedSection{grid-column:1;min-width:0;padding:20px;border:1px solid #e1ebe0;border-radius:22px;background:rgba(255,255,255,.94);box-shadow:0 12px 34px rgba(45,110,65,.05)}
+.savedSection .sectionHeading{margin-bottom:10px}
+.savedItem{display:grid;grid-template-columns:76px minmax(0,1fr);align-items:center;gap:13px;padding:14px 0;border-top:1px solid #edf1eb}
+.savedImage,.savedImageFallback{width:76px;height:76px;border-radius:12px;object-fit:cover;background:#f0f8ed}
+.savedImageFallback{display:grid;place-items:center;color:#498c5a;font-size:10px;font-weight:900}
+.summary{grid-column:2;grid-row:1 / span 2}
+.cartEmptyNote{padding:20px 12px;color:#748075;font-size:13px;line-height:1.6}
+@media(max-width:680px){.savedSection{grid-column:1;grid-row:auto;padding:16px}.summary{grid-column:1;grid-row:auto;order:-1}.savedItem{grid-template-columns:68px minmax(0,1fr)}.savedImage,.savedImageFallback{width:68px;height:68px}}
