@@ -56,6 +56,7 @@ export default function AddToCartButton({
       merged.set(productId, current + 1);
       const cart = Array.from(merged, ([product_id, quantity]) => ({ product_id, quantity }));
       localStorage.setItem("neweix_cart", JSON.stringify(cart));
+      window.dispatchEvent(new Event("neweix-cart-change"));
       setMessage(t("cartAdded"));
     } catch {
       setMessage(t("addToCartError"));
@@ -68,8 +69,20 @@ export default function AddToCartButton({
       return;
     }
     try {
-      localStorage.setItem("neweix_buy_now", JSON.stringify([{ product_id: productId, quantity: 1 }]));
-      router.push("/checkout?buyNow=1");
+      const saved = localStorage.getItem("neweix_cart");
+      const parsed: unknown = saved ? JSON.parse(saved) : [];
+      if (!Array.isArray(parsed)) throw new Error("Invalid cart");
+      const merged = new Map<string, number>();
+      for (const item of parsed.filter(isCartItem)) {
+        merged.set(item.product_id, Math.min(100, (merged.get(item.product_id) ?? 0) + item.quantity));
+      }
+      const current = merged.get(productId) ?? 0;
+      if (current < 1) merged.set(productId, 1);
+      else merged.set(productId, Math.min(current, maxQuantity, 100));
+      const cart = Array.from(merged, ([product_id, quantity]) => ({ product_id, quantity }));
+      localStorage.setItem("neweix_cart", JSON.stringify(cart));
+      window.dispatchEvent(new Event("neweix-cart-change"));
+      router.push("/cart");
     } catch {
       setMessage(t("buyNowError"));
     }

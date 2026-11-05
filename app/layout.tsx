@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import CustomerThemeProvider from "@/components/customer-theme-provider";
 import { LanguageProvider } from "@/components/language-provider";
+import StorefrontBottomNav from "@/components/storefront-bottom-nav";
 
 const siteUrl = "https://neweix.com";
 
@@ -43,7 +44,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <LanguageProvider><CustomerThemeProvider />
-        {children}</LanguageProvider>
+        {children}
+        <StorefrontBottomNav />
+        </LanguageProvider>
       </body>
     </html>
   );

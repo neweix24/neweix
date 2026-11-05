@@ -319,13 +319,6 @@ export default function StorefrontHome() {
 
       <footer className={styles.footer}><Link href="/" className={styles.brand}><svg viewBox="0 0 148 30" role="img" aria-label="neweix" focusable="false"><text x="0" y="23" >neweix</text></svg></Link><p>{t("footerTagline")}</p><nav aria-label="Footer"><Link href="/about">{t("about")}</Link><Link href="/contact">{t("contact")}</Link><Link href="/faq">{t("faq")}</Link><Link href="/privacy">{t("privacy")}</Link><Link href="/terms">{t("terms")}</Link></nav><small>© {new Date().getFullYear()} NEWEIX. {t("allRights")}</small></footer>
 
-      <nav className={styles.bottomNav} aria-label="Mobile navigation">
-        <Link href="/" aria-current="page"><Icon name="home" size={24} />{t("homeNav")}</Link>
-        <Link href="/products"><Icon name="grid" size={24} />{t("productsSearch")}</Link>
-        <Link href="/cart"><span className={styles.bottomCartIcon}><Icon name="cart" size={24} /><b>{cartCount > 99 ? "99+" : cartCount}</b></span>{t("cart")}</Link>
-        <Link href="/account"><Icon name="user" size={24} />{t("myAccountNav")}</Link>
-      </nav>
-
     </div>
   );
 }
