@@ -54,7 +54,9 @@ export default function PathaoPanel() {
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [consignmentId, setConsignmentId] = useState("");
   const [tracking, setTracking] = useState<unknown>(null);
-  const [trackingLoading, setTrackingLoading] = useState(false);\n  const [shipments, setShipments] = useState<Shipment[]>([]);\n  const [shipmentsLoading, setShipmentsLoading] = useState(false);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [shipmentsLoading, setShipmentsLoading] = useState(false);
 
   async function getJson(url: string) {
     const response = await fetch(url, { cache: "no-store" });
