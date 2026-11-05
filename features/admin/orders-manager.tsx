@@ -114,6 +114,8 @@ export default function OrdersManager() {
   const [search, setSearch] = useState("");
   const [restockQuantities, setRestockQuantities] = useState<Record<string, number>>({});
   const [restockIdempotencyKeys, setRestockIdempotencyKeys] = useState<Record<string, string>>({});
+  const [selectedPathaoOrderIds, setSelectedPathaoOrderIds] = useState<string[]>([]);
+  const [bulkPathaoBusy, setBulkPathaoBusy] = useState(false);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -266,6 +268,94 @@ export default function OrdersManager() {
       await loadOrders();
     } finally {
       setBusyId("");
+    }
+  }
+
+  async function createBulkPathaoShipments() {
+    const selected = orders.filter((order) => selectedPathaoOrderIds.includes(order.id));
+    if (selected.length === 0 || selected.length > 10) {
+      setError("Select between 1 and 10 eligible orders for a batch.");
+      return;
+    }
+    const eligible = selected.filter((order) =>
+      ["confirmed", "processing", "packed"].includes(order.status) &&
+      !order.delivery_consignment_id &&
+      ["not_booked", "failed"].includes(order.delivery_status || "not_booked") &&
+      (order.payment_method === "cod"
+        ? Number(order.delivery_fee) <= 0 || ["paid", "not_required"].includes(order.delivery_fee_payment_status)
+        : order.payment_status === "paid")
+    );
+    if (eligible.length !== selected.length) {
+      setError("One or more selected orders are no longer eligible. Refresh orders and select again.");
+      await loadOrders();
+      return;
+    }
+
+    const rawStoreId = window.prompt("Enter the Pathao Merchant Store ID for this batch:");
+    if (!rawStoreId) return;
+    const storeId = Number(rawStoreId.trim());
+    if (!Number.isSafeInteger(storeId) || storeId < 1) {
+      setError("Enter a valid Pathao Store ID.");
+      return;
+    }
+
+    const preview = eligible.map((order) => {
+      const address = [
+        order.shipping_address || order.address,
+        order.shipping_village,
+        order.shipping_union_other || order.shipping_union,
+        order.shipping_upazila,
+        order.shipping_district || order.shipping_city,
+        order.shipping_division,
+      ].filter(Boolean).join(", ");
+      const cod = order.payment_method === "cod"
+        ? Math.max(0, Number(order.total) - (order.delivery_fee_payment_status === "paid" ? Number(order.delivery_fee) : 0))
+        : 0;
+      return { order, address, cod };
+    });
+    const invalidAddress = preview.find(({ address }) => address.length < 10 || address.length > 220);
+    if (invalidAddress) {
+      setError(`Order ${invalidAddress.order.order_number} has an incomplete or overlong Pathao address. Fix it and retry that order individually.`);
+      return;
+    }
+    const summary = preview.map(({ order, cod }) => `${order.order_number} · COD ৳${cod.toLocaleString("en-BD")}`).join("\n");
+    if (!window.confirm(`Book these ${eligible.length} orders with Pathao sequentially?\n\n${summary}\n\nEach order is reserved independently. Successful bookings are saved separately; an uncertain timeout must be checked in Pathao before retry.`)) return;
+
+    setBulkPathaoBusy(true);
+    setError("");
+    setNotice("");
+    let succeeded = 0;
+    const failures: string[] = [];
+    try {
+      for (const { order, address } of preview) {
+        try {
+          const response = await fetch("/api/admin/pathao", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            cache: "no-store",
+            body: JSON.stringify({
+              action: "create_order",
+              orderId: order.id,
+              storeId,
+              recipientAddress: address,
+              specialInstruction: "",
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok) {
+            failures.push(`${order.order_number}: ${result.error || "Booking failed"}`);
+          } else {
+            succeeded += 1;
+          }
+        } catch {
+          failures.push(`${order.order_number}: Network outcome unknown; verify Pathao Merchant Panel before retrying.`);
+        }
+      }
+      setSelectedPathaoOrderIds([]);
+      setNotice(`Pathao batch finished: ${succeeded} successful, ${failures.length} failed or requiring review.${failures.length ? ` Details: ${failures.join(" | ")}` : ""}`);
+      await loadOrders();
+    } finally {
+      setBulkPathaoBusy(false);
     }
   }
 
@@ -515,6 +605,28 @@ export default function OrdersManager() {
         {visibleOrders.length} orders found.
       </p>
 
+      <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border p-3">
+        <p className="text-sm">
+          {selectedPathaoOrderIds.length} selected · Batch booking is limited to 10 orders and processes each order through the existing atomic reservation flow.
+        </p>
+        <button
+          type="button"
+          onClick={() => void createBulkPathaoShipments()}
+          disabled={bulkPathaoBusy || busyId !== "" || statusBusyId !== "" || selectedPathaoOrderIds.length < 1 || selectedPathaoOrderIds.length > 10}
+          className="neweix-button-primary disabled:opacity-50"
+        >
+          {bulkPathaoBusy ? "Booking batch..." : "Book selected with Pathao"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedPathaoOrderIds([])}
+          disabled={bulkPathaoBusy || selectedPathaoOrderIds.length === 0}
+          className="neweix-button-secondary disabled:opacity-50"
+        >
+          Clear selection
+        </button>
+      </div>
+
       {error && (
         <p
           role="alert"
@@ -548,6 +660,26 @@ export default function OrdersManager() {
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
+                  {["confirmed", "processing", "packed"].includes(order.status) &&
+                    !order.delivery_consignment_id &&
+                    ["not_booked", "failed"].includes(order.delivery_status || "not_booked") &&
+                    (order.payment_method === "cod"
+                      ? Number(order.delivery_fee) <= 0 || ["paid", "not_required"].includes(order.delivery_fee_payment_status)
+                      : order.payment_status === "paid") && (
+                    <label className="mb-2 inline-flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedPathaoOrderIds.includes(order.id)}
+                        disabled={bulkPathaoBusy || busyId !== "" || statusBusyId !== "" || (!selectedPathaoOrderIds.includes(order.id) && selectedPathaoOrderIds.length >= 10)}
+                        onChange={(event) => setSelectedPathaoOrderIds((current) =>
+                          event.target.checked
+                            ? [...current, order.id]
+                            : current.filter((id) => id !== order.id)
+                        )}
+                      />
+                      Include in Pathao batch
+                    </label>
+                  )}
                   <h3 className="font-bold">{order.order_number}</h3>
                   <p className="mt-1 text-sm">
                     {order.customer_name} ·{" "}
