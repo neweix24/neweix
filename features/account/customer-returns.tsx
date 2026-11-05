@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import Icon from "@/components/ui/icon";
 
@@ -52,7 +52,7 @@ export default function CustomerReturns() {
   const eligibleOrders = orders.filter((order) => order.status === "delivered" && !requests.some((r) => r.order_id === order.id && ["requested", "approved", "received"].includes(r.status)));
   const currentOrder = eligibleOrders.find((order) => order.id === selectedOrder);
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setNotice("");
     const items = Object.entries(selectedItems).filter(([, quantity]) => quantity > 0).map(([order_item_id, quantity]) => ({ order_item_id, quantity }));
     if (!selectedOrder || items.length === 0) { setError("অর্ডার এবং অন্তত একটি পণ্য নির্বাচন করুন।"); return; }
