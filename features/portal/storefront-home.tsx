@@ -33,12 +33,6 @@ function readWishlistIds() {
 function money(value: number, locale: string) {
   return new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(value);
 }
-function readCount(key: string) {
-  try {
-    const value: unknown = JSON.parse(localStorage.getItem(key) ?? "[]");
-    return Array.isArray(value) ? value.length : 0;
-  } catch { return 0; }
-}
 function readCartCount() {
   try {
     const value: unknown = JSON.parse(localStorage.getItem("neweix_cart") ?? "[]");
@@ -338,7 +332,7 @@ export default function StorefrontHome() {
                 <Link href={`/products/${encodeURIComponent(product.slug)}`} className={styles.productImage}>
                   {product.image_urls?.[0] ? <img src={product.image_urls[0]} alt={product.name} loading="lazy"/> : <Icon name="package" size={42} />}
                   {product.is_featured && <small>{t("featured")}</small>}
-                  {discountPercentage(product.price, product.compare_at_price) > 0 && <span className={styles.discountBadge}>{discountPercentage(product.price, product.compare_at_price)}% OFF</span>}
+                  {discountPercentage(product.price, product.compare_at_price) > 0 && <span className={styles.discountBadge}>{discountPercentage(product.price, product.compare_at_price)}% {locale === "bn" ? "ছাড়" : "OFF"}</span>}
                 </Link>
                 <button
                   type="button"
