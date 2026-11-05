@@ -126,3 +126,10 @@
 .categoryChips button:focus-visible,.clearFilters:focus-visible,.searchSubmit:focus-visible{outline:3px solid var(--brand-lime-soft);outline-offset:2px}
 .categoryChips .activeChip{box-shadow:0 5px 14px rgba(0,0,0,.12)}
 @media(max-width:640px){.categoryChips{margin-inline:-2px;scrollbar-width:thin;overscroll-behavior-x:contain}.categoryChips button{min-height:38px;padding-inline:13px}}
+
+
+/* Product quick-view affordance and keyboard-visible controls */
+.iconButton{transition:color .18s ease,border-color .18s ease,background .18s ease,transform .18s ease}
+.iconButton:hover{transform:translateY(-1px);border-color:var(--primary)!important;color:var(--primary)}
+.iconButton:focus-visible{outline:3px solid var(--brand-lime-soft);outline-offset:2px}
+.card .iconButton[aria-pressed="true"]{border-color:var(--primary)!important;color:var(--primary);background:var(--brand-lime-soft)}
