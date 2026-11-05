@@ -310,7 +310,7 @@ export default function ProductCatalog() {
                   <span>NEWEIX</span>
                 )}
                 {product.is_featured && <small>{t("featured")}</small>}
-                {discountPercentage(product.price, product.compare_at_price) > 0 && <span className={styles.discountBadge}>{discountPercentage(product.price, product.compare_at_price)}% OFF</span>}
+                {discountPercentage(product.price, product.compare_at_price) > 0 && <span className={styles.discountBadge}>{discountPercentage(product.price, product.compare_at_price)}% {locale === "bn" ? "ছাড়" : "OFF"}</span>}
               </Link>
               <div className={styles.details}>
                 <div className={`${styles.productTools} mb-2 flex flex-wrap gap-2`}>
