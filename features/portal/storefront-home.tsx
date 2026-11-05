@@ -234,7 +234,7 @@ export default function StorefrontHome() {
               aria-expanded={quickMenuOpen}
               onClick={() => { setQuickMenuOpen((open) => !open); setNotificationsOpen(false); }}
             >
-              <span aria-hidden="true">⋯</span>
+              <Icon name="more-horizontal" size={22} />
             </button>
             {quickMenuOpen && (
               <nav className={styles.quickMenuPanel} aria-label="Quick links">
