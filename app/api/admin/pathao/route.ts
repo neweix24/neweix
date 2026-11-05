@@ -273,15 +273,15 @@ export async function POST(request: Request) {
       }
       const row = value as Record<string, unknown>;
       const identifier = typeof row.identifier === "string" ? row.identifier.trim() : "";
-      const parseAmount = (candidate: unknown, required: boolean): number | null => {
-        if (candidate == null || candidate === "") return required ? null : null;
+      const parseAmount = (candidate: unknown): number | null => {
+        if (candidate == null || candidate === "") return null;
         if (typeof candidate !== "number" || !Number.isFinite(candidate) || candidate < 0 || candidate > 100000000) return null;
         return Math.round(candidate * 100) / 100;
       };
-      const codAmount = parseAmount(row.codAmount, true);
-      const deliveryCharge = parseAmount(row.deliveryCharge, false);
-      const discountAmount = parseAmount(row.discountAmount, false);
-      const netPayoutAmount = parseAmount(row.netPayoutAmount, false);
+      const codAmount = parseAmount(row.codAmount);
+      const deliveryCharge = parseAmount(row.deliveryCharge);
+      const discountAmount = parseAmount(row.discountAmount);
+      const netPayoutAmount = parseAmount(row.netPayoutAmount);
       if (!identifier || identifier.length > 120 || codAmount === null ||
           (row.deliveryCharge != null && row.deliveryCharge !== "" && deliveryCharge === null) ||
           (row.discountAmount != null && row.discountAmount !== "" && discountAmount === null) ||
