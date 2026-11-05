@@ -22,7 +22,9 @@ create index if not exists customer_notifications_user_unread_idx
   where read_at is null;
 
 alter table public.customer_notifications enable row level security;
-revoke all on public.customer_notifications from public,anon;
+revoke all on public.customer_notifications from public,anon,authenticated;
+revoke all privileges (id,user_id,order_id,event_type,event_key,title,body,href,read_at,created_at)
+  on table public.customer_notifications from authenticated;
 grant select on public.customer_notifications to authenticated;
 grant update(read_at) on public.customer_notifications to authenticated;
 
