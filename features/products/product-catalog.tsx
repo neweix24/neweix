@@ -50,10 +50,10 @@ export default function ProductCatalog() {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [compareIds, setCompareIds] = useState<string[]>([]);
 
-  const visibleCategories = useMemo(
-    () => categories.filter((category) => products.some((product) => product.category_id === category.id)),
-    [categories, products]
-  );
+  // Show every active category returned by the categories API. Deriving this
+  // list from the first product page hid categories whose products appeared
+  // only on later pages.
+  const visibleCategories = categories;
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
