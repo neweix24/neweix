@@ -8,15 +8,28 @@
 - A warehouse represents a physical dispatch origin, not a customer's destination.
 - Each warehouse has its own address, contact details and optional Pathao Store ID.
 
-## Phase 1 delivered by this change
+## Foundation and physical stock reconciliation
 
 - Adds server-only warehouse configuration.
 - Seeds Mymensingh as the primary headquarters and Dhaka as a second dispatch location.
 - Adds per-product, per-warehouse stock records with on-hand, reserved and reorder quantities.
 - Adds an auditable inventory movement ledger.
-- Adds order fulfillment and fulfillment-line tables so one order can later be split across warehouses and shipments.
-- Adds an Admin → Warehouses & Dispatch screen and an Admin/Supreme-only API.
-- Adds a database behavior test for split-origin stock records and server-only privileges.
+- Adds order fulfillment and fulfillment-line tables so one order can be split across warehouses.
+- Adds Admin → Warehouses & Dispatch and an Admin/Supreme-only API.
+- Adds a one-time physical opening-balance workflow. It records the counted quantity and evidence note, rejects duplicate opening balances, and never copies legacy `products.stock` into a warehouse.
+- Supreme stock operations require MFA.
+
+## Atomic warehouse allocation delivered in this phase
+
+- Adds a service-role-only SQL RPC that can allocate confirmed, processing or packed orders.
+- Reserves stock using row locks inside one database transaction.
+- Prefers the primary Mymensingh warehouse, then the warehouse with the largest available quantity, then warehouse code for deterministic tie-breaking.
+- Splits an order line across warehouses when one location cannot satisfy the full quantity.
+- Creates one fulfillment group per warehouse and matching fulfillment-line records.
+- Writes one inventory movement ledger entry for every reservation slice.
+- If any item is short, the entire transaction rolls back: no partial reservation or fulfillment is left behind.
+- Adds an Admin/Supreme-only endpoint at `POST /api/admin/orders/allocate-warehouse` with Supreme MFA enforcement.
+- The endpoint is an explicit admin action; checkout does not call it automatically yet.
 
 ## Important stock safety rule
 
@@ -26,10 +39,10 @@ The two initial warehouse records have no invented street address or Pathao Stor
 
 ## Remaining implementation phases
 
-1. Reconcile legacy stock into warehouse inventory with audited opening-balance operations.
-2. Implement atomic stock reservation across one or more warehouses, with automatic origin recommendation and Admin override.
-3. Split mixed-origin order lines into separate fulfillment groups and calculate a Pathao quote using the selected origin's Pathao Store ID.
-4. Book and track each fulfillment independently; preserve idempotency, payment checks and webhook reconciliation.
-5. Add warehouse stock transfers, adjustments, returns/restocking and operational reporting.
+1. Add stock adjustment and transfer operations, plus a reconciliation view showing products not yet counted by warehouse.
+2. Add admin allocation controls and an override to choose dispatch origin; validate and test allocation edge cases.
+3. Integrate warehouse allocation into checkout atomically, without breaking the legacy checkout until every relevant SKU is reconciled.
+4. Split mixed-origin orders into separate Pathao quotes and bookings using each warehouse's own Pathao Store ID and address.
+5. Track each fulfillment independently, preserving idempotency, payment checks, webhook reconciliation, returns/restocking and operational reporting.
 
-Until phases 1–4 are complete and tested, the existing single-order checkout and Pathao booking behavior remains in place. Do not interpret the warehouse setup screen as proof that multi-origin shipping is already live.
+Until checkout and Pathao phases are complete and production configuration is verified, the existing single-order checkout and Pathao booking behavior remains in place. Warehouse setup and the manual allocation endpoint do not mean multi-origin shipping is live.
