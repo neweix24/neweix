@@ -205,4 +205,82 @@ grant execute on function public.allocate_order_to_warehouses(uuid, uuid)
 comment on function public.allocate_order_to_warehouses(uuid, uuid)
   is 'Atomically allocates confirmed order lines across active warehouses, reserves physical stock, creates split fulfillment groups, and records stock ledger movements.';
 
+
+-- Cancelling an order releases its warehouse reservations atomically with the
+-- existing order-status transition. Booked/dispatched shipments must be handled
+-- by the courier cancellation/return workflow first.
+create or replace function public.release_order_warehouse_reservations_on_cancel()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_line record;
+begin
+  if new.status::text <> 'cancelled' or old.status::text = 'cancelled' then
+    return new;
+  end if;
+
+  if exists (
+    select 1
+      from public.order_fulfillments f
+     where f.order_id = new.id
+       and f.status in ('booked', 'dispatched', 'delivered')
+  ) then
+    raise exception 'ORDER_FULFILLMENT_MUST_BE_CANCELLED_OR_RETURNED_FIRST'
+      using errcode = '55000';
+  end if;
+
+  for v_line in
+    select f.id as fulfillment_id, f.warehouse_id, fi.product_id, fi.quantity
+      from public.order_fulfillments f
+      join public.order_fulfillment_items fi on fi.fulfillment_id = f.id
+     where f.order_id = new.id
+       and f.status <> 'cancelled'
+     order by f.warehouse_id, fi.product_id, f.id
+  loop
+    update public.warehouse_inventory
+       set quantity_reserved = quantity_reserved - v_line.quantity,
+           updated_at = pg_catalog.now()
+     where warehouse_id = v_line.warehouse_id
+       and product_id = v_line.product_id
+       and quantity_reserved >= v_line.quantity;
+
+    if not found then
+      raise exception 'ORDER_FULFILLMENT_RESERVED_STOCK_INCONSISTENT'
+        using errcode = '23514';
+    end if;
+
+    insert into public.inventory_movements (
+      product_id, from_warehouse_id, to_warehouse_id, quantity,
+      movement_type, reference_type, reference_id, note, actor_user_id
+    ) values (
+      v_line.product_id, v_line.warehouse_id, null, v_line.quantity,
+      'order_release', 'order_fulfillment', v_line.fulfillment_id,
+      'Released because order ' || new.id::text || ' was cancelled', null
+    );
+  end loop;
+
+  update public.order_fulfillments
+     set status = 'cancelled', updated_at = pg_catalog.now()
+   where order_id = new.id
+     and status not in ('cancelled', 'dispatched', 'delivered', 'booked');
+
+  return new;
+end;
+$function$;
+
+drop trigger if exists orders_release_warehouse_reservations_on_cancel on public.orders;
+create trigger orders_release_warehouse_reservations_on_cancel
+after update of status on public.orders
+for each row
+when (new.status::text = 'cancelled' and old.status::text is distinct from new.status::text)
+execute function public.release_order_warehouse_reservations_on_cancel();
+
+revoke all on function public.release_order_warehouse_reservations_on_cancel()
+  from public, anon, authenticated;
+grant execute on function public.release_order_warehouse_reservations_on_cancel()
+  to service_role;
+
 commit;
