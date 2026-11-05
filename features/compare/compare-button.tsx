@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Icon from "@/components/ui/icon";
+import { loadSavedProductLists, mutateSavedProduct } from "@/lib/customer-saved-products";
 
 const KEY = "neweix_compare";
 const LIMIT = 4;
@@ -21,7 +22,7 @@ export default function CompareButton({ productId }: { productId: string }) {
   const [ids, setIds] = useState<string[]>([]);
   const [message, setMessage] = useState("");
 
-  useEffect(() => setIds(readIds()), []);
+  useEffect(() => { setIds(readIds()); void loadSavedProductLists().then((lists) => setIds(lists.compare)); }, []);
 
   function toggle() {
     const current = readIds();
@@ -42,6 +43,7 @@ export default function CompareButton({ productId }: { productId: string }) {
       localStorage.setItem(KEY, JSON.stringify(next));
       setIds(next);
       window.dispatchEvent(new Event("neweix-compare-change"));
+      void mutateSavedProduct("compare", productId, next.includes(productId) ? "add" : "remove").then((result) => { if (!result.ok) setMessage(result.error || "তুলনার তালিকা সিঙ্ক করা যায়নি।"); });
     } catch {
       setMessage("তুলনার তালিকা সংরক্ষণ করা যায়নি।");
     }

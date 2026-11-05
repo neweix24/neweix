@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { loadSavedProductLists, mutateSavedProduct, readSavedProductLists, writeSavedProductLists } from "@/lib/customer-saved-products";
 
 type Product = {
   id: string;
@@ -39,6 +40,7 @@ export default function CompareView() {
   useEffect(() => {
     const sync = () => setIds(readIds());
     sync();
+    void loadSavedProductLists().then((lists) => setIds(lists.compare));
     window.addEventListener("storage", sync);
     window.addEventListener("neweix-compare-change", sync);
     let active = true;
@@ -62,8 +64,10 @@ export default function CompareView() {
   function remove(id: string) {
     const next = ids.filter((value) => value !== id);
     try {
-      localStorage.setItem(KEY, JSON.stringify(next));
+      const lists = readSavedProductLists();
+      writeSavedProductLists({ ...lists, compare: next });
       setIds(next);
+      void mutateSavedProduct("compare", id, "remove").then((result) => { if (!result.ok) setError(result.error || "Could not sync your comparison list."); });
       window.dispatchEvent(new Event("neweix-compare-change"));
     } catch {
       setError("Could not update your comparison list.");
@@ -72,8 +76,10 @@ export default function CompareView() {
 
   function clear() {
     try {
-      localStorage.removeItem(KEY);
+      const lists = readSavedProductLists();
+      writeSavedProductLists({ ...lists, compare: [] });
       setIds([]);
+      for (const id of ids) void mutateSavedProduct("compare", id, "remove");
       window.dispatchEvent(new Event("neweix-compare-change"));
     } catch {
       setError("Could not clear your comparison list.");

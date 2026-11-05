@@ -4,6 +4,7 @@ import Link from "next/link";
 import Icon from "@/components/ui/icon";
 import { useEffect, useMemo, useState } from "react";
 import ProductCardActions from "@/features/products/product-card-actions";
+import { loadSavedProductLists, mutateSavedProduct, readSavedProductLists, writeSavedProductLists } from "@/lib/customer-saved-products";
 
 type Product = { id: string; name: string; slug: string; description: string | null; price: number; image_urls: string[] | null; stock: number };
 const KEY = "neweix_wishlist";
@@ -27,6 +28,7 @@ export default function WishlistView() {
 
   useEffect(() => {
     setIds(readIds());
+    void loadSavedProductLists().then((lists) => setIds(lists.wishlist));
     let active = true;
     fetch("/api/products", { cache: "no-store" })
       .then(async (response) => {
@@ -44,7 +46,11 @@ export default function WishlistView() {
   function remove(id: string) {
     const next = ids.filter((value) => value !== id);
     setIds(next);
-    try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { setError("Could not save your wishlist."); }
+    try {
+      const lists = readSavedProductLists();
+      writeSavedProductLists({ ...lists, wishlist: next });
+      void mutateSavedProduct("wishlist", id, "remove").then((result) => { if (!result.ok) setError(result.error || "Could not sync your wishlist."); });
+    } catch { setError("Could not save your wishlist."); }
   }
 
   return (
