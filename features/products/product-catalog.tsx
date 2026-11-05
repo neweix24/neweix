@@ -165,6 +165,7 @@ export default function ProductCatalog() {
   }, [filtersReady, filterKey, reloadToken, query]);
 
   const filtered = products;
+  const hasActiveFilters = Boolean(query.trim() || categorySlug || minPrice.trim() || maxPrice.trim() || inStockOnly);
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -284,11 +285,8 @@ export default function ProductCatalog() {
             <button type="button" onClick={() => setReloadToken((value) => value + 1)}><Icon name="refresh" size={16} /> {t("retry")}</button>
           </div>
         )}
-        {!loading && !error && products.length === 0 && (
-          <p className={styles.state}>{t("noProducts")}</p>
-        )}
-        {!loading && !error && products.length > 0 && filtered.length === 0 && (
-          <p className={styles.state}>{t("noMatchingProducts")}</p>
+        {!loading && !error && total === 0 && (
+          <p className={styles.state}>{hasActiveFilters ? t("noMatchingProducts") : t("noProducts")}</p>
         )}
         <div className={styles.grid}>
           {filtered.map((product) => (
