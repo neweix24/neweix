@@ -291,7 +291,7 @@ export default function AccountView() {
                     <p>Manage your shopping and preferences.</p>
                   </div>
                   <nav className="account-links" aria-label="Account sections">
-                    <a className="account-nav-overview" href="#account-overview">Account overview</a>
+                    <Link className="account-nav-overview" href="#account-overview" aria-current="page">Account overview</Link>
                     <span className="account-nav-label">SHOPPING</span>
                     <Link href="/orders">My orders</Link>
                     <Link href="/wishlist">Wishlist</Link>
@@ -468,7 +468,6 @@ export default function AccountView() {
           min-height: 100vh;
           padding: 0 20px 72px;
           background: radial-gradient(ellipse at 85% 0%, rgba(182,255,74,.14), transparent 38%), linear-gradient(145deg, #fbfff7, #f3fff5 58%, #f5fbff);
-          color: var(--ink);
           color: var(--ink);
         }
 
