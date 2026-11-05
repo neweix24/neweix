@@ -304,3 +304,20 @@
 
 /* Accessible three-dot quick menu trigger */
 .menuButton{display:grid;flex:0 0 42px;width:42px;height:42px;place-items:center;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);cursor:pointer;transition:background .18s ease,border-color .18s ease,transform .18s ease}.menuButton:hover{border-color:var(--lime);background:color-mix(in srgb,var(--lime) 9%,var(--panel));transform:translateY(-1px)}.menuButton:focus-visible{outline:2px solid var(--lime);outline-offset:3px}@media(max-width:600px){.menuButton{flex-basis:38px;width:38px;height:38px}}
+
+
+/* Header quick links and notifications */
+.headerQuickMenu{position:relative;display:flex;flex:0 0 auto;align-items:center;gap:8px}
+.quickMenuTrigger,.notificationTrigger{position:relative;display:grid;width:42px;height:42px;place-items:center;border:1px solid var(--line);border-radius:13px;background:var(--panel);color:var(--text);cursor:pointer;box-shadow:0 5px 16px rgba(18,42,28,.06)}
+.quickMenuTrigger:hover,.quickMenuTrigger[aria-expanded="true"],.notificationTrigger:hover,.notificationTrigger[aria-expanded="true"]{border-color:var(--lime);color:var(--lime);background:color-mix(in srgb,var(--lime) 7%,var(--panel))}
+.quickMenuPanel,.notificationPanel{position:absolute;z-index:1200;top:calc(100% + 10px);right:0;border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--text);box-shadow:0 18px 48px rgba(18,32,24,.16)}
+.quickMenuPanel{display:grid;width:min(250px,calc(100vw - 28px));gap:4px;padding:9px}
+.quickMenuPanel a{display:flex;min-height:43px;align-items:center;gap:11px;padding:9px 11px;border-radius:10px;color:var(--text);font-size:13px;font-weight:650;text-decoration:none}
+.quickMenuPanel a:hover,.quickMenuPanel a:focus-visible{outline:none;background:color-mix(in srgb,var(--lime) 9%,var(--panel));color:var(--lime)}
+.quickMenuPanel a svg{flex:0 0 auto;color:var(--lime)}
+.quickMenuPanel a b{margin-left:auto;color:var(--lime);font-size:11px}
+.notificationPanel{right:50px;display:grid;width:min(280px,calc(100vw - 28px));gap:8px;padding:17px}
+.notificationPanel strong{font-size:14px}
+.notificationPanel p{margin:4px 0 0;font-size:13px;font-weight:650}
+.notificationPanel span{color:var(--muted);font-size:11px;line-height:1.6}
+@media(max-width:600px){.quickMenuTrigger,.notificationTrigger{width:38px;height:38px;border-radius:11px}.quickMenuPanel,.notificationPanel{top:calc(100% + 8px)}.notificationPanel{right:46px}}
