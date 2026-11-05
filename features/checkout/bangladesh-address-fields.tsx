@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BANGLADESH_ADMIN_AREAS,
   findAddressCodesByNames,
@@ -52,6 +52,8 @@ export default function BangladeshAddressFields({
   const [unionCode, setUnionCode] = useState(initial.unionCode);
   const [unionOther, setUnionOther] = useState("");
   const [upazilaOther, setUpazilaOther] = useState(initial.upazilaCode === "other" ? initialUpazila ?? "" : "");
+  const onAddressChangeRef = useRef(onAddressChange);
+  onAddressChangeRef.current = onAddressChange;
 
   const division = BANGLADESH_ADMIN_AREAS.find((item) => item.code === divisionCode);
   const districts = division?.districts ?? [];
@@ -60,12 +62,15 @@ export default function BangladeshAddressFields({
   const upazila = upazilas.find((item) => item.code === upazilaCode);
   const unions = upazila?.unions ?? [];
 
+  useEffect(() => {
+    onAddressChangeRef.current?.({ districtCode, upazilaCode });
+  }, [districtCode, upazilaCode]);
+
   function changeDivision(value: string) {
     setDivisionCode(value);
     setDistrictCode("");
     setUpazilaCode("");
     setUnionCode("");
-    onAddressChange?.({ districtCode: "", upazilaCode: "" });
   }
 
   function changeDistrict(value: string) {
@@ -73,13 +78,11 @@ export default function BangladeshAddressFields({
     setUpazilaCode("");
     setUnionCode("");
     const selected = districts.find((item) => item.code === value);
-    onAddressChange?.({ districtCode: value, upazilaCode: "" });
   }
 
   function changeUpazila(value: string) {
     setUpazilaCode(value);
     setUnionCode("");
-    onAddressChange?.({ districtCode, upazilaCode: value });
   }
 
   return (
