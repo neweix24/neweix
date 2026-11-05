@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Icon from "@/components/ui/icon";
-import { useRouter } from "next/navigation";
 
 type DataRequest = {
   id: string;
@@ -29,7 +28,6 @@ const statusNames: Record<DataRequest["status"], string> = {
 };
 
 export default function CustomerDataRequests() {
-  const router = useRouter();
   const [requests, setRequests] = useState<DataRequest[]>([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -41,8 +39,7 @@ export default function CustomerDataRequests() {
       const response = await fetch("/api/account/data-requests", { cache: "no-store" });
       const result = await response.json();
       if (response.status === 401) {
-        router.replace("/auth/customer-login?next=/account/data-requests");
-        return;
+        throw new Error("Your session could not be verified. Refresh the page and try again.");
       }
       if (!response.ok) throw new Error(result.error || "Could not load requests.");
       setRequests(Array.isArray(result.requests) ? result.requests : []);
@@ -51,7 +48,7 @@ export default function CustomerDataRequests() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => { void loadRequests(); }, [loadRequests]);
 
