@@ -139,7 +139,7 @@ export default function CustomerThemePage() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, []);
 
   function updateColor(key: keyof ThemeSettings, value: string) {
     setTheme((current) => ({ ...current, [key]: value }));
