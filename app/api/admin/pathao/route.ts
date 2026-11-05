@@ -223,8 +223,8 @@ export async function POST(request: Request) {
   let body: unknown;
   try {
     const raw = await request.text();
-    if (new TextEncoder().encode(raw).byteLength > 8192) {
-      return errorResponse("Request is too large.", 413);
+    if (new TextEncoder().encode(raw).byteLength > 1_048_576) {
+      return errorResponse("Request is too large. Settlement imports are limited to 1 MB.", 413);
     }
     body = JSON.parse(raw);
   } catch {
