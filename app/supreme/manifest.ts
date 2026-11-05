@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "NEWEIX Control",
     description: "Secure Supreme-only NEWEIX business control workspace.",
     start_url: "/supreme",
-    scope: "/supreme/",
+    scope: "/supreme",
     display: "standalone",
     orientation: "portrait",
     background_color: "#080b09",
