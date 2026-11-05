@@ -629,7 +629,8 @@ export default function PathaoPanel() {
       const unmapped = accumulated.filter((item) =>
         !["fully_mapped", "partially_mapped"].includes(item.status)
       ).length;
-      setMappingMessage(`Coverage scan finished: ${fullyMapped} districts fully mapped, ${partiallyMapped} partially mapped, ${unmapped} need manual review. ${mappedUpazilas} verified upazila mappings saved. No ambiguous or non-exact names were guessed.`);
+      const syncErrors = accumulated.filter((item) => item.status === "sync_error").length;
+      setMappingMessage(`Coverage scan finished: ${fullyMapped} districts fully mapped, ${partiallyMapped} partially mapped, ${unmapped} need manual review, ${syncErrors} had API/sync errors. ${mappedUpazilas} verified upazila mappings saved. No ambiguous or non-exact names were guessed.`);
     } catch (error) {
       setMappingMessage(error instanceof Error ? error.message : "Pathao 64-district coverage scan failed.");
     } finally {
