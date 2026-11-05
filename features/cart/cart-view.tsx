@@ -32,6 +32,7 @@ export default function CartView() {
   const { t, locale } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [savedItems, setSavedItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -48,6 +49,21 @@ export default function CartView() {
       const normalized = Array.from(merged, ([product_id, quantity]) => ({ product_id, quantity }));
       setCart(normalized);
       localStorage.setItem("neweix_cart", JSON.stringify(normalized));
+      try {
+        const savedForLaterRaw = localStorage.getItem("neweix_saved_for_later");
+        const savedForLaterParsed: unknown = savedForLaterRaw ? JSON.parse(savedForLaterRaw) : [];
+        if (!Array.isArray(savedForLaterParsed)) throw new Error("Invalid saved items");
+        const savedMerged = new Map<string, number>();
+        for (const item of savedForLaterParsed.filter(isCartItem)) {
+          savedMerged.set(item.product_id, Math.min(100, (savedMerged.get(item.product_id) ?? 0) + item.quantity));
+        }
+        const normalizedSaved = Array.from(savedMerged, ([product_id, quantity]) => ({ product_id, quantity }));
+        setSavedItems(normalizedSaved);
+        localStorage.setItem("neweix_saved_for_later", JSON.stringify(normalizedSaved));
+      } catch {
+        setSavedItems([]);
+        localStorage.removeItem("neweix_saved_for_later");
+      }
     } catch {
       setCart([]);
       setError(t("cartReadError"));
@@ -80,9 +96,52 @@ export default function CartView() {
     return product ? [{ product, quantity: entry.quantity }] : [];
   });
   const unavailable = cart.filter((entry) => !productMap.has(entry.product_id));
+  const savedProductItems = savedItems.flatMap((entry) => {
+    const product = productMap.get(entry.product_id);
+    return product ? [{ product, quantity: entry.quantity }] : [];
+  });
+  const unavailableSaved = savedItems.filter((entry) => !productMap.has(entry.product_id));
   const stockIssues = items.filter(({ product, quantity }) => quantity > product.stock || product.stock < 1);
   const total = items.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  function saveForLater(product: Product) {
+    const item = cart.find((entry) => entry.product_id === product.id);
+    if (!item) return;
+    const alreadySaved = savedItems.find((entry) => entry.product_id === product.id);
+    const nextSaved = alreadySaved
+      ? savedItems.map((entry) => entry.product_id === product.id ? { ...entry, quantity: Math.min(100, entry.quantity + item.quantity) } : entry)
+      : [...savedItems, item];
+    saveCart(cart.filter((entry) => entry.product_id !== product.id));
+    setSavedItems(nextSaved);
+    localStorage.setItem("neweix_saved_for_later", JSON.stringify(nextSaved));
+    setNotice(`${product.name} saved for later.`);
+  }
+
+  function moveSavedToCart(product: Product) {
+    const saved = savedItems.find((entry) => entry.product_id === product.id);
+    if (!saved) return;
+    const current = cart.find((entry) => entry.product_id === product.id);
+    const nextQuantity = (current?.quantity ?? 0) + saved.quantity;
+    if (nextQuantity > product.stock || nextQuantity > 100) {
+      setNotice(`Only ${product.stock} unit(s) are currently available. Adjust the saved quantity before moving it to your cart.`);
+      return;
+    }
+    const nextCart = current
+      ? cart.map((entry) => entry.product_id === product.id ? { ...entry, quantity: nextQuantity } : entry)
+      : [...cart, saved];
+    saveCart(nextCart);
+    const nextSaved = savedItems.filter((entry) => entry.product_id !== product.id);
+    setSavedItems(nextSaved);
+    localStorage.setItem("neweix_saved_for_later", JSON.stringify(nextSaved));
+    setNotice(`${product.name} moved to your cart.`);
+  }
+
+  function removeSaved(productId: string) {
+    const nextSaved = savedItems.filter((entry) => entry.product_id !== productId);
+    setSavedItems(nextSaved);
+    localStorage.setItem("neweix_saved_for_later", JSON.stringify(nextSaved));
+  }
 
   function changeQuantity(product: Product, change: number) {
     const item = cart.find((entry) => entry.product_id === product.id);
@@ -129,7 +188,7 @@ export default function CartView() {
           </div>
         )}
 
-        {!loading && !error && items.length === 0 && (
+        {!loading && !error && items.length === 0 && savedItems.length === 0 && (
           <section className={styles.empty}>
             <span className={styles.emptyIcon}><Icon name="cart" size={30} /></span>
             <h2>{t("emptyCart")}</h2>
@@ -138,13 +197,14 @@ export default function CartView() {
           </section>
         )}
 
-        {!loading && !error && items.length > 0 && (
+        {!loading && !error && (items.length > 0 || savedItems.length > 0) && (
           <div className={styles.layout}>
             <section className={styles.items} aria-label={t("cartProducts")}>
               <div className={styles.sectionHeading}>
                 <h2>{t("cartProducts")}</h2>
                 <span>{itemCount} {t("itemCount")}</span>
               </div>
+              {items.length === 0 && <p className={styles.cartEmptyNote}>Your cart is empty. Move a saved item back to your cart when you are ready.</p>}
               {items.map(({ product, quantity }) => (
                 <article key={product.id} className={styles.item}>
                   {product.image_urls?.[0] ? (
@@ -161,6 +221,7 @@ export default function CartView() {
                         <span aria-live="polite">{quantity}</span>
                         <button type="button" aria-label={product.name + " " + t("increaseQuantity")} disabled={quantity >= product.stock} onClick={() => changeQuantity(product, 1)}><Icon name="plus" size={15} /></button>
                       </div>
+                      <button type="button" className={styles.saveLater} onClick={() => saveForLater(product)}><Icon name="tag" size={15} /> Save for later</button>
                       <button type="button" className={styles.remove} onClick={() => saveCart(cart.filter((entry) => entry.product_id !== product.id))}><Icon name="trash" size={15} /> {t("remove")}</button>
                     </div>
                   </div>
@@ -169,7 +230,42 @@ export default function CartView() {
               ))}
             </section>
 
-            <aside className={styles.summary}>
+            {savedItems.length > 0 && (
+              <section className={styles.savedSection} aria-labelledby="saved-for-later-heading">
+                <div className={styles.sectionHeading}>
+                  <h2 id="saved-for-later-heading">Saved for later</h2>
+                  <span>{savedItems.length} {savedItems.length === 1 ? "item" : "items"}</span>
+                </div>
+                {unavailableSaved.length > 0 && (
+                  <div className={styles.warning}>
+                    <p>{unavailableSaved.length} saved item(s) are no longer available.</p>
+                    <button type="button" onClick={() => {
+                      const next = savedItems.filter((entry) => productMap.has(entry.product_id));
+                      setSavedItems(next);
+                      localStorage.setItem("neweix_saved_for_later", JSON.stringify(next));
+                    }}><Icon name="trash" size={16} /> Remove unavailable</button>
+                  </div>
+                )}
+                {savedProductItems.map(({ product, quantity }) => (
+                  <article key={product.id} className={styles.savedItem}>
+                    {product.image_urls?.[0] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={product.image_urls[0]} alt={product.name} loading="lazy" className={styles.savedImage} />
+                    ) : <div className={styles.savedImageFallback}>NEWEIX</div>}
+                    <div className={styles.details}>
+                      <h3>{product.name}</h3>
+                      <p className={styles.unitPrice}>{formatPrice(Number(product.price), locale)} <span>· Saved quantity: {quantity}</span></p>
+                      <div className={styles.controls}>
+                        <button type="button" className={styles.restore} onClick={() => moveSavedToCart(product)} disabled={product.stock < 1}>Move to cart</button>
+                        <button type="button" className={styles.remove} onClick={() => removeSaved(product.id)}><Icon name="trash" size={15} /> Remove</button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </section>
+            )}
+
+            {items.length > 0 && <aside className={styles.summary}>
               <h2>{t("orderSummary")}</h2>
               <div className={styles.summaryRow}><span>{t("products")} ({itemCount})</span><strong>{formatPrice(total, locale)}</strong></div>
               <div className={styles.summaryRow}><span>{t("delivery")}</span><span className={styles.muted}>{t("confirmedAtCheckout")}</span></div>
@@ -182,7 +278,7 @@ export default function CartView() {
               ) : <button type="button" disabled className={styles.checkoutDisabled}><Icon name="shield" size={17} /> {t("fixCartFirst")}</button>}
               <Link href="/products" className={styles.backLink}>{t("continueShopping")}</Link>
               <div className={styles.secureNote}><Icon name="shield" size={16} /><span>Your order is rechecked for current price and stock before it is placed.</span></div>
-            </aside>
+            </aside>}
           </div>
         )}
       </div>
