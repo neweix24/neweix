@@ -44,11 +44,23 @@ export function maskBangladeshPhone(phone: string): string {
 
 export async function getAuthenticatedCustomer(): Promise<{ id: string } | null> {
   try {
+    // Verify the cookie-backed customer session with Supabase Auth itself.
+    // getUser() is the same server-side validation path used by the profile
+    // bootstrap endpoint; relying on locally decoded claims here caused valid
+    // Google OAuth sessions to be rejected by the OTP endpoints.
     const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase.auth.getClaims();
-    const userId = data?.claims?.sub;
-    return error || typeof userId !== "string" ? null : { id: userId };
-  } catch {
+    const { data, error } = await supabase.auth.getUser();
+    const userId = data.user?.id;
+    if (error || typeof userId !== "string" || !userId) {
+      if (error) console.warn("Customer session validation failed:", error.message);
+      return null;
+    }
+    return { id: userId };
+  } catch (error) {
+    console.warn(
+      "Customer session validation unavailable:",
+      error instanceof Error ? error.message : "unknown error"
+    );
     return null;
   }
 }
