@@ -10,9 +10,11 @@ export default function EixPayPage() {
   return (
     <>
       <EixPayWallet />
-      <div className="mx-auto max-w-6xl px-4 pb-10 sm:px-6">
-        <WalletPaymentMethods />
-      </div>
+      <section className="bg-[#08110d] px-4 py-8 text-white sm:px-6 lg:py-12">
+        <div className="mx-auto max-w-6xl">
+          <WalletPaymentMethods />
+        </div>
+      </section>
     </>
   );
 }
