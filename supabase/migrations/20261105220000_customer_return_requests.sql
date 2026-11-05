@@ -164,4 +164,99 @@ revoke all on function public.customer_create_return_request(uuid, uuid, text, t
 grant execute on function public.customer_create_return_request(uuid, uuid, text, text, jsonb)
   to service_role;
 
+
+create or replace function public.admin_review_customer_return_request(
+  p_request_id uuid,
+  p_actor_id uuid,
+  p_new_status text,
+  p_staff_note text default null,
+  p_refund_amount integer default null,
+  p_refund_method text default null,
+  p_refund_reference text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_request public.customer_return_requests%rowtype;
+begin
+  if p_request_id is null or p_actor_id is null
+     or p_new_status not in ('approved', 'rejected', 'received', 'refunded', 'closed')
+     or (p_staff_note is not null and pg_catalog.char_length(p_staff_note) > 1000)
+     or (p_refund_reference is not null and pg_catalog.char_length(p_refund_reference) > 120) then
+    raise exception 'INVALID_RETURN_REVIEW';
+  end if;
+
+  if not exists (
+    select 1 from public.staff_profiles sp
+    where sp.user_id = p_actor_id
+      and sp.role in ('supreme', 'admin')
+      and sp.is_active = true
+  ) then
+    raise exception 'ACTOR_NOT_AUTHORIZED';
+  end if;
+
+  select * into v_request
+    from public.customer_return_requests
+   where id = p_request_id
+   for update;
+  if not found then raise exception 'RETURN_REQUEST_NOT_FOUND'; end if;
+
+  if not (
+    (v_request.status = 'requested' and p_new_status in ('approved', 'rejected'))
+    or (v_request.status = 'approved' and p_new_status in ('received', 'rejected'))
+    or (v_request.status = 'received' and p_new_status in ('refunded', 'closed'))
+    or (v_request.status = 'refunded' and p_new_status = 'closed')
+  ) then
+    raise exception 'INVALID_RETURN_STATUS_TRANSITION';
+  end if;
+
+  if p_new_status = 'refunded' and (
+    p_refund_amount is null or p_refund_amount < 0
+    or p_refund_method is null
+    or p_refund_method not in ('original', 'bkash', 'nagad', 'rocket', 'bank', 'eixon', 'manual')
+  ) then
+    raise exception 'REFUND_DETAILS_REQUIRED';
+  end if;
+
+  update public.customer_return_requests
+     set status = p_new_status,
+         staff_note = coalesce(pg_catalog.btrim(p_staff_note), staff_note),
+         refund_amount = case when p_new_status = 'refunded' then p_refund_amount else refund_amount end,
+         refund_method = case when p_new_status = 'refunded' then p_refund_method else refund_method end,
+         refund_reference = case when p_new_status = 'refunded' then nullif(pg_catalog.btrim(p_refund_reference), '') else refund_reference end,
+         reviewed_by = p_actor_id,
+         reviewed_at = pg_catalog.now(),
+         updated_at = pg_catalog.now()
+   where id = p_request_id;
+
+  insert into public.audit_logs(actor_id, action, target_type, target_id, details)
+  values (
+    p_actor_id,
+    'customer_return_request.' || p_new_status,
+    'customer_return_request',
+    p_request_id::text,
+    pg_catalog.jsonb_build_object(
+      'previous_status', v_request.status,
+      'new_status', p_new_status,
+      'refund_amount', case when p_new_status = 'refunded' then p_refund_amount else null end,
+      'refund_method', case when p_new_status = 'refunded' then p_refund_method else null end
+    )
+  );
+
+  return pg_catalog.jsonb_build_object(
+    'request_id', p_request_id,
+    'previous_status', v_request.status,
+    'status', p_new_status
+  );
+end;
+$function$;
+
+revoke all on function public.admin_review_customer_return_request(uuid, uuid, text, text, integer, text, text)
+  from public, anon, authenticated;
+grant execute on function public.admin_review_customer_return_request(uuid, uuid, text, text, integer, text, text)
+  to service_role;
+
 commit;
