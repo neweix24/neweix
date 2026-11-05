@@ -9,6 +9,7 @@ import styles from "./storefront-home.module.css";
 import HomepageYouTubeVideos from "@/features/portal/homepage-youtube-videos";
 import ProductCardActions from "@/features/products/product-card-actions";
 import { useLanguage } from "@/components/language-provider";
+import LanguageSwitcher from "@/components/language-switcher";
 
 type Product = {
   id: string; name: string; slug: string; price: number;
@@ -269,6 +270,7 @@ export default function StorefrontHome() {
           <div className={styles.drawerHead}><div><span className={styles.eyebrow}>{t("customer")}</span><h2 id="drawer-title">{t("myAccount")}</h2></div><button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close menu"><Icon name="close" size={18} /></button></div>
           <div className={styles.drawerGroup}>{customer ? <Link href="/account" onClick={() => setDrawerOpen(false)}><Icon name="user" size={17} /> <span>{t("myProfile")}</span></Link> : <Link href="/auth/customer-login?next=/account" onClick={() => setDrawerOpen(false)}><Icon name="user" size={17} /> <span>{t("loginSignup")}</span></Link>}</div>
           <div className={styles.drawerGroup}><span>{t("myShopping")}</span><Link href="/orders" onClick={() => setDrawerOpen(false)}><Icon name="orders" size={17} /> <span>{t("myOrders")}</span></Link><Link href="/track-order" onClick={() => setDrawerOpen(false)}><Icon name="truck" size={17} /> <span>{t("trackMyOrder")}</span></Link><Link href="/wishlist" onClick={() => setDrawerOpen(false)}><Icon name="heart" size={17} /> <span>{t("wishlist")}</span><b>{wishlistCount}</b></Link><Link href="/cart" onClick={() => setDrawerOpen(false)}><Icon name="cart" size={17} /> <span>{t("shoppingCart")}</span><b>{cartCount}</b></Link></div>
+          <div className={styles.drawerGroup}><span>{t("preferences")}</span><div style={{ padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}><LanguageSwitcher /></div></div>
           <div className={styles.drawerGroup}><span>{t("accountSettings")}</span><Link href="/account/eixpay" onClick={() => setDrawerOpen(false)}><Icon name="wallet" size={17} /> <span>EixPay Wallet · Eixon</span></Link><Link href="/account/neweix-plus" onClick={() => setDrawerOpen(false)}><Icon name="membership" size={17} /> <span>Neweix+ Membership</span></Link><Link href="/eixverse" onClick={() => setDrawerOpen(false)}><Icon name="globe" size={17} /> <span>EixVerse</span></Link><Link href="/account/theme" onClick={() => setDrawerOpen(false)}><Icon name="settings" size={17} /> <span>{t("themePreferences")}</span></Link>
              <Link href="/account/addresses" onClick={() => setDrawerOpen(false)}><Icon name="map-pin" size={17} /> <span>{t("deliveryAddresses")}</span></Link>
              <Link href="/account/privacy" onClick={() => setDrawerOpen(false)}><Icon name="shield" size={17} /> <span>{t("privacyConsent")}</span></Link>
