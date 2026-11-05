@@ -46,11 +46,28 @@ function getProviderStatus(payload: unknown): string {
 
 function mapPathaoStatus(status: string): string | null {
   if (!status) return null;
-  if (status.includes("deliver")) return "delivered";
-  if (status.includes("return")) return "returned";
-  if (status.includes("cancel")) return "cancelled";
+
+  // Partial delivery, exchange, return requests/in-transit, and hold are
+  // separate operational outcomes. They must never be collapsed into a
+  // fully delivered or fully returned order state.
+  if (
+    status.includes("partial") ||
+    status.includes("exchange") ||
+    status.includes("returnidcreated") ||
+    status.includes("returnintransit") ||
+    status.includes("onhold")
+  ) return null;
+
+  if (status === "delivered" || status === "orderdelivered") return "delivered";
+  if (
+    status === "returned" ||
+    status === "orderreturned" ||
+    status === "returnedtomerchant" ||
+    status === "orderreturnedtomerchant"
+  ) return "returned";
+  if (status === "cancelled" || status === "canceled" || status === "ordercancelled") return "cancelled";
   if (status.includes("pickupfailed") || status.includes("deliveryfailed") || status === "failed") return "failed";
-  if (status === "picked" || status.includes("pickedup")) return "picked_up";
+  if (status === "picked" || status === "orderpicked" || status.includes("pickedup")) return "picked_up";
   if (
     status.includes("transit") ||
     status.includes("sortinghub") ||
