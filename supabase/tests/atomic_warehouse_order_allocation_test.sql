@@ -37,13 +37,12 @@ begin
   values (v_actor_id, 'Warehouse Allocation Test', 'admin', true);
 
   insert into public.products (name, slug, price, stock, is_active)
-  values
-    ('Allocation product A', 'allocation-a-' || v_actor_id::text, 100, 99, true),
-    ('Allocation product B', 'allocation-b-' || v_actor_id::text, 200, 99, true)
+  values ('Allocation product A', 'allocation-a-' || v_actor_id::text, 100, 99, true)
   returning id into v_product_a;
 
-  select id into v_product_b from public.products
-  where slug = 'allocation-b-' || v_actor_id::text;
+  insert into public.products (name, slug, price, stock, is_active)
+  values ('Allocation product B', 'allocation-b-' || v_actor_id::text, 200, 99, true)
+  returning id into v_product_b;
 
   insert into public.warehouse_inventory
     (warehouse_id, product_id, quantity_on_hand, quantity_reserved, reorder_level)
