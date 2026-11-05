@@ -451,7 +451,9 @@ export async function POST(request: Request) {
 
     const allRowsHavePayout = rowsToInsert.every((row) => row.net_payout_amount !== null);
     const expectedPayoutAmount = allRowsHavePayout
-      ? Math.round(rowsToInsert.reduce((sum, row) => sum + Number(row.net_payout_amount), 0) * 100) / 100
+      ? Math.round(rowsToInsert
+          .filter((row) => row.match_status !== "duplicate")
+          .reduce((sum, row) => sum + Number(row.net_payout_amount), 0) * 100) / 100
       : null;
     const matchedCount = rowsToInsert.filter((row) => row.match_status === "matched").length;
     const mismatchCount = rowsToInsert.filter((row) => row.match_status === "amount_mismatch").length;
