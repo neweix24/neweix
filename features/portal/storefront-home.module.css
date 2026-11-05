@@ -203,3 +203,100 @@
     margin-top: 10px;
   }
 }
+
+
+/* Premium full-width homepage search */
+.headerSearch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 58px;
+  padding: 5px;
+  border: 1px solid color-mix(in srgb, var(--lime) 25%, var(--line));
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow: 0 8px 26px rgba(18, 42, 28, .07), inset 0 1px 0 rgba(255, 255, 255, .55);
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.headerSearch:focus-within {
+  border-color: var(--lime);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--lime) 12%, transparent), 0 12px 30px rgba(18, 42, 28, .09);
+}
+.searchLeadingIcon {
+  display: grid;
+  flex: 0 0 44px;
+  height: 100%;
+  place-items: center;
+  color: var(--lime);
+}
+.headerSearch input {
+  min-width: 0;
+  flex: 1 1 auto;
+  height: 100%;
+  padding: 0 14px 0 2px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.headerSearch input::placeholder {
+  color: var(--muted);
+  opacity: .82;
+}
+.headerSearch button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: auto;
+  min-width: 116px;
+  height: 46px;
+  min-height: 46px;
+  margin: 0;
+  padding: 0 19px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--lime);
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--lime) 20%, transparent);
+  cursor: pointer;
+}
+.headerSearch button:hover {
+  filter: brightness(1.04);
+}
+@media (max-width: 600px) {
+  .headerSearch {
+    height: 50px;
+    padding: 4px;
+    border-radius: 15px;
+  }
+  .searchLeadingIcon {
+    flex-basis: 38px;
+  }
+  .headerSearch input {
+    padding-right: 6px;
+    font-size: 13px;
+  }
+  .headerSearch button {
+    width: 42px;
+    min-width: 42px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    border-radius: 11px;
+  }
+  .searchButtonLabel {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .headerSearch {
+    transition: none;
+  }
+}
