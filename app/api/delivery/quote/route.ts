@@ -24,6 +24,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const districtCode = (searchParams.get("district_code") || "").trim();
   const upazilaCode = (searchParams.get("upazila_code") || "").trim();
+  const couponCode = (searchParams.get("coupon_code") || "").trim().toUpperCase();
   let items: Array<{ product_id: string; quantity: number }>;
 
   try {
@@ -43,7 +44,8 @@ export async function GET(request: Request) {
   }
 
   if (!/^BD-D[0-9]{2}-Z[0-9]{2}$/.test(districtCode) ||
-      !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode)) {
+      !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode) ||
+      (couponCode && !/^[A-Z0-9_-]{3,40}$/.test(couponCode))) {
     return NextResponse.json({ error: "Select a supported district and upazila." }, { status: 400 });
   }
 
@@ -119,7 +121,25 @@ export async function GET(request: Request) {
     ]);
     if (settingsResult.error) throw settingsResult.error;
     const threshold = Math.max(0, Number(settingsResult.data?.[0]?.value ?? 0));
-    const freeDelivery = threshold > 0 && trustedSubtotal >= threshold;
+    let freeShippingCoupon = false;
+    if (couponCode) {
+      const { data: coupon, error: couponError } = await supabase
+        .from("coupons")
+        .select("is_active, starts_at, expires_at, usage_limit, usage_count, min_subtotal, discount_type")
+        .eq("code", couponCode)
+        .maybeSingle();
+      if (couponError) throw couponError;
+      const now = Date.now();
+      freeShippingCoupon = Boolean(
+        coupon?.is_active === true &&
+        coupon.discount_type === "free_shipping" &&
+        trustedSubtotal >= Number(coupon.min_subtotal ?? 0) &&
+        (!coupon.starts_at || new Date(coupon.starts_at).getTime() <= now) &&
+        (!coupon.expires_at || new Date(coupon.expires_at).getTime() > now) &&
+        (coupon.usage_limit == null || Number(coupon.usage_count) < Number(coupon.usage_limit))
+      );
+    }
+    const freeDelivery = (threshold > 0 && trustedSubtotal >= threshold) || freeShippingCoupon;
 
     const rawQuote = await calculatePathaoPrice({
       storeId,
