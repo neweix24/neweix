@@ -82,6 +82,16 @@ function money(value: number | string | null | undefined): string {
   return `৳${Number(value).toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+type DeliveryOperation = {
+  id: string;
+  consignment_id: string;
+  operation_type: "reverse_pickup" | "return" | "exchange" | "partial_delivery";
+  operation_status: "requested" | "in_progress" | "completed" | "failed" | "recorded";
+  related_consignment_id: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
 type Shipment = {
   id: string;
   order_number: string;
@@ -132,6 +142,13 @@ export default function PathaoPanel() {
   const [consignmentId, setConsignmentId] = useState("");
   const [tracking, setTracking] = useState<unknown>(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
+  const [deliveryOperations, setDeliveryOperations] = useState<DeliveryOperation[]>([]);
+  const [operationType, setOperationType] = useState<DeliveryOperation["operation_type"]>("reverse_pickup");
+  const [operationStatus, setOperationStatus] = useState<DeliveryOperation["operation_status"]>("recorded");
+  const [relatedConsignmentId, setRelatedConsignmentId] = useState("");
+  const [operationNotes, setOperationNotes] = useState("");
+  const [operationBusy, setOperationBusy] = useState(false);
+  const [operationMessage, setOperationMessage] = useState("");
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [shipmentsLoading, setShipmentsLoading] = useState(false);
   const [settlementImports, setSettlementImports] = useState<SettlementImport[]>([]);
@@ -398,6 +415,7 @@ export default function PathaoPanel() {
     try {
       const result = await getJson(`/api/admin/pathao?action=track&consignmentId=${encodeURIComponent(consignmentId.trim())}`);
       setTracking(result);
+      await loadDeliveryOperations(consignmentId.trim());
       setMessage(result.synced
         ? "Pathao status retrieved and NEWEIX order status synchronized."
         : "Pathao status retrieved. No local status change was needed.");
@@ -407,6 +425,54 @@ export default function PathaoPanel() {
       setState("error");
     } finally {
       setTrackingLoading(false);
+    }
+  }
+
+  async function loadDeliveryOperations(value: string) {
+    if (!/^[A-Za-z0-9-]{3,80}$/.test(value)) {
+      setDeliveryOperations([]);
+      return;
+    }
+    try {
+      const result = await getJson(`/api/admin/pathao?action=delivery_operations&consignmentId=${encodeURIComponent(value)}`);
+      setDeliveryOperations(Array.isArray(result.operations) ? result.operations as DeliveryOperation[] : []);
+    } catch {
+      setDeliveryOperations([]);
+    }
+  }
+
+  async function recordDeliveryOperation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!/^[A-Za-z0-9-]{3,80}$/.test(consignmentId.trim())) {
+      setOperationMessage("Enter and track a valid Pathao Consignment ID first.");
+      return;
+    }
+    setOperationBusy(true);
+    setOperationMessage("");
+    try {
+      const response = await fetch("/api/admin/pathao", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          action: "record_delivery_operation",
+          consignmentId: consignmentId.trim(),
+          operationType,
+          operationStatus,
+          relatedConsignmentId: relatedConsignmentId.trim() || null,
+          notes: operationNotes.trim(),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not record Pathao operation.");
+      setOperationNotes("");
+      setRelatedConsignmentId("");
+      await loadDeliveryOperations(consignmentId.trim());
+      setOperationMessage("Manual Pathao operation recorded in the NEWEIX audit history.");
+    } catch (error) {
+      setOperationMessage(error instanceof Error ? error.message : "Could not record Pathao operation.");
+    } finally {
+      setOperationBusy(false);
     }
   }
 
@@ -645,6 +711,60 @@ export default function PathaoPanel() {
         </div>
         {tracking !== null && <pre className="max-h-64 overflow-auto rounded-lg bg-gray-50 p-3 text-xs">{JSON.stringify(tracking, null, 2)}</pre>}
       </form>
+
+      <section className="mt-5 space-y-3 rounded-xl border border-gray-200 p-4">
+        <div>
+          <h3 className="font-semibold">NEWEIX Return / Exchange Operation Log</h3>
+          <p className="mt-1 text-xs leading-5 text-gray-600">After completing or requesting the action in Pathao Merchant Panel, record the operation here. This is an internal audit entry only; it does not create or cancel a Pathao request.</p>
+        </div>
+        <form onSubmit={recordDeliveryOperation} className="grid gap-3 sm:grid-cols-2">
+          <label className="text-sm font-medium">Operation
+            <select value={operationType} onChange={(event) => setOperationType(event.target.value as DeliveryOperation["operation_type"])} className="mt-1 w-full rounded-lg border px-3 py-2">
+              <option value="reverse_pickup">Reverse Pickup</option>
+              <option value="return">Return</option>
+              <option value="exchange">Exchange</option>
+              <option value="partial_delivery">Partial Delivery</option>
+            </select>
+          </label>
+          <label className="text-sm font-medium">Operation status
+            <select value={operationStatus} onChange={(event) => setOperationStatus(event.target.value as DeliveryOperation["operation_status"])} className="mt-1 w-full rounded-lg border px-3 py-2">
+              <option value="recorded">Recorded</option>
+              <option value="requested">Requested in Pathao</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+            </select>
+          </label>
+          <label className="text-sm font-medium sm:col-span-2">Related / return / exchange Consignment ID (optional)
+            <input maxLength={80} value={relatedConsignmentId} onChange={(event) => setRelatedConsignmentId(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2" placeholder="New return or exchange parcel ID" />
+          </label>
+          <label className="text-sm font-medium sm:col-span-2">Notes (optional)
+            <textarea maxLength={1000} rows={3} value={operationNotes} onChange={(event) => setOperationNotes(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2" placeholder="Record returned item condition, accepted quantities, collection amount, or Pathao support reference." />
+          </label>
+          <button type="submit" disabled={operationBusy || !consignmentId.trim()} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2">
+            {operationBusy ? "Recording..." : "Save Operation to Audit History"}
+          </button>
+        </form>
+        {operationMessage && <p className="text-xs text-gray-600">{operationMessage}</p>}
+        {deliveryOperations.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-left text-xs">
+              <thead className="border-b text-gray-500"><tr><th className="p-2">Operation</th><th className="p-2">Status</th><th className="p-2">Related ID</th><th className="p-2">Notes</th><th className="p-2">Recorded</th></tr></thead>
+              <tbody>{deliveryOperations.map((item) => (
+                <tr key={item.id} className="border-b last:border-0">
+                  <td className="p-2 font-medium">{item.operation_type.replaceAll("_", " ")}</td>
+                  <td className="p-2">{item.operation_status.replaceAll("_", " ")}</td>
+                  <td className="p-2 font-mono">{item.related_consignment_id || "—"}</td>
+                  <td className="max-w-xs whitespace-pre-wrap p-2">{item.notes || "—"}</td>
+                  <td className="p-2">{new Date(item.created_at).toLocaleString()}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-xs text-gray-500">No manual Pathao operation has been recorded for this consignment yet. Track the shipment to load its history.</p>
+        )}
+      </section>
 
       <form onSubmit={calculatePrice} className="mt-5 space-y-4 rounded-xl border border-gray-200 p-4">
         <div>
