@@ -95,33 +95,46 @@ export default function StorefrontHome() {
 
   useEffect(() => {
     let active = true;
+
     async function loadProducts() {
       try {
-        const [productResponse, categoryResponse] = await Promise.all([
-          fetch("/api/products", { cache: "no-store" }),
-          fetch("/api/categories", { cache: "no-store" }),
-        ]);
-        const [productResult, categoryResult] = await Promise.all([
-          productResponse.json(),
-          categoryResponse.json(),
-        ]);
-        if (!productResponse.ok || !Array.isArray(productResult.data)) throw new Error("Products unavailable");
-        if (active) setProducts(productResult.data.slice(0, 8));
-        if (categoryResponse.ok && Array.isArray(categoryResult.categories) && active) {
-          const validCategories = categoryResult.categories.filter((item: unknown): item is Category =>
-            Boolean(item) && typeof item === "object" &&
-            typeof (item as Category).id === "string" &&
-            typeof (item as Category).name === "string" &&
-            typeof (item as Category).slug === "string"
-          );
-          const populatedCategories = validCategories.filter((category: Category) =>
-            productResult.data.some((product: { category_id?: string | null }) => product.category_id === category.id)
-          );
-          setCategories(populatedCategories);
+        // One small public response replaces two uncached requests and avoids
+        // downloading product fields that the homepage never renders.
+        const response = await fetch("/api/public/homepage");
+        const result = await response.json();
+        if (!response.ok || !Array.isArray(result.products)) {
+          throw new Error("Homepage products unavailable");
         }
-      } catch { if (active) setProducts([]); }
-      finally { if (active) setProductsLoading(false); }
+
+        if (!active) return;
+        const homepageProducts = result.products as Product[];
+        setProducts(homepageProducts);
+
+        if (Array.isArray(result.categories)) {
+          const categoryIds = new Set(
+            homepageProducts
+              .map((product) => product.category_id)
+              .filter((id): id is string => typeof id === "string")
+          );
+          const validCategories = (result.categories as Category[]).filter(
+            (category) =>
+              typeof category?.id === "string" &&
+              typeof category.name === "string" &&
+              typeof category.slug === "string" &&
+              categoryIds.has(category.id)
+          );
+          setCategories(validCategories);
+        }
+      } catch {
+        if (active) {
+          setProducts([]);
+          setCategories([]);
+        }
+      } finally {
+        if (active) setProductsLoading(false);
+      }
     }
+
     void loadProducts();
     return () => { active = false; };
   }, []);
