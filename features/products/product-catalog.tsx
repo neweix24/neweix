@@ -307,7 +307,7 @@ export default function ProductCatalog() {
                 <div className="mb-2 flex flex-wrap gap-2">
                   <button type="button" aria-pressed={wishlist.includes(product.id)} aria-label={wishlist.includes(product.id) ? t("removeFromWishlist") : t("addToWishlist")} title={wishlist.includes(product.id) ? t("removeFromWishlist") : t("addToWishlist")} onClick={() => toggleWishlist(product)} className={styles.iconButton} style={{ borderColor: "var(--border)" }}><Icon name="heart" size={17} /></button>
                   <button type="button" aria-pressed={compareIds.includes(product.id)} aria-label={compareIds.includes(product.id) ? t("removedFromCompare") : t("compare")} title={compareIds.includes(product.id) ? t("removedFromCompare") : t("compare")} onClick={() => toggleCompare(product)} className={styles.iconButton} style={{ borderColor: "var(--border)" }}><Icon name="compare" size={17} /></button>
-                  <button type="button" aria-label="Quick view" title="Quick view" onClick={() => setQuickViewProduct(product)} className={styles.iconButton}><Icon name="eye" size={17} /></button>
+                  <button type="button" aria-label={t("quickView")} title={t("quickView")} onClick={() => setQuickViewProduct(product)} className={styles.iconButton}><Icon name="eye" size={17} /></button>
                 </div>
                 <span className={product.stock > 0 ? styles.inStock : styles.outOfStock}>
                   {product.stock > 0 ? t("inStock") : t("outOfStock")}
