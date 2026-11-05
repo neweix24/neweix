@@ -251,21 +251,25 @@ export default function CheckoutView() {
       ? paymentConfig?.paymentMethods?.[mfsMethod]
       : paymentConfig?.paymentMethods?.[paymentMethod];
 
-  async function loadDeliveryQuote(city: string) {
-    const normalizedCity = city.trim();
-    if (normalizedCity.length < 2) {
+  async function loadDeliveryQuote(districtCode: string, upazilaCode: string, couponCode = "") {
+    if (!districtCode || !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode)) {
       setDeliveryFeeQuote(null);
       return null;
     }
     setDeliveryQuoteLoading(true);
+    setError("");
     try {
-      const response = await fetch(
-        `/api/delivery/quote?city=${encodeURIComponent(normalizedCity)}&subtotal=${encodeURIComponent(String(total))}`,
-        { cache: "no-store" }
-      );
+      const params = new URLSearchParams({
+        district_code: districtCode,
+        upazila_code: upazilaCode,
+        subtotal: String(Math.round(total)),
+        items: JSON.stringify(cart.map(({ product_id, quantity }) => ({ product_id, quantity }))),
+        coupon_code: couponCode.trim().toUpperCase(),
+      });
+      const response = await fetch(`/api/delivery/quote?${params.toString()}`, { cache: "no-store" });
       const result = await response.json().catch(() => null);
       if (!response.ok || !Number.isFinite(Number(result?.delivery_fee))) {
-        throw new Error(result?.error || "Could not calculate the delivery fee.");
+        throw new Error(result?.error || "Could not calculate the live Pathao delivery fee.");
       }
       const fee = Number(result.delivery_fee);
       setDeliveryFeeQuote(fee);
@@ -310,7 +314,11 @@ export default function CheckoutView() {
 
     setSubmitting(true);
     const formData = new FormData(form);
-    const quote = await loadDeliveryQuote(String(formData.get("shipping_city") ?? ""));
+    const quote = await loadDeliveryQuote(
+      String(formData.get("shipping_district_code") ?? ""),
+      String(formData.get("shipping_upazila_code") ?? ""),
+      String(formData.get("coupon_code") ?? ""),
+    );
     if (quote === null) {
       setSubmitting(false);
       setError("Could not confirm the delivery fee. Check the city or district and try again.");
@@ -320,8 +328,8 @@ export default function CheckoutView() {
     const transactionId = String(formData.get("payment_transaction_id") ?? "").trim();
     const deliveryFeeTransactionId = String(formData.get("delivery_fee_payment_transaction_id") ?? "").trim();
 
-    if (paymentMethod === "cod" &&
-      (!deliveryFeeTransactionId || deliveryFeeTransactionId.length > 120 || !/^[A-Za-z0-9-]+$/.test(deliveryFeeTransactionId))) {
+    if (paymentMethod === "cod" && quote > 0 &&
+      (!selectedMobilePayment?.enabled || !deliveryFeeTransactionId || deliveryFeeTransactionId.length > 120 || !/^[A-Za-z0-9-]+$/.test(deliveryFeeTransactionId))) {
       setError("Enter a valid delivery-fee transaction ID.");
       setSubmitting(false);
       return;
@@ -349,8 +357,8 @@ export default function CheckoutView() {
       coupon_code: String(formData.get("coupon_code") ?? "").trim().toUpperCase() || null,
       payment_method: paymentMethod,
       payment_transaction_id: paymentMethod === "cod" ? null : transactionId,
-      delivery_fee_payment_method: paymentMethod === "cod" ? mfsMethod : null,
-      delivery_fee_payment_transaction_id: paymentMethod === "cod" ? deliveryFeeTransactionId : null,
+      delivery_fee_payment_method: paymentMethod === "cod" && quote > 0 ? mfsMethod : null,
+      delivery_fee_payment_transaction_id: paymentMethod === "cod" && quote > 0 ? deliveryFeeTransactionId : null,
       items: cart.map(({ product_id, quantity }) => ({ product_id, quantity })),
     };
 
@@ -483,7 +491,7 @@ export default function CheckoutView() {
 
         <p><strong>Product subtotal: {formatPrice(total, locale)}</strong></p>
         <p>Delivery: Pathao Courier</p>
-        <p>Delivery fee: {deliveryQuoteLoading ? "Calculating..." : deliveryFeeQuote === null ? "Select your district above to calculate the fee." : formatPrice(deliveryFeeQuote, locale)}</p>
+        <p>Delivery fee: {deliveryQuoteLoading ? "Calculating..." : deliveryFeeQuote === null ? "Select a supported upazila above to calculate the live Pathao fee." : formatPrice(deliveryFeeQuote, locale)}</p>
 
         {missingProducts && <p role="alert">Some product details are unavailable.</p>}
         {stockIssues.length > 0 && <p role="alert">Some products have insufficient stock.</p>}
@@ -523,8 +531,8 @@ export default function CheckoutView() {
           initialUpazila={defaultAddress?.upazila}
           initialVillage={defaultAddress?.area}
           disabled={submitting}
-          onDistrictChange={(districtName) => {
-            if (districtName) void loadDeliveryQuote(districtName);
+          onAddressChange={({ districtCode, upazilaCode }) => {
+            if (districtCode && upazilaCode) void loadDeliveryQuote(districtCode, upazilaCode);
             else setDeliveryFeeQuote(null);
           }}
         />
@@ -532,7 +540,13 @@ export default function CheckoutView() {
         <label htmlFor="coupon_code">Coupon code (optional)</label>
         <input id="coupon_code" name="coupon_code" type="text" maxLength={40}
           pattern="[A-Za-z0-9_-]{3,40}" title="Use 3–40 letters, numbers, hyphens, or underscores"
-          autoComplete="off" disabled={submitting} placeholder="Example: SAVE10" style={fieldStyle} />
+          autoComplete="off" disabled={submitting} placeholder="Example: SAVE10" style={fieldStyle}
+          onBlur={(event) => {
+            const form = event.currentTarget.form;
+            const district = form?.elements.namedItem("shipping_district_code") as HTMLInputElement | null;
+            const upazila = form?.elements.namedItem("shipping_upazila_code") as HTMLInputElement | null;
+            void loadDeliveryQuote(district?.value ?? "", upazila?.value ?? "", event.currentTarget.value);
+          }} />
 
         <section className={styles.paymentOptions} aria-labelledby="delivery-heading">
           <h2 id="delivery-heading">Delivery method</h2>
@@ -540,7 +554,7 @@ export default function CheckoutView() {
             <input type="radio" name="delivery_method" value="pathao" checked readOnly />
             <span><strong>Pathao Courier</strong> — Home delivery by courier</span>
           </label>
-          <p>The delivery fee is calculated based on the destination. An administrator will review and approve the parcel before booking with Pathao.</p>
+          <p>The live delivery fee is fetched from Pathao using your selected upazila and the verified parcel weight. An administrator will review and approve the parcel before booking.</p>
         </section>
 
         <fieldset className={styles.paymentOptions}>
@@ -603,7 +617,7 @@ export default function CheckoutView() {
             <p role="alert">{paymentConfigError} You can choose Cash on Delivery for now.</p>
           )}
 
-          {selectedMobilePayment?.enabled && (
+          {selectedMobilePayment?.enabled && (paymentMethod !== "cod" || (deliveryFeeQuote ?? 0) > 0) && (
             <div className={styles.paymentDetails}>
               <h3>{selectedMobilePayment.label} Payment</h3>
               <p>Send money to the number below:</p>
@@ -619,7 +633,7 @@ export default function CheckoutView() {
               <input
                 id={paymentMethod === "cod" ? "delivery_fee_payment_transaction_id" : "payment_transaction_id"}
                 name={paymentMethod === "cod" ? "delivery_fee_payment_transaction_id" : "payment_transaction_id"}
-                required
+                required={paymentMethod !== "cod" || (deliveryFeeQuote ?? 0) > 0}
                 minLength={1}
                 maxLength={120}
                 pattern="[A-Za-z0-9-]+"

@@ -13,7 +13,7 @@ type Props = {
   initialUpazila?: string | null;
   initialUnion?: string | null;
   initialVillage?: string | null;
-  onDistrictChange?: (districtName: string) => void;
+  onAddressChange?: (address: { districtCode: string; upazilaCode: string }) => void;
   disabled?: boolean;
 };
 
@@ -35,7 +35,7 @@ export default function BangladeshAddressFields({
   initialUpazila,
   initialUnion,
   initialVillage,
-  onDistrictChange,
+  onAddressChange,
   disabled = false,
 }: Props) {
   const { locale, t } = useLanguage();
@@ -65,7 +65,7 @@ export default function BangladeshAddressFields({
     setDistrictCode("");
     setUpazilaCode("");
     setUnionCode("");
-    onDistrictChange?.("");
+    onAddressChange?.({ districtCode: "", upazilaCode: "" });
   }
 
   function changeDistrict(value: string) {
@@ -73,12 +73,13 @@ export default function BangladeshAddressFields({
     setUpazilaCode("");
     setUnionCode("");
     const selected = districts.find((item) => item.code === value);
-    onDistrictChange?.(selected?.bn_name ?? "");
+    onAddressChange?.({ districtCode: value, upazilaCode: "" });
   }
 
   function changeUpazila(value: string) {
     setUpazilaCode(value);
     setUnionCode("");
+    onAddressChange?.({ districtCode, upazilaCode: value });
   }
 
   return (

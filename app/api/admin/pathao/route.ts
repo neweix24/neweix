@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createRuntimeServiceClient } from "@/lib/supabase/runtime-service-client";
+import { resolveBangladeshAddress } from "@/lib/bangladesh-admin";
 import {
   calculatePathaoPrice,
   createPathaoOrder,
@@ -53,6 +54,26 @@ async function authorizeAdmin(): Promise<AdminAuthResult> {
   return { ok: true, userId, role: profile.role };
 }
 
+
+function extractPathaoRows(payload: unknown): Array<Record<string, unknown>> {
+  if (Array.isArray(payload)) {
+    return payload.filter((item): item is Record<string, unknown> =>
+      Boolean(item) && typeof item === "object" && !Array.isArray(item)
+    );
+  }
+  if (!payload || typeof payload !== "object") return [];
+  const record = payload as Record<string, unknown>;
+  const data = record.data;
+  if (Array.isArray(data)) return extractPathaoRows(data);
+  if (data && typeof data === "object") {
+    const nested = data as Record<string, unknown>;
+    if (Array.isArray(nested.data)) return extractPathaoRows(nested.data);
+    if (Array.isArray(nested.locations)) return extractPathaoRows(nested.locations);
+  }
+  if (Array.isArray(record.locations)) return extractPathaoRows(record.locations);
+  return [];
+}
+
 function normalizePathaoPhone(value: string) {
   const digits = value.replace(/\D/g, "");
   const local = digits.startsWith("880") ? `0${digits.slice(3)}` : digits;
@@ -81,6 +102,24 @@ export async function GET(request: Request) {
         environment: connection.environment,
         message: "Pathao authentication succeeded.",
       }, { headers: { "Cache-Control": "no-store" } });
+    }
+
+
+    if (action === "location_mappings") {
+      const admin = await createRuntimeServiceClient();
+      const { data: mappings, error } = await admin
+        .from("pathao_location_mappings")
+        .select("id, division_code, district_code, upazila_code, pathao_city_id, pathao_zone_id, pathao_city_name, pathao_zone_name, is_verified, is_active, verified_at, updated_at")
+        .order("district_code", { ascending: true })
+        .order("upazila_code", { ascending: true })
+        .limit(1000);
+      if (error) {
+        console.error("Pathao location mappings query failed:", error.message);
+        return errorResponse("Could not load Pathao location mappings. Apply the latest database migration first.", 503);
+      }
+      return NextResponse.json({ success: true, mappings: mappings ?? [] }, {
+        headers: { "Cache-Control": "private, no-store" },
+      });
     }
 
     if (action === "settlement_imports") {
@@ -270,6 +309,87 @@ export async function POST(request: Request) {
   }
 
   const input = body as Record<string, unknown>;
+
+
+  if (input.action === "save_location_mapping") {
+    const divisionCode = typeof input.divisionCode === "string" ? input.divisionCode.trim() : "";
+    const districtCode = typeof input.districtCode === "string" ? input.districtCode.trim() : "";
+    const upazilaCode = typeof input.upazilaCode === "string" ? input.upazilaCode.trim() : "";
+    const cityId = input.pathaoCityId;
+    const zoneId = input.pathaoZoneId;
+    if (
+      !/^BD-D[0-9]{2}$/.test(divisionCode) ||
+      !/^BD-D[0-9]{2}-Z[0-9]{2}$/.test(districtCode) ||
+      !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode) ||
+      !Number.isSafeInteger(cityId) || Number(cityId) < 1 ||
+      !Number.isSafeInteger(zoneId) || Number(zoneId) < 1
+    ) {
+      return errorResponse("Select a valid Bangladesh division, district, upazila, Pathao city, and Pathao zone.", 400);
+    }
+
+    const address = resolveBangladeshAddress(divisionCode, districtCode, upazilaCode, "not_applicable");
+    if (!address || !address.upazila || address.division.code !== divisionCode ||
+        address.district.code !== districtCode || address.upazila.code !== upazilaCode) {
+      return errorResponse("The Bangladesh administrative codes do not form a valid address.", 400);
+    }
+
+    // Verify both IDs and their names against Pathao's live catalog before
+    // persisting a mapping. Client-supplied labels are never trusted.
+    const cities = extractPathaoRows(await getPathaoCities());
+    const city = cities.find((row) => Number(row.city_id) === cityId);
+    if (!city || typeof city.city_name !== "string") {
+      return errorResponse("The selected Pathao city ID was not found in the live Pathao catalog.", 422);
+    }
+    const zones = extractPathaoRows(await getPathaoZones(Number(cityId)));
+    const zone = zones.find((row) => Number(row.zone_id) === zoneId);
+    if (!zone || typeof zone.zone_name !== "string") {
+      return errorResponse("The selected Pathao zone does not belong to the selected Pathao city.", 422);
+    }
+
+    const admin = await createRuntimeServiceClient();
+    const now = new Date().toISOString();
+    const { data: mapping, error } = await admin
+      .from("pathao_location_mappings")
+      .upsert({
+        division_code: divisionCode,
+        district_code: districtCode,
+        upazila_code: upazilaCode,
+        pathao_city_id: Number(cityId),
+        pathao_zone_id: Number(zoneId),
+        pathao_city_name: city.city_name,
+        pathao_zone_name: zone.zone_name,
+        is_verified: true,
+        is_active: true,
+        verified_at: now,
+        verified_by: staff.userId,
+        updated_at: now,
+      }, { onConflict: "district_code,upazila_code" })
+      .select("id, division_code, district_code, upazila_code, pathao_city_id, pathao_zone_id, pathao_city_name, pathao_zone_name, is_verified, is_active, verified_at, updated_at")
+      .single();
+
+    if (error || !mapping) {
+      console.error("Pathao location mapping save failed:", error?.message);
+      return errorResponse("Could not save the verified Pathao location mapping.", 503);
+    }
+
+    const { error: auditError } = await admin.from("audit_logs").insert({
+      actor_id: staff.userId,
+      action: "pathao.location_mapping.verified",
+      target_type: "pathao_location_mapping",
+      target_id: mapping.id,
+      details: {
+        district_code: districtCode,
+        upazila_code: upazilaCode,
+        pathao_city_id: Number(cityId),
+        pathao_zone_id: Number(zoneId),
+      },
+    });
+    if (auditError) console.error("Pathao location mapping audit log failed:", auditError.message);
+
+    return NextResponse.json({ success: true, mapping }, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
 
   if (input.action === "record_delivery_operation") {
     const allowedTypes = ["reverse_pickup", "return", "exchange", "partial_delivery"] as const;

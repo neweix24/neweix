@@ -2,9 +2,24 @@
 
 import { useState, type FormEvent } from "react";
 import Icon from "@/components/ui/icon";
+import { BANGLADESH_ADMIN_AREAS } from "@/lib/bangladesh-admin";
 
 type State = "idle" | "loading" | "success" | "error";
 type LocationOption = { id: number; name: string; available?: boolean };
+type PathaoMapping = {
+  id: string;
+  division_code: string;
+  district_code: string;
+  upazila_code: string;
+  pathao_city_id: number;
+  pathao_zone_id: number;
+  pathao_city_name: string;
+  pathao_zone_name: string;
+  is_verified: boolean;
+  is_active: boolean;
+  verified_at: string | null;
+  updated_at: string;
+};
 type SettlementImport = {
   id: string;
   settlement_reference: string | null;
@@ -170,6 +185,17 @@ export default function PathaoPanel() {
   const [payoutReceivedAmount, setPayoutReceivedAmount] = useState("");
   const [payoutReceiptReference, setPayoutReceiptReference] = useState("");
   const [payoutReceiptBusy, setPayoutReceiptBusy] = useState(false);
+  const [mappings, setMappings] = useState<PathaoMapping[]>([]);
+  const [mappingsLoading, setMappingsLoading] = useState(false);
+  const [mappingSaving, setMappingSaving] = useState(false);
+  const [mappingMessage, setMappingMessage] = useState("");
+  const [mappingDivisionCode, setMappingDivisionCode] = useState("");
+  const [mappingDistrictCode, setMappingDistrictCode] = useState("");
+  const [mappingUpazilaCode, setMappingUpazilaCode] = useState("");
+  const [mappingCityId, setMappingCityId] = useState("");
+  const [mappingZoneId, setMappingZoneId] = useState("");
+  const [mappingZones, setMappingZones] = useState<LocationOption[]>([]);
+  const [mappingZonesLoading, setMappingZonesLoading] = useState(false);
 
   async function getJson(url: string) {
     const response = await fetch(url, { cache: "no-store" });

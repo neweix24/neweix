@@ -19,6 +19,17 @@ function getEnvValue(env: Record<string, unknown>, key: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+export async function getPathaoStoreId(): Promise<number> {
+  const context = await getCloudflareContext();
+  const env = context.env as Record<string, unknown>;
+  const raw = getEnvValue(env, "PATHAO_STORE_ID");
+  const storeId = Number(raw);
+  if (!/^\d+$/.test(raw) || !Number.isSafeInteger(storeId) || storeId < 1) {
+    throw new Error("PATHAO_STORE_ID must be configured as a positive integer.");
+  }
+  return storeId;
+}
+
 export async function getPathaoConfig(): Promise<PathaoConfig> {
   const context = await getCloudflareContext();
   const env = context.env as Record<string, unknown>;
