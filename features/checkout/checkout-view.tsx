@@ -80,6 +80,11 @@ export default function CheckoutView() {
   const [error, setError] = useState("");
   const [deliveryFeeQuote, setDeliveryFeeQuote] = useState<number | null>(null);
   const [deliveryQuoteLoading, setDeliveryQuoteLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponChecking, setCouponChecking] = useState(false);
+  const [couponMessage, setCouponMessage] = useState("");
+  const [couponError, setCouponError] = useState(false);
+  const [couponPreview, setCouponPreview] = useState<{ code: string; discount: number; free_shipping: boolean } | null>(null);
   const [orderNumber, setOrderNumber] = useState("");
   const [submittedPaymentMethod, setSubmittedPaymentMethod] =
     useState<PaymentMethod>("cod");
@@ -280,6 +285,44 @@ export default function CheckoutView() {
       return null;
     } finally {
       setDeliveryQuoteLoading(false);
+    }
+  }
+
+  async function applyCoupon() {
+    const code = couponCode.trim().toUpperCase();
+    setCouponMessage("");
+    setCouponPreview(null);
+    setCouponError(false);
+    if (!/^[A-Z0-9_-]{3,40}$/.test(code)) {
+      setCouponError(true);
+      setCouponMessage("Enter a valid coupon code (3–40 letters, numbers, hyphens, or underscores).");
+      return;
+    }
+    setCouponChecking(true);
+    try {
+      const response = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({ code, subtotal: Math.round(total) }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success || !result?.coupon) {
+        throw new Error(result?.error || "This coupon could not be applied.");
+      }
+      const preview = result.coupon as { code: string; discount: number; free_shipping: boolean };
+      if (typeof preview.discount !== "number" || !Number.isSafeInteger(preview.discount) || preview.discount < 0 || preview.discount > total) {
+        throw new Error("The coupon preview returned an invalid discount.");
+      }
+      setCouponPreview(preview);
+      setCouponMessage(preview.free_shipping
+        ? "Coupon applied: free delivery will be confirmed when your order is placed."
+        : `Coupon applied. You save ${formatPrice(preview.discount, locale)}.`);
+    } catch (err) {
+      setCouponError(true);
+      setCouponMessage(err instanceof Error ? err.message : "Could not validate this coupon.");
+    } finally {
+      setCouponChecking(false);
     }
   }
 
@@ -490,8 +533,12 @@ export default function CheckoutView() {
         ))}
 
         <p><strong>Product subtotal: {formatPrice(total, locale)}</strong></p>
+        {couponPreview && !couponPreview.free_shipping && (
+          <p className={styles.discountRow}><span>Coupon savings</span><strong>−{formatPrice(couponPreview.discount, locale)}</strong></p>
+        )}
+        <p><strong>Estimated total: {formatPrice(Math.max(0, total - (couponPreview?.discount ?? 0)) + (couponPreview?.free_shipping ? 0 : (deliveryFeeQuote ?? 0)), locale)}</strong></p>
         <p>Delivery: Pathao Courier</p>
-        <p>Delivery fee: {deliveryQuoteLoading ? "Calculating..." : deliveryFeeQuote === null ? "Select a supported upazila above to calculate the live Pathao fee." : formatPrice(deliveryFeeQuote, locale)}</p>
+        <p>Delivery fee: {deliveryQuoteLoading ? "Calculating..." : deliveryFeeQuote === null ? "Select a supported upazila above to calculate the live Pathao fee." : couponPreview?.free_shipping ? "Free delivery (subject to server confirmation)" : formatPrice(deliveryFeeQuote, locale)}</p>
 
         {missingProducts && <p role="alert">Some product details are unavailable.</p>}
         {stockIssues.length > 0 && <p role="alert">Some products have insufficient stock.</p>}
@@ -538,15 +585,35 @@ export default function CheckoutView() {
         />
 
         <label htmlFor="coupon_code">Coupon code (optional)</label>
-        <input id="coupon_code" name="coupon_code" type="text" maxLength={40}
-          pattern="[A-Za-z0-9_-]{3,40}" title="Use 3–40 letters, numbers, hyphens, or underscores"
-          autoComplete="off" disabled={submitting} placeholder="Example: SAVE10" style={fieldStyle}
-          onBlur={(event) => {
-            const form = event.currentTarget.form;
-            const district = form?.elements.namedItem("shipping_district_code") as HTMLInputElement | null;
-            const upazila = form?.elements.namedItem("shipping_upazila_code") as HTMLInputElement | null;
-            void loadDeliveryQuote(district?.value ?? "", upazila?.value ?? "", event.currentTarget.value);
-          }} />
+        <div className={styles.couponEntry}>
+          <input id="coupon_code" name="coupon_code" type="text" maxLength={40}
+            pattern="[A-Za-z0-9_-]{3,40}" title="Use 3–40 letters, numbers, hyphens, or underscores"
+            autoComplete="off" disabled={submitting} placeholder="Example: SAVE10" style={fieldStyle}
+            value={couponCode}
+            onChange={(event) => {
+              setCouponCode(event.target.value.toUpperCase());
+              setCouponPreview(null);
+              setCouponMessage("");
+              setCouponError(false);
+            }}
+            onBlur={(event) => {
+              const form = event.currentTarget.form;
+              const district = form?.elements.namedItem("shipping_district_code") as HTMLInputElement | null;
+              const upazila = form?.elements.namedItem("shipping_upazila_code") as HTMLInputElement | null;
+              void loadDeliveryQuote(district?.value ?? "", upazila?.value ?? "", event.currentTarget.value);
+            }} />
+          <button type="button" className={styles.couponButton}
+            onClick={() => void applyCoupon()} disabled={submitting || couponChecking || !couponCode.trim()}>
+            {couponChecking ? "Checking..." : couponPreview ? "Apply again" : "Apply coupon"}
+          </button>
+        </div>
+        {couponMessage && <p role={couponError ? "alert" : "status"} className={couponError ? styles.couponError : styles.couponSuccess}>{couponMessage}</p>}
+        {couponPreview && (
+          <div className={styles.discountRow}>
+            <span>{couponPreview.free_shipping ? "Free delivery coupon" : "Coupon discount"}</span>
+            <strong>{couponPreview.free_shipping ? "Delivery fee waived at order confirmation" : `−${formatPrice(couponPreview.discount, locale)}`}</strong>
+          </div>
+        )}
 
         <section className={styles.paymentOptions} aria-labelledby="delivery-heading">
           <h2 id="delivery-heading">Delivery method</h2>
