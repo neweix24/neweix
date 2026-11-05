@@ -224,3 +224,119 @@ export async function getPathaoOrderInfo(consignmentId: string) {
     token,
   );
 }
+
+async function pathaoMutation<T>(
+  config: PathaoConfig,
+  path: string,
+  accessToken: string,
+  body?: unknown,
+): Promise<T> {
+  const response = await fetch(`${config.baseUrl}${path}`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
+  });
+
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const message =
+      payload && typeof payload === "object" && "message" in payload &&
+      typeof payload.message === "string"
+        ? payload.message
+        : "Pathao API request failed.";
+    throw new Error(`Pathao API (${response.status}): ${message}`);
+  }
+  return payload as T;
+}
+
+async function withPathaoToken<T>(
+  operation: (config: PathaoConfig, token: string) => Promise<T>,
+): Promise<T> {
+  const config = await getPathaoConfig();
+  const token = await getPathaoAccessToken(config);
+  return operation(config, token);
+}
+
+export async function getPathaoZones(cityId: number) {
+  if (!Number.isSafeInteger(cityId) || cityId < 1) throw new Error("Invalid Pathao city ID.");
+  return withPathaoToken((config, token) =>
+    pathaoRequest<unknown>(config, `/aladdin/api/v1/cities/${cityId}/zone-list`, token),
+  );
+}
+
+export async function getPathaoAreas(zoneId: number) {
+  if (!Number.isSafeInteger(zoneId) || zoneId < 1) throw new Error("Invalid Pathao zone ID.");
+  return withPathaoToken((config, token) =>
+    pathaoRequest<unknown>(config, `/aladdin/api/v1/zones/${zoneId}/area-list`, token),
+  );
+}
+
+export type PathaoPriceInput = {
+  storeId: number;
+  itemType: number;
+  deliveryType: number;
+  itemWeightKg: number;
+  recipientCity?: number;
+  recipientZone?: number;
+};
+
+export async function calculatePathaoPrice(input: PathaoPriceInput) {
+  if (!Number.isSafeInteger(input.storeId) || input.storeId < 1 ||
+      !Number.isSafeInteger(input.itemType) || !Number.isSafeInteger(input.deliveryType) ||
+      !Number.isFinite(input.itemWeightKg) || input.itemWeightKg <= 0 || input.itemWeightKg > 10) {
+    throw new Error("Invalid Pathao price calculation input.");
+  }
+  return withPathaoToken((config, token) =>
+    pathaoMutation<unknown>(config, "/aladdin/api/v1/merchant/price-plan", token, {
+      store_id: input.storeId,
+      item_type: input.itemType,
+      delivery_type: input.deliveryType,
+      item_weight: input.itemWeightKg,
+      ...(input.recipientCity ? { recipient_city: input.recipientCity } : {}),
+      ...(input.recipientZone ? { recipient_zone: input.recipientZone } : {}),
+    }),
+  );
+}
+
+export async function cancelPathaoOrder(consignmentId: string) {
+  if (!/^[A-Za-z0-9-]{3,80}$/.test(consignmentId)) {
+    throw new Error("Pathao consignment ID is invalid.");
+  }
+  return withPathaoToken((config, token) =>
+    pathaoMutation<unknown>(
+      config,
+      `/aladdin/api/v1/orders/${encodeURIComponent(consignmentId)}/cancel`,
+      token,
+    ),
+  );
+}
+
+export async function createPathaoBulkOrders(orders: PathaoCreateOrderInput[]) {
+  if (!Array.isArray(orders) || orders.length < 1 || orders.length > 50) {
+    throw new Error("Bulk booking supports between 1 and 50 orders per request.");
+  }
+  const payload = orders.map((input) => ({
+    store_id: input.storeId,
+    merchant_order_id: input.merchantOrderId,
+    recipient_name: input.recipientName,
+    recipient_phone: input.recipientPhone,
+    recipient_address: input.recipientAddress,
+    delivery_type: 48,
+    item_type: 2,
+    item_quantity: input.itemQuantity,
+    item_weight: input.itemWeightKg,
+    amount_to_collect: input.amountToCollect,
+    ...(input.itemDescription ? { item_description: input.itemDescription.slice(0, 200) } : {}),
+    ...(input.specialInstruction ? { special_instruction: input.specialInstruction.slice(0, 500) } : {}),
+  }));
+  return withPathaoToken((config, token) =>
+    pathaoMutation<unknown>(config, "/aladdin/api/v1/orders/bulk", token, { orders: payload }),
+  );
+}
+
