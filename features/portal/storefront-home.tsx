@@ -9,6 +9,7 @@ import styles from "./storefront-home.module.css";
 import HomepageYouTubeVideos from "@/features/portal/homepage-youtube-videos";
 import ProductCardActions from "@/features/products/product-card-actions";
 import { useLanguage } from "@/components/language-provider";
+import LanguageSwitcher from "@/components/language-switcher";
 
 type Product = {
   id: string; name: string; slug: string; price: number;
@@ -95,33 +96,46 @@ export default function StorefrontHome() {
 
   useEffect(() => {
     let active = true;
+
     async function loadProducts() {
       try {
-        const [productResponse, categoryResponse] = await Promise.all([
-          fetch("/api/products", { cache: "no-store" }),
-          fetch("/api/categories", { cache: "no-store" }),
-        ]);
-        const [productResult, categoryResult] = await Promise.all([
-          productResponse.json(),
-          categoryResponse.json(),
-        ]);
-        if (!productResponse.ok || !Array.isArray(productResult.data)) throw new Error("Products unavailable");
-        if (active) setProducts(productResult.data.slice(0, 8));
-        if (categoryResponse.ok && Array.isArray(categoryResult.categories) && active) {
-          const validCategories = categoryResult.categories.filter((item: unknown): item is Category =>
-            Boolean(item) && typeof item === "object" &&
-            typeof (item as Category).id === "string" &&
-            typeof (item as Category).name === "string" &&
-            typeof (item as Category).slug === "string"
-          );
-          const populatedCategories = validCategories.filter((category: Category) =>
-            productResult.data.some((product: { category_id?: string | null }) => product.category_id === category.id)
-          );
-          setCategories(populatedCategories);
+        // One small public response replaces two uncached requests and avoids
+        // downloading product fields that the homepage never renders.
+        const response = await fetch("/api/public/homepage");
+        const result = await response.json();
+        if (!response.ok || !Array.isArray(result.products)) {
+          throw new Error("Homepage products unavailable");
         }
-      } catch { if (active) setProducts([]); }
-      finally { if (active) setProductsLoading(false); }
+
+        if (!active) return;
+        const homepageProducts = result.products as Product[];
+        setProducts(homepageProducts);
+
+        if (Array.isArray(result.categories)) {
+          const categoryIds = new Set(
+            homepageProducts
+              .map((product) => product.category_id)
+              .filter((id): id is string => typeof id === "string")
+          );
+          const validCategories = (result.categories as Category[]).filter(
+            (category) =>
+              typeof category?.id === "string" &&
+              typeof category.name === "string" &&
+              typeof category.slug === "string" &&
+              categoryIds.has(category.id)
+          );
+          setCategories(validCategories);
+        }
+      } catch {
+        if (active) {
+          setProducts([]);
+          setCategories([]);
+        }
+      } finally {
+        if (active) setProductsLoading(false);
+      }
     }
+
     void loadProducts();
     return () => { active = false; };
   }, []);
@@ -168,18 +182,17 @@ export default function StorefrontHome() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link href="/" className={styles.brand} aria-label="NEWEIX home"><svg viewBox="0 0 148 30" role="img" aria-label="neweix" focusable="false"><text x="0" y="23" >neweix</text></svg></Link>
+        <div className={styles.headerTop}>
+          <Link href="/" className={styles.brand} aria-label="NEWEIX home">
+            <img src="/neweix-logo.svg" alt="NEWEIX" width="148" height="32" />
+          </Link>
+          <div className={styles.headerActionsPlaceholder} aria-hidden="true" />
+        </div>
         <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
           <label className={styles.srOnly} htmlFor="home-product-search">{t("searchProducts")}</label>
           <input id="home-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("searchProducts")} />
           <button type="submit" aria-label={t("search")}><Icon name="search" size={19} /></button>
         </form>
-        <nav className={styles.desktopNav} aria-label="Main navigation">
-          <Link href="/products">{t("products")}</Link>
-          <Link href="/track-order">{t("trackOrder")}</Link>
-          <Link href="/wishlist">{t("wishlist")}</Link>
-          <Link href="/cart" className={styles.cartLink}>{t("cart")} <span>{cartCount}</span></Link>
-        </nav>
       </header>
 
       <main className={styles.main}>
@@ -214,7 +227,20 @@ export default function StorefrontHome() {
         <section className={styles.productSection} aria-labelledby="featured-title">
           <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>DISCOVER NEWEIX</span><h2 id="featured-title">{t("picksForYou")}</h2><p>{t("chooseFromStore")}</p></div><Link href="/products">{t("viewAllProducts")} <Icon name="arrow-right" size={16} /></Link></div>
           {cartNotice && <p className={styles.cartNotice} role="status">{cartNotice}<button type="button" onClick={() => setCartNotice("")} aria-label={t("closeMessage")}><Icon name="close" size={17} /></button></p>}
-          {productsLoading ? <p className={styles.state} role="status">{t("loadingProducts")}</p> : products.length ? (
+          {productsLoading ? (
+            <div className={styles.productGrid} role="status" aria-label="Loading featured products" aria-busy="true">
+              {Array.from({ length: 8 }, (_, index) => (
+                <article className={styles.productCard} key={`product-skeleton-${index}`}>
+                  <div className={styles.productImage} aria-hidden="true" style={{ aspectRatio: "4 / 3", minHeight: 150, borderRadius: 12, background: "linear-gradient(100deg, #edf2ed 20%, #f7faf7 38%, #edf2ed 56%)" }} />
+                  <div className={styles.productInfo}>
+                    <span aria-hidden="true" style={{ display: "block", width: "78%", height: 14, margin: "4px 0 12px", borderRadius: 8, background: "#edf2ed" }} />
+                    <span aria-hidden="true" style={{ display: "block", width: "42%", height: 17, marginBottom: 12, borderRadius: 8, background: "#edf2ed" }} />
+                    <span aria-hidden="true" style={{ display: "block", width: "100%", height: 38, borderRadius: 10, background: "#f1f5f1" }} />
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : products.length ? (
             <div className={styles.productGrid}>{products.map((product) => (
               <article className={styles.productCard} key={product.id}>
                 <Link href={`/products/${encodeURIComponent(product.slug)}`} className={styles.productImage}>
@@ -243,6 +269,7 @@ export default function StorefrontHome() {
           <div className={styles.drawerHead}><div><span className={styles.eyebrow}>{t("customer")}</span><h2 id="drawer-title">{t("myAccount")}</h2></div><button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close menu"><Icon name="close" size={18} /></button></div>
           <div className={styles.drawerGroup}>{customer ? <Link href="/account" onClick={() => setDrawerOpen(false)}><Icon name="user" size={17} /> <span>{t("myProfile")}</span></Link> : <Link href="/auth/customer-login?next=/account" onClick={() => setDrawerOpen(false)}><Icon name="user" size={17} /> <span>{t("loginSignup")}</span></Link>}</div>
           <div className={styles.drawerGroup}><span>{t("myShopping")}</span><Link href="/orders" onClick={() => setDrawerOpen(false)}><Icon name="orders" size={17} /> <span>{t("myOrders")}</span></Link><Link href="/track-order" onClick={() => setDrawerOpen(false)}><Icon name="truck" size={17} /> <span>{t("trackMyOrder")}</span></Link><Link href="/wishlist" onClick={() => setDrawerOpen(false)}><Icon name="heart" size={17} /> <span>{t("wishlist")}</span><b>{wishlistCount}</b></Link><Link href="/cart" onClick={() => setDrawerOpen(false)}><Icon name="cart" size={17} /> <span>{t("shoppingCart")}</span><b>{cartCount}</b></Link></div>
+          <div className={styles.drawerGroup}><span>{t("preferences")}</span><div style={{ padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}><LanguageSwitcher /></div></div>
           <div className={styles.drawerGroup}><span>{t("accountSettings")}</span><Link href="/account/eixpay" onClick={() => setDrawerOpen(false)}><Icon name="wallet" size={17} /> <span>EixPay Wallet · Eixon</span></Link><Link href="/account/neweix-plus" onClick={() => setDrawerOpen(false)}><Icon name="membership" size={17} /> <span>Neweix+ Membership</span></Link><Link href="/eixverse" onClick={() => setDrawerOpen(false)}><Icon name="globe" size={17} /> <span>EixVerse</span></Link><Link href="/account/theme" onClick={() => setDrawerOpen(false)}><Icon name="settings" size={17} /> <span>{t("themePreferences")}</span></Link>
              <Link href="/account/addresses" onClick={() => setDrawerOpen(false)}><Icon name="map-pin" size={17} /> <span>{t("deliveryAddresses")}</span></Link>
              <Link href="/account/privacy" onClick={() => setDrawerOpen(false)}><Icon name="shield" size={17} /> <span>{t("privacyConsent")}</span></Link>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./homepage-youtube-videos.module.css";
 
 type Video = { id: string; title: string; thumbnail: string; publishedAt: string | null };
@@ -8,15 +8,41 @@ type Video = { id: string; title: string; thumbnail: string; publishedAt: string
 export default function HomepageYouTubeVideos() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // The YouTube feed performs several external requests. Defer it until the
+  // visitor approaches this section so it cannot compete with the first view.
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    if (!("IntersectionObserver" in window)) {
+      setShouldLoad(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "420px 0px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
+    if (!shouldLoad) return;
     let active = true;
-    fetch("/api/public/youtube-videos", { cache: "no-store" })
+    fetch("/api/public/youtube-videos", { cache: "force-cache" })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("Feed unavailable")))
       .then((data: { videos?: Video[] }) => { if (active && Array.isArray(data.videos)) setVideos(data.videos); })
       .catch(() => { if (active) setVideos([]); });
     return () => { active = false; };
-  }, []);
+  }, [shouldLoad]);
 
   useEffect(() => {
     if (!selected) return;
@@ -25,7 +51,7 @@ export default function HomepageYouTubeVideos() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selected]);
 
-  if (!videos.length) return null;
+  if (!videos.length) return <div ref={sentinelRef} aria-hidden="true" />;
 
   return (
     <section className={styles.section} aria-labelledby="homepage-youtube-title">

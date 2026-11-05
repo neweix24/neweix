@@ -12,7 +12,7 @@ export async function GET() {
   try {
     const env = await getYouTubeEnv();
     if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.YOUTUBE_TOKEN_ENCRYPTION_KEY) {
-      return NextResponse.json({ videos: [], configured: false }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } });
+      return NextResponse.json({ videos: [], configured: false }, { headers: { "Cache-Control": "public, max-age=120, s-maxage=300, stale-while-revalidate=600" } });
     }
 
     const supabase = await createRuntimeServiceClient();
@@ -27,7 +27,7 @@ export async function GET() {
 
     if (error) throw error;
     if (!account?.refresh_token_ciphertext) {
-      return NextResponse.json({ videos: [], configured: false }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } });
+      return NextResponse.json({ videos: [], configured: false }, { headers: { "Cache-Control": "public, max-age=120, s-maxage=300, stale-while-revalidate=600" } });
     }
 
     const refreshToken = await decryptYouTubeToken(account.refresh_token_ciphertext, env.YOUTUBE_TOKEN_ENCRYPTION_KEY);
@@ -64,9 +64,9 @@ export async function GET() {
       updated_at: new Date().toISOString(),
     }).eq("id", account.id);
 
-    return NextResponse.json({ videos, configured: true }, { headers: { "Cache-Control": "public, s-maxage=900, stale-while-revalidate=1800" } });
+    return NextResponse.json({ videos, configured: true }, { headers: { "Cache-Control": "public, max-age=300, s-maxage=900, stale-while-revalidate=1800" } });
   } catch (error) {
     console.error("[homepage-youtube] feed failed", error instanceof Error ? error.message : "unknown error");
-    return NextResponse.json({ videos: [], configured: false }, { status: 200, headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300" } });
+    return NextResponse.json({ videos: [], configured: false }, { status: 200, headers: { "Cache-Control": "public, max-age=60, s-maxage=120, stale-while-revalidate=300" } });
   }
 }
