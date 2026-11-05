@@ -311,7 +311,6 @@ export default function StorefrontHome() {
               <Link href="/contact" onClick={() => setQuickMenuOpen(false)}><Icon name="mail" size={17} />{t("contact")}</Link>
             </nav>}
           </div>
-          <button className={styles.menuButton} type="button" onClick={() => setDrawerOpen(true)} aria-label="Open My Account" aria-haspopup="dialog" aria-expanded={drawerOpen}><Icon name="user" size={21} /></button>
         </div>
         <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
           <label className={styles.srOnly} htmlFor="home-product-search">{t("searchProducts")}</label>
