@@ -817,7 +817,7 @@ export default function PathaoPanel() {
           <article className="rounded-lg bg-gray-50 p-3">
             <h4 className="text-sm font-semibold">Product Exchange</h4>
             <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs leading-5 text-gray-700">
-              <li>Open the delivered consignment's View page.</li>
+              <li>Open the delivered consignment&apos;s View page.</li>
               <li>Create an Exchange Parcel ID.</li>
               <li>Arrange the replacement parcel and tell the customer to hand the original item to the courier.</li>
               <li>Record both consignment IDs and inspect the returned item before updating inventory.</li>
@@ -827,7 +827,7 @@ export default function PathaoPanel() {
             <h4 className="text-sm font-semibold">Partial Delivery</h4>
             <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs leading-5 text-gray-700">
               <li>In Pathao Merchant Panel, open Dashboard → New Deliveries → Partial.</li>
-              <li>Provide Store, customer's phone number and Cash Collection Amount.</li>
+              <li>Provide Store, customer&apos;s phone number and Cash Collection Amount.</li>
               <li>Complete the partial entry by 9 PM.</li>
               <li>Verify which items were accepted and returned before changing NEWEIX order quantities or stock.</li>
             </ol>
