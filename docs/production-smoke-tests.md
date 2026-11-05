@@ -6,6 +6,7 @@ The production smoke test is a lightweight HTTP-level check. It runs automatical
 
 - Public storefront routes return HTTP 200 and a non-empty page.\n- Customer-protected pages such as Wishlist redirect unauthenticated visitors to Customer Login.
 - The public product API returns JSON successfully.
+- The Pathao webhook integration handshake returns HTTP 202 and the required protocol response header. This is a non-mutating check; it does not authenticate a real shipment event or contact Pathao's API.
 - Admin, Supreme and integration pages redirect unauthenticated visitors to the login flow.
 - Admin product, order, Pathao and BulkSMSBD APIs reject unauthenticated requests with HTTP 401 or 403.
 

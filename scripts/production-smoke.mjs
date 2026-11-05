@@ -38,21 +38,25 @@ function pause(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function request(path) {
+async function request(path, init = {}) {
   return fetch(new URL(path, baseUrl), {
-    method: "GET",
+    ...init,
+    method: init.method || "GET",
     redirect: "manual",
     cache: "no-store",
     signal: AbortSignal.timeout(timeoutMs),
-    headers: { "User-Agent": "NEWEIX-Production-Smoke-Test/1.0" },
+    headers: {
+      "User-Agent": "NEWEIX-Production-Smoke-Test/1.0",
+      ...(init.headers || {}),
+    },
   });
 }
 
-async function runCheck(label, path, validate) {
+async function runCheck(label, path, validate, init = {}) {
   let lastError = "No response";
   for (let attempt = 1; attempt <= retries; attempt += 1) {
     try {
-      const response = await request(path);
+      const response = await request(path, init);
       const result = await validate(response);
       if (result.ok) {
         process.stdout.write(`PASS  ${label} — HTTP ${response.status}\n`);
@@ -117,6 +121,28 @@ await runCheck("Public product API", "/api/products", async (response) => {
     : { ok: false, reason: "Product API returned an invalid JSON payload" };
 });
 
+await runCheck("Pathao webhook integration handshake", "/api/webhooks/pathao", async (response) => {
+  if (response.status !== 202) {
+    return { ok: false, reason: `Expected HTTP 202, received ${response.status}` };
+  }
+  const integrationSecret = response.headers.get("x-pathao-merchant-webhook-integration-secret");
+  if (integrationSecret !== "f3992ecc-59da-4cbe-a049-a13da2018d51") {
+    return { ok: false, reason: "Missing or incorrect Pathao integration response header" };
+  }
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    return { ok: false, reason: "Expected a JSON handshake response" };
+  }
+  const body = await response.json();
+  return body?.accepted === true
+    ? { ok: true }
+    : { ok: false, reason: "Pathao handshake was not accepted" };
+}, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ event: "webhook_integration" }),
+});
+
 for (const path of protectedPages) {
   await runCheck(`Protected page ${path}`, path, async (response) => {
     const location = response.headers.get("location") || "";
@@ -165,7 +191,7 @@ for (const path of protectedCustomerApis) {
   });
 }
 
-process.stdout.write(`\nSmoke test summary: ${publicPages.length + protectedPages.length + protectedCustomerPages.length + protectedApis.length + protectedCustomerApis.length + 1 - failures.length} passed, ${failures.length} failed.\n`);
+process.stdout.write(`\nSmoke test summary: ${publicPages.length + protectedPages.length + protectedCustomerPages.length + protectedApis.length + protectedCustomerApis.length + 2 - failures.length} passed, ${failures.length} failed.\n`);
 if (failures.length > 0) {
   process.stderr.write(JSON.stringify(failures, null, 2) + "\n");
   process.exitCode = 1;
