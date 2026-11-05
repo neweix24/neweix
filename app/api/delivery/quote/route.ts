@@ -43,8 +43,7 @@ export async function GET(request: Request) {
   }
 
   if (!/^BD-D[0-9]{2}-Z[0-9]{2}$/.test(districtCode) ||
-      !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode) ||
-      false) {
+      !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode)) {
     return NextResponse.json({ error: "Select a supported district and upazila." }, { status: 400 });
   }
 
