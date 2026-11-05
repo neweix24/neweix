@@ -70,6 +70,12 @@ jobs:
         run: |
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/partial_return_restock_privileges_test.sql
 
+      - name: Verify customer return request privilege boundaries
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/customer_return_requests_privileges_test.sql
+
       - name: Verify EixPay daily watchdog permissions
         env:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
