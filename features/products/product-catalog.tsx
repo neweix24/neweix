@@ -7,6 +7,7 @@ import styles from "./product-catalog.module.css";
 import ProductCardActions from "@/features/products/product-card-actions";
 import ProductQuickView from "@/features/products/product-quick-view";
 import { useLanguage } from "@/components/language-provider";
+import { loadSavedProductLists, mutateSavedProduct } from "@/lib/customer-saved-products";
 
 type Product = {
   id: string;
@@ -128,6 +129,7 @@ export default function ProductCatalog() {
     } catch {
       localStorage.removeItem("neweix_wishlist");
     }
+    void loadSavedProductLists().then((lists) => { setWishlist(lists.wishlist); setCompareIds(lists.compare); });
   }, []);
 
   useEffect(() => {
@@ -190,6 +192,7 @@ export default function ProductCatalog() {
     try {
       localStorage.setItem("neweix_wishlist", JSON.stringify(next));
       window.dispatchEvent(new Event("neweix-wishlist-change"));
+      void mutateSavedProduct("wishlist", product.id, next.includes(product.id) ? "add" : "remove").then((result) => { if (!result.ok) setNotice(result.error || t("wishlistSaveFailed")); });
       setWishlist(next);
       setNotice(next.includes(product.id) ? t("savedToWishlist") : t("removedFromWishlist"));
     } catch {
@@ -200,7 +203,7 @@ export default function ProductCatalog() {
   function toggleCompare(product: Product) {
     const next = compareIds.includes(product.id) ? compareIds.filter((id) => id !== product.id) : compareIds.length < 4 ? [...compareIds, product.id] : null;
     if (!next) { setNotice(t("compareLimit")); return; }
-    try { localStorage.setItem("neweix_compare", JSON.stringify(next)); setCompareIds(next); setNotice(next.includes(product.id) ? t("addedToCompare") : t("removedFromCompare")); window.dispatchEvent(new Event("neweix-compare-change")); }
+    try { localStorage.setItem("neweix_compare", JSON.stringify(next)); setCompareIds(next); void mutateSavedProduct("compare", product.id, next.includes(product.id) ? "add" : "remove").then((result) => { if (!result.ok) setNotice(result.error || t("compareSaveFailed")); }); setNotice(next.includes(product.id) ? t("addedToCompare") : t("removedFromCompare")); window.dispatchEvent(new Event("neweix-compare-change")); }
     catch { setNotice(t("compareSaveFailed")); }
   }
 
