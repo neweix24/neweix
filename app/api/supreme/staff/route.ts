@@ -6,7 +6,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ALLOWED_ROLES = ["admin", "staff"] as const;
+const ALLOWED_ROLES = ["admin", "manager", "employee", "staff"] as const;
 const MAX_BODY_BYTES = 4096;
 
 function errorResponse(message: string, status: number) {
@@ -141,9 +141,32 @@ export async function POST(request: Request) {
       )
     ) {
       return errorResponse(
-        "Role admin অথবা staff হতে হবে।",
+        "Role admin, manager অথবা employee হতে হবে।",
         400
       );
+    }
+
+    // Manager accounts may only be provisioned from a nomination approved by Supreme.
+    let approvedNominationId: string | null = null;
+    if (role === "manager") {
+      const { env } = await getCloudflareContext();
+      const nominationKey = (env as typeof env & { SUPABASE_SERVICE_ROLE_KEY?: string }).SUPABASE_SERVICE_ROLE_KEY;
+      const nominationUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!nominationKey || !nominationUrl) return errorResponse("সার্ভার কনফিগারেশন অসম্পূর্ণ।", 500);
+      const nominationClient = createClient(nominationUrl, nominationKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      const { data: nomination, error: nominationError } = await nominationClient
+        .from("staff_manager_nominations")
+        .select("id")
+        .eq("status", "approved")
+        .is("provisioned_user_id", null)
+        .eq("candidate_email", email)
+        .maybeSingle();
+      if (nominationError || !nomination) {
+        return errorResponse("এই ইমেইলের জন্য Supreme-approved Manager nomination পাওয়া যায়নি।", 403);
+      }
+      approvedNominationId = nomination.id;
     }
 
     // 8. Read the server-only service role secret.
@@ -219,6 +242,22 @@ export async function POST(request: Request) {
         "Staff profile তৈরি হয়নি; নতুন account বাতিল করা হয়েছে।",
         500
       );
+    }
+
+    // Link a newly created Manager to its approved nomination.
+    if (role === "manager" && approvedNominationId) {
+      const { error: nominationUpdateError } = await adminClient
+        .from("staff_manager_nominations")
+        .update({ provisioned_user_id: created.user.id, provisioned_at: new Date().toISOString() })
+        .eq("id", approvedNominationId)
+        .eq("status", "approved")
+        .is("provisioned_user_id", null);
+
+      if (nominationUpdateError) {
+        await adminClient.from("staff_profiles").delete().eq("user_id", created.user.id);
+        await adminClient.auth.admin.deleteUser(created.user.id);
+        return errorResponse("Manager nomination link failed; new account was rolled back.", 500);
+      }
     }
 
     // 12. Return only non-secret account details.
