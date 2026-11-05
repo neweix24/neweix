@@ -94,13 +94,16 @@ export async function GET(request: Request) {
         console.error("Pathao settlement import history failed:", importsError.message);
         return errorResponse("Could not load Pathao settlement history. Verify the database migration.", 503);
       }
-      const importIds = (imports ?? []).map((item) => item.id);
+      const requestedImportId = params.get("importId");
+      const selectedImportId = requestedImportId && UUID_REGEX.test(requestedImportId)
+        ? requestedImportId
+        : imports?.[0]?.id ?? null;
       let rows: Array<Record<string, unknown>> = [];
-      if (importIds.length > 0) {
+      if (selectedImportId && (imports ?? []).some((item) => item.id === selectedImportId)) {
         const { data, error } = await admin
           .from("pathao_settlement_rows")
           .select("id, import_id, source_row_number, source_identifier, consignment_id, merchant_order_id, cod_amount, delivery_charge, discount_amount, net_payout_amount, expected_cod_amount, variance_amount, match_status, matched_order_id")
-          .in("import_id", importIds)
+          .eq("import_id", selectedImportId)
           .order("source_row_number", { ascending: true })
           .limit(1000);
         if (error) {
@@ -109,7 +112,7 @@ export async function GET(request: Request) {
         }
         rows = (data ?? []) as Array<Record<string, unknown>>;
       }
-      return NextResponse.json({ success: true, imports: imports ?? [], rows }, {
+      return NextResponse.json({ success: true, imports: imports ?? [], selectedImportId, rows }, {
         headers: { "Cache-Control": "private, no-store" },
       });
     }
