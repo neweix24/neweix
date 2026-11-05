@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import Icon from "@/components/ui/icon";
 
 type State = "idle" | "loading" | "success" | "error";
@@ -99,7 +99,7 @@ export default function PathaoPanel() {
     }
   }
 
-  async function calculatePrice(event: React.FormEvent<HTMLFormElement>) {
+  async function calculatePrice(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setQuoteLoading(true);
     setQuote(null);
