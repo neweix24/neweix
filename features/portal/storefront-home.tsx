@@ -44,6 +44,8 @@ export default function StorefrontHome() {
   const pathname = usePathname();
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [quickMenuOpen, setQuickMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
@@ -53,6 +55,7 @@ export default function StorefrontHome() {
   const [search, setSearch] = useState("");
   const [cartNotice, setCartNotice] = useState("");
   const panelRef = useRef<HTMLElement>(null);
+  const quickMenuRef = useRef<HTMLDivElement>(null);
 
   const refreshCounts = useCallback(() => {
     setCartCount(readCartCount());
@@ -141,6 +144,28 @@ export default function StorefrontHome() {
   }, []);
 
   useEffect(() => {
+    if (!quickMenuOpen && !notificationsOpen) return;
+    function closeOnOutsideClick(event: globalThis.PointerEvent) {
+      if (event.target instanceof Node && !quickMenuRef.current?.contains(event.target)) {
+        setQuickMenuOpen(false);
+        setNotificationsOpen(false);
+      }
+    }
+    function closeOnEscape(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        setQuickMenuOpen(false);
+        setNotificationsOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [quickMenuOpen, notificationsOpen]);
+
+  useEffect(() => {
     if (!drawerOpen) return;
     const previous = document.activeElement as HTMLElement | null;
     const bodyOverflow = document.body.style.overflow;
@@ -186,7 +211,27 @@ export default function StorefrontHome() {
           <Link href="/" className={styles.brand} aria-label="NEWEIX home">
             <img src="/neweix-logo.svg" alt="NEWEIX" width="148" height="32" />
           </Link>
-          <button className={styles.menuButton} type="button" onClick={() => setDrawerOpen(true)} aria-label="Open quick menu" aria-haspopup="dialog" aria-expanded={drawerOpen}><Icon name="more-vertical" size={22} /></button>
+          <div ref={quickMenuRef} className={styles.headerQuickMenu}>
+            <button type="button" className={styles.notificationTrigger} aria-label="Notifications" aria-haspopup="true" aria-expanded={notificationsOpen} onClick={() => { setNotificationsOpen((open) => !open); setQuickMenuOpen(false); }}>
+              <Icon name="bell" size={19} />
+            </button>
+            {notificationsOpen && <section className={styles.notificationPanel} aria-label="Notifications">
+              <strong>Notifications</strong>
+              <p>You’re all caught up.</p>
+              <span>New order and offer updates will appear here.</span>
+            </section>}
+            <button type="button" className={styles.quickMenuTrigger} aria-label="Open quick links" aria-haspopup="true" aria-expanded={quickMenuOpen} onClick={() => { setQuickMenuOpen((open) => !open); setNotificationsOpen(false); }}>
+              <Icon name="more-horizontal" size={22} />
+            </button>
+            {quickMenuOpen && <nav className={styles.quickMenuPanel} aria-label="Quick links">
+              <Link href="/products" onClick={() => setQuickMenuOpen(false)}><Icon name="grid" size={17} />{t("productsSearch")}</Link>
+              <Link href="/track-order" onClick={() => setQuickMenuOpen(false)}><Icon name="truck" size={17} />{t("trackMyOrder")}</Link>
+              <Link href="/wishlist" onClick={() => setQuickMenuOpen(false)}><Icon name="heart" size={17} />{t("wishlist")}<b>{wishlistCount}</b></Link>
+              <Link href="/cart" onClick={() => setQuickMenuOpen(false)}><Icon name="cart" size={17} />{t("shoppingCart")}<b>{cartCount}</b></Link>
+              <Link href="/faq" onClick={() => setQuickMenuOpen(false)}><Icon name="help" size={17} />{t("faq")}</Link>
+              <Link href="/contact" onClick={() => setQuickMenuOpen(false)}><Icon name="mail" size={17} />{t("contact")}</Link>
+            </nav>}
+          </div>
         </div>
         <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
           <label className={styles.srOnly} htmlFor="home-product-search">{t("searchProducts")}</label>
