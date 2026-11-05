@@ -326,8 +326,8 @@ export default function CheckoutView() {
     const transactionId = String(formData.get("payment_transaction_id") ?? "").trim();
     const deliveryFeeTransactionId = String(formData.get("delivery_fee_payment_transaction_id") ?? "").trim();
 
-    if (paymentMethod === "cod" &&
-      (!deliveryFeeTransactionId || deliveryFeeTransactionId.length > 120 || !/^[A-Za-z0-9-]+$/.test(deliveryFeeTransactionId))) {
+    if (paymentMethod === "cod" && quote > 0 &&
+      (!selectedMobilePayment?.enabled || !deliveryFeeTransactionId || deliveryFeeTransactionId.length > 120 || !/^[A-Za-z0-9-]+$/.test(deliveryFeeTransactionId))) {
       setError("Enter a valid delivery-fee transaction ID.");
       setSubmitting(false);
       return;
@@ -355,8 +355,8 @@ export default function CheckoutView() {
       coupon_code: String(formData.get("coupon_code") ?? "").trim().toUpperCase() || null,
       payment_method: paymentMethod,
       payment_transaction_id: paymentMethod === "cod" ? null : transactionId,
-      delivery_fee_payment_method: paymentMethod === "cod" ? mfsMethod : null,
-      delivery_fee_payment_transaction_id: paymentMethod === "cod" ? deliveryFeeTransactionId : null,
+      delivery_fee_payment_method: paymentMethod === "cod" && quote > 0 ? mfsMethod : null,
+      delivery_fee_payment_transaction_id: paymentMethod === "cod" && quote > 0 ? deliveryFeeTransactionId : null,
       items: cart.map(({ product_id, quantity }) => ({ product_id, quantity })),
     };
 
