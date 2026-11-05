@@ -90,12 +90,13 @@ export default function AccountView() {
           cache: "no-store",
         });
         const phoneStatus = await phoneResponse.json().catch(() => null);
-        if (phoneResponse.ok && phoneStatus?.success) {
-          setPhoneVerified(Boolean(phoneStatus.verified));
-          setVerifiedPhone(
-            typeof phoneStatus.phone === "string" ? phoneStatus.phone : ""
-          );
+        if (!phoneResponse.ok || !phoneStatus?.success) {
+          throw new Error(phoneStatus?.error || "Your phone verification status could not be loaded. Refresh the page and sign in again.");
         }
+        setPhoneVerified(Boolean(phoneStatus.verified));
+        setVerifiedPhone(
+          typeof phoneStatus.phone === "string" ? phoneStatus.phone : ""
+        );
       } catch (error) {
         if (active) {
           setErrorMessage(
