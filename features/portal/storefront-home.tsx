@@ -45,6 +45,7 @@ export default function StorefrontHome() {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [quickMenuOpen, setQuickMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
@@ -143,14 +144,15 @@ export default function StorefrontHome() {
   }, []);
 
   useEffect(() => {
-    if (!quickMenuOpen) return;
+    if (!quickMenuOpen && !notificationsOpen) return;
     function closeOnOutsideClick(event: globalThis.PointerEvent) {
       if (event.target instanceof Node && !quickMenuRef.current?.contains(event.target)) {
         setQuickMenuOpen(false);
+        setNotificationsOpen(false);
       }
     }
     function closeOnEscape(event: globalThis.KeyboardEvent) {
-      if (event.key === "Escape") setQuickMenuOpen(false);
+      if (event.key === "Escape") { setQuickMenuOpen(false); setNotificationsOpen(false); }
     }
     document.addEventListener("pointerdown", closeOnOutsideClick);
     document.addEventListener("keydown", closeOnEscape);
@@ -158,7 +160,7 @@ export default function StorefrontHome() {
       document.removeEventListener("pointerdown", closeOnOutsideClick);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [quickMenuOpen]);
+  }, [quickMenuOpen, notificationsOpen]);
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -209,13 +211,30 @@ export default function StorefrontHome() {
           <div ref={quickMenuRef} className={styles.headerQuickMenu}>
             <button
               type="button"
+              className={styles.notificationTrigger}
+              aria-label="Notifications"
+              aria-haspopup="true"
+              aria-expanded={notificationsOpen}
+              onClick={() => { setNotificationsOpen((open) => !open); setQuickMenuOpen(false); }}
+            >
+              <Icon name="bell" size={19} />
+            </button>
+            {notificationsOpen && (
+              <section className={styles.notificationPanel} aria-label="Notifications">
+                <strong>Notifications</strong>
+                <p>You’re all caught up.</p>
+                <span>New order and offer updates will appear here.</span>
+              </section>
+            )}
+            <button
+              type="button"
               className={styles.quickMenuTrigger}
               aria-label="Open quick menu"
               aria-haspopup="true"
               aria-expanded={quickMenuOpen}
-              onClick={() => setQuickMenuOpen((open) => !open)}
+              onClick={() => { setQuickMenuOpen((open) => !open); setNotificationsOpen(false); }}
             >
-              <span aria-hidden="true">⋮</span>
+              <span aria-hidden="true">⋯</span>
             </button>
             {quickMenuOpen && (
               <nav className={styles.quickMenuPanel} aria-label="Quick links">
