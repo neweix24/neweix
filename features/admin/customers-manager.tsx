@@ -92,7 +92,7 @@ export default function CustomersManager() {
             Registered customers: <strong>{pagination.total.toLocaleString("en-BD")}</strong>
           </p>
           <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-            per page {pagination.page_size} জন · server-side search
+            {pagination.page_size} customers per page · server-side search
           </p>
         </div>
         <input
@@ -180,11 +180,11 @@ export default function CustomersManager() {
             <button type="button" disabled={!pagination.has_previous || loading}
               onClick={() => setPage((current) => Math.max(1, current - 1))}
               className="rounded-lg border px-4 py-2 text-sm disabled:opacity-40"
-              style={{ borderColor: "var(--border)" }}>আগের Page</button>
+              style={{ borderColor: "var(--border)" }}>Previous page</button>
             <button type="button" disabled={!pagination.has_next || loading}
               onClick={() => setPage((current) => current + 1)}
               className="rounded-lg border px-4 py-2 text-sm disabled:opacity-40"
-              style={{ borderColor: "var(--border)" }}>পরের Page</button>
+              style={{ borderColor: "var(--border)" }}>Next page</button>
           </div>
         </nav>
       )}
