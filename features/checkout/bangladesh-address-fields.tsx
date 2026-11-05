@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BANGLADESH_ADMIN_AREAS,
   findAddressCodesByNames,
@@ -52,6 +52,8 @@ export default function BangladeshAddressFields({
   const [unionCode, setUnionCode] = useState(initial.unionCode);
   const [unionOther, setUnionOther] = useState("");
   const [upazilaOther, setUpazilaOther] = useState(initial.upazilaCode === "other" ? initialUpazila ?? "" : "");
+  const onAddressChangeRef = useRef(onAddressChange);
+  onAddressChangeRef.current = onAddressChange;
 
   const division = BANGLADESH_ADMIN_AREAS.find((item) => item.code === divisionCode);
   const districts = division?.districts ?? [];
@@ -62,9 +64,9 @@ export default function BangladeshAddressFields({
 
   useEffect(() => {
     if (districtCode && upazilaCode) {
-      onAddressChange?.({ districtCode, upazilaCode });
+      onAddressChangeRef.current?.({ districtCode, upazilaCode });
     }
-  }, [districtCode, upazilaCode, onAddressChange]);
+  }, [districtCode, upazilaCode]);
 
   function changeDivision(value: string) {
     setDivisionCode(value);
