@@ -248,7 +248,7 @@ export async function POST(request: Request) {
       (input.settlementReference != null &&
         (typeof input.settlementReference !== "string" || input.settlementReference.trim().length > 120)) ||
       (input.settlementDate != null &&
-        (typeof input.settlementDate !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(input.settlementDate))) ||
+        (typeof input.settlementDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(input.settlementDate))) ||
       !Array.isArray(input.rows) || input.rows.length < 1 || input.rows.length > 1000
     ) {
       return errorResponse("Settlement report details are invalid. Import 1 to 1,000 mapped rows.", 400);
