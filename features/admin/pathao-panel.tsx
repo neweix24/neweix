@@ -759,6 +759,14 @@ export default function PathaoPanel() {
     };
   }, []);
 
+  const coverageSummary = {
+    fullyMapped: coverageSyncResults.filter((item) => item.status === "fully_mapped").length,
+    partiallyMapped: coverageSyncResults.filter((item) => item.status === "partially_mapped").length,
+    matchedUpazilas: coverageSyncResults.reduce((total, item) => total + item.matchedUpazilas, 0),
+    skippedUpazilas: coverageSyncResults.reduce((total, item) => total + item.skippedUpazilas.length, 0),
+    syncErrors: coverageSyncResults.filter((item) => item.status === "sync_error").length,
+  };
+
   return (
     <section className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -846,19 +854,29 @@ export default function PathaoPanel() {
           <span className="text-xs text-gray-600">Eight divisions · live City/Zone catalog · no guessed mappings</span>
         </div>
         {coverageSyncResults.length > 0 && (
-          <div className="overflow-x-auto rounded-lg border bg-white">
-            <table className="w-full min-w-[760px] text-left text-xs">
-              <thead className="border-b bg-gray-50"><tr><th className="p-2">Division</th><th className="p-2">District</th><th className="p-2">Pathao city</th><th className="p-2">Upazila mapping</th><th className="p-2">Result</th></tr></thead>
-              <tbody>{coverageSyncResults.map((item) => (
-                <tr key={item.districtCode} className="border-b last:border-0">
-                  <td className="p-2">{item.divisionName}</td>
-                  <td className="p-2 font-medium">{item.districtName}</td>
-                  <td className="p-2">{item.pathaoCityName ?? "Not matched"}</td>
-                  <td className="p-2">{item.matchedUpazilas}/{item.totalUpazilas}</td>
-                  <td className="p-2">{item.status === "fully_mapped" ? "Fully mapped" : item.status === "partially_mapped" ? `Partial · ${item.skippedUpazilas.length} need review` : item.status === "sync_error" ? "Sync error" : item.status === "city_not_found" ? "City not found" : item.status === "city_ambiguous" ? "Ambiguous city" : item.status === "zones_unavailable" ? "Zones unavailable" : "No exact zone match"}</td>
-                </tr>
-              ))}</tbody>
-            </table>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Districts checked</p><p className="text-lg font-bold">{coverageSyncResults.length}/64</p></div>
+              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Fully mapped</p><p className="text-lg font-bold">{coverageSummary.fullyMapped}</p></div>
+              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Partially mapped</p><p className="text-lg font-bold">{coverageSummary.partiallyMapped}</p></div>
+              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Exact matches</p><p className="text-lg font-bold">{coverageSummary.matchedUpazilas}</p></div>
+              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Need review / errors</p><p className="text-lg font-bold">{coverageSummary.skippedUpazilas} / {coverageSummary.syncErrors}</p></div>
+            </div>
+            <div className="overflow-x-auto rounded-lg border bg-white">
+              <table className="w-full min-w-[900px] text-left text-xs">
+                <thead className="border-b bg-gray-50"><tr><th className="p-2">Division</th><th className="p-2">District</th><th className="p-2">Pathao city</th><th className="p-2">Upazila mapping</th><th className="p-2">Result</th><th className="p-2">Unmatched upazilas</th></tr></thead>
+                <tbody>{coverageSyncResults.map((item) => (
+                  <tr key={item.districtCode} className="border-b last:border-0 align-top">
+                    <td className="p-2">{item.divisionName}</td>
+                    <td className="p-2 font-medium">{item.districtName}</td>
+                    <td className="p-2">{item.pathaoCityName ?? "Not matched"}</td>
+                    <td className="p-2">{item.matchedUpazilas}/{item.totalUpazilas}</td>
+                    <td className="p-2">{item.status === "fully_mapped" ? "Fully mapped" : item.status === "partially_mapped" ? `Partial · ${item.skippedUpazilas.length} need review` : item.status === "sync_error" ? "Sync error" : item.status === "city_not_found" ? "City not found" : item.status === "city_ambiguous" ? "Ambiguous city" : item.status === "zones_unavailable" ? "Zones unavailable" : "No exact zone match"}</td>
+                    <td className="max-w-xs whitespace-normal p-2">{item.skippedUpazilas.length > 0 ? <details><summary className="cursor-pointer font-medium text-amber-800">View {item.skippedUpazilas.length} area(s)</summary><ul className="mt-2 list-disc space-y-1 pl-4 text-gray-600">{item.skippedUpazilas.map((name) => <li key={name}>{name}</li>)}</ul></details> : <span className="text-gray-400">None</span>}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
           </div>
         )}
         <p className="text-xs leading-5 text-gray-600">
