@@ -58,15 +58,24 @@ export async function middleware(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet, cacheHeaders) {
+        // Make refreshed cookies visible to downstream Server Components in
+        // this request, and persist the same values in the browser response.
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
-        // @supabase/ssr 0.7 does not expose cache headers through setAll.
-        // Explicitly prevent Cloudflare/CDNs from caching refreshed sessions.
-        response.headers.set("Cache-Control", "private, no-store, max-age=0");
+
+        // Supabase SSR >=0.10 supplies the cache headers required whenever
+        // refreshed auth cookies are written. Prevent Cloudflare/CDN caching.
+        for (const [name, value] of Object.entries(cacheHeaders)) {
+          response.headers.set(name, value);
+        }
+        response.headers.set(
+          "Cache-Control",
+          "private, no-cache, no-store, must-revalidate, max-age=0",
+        );
         response.headers.set("Expires", "0");
         response.headers.set("Pragma", "no-cache");
       },
@@ -79,6 +88,23 @@ export async function middleware(request: NextRequest) {
 
   response.headers.set("Cache-Control", "private, no-store");
 
+  // Preserve Supabase's refreshed auth cookies and cache headers on
+  // redirects returned after session validation.
+  function copySessionState(target: NextResponse) {
+    response.cookies.getAll().forEach((cookie) => target.cookies.set(cookie));
+    for (const name of ["Cache-Control", "Expires", "Pragma"]) {
+      const value = response.headers.get(name);
+      if (value) target.headers.set(name, value);
+    }
+    target.headers.set(
+      "Cache-Control",
+      "private, no-cache, no-store, must-revalidate, max-age=0",
+    );
+    target.headers.set("Expires", "0");
+    target.headers.set("Pragma", "no-cache");
+    return target;
+  }
+
   // A valid customer session should never be shown the customer sign-in form.
   // Replace the login history entry with the storefront so Back cannot reopen
   // a stale login screen after a successful sign-in.
@@ -87,9 +113,7 @@ export async function middleware(request: NextRequest) {
     destination.pathname = "/";
     destination.search = "";
     const redirectResponse = NextResponse.redirect(destination);
-    response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
-    redirectResponse.headers.set("Cache-Control", "private, no-store");
-    return redirectResponse;
+    return copySessionState(redirectResponse);
   }
 
   // The remaining public routes do not need authorization checks.
@@ -112,9 +136,7 @@ export async function middleware(request: NextRequest) {
       destination.search = "";
       destination.searchParams.set("next", pathname + request.nextUrl.search);
       const redirectResponse = NextResponse.redirect(destination);
-      response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
-      redirectResponse.headers.set("Cache-Control", "private, no-store");
-      return redirectResponse;
+      return copySessionState(redirectResponse);
     }
 
     const { data: customerProfile, error: customerProfileError } = await supabase
@@ -138,9 +160,7 @@ export async function middleware(request: NextRequest) {
       destination.search = "";
       destination.searchParams.set("verifyPhone", "1");
       const redirectResponse = NextResponse.redirect(destination);
-      response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
-      redirectResponse.headers.set("Cache-Control", "private, no-store");
-      return redirectResponse;
+      return copySessionState(redirectResponse);
     }
   }
 
@@ -152,9 +172,7 @@ export async function middleware(request: NextRequest) {
     destination.pathname = path;
     destination.search = "";
     const redirectResponse = NextResponse.redirect(destination);
-    response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
-    redirectResponse.headers.set("Cache-Control", "private, no-store");
-    return redirectResponse;
+    return copySessionState(redirectResponse);
   }
 
   if (claimsError || typeof userId !== "string" || !userId) {
@@ -163,9 +181,7 @@ export async function middleware(request: NextRequest) {
     destination.search = "";
     destination.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
     const redirectResponse = NextResponse.redirect(destination);
-    response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
-    redirectResponse.headers.set("Cache-Control", "private, no-store");
-    return redirectResponse;
+    return copySessionState(redirectResponse);
   }
 
   const { data: profile, error: profileError } = await supabase
