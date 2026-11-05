@@ -283,8 +283,7 @@ export default function AccountView() {
         ) : (
           <>
             <div className={phoneVerified ? "account-layout" : "account-layout account-layout-locked"}>
-              {phoneVerified && (
-                <aside className="account-sidebar" aria-label="My account navigation">
+              <aside className="account-sidebar" aria-label="My account navigation">
                   <div className="sidebar-heading">
                     <span className="sidebar-kicker">CUSTOMER SPACE</span>
                     <h2>My account</h2>
@@ -296,17 +295,16 @@ export default function AccountView() {
                     <Link href="/orders">My orders</Link>
                     <Link href="/wishlist">Wishlist</Link>
                     <Link href="/cart">Shopping cart</Link>
-                    <Link href="/account/addresses">Delivery addresses</Link>
+                    <Link href="/account/addresses">Delivery information</Link>
                     <span className="account-nav-label">NEWEIX SERVICES</span>
                     <Link href="/account/eixpay">EixPay Wallet · Eixon</Link>
                     <Link href="/account/neweix-plus">Neweix+ Membership</Link>
                     <Link href="/eixverse">EixVerse</Link>
                     <span className="account-nav-label">PREFERENCES & PRIVACY</span>
-                    <Link href="/account/privacy">Privacy & preferences</Link>
-                    <Link href="/account/data-requests">My data and privacy</Link>
+                    <Link href="/account/privacy">Privacy & consent</Link>
+                    <Link href="/account/data-requests">My information</Link>
                   </nav>
                 </aside>
-              )}
               <section className="account-main-panel" id="account-overview" aria-label="Account overview">
             <div className="account-email">
               {avatarUrl && (
