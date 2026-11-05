@@ -190,8 +190,9 @@ export default function StorefrontHome() {
         </div>
         <form className={styles.headerSearch} onSubmit={submitSearch} role="search">
           <label className={styles.srOnly} htmlFor="home-product-search">{t("searchProducts")}</label>
+          <span className={styles.searchLeadingIcon} aria-hidden="true"><Icon name="search" size={19} /></span>
           <input id="home-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("searchProducts")} />
-          <button type="submit" aria-label={t("search")}><Icon name="search" size={19} /></button>
+          <button type="submit" aria-label={t("search")}><Icon name="search" size={18} /><span className={styles.searchButtonLabel}>{t("search")}</span></button>
         </form>
       </header>
 
