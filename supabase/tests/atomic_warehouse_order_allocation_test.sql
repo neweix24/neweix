@@ -115,6 +115,34 @@ begin
       if sqlerrm <> 'WAREHOUSE_ALLOCATION_ALREADY_EXISTS' then raise; end if;
   end;
 
+  perform public.admin_update_order_status(v_order_id, 'cancelled', v_actor_id);
+
+  select quantity_reserved into v_reserved
+  from public.warehouse_inventory
+  where warehouse_id = v_mymensingh_id and product_id = v_product_a;
+  if v_reserved <> 0 then raise exception 'ORDER_CANCELLATION_DID_NOT_RELEASE_PRIMARY_STOCK'; end if;
+
+  select quantity_reserved into v_reserved
+  from public.warehouse_inventory
+  where warehouse_id = v_dhaka_id and product_id = v_product_a;
+  if v_reserved <> 0 then raise exception 'ORDER_CANCELLATION_DID_NOT_RELEASE_SECONDARY_STOCK'; end if;
+
+  if exists (
+    select 1 from public.order_fulfillments
+    where order_id = v_order_id and status <> 'cancelled'
+  ) then
+    raise exception 'ORDER_CANCELLATION_DID_NOT_CANCEL_FULFILLMENT_GROUPS';
+  end if;
+
+  if not exists (
+    select 1 from public.inventory_movements
+    where movement_type = 'order_release'
+      and reference_type = 'order_fulfillment'
+      and reference_id in (select id from public.order_fulfillments where order_id = v_order_id)
+  ) then
+    raise exception 'ORDER_RELEASE_LEDGER_ENTRY_MISSING';
+  end if;
+
   insert into public.orders (
     id, order_number, customer_name, customer_phone, shipping_address,
     subtotal, delivery_fee, total, payment_method, payment_status, status
