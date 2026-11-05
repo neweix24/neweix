@@ -299,6 +299,11 @@ export default function AccountView() {
             <span><strong>Wallet · Eixon</strong><small>Manage your wallet, balance and payment methods.</small></span>
             <span className="account-shortcut-arrow" aria-hidden="true">→</span>
           </Link>
+          <Link href="/account/notifications" className="account-shortcut">
+            <span className="account-shortcut-icon"><Icon name="bell" size={21} /></span>
+            <span><strong>Notifications</strong><small>View your order, payment and delivery updates.</small></span>
+            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
+          </Link>
         </section>
 
         {loading ? (
