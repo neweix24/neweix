@@ -24,7 +24,6 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const districtCode = (searchParams.get("district_code") || "").trim();
   const upazilaCode = (searchParams.get("upazila_code") || "").trim();
-  const subtotal = Number(searchParams.get("subtotal") || 0);
   let items: Array<{ product_id: string; quantity: number }>;
 
   try {
@@ -45,7 +44,7 @@ export async function GET(request: Request) {
 
   if (!/^BD-D[0-9]{2}-Z[0-9]{2}$/.test(districtCode) ||
       !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode) ||
-      !Number.isSafeInteger(subtotal) || subtotal < 0) {
+      false) {
     return NextResponse.json({ error: "Select a supported district and upazila." }, { status: 400 });
   }
 
@@ -80,7 +79,7 @@ export async function GET(request: Request) {
     const productIds = items.map((item) => item.product_id);
     const { data: products, error: productsError } = await supabase
       .from("products")
-      .select("id, weight_grams, stock, is_active")
+      .select("id, weight_grams, stock, is_active, price")
       .in("id", productIds);
     if (productsError) throw productsError;
     if (!products || products.length !== items.length ||
@@ -90,12 +89,21 @@ export async function GET(request: Request) {
 
     const productById = new Map(products.map((product) => [product.id, product]));
     let totalWeightGrams = 0;
+    let trustedSubtotal = 0;
     for (const item of items) {
       const product = productById.get(item.product_id);
       if (!product || Number(product.stock) < item.quantity) {
         return NextResponse.json({ error: "A cart product has insufficient stock." }, { status: 409 });
       }
       const grams = Number(product.weight_grams);
+      const unitPrice = Number(product.price);
+      if (!Number.isSafeInteger(unitPrice) || unitPrice < 0) {
+        return NextResponse.json({ error: "A cart product has an invalid price." }, { status: 409 });
+      }
+      trustedSubtotal += unitPrice * item.quantity;
+      if (!Number.isSafeInteger(trustedSubtotal)) {
+        return NextResponse.json({ error: "Cart subtotal is outside the supported range." }, { status: 422 });
+      }
       if (!Number.isSafeInteger(grams) || grams < 1) {
         return NextResponse.json({ error: "A product is missing a valid shipping weight." }, { status: 422 });
       }
@@ -112,7 +120,7 @@ export async function GET(request: Request) {
     ]);
     if (settingsResult.error) throw settingsResult.error;
     const threshold = Math.max(0, Number(settingsResult.data?.[0]?.value ?? 0));
-    const freeDelivery = threshold > 0 && subtotal >= threshold;
+    const freeDelivery = threshold > 0 && trustedSubtotal >= threshold;
 
     const rawQuote = await calculatePathaoPrice({
       storeId,
