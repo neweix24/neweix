@@ -36,7 +36,7 @@ function parseDelimitedText(input: string, delimiter: string): string[][] {
   let row: string[] = [];
   let cell = "";
   let quoted = false;
-  const source = input.replace(/^\\uFEFF/, "");
+  const source = input.replace(/^\uFEFF/, "");
   for (let index = 0; index < source.length; index += 1) {
     const char = source[index];
     if (char === '"') {
@@ -49,8 +49,8 @@ function parseDelimitedText(input: string, delimiter: string): string[][] {
     } else if (char === delimiter && !quoted) {
       row.push(cell);
       cell = "";
-    } else if ((char === "\\n" || char === "\\r") && !quoted) {
-      if (char === "\\r" && source[index + 1] === "\\n") index += 1;
+    } else if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && source[index + 1] === "\n") index += 1;
       row.push(cell);
       if (row.some((value) => value.trim() !== "")) rows.push(row);
       row = [];
@@ -64,7 +64,7 @@ function parseDelimitedText(input: string, delimiter: string): string[][] {
   return rows;
 }
 function parseMoney(value: string): number | null {
-  const cleaned = value.replace(/[৳$\\s,]/g, "").replace(/[()]/g, (part) => part === "(" ? "-" : "");
+  const cleaned = value.replace(/[৳$\s,]/g, "").replace(/[()]/g, (part) => part === "(" ? "-" : "");
   if (!cleaned) return null;
   const amount = Number(cleaned);
   return Number.isFinite(amount) && amount >= 0 && amount <= 100000000
@@ -251,7 +251,7 @@ export default function PathaoPanel() {
     }
     try {
       const source = await file.text();
-      const firstLine = source.split(/\\r?\\n/, 1)[0] || "";
+      const firstLine = source.split(/\r?\n/, 1)[0] || "";
       const delimiter = [",", ";", "\\t"].sort((a, b) =>
         firstLine.split(b).length - firstLine.split(a).length
       )[0];
