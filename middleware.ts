@@ -14,6 +14,10 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
   const isSupremePath = pathname === "/supreme" || pathname.startsWith("/supreme/");
+  const isWorkforcePath =
+    pathname === "/staff" || pathname.startsWith("/staff/") ||
+    pathname === "/manager" || pathname.startsWith("/manager/") ||
+    pathname === "/employee" || pathname.startsWith("/employee/");
   const isApiPath = pathname.startsWith("/api/");
   const isCustomerApi =
     (pathname.startsWith("/api/account/") &&
@@ -37,7 +41,7 @@ export async function middleware(request: NextRequest) {
   // refreshed request cookies prevents those handlers from trying to rotate
   // the same stale refresh token again. Public APIs remain publicly accessible.
   // Public storefront pages avoid an auth lookup unless they need route gating.
-  if (!isAdminPath && !isSupremePath && !isCustomerProtected && !isCustomerLoginPath && !isApiPath) {
+  if (!isAdminPath && !isSupremePath && !isWorkforcePath && !isCustomerProtected && !isCustomerLoginPath && !isApiPath) {
     return response;
   }
 
