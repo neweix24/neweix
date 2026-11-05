@@ -92,7 +92,7 @@ export default function CustomerDataControls() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, []);
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -134,7 +134,7 @@ export default function CustomerDataControls() {
         .from("customer_preferences")
         .upsert(
           {
-            user_id: authData.user.id,
+            user_id: session.user.id,
             preferred_sizes: preferredSizes,
             preferred_colors: preferredColors,
           },
@@ -161,7 +161,7 @@ export default function CustomerDataControls() {
           .from("customer_consents")
           .insert(
             changedConsents.map((item) => ({
-              user_id: authData.user!.id,
+              user_id: session.user.id,
               consent_type: item.consent_type,
               consented: item.consented,
               policy_version: CONSENT_VERSION,
