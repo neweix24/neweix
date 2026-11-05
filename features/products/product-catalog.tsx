@@ -304,7 +304,7 @@ export default function ProductCatalog() {
                 {product.is_featured && <small>{t("featured")}</small>}
               </Link>
               <div className={styles.details}>
-                <div className="mb-2 flex flex-wrap gap-2">
+                <div className={`${styles.productTools} mb-2 flex flex-wrap gap-2`}>
                   <button type="button" aria-pressed={wishlist.includes(product.id)} aria-label={wishlist.includes(product.id) ? t("removeFromWishlist") : t("addToWishlist")} title={wishlist.includes(product.id) ? t("removeFromWishlist") : t("addToWishlist")} onClick={() => toggleWishlist(product)} className={styles.iconButton} style={{ borderColor: "var(--border)" }}><Icon name="heart" size={17} /></button>
                   <button type="button" aria-pressed={compareIds.includes(product.id)} aria-label={compareIds.includes(product.id) ? t("removedFromCompare") : t("compare")} title={compareIds.includes(product.id) ? t("removedFromCompare") : t("compare")} onClick={() => toggleCompare(product)} className={styles.iconButton} style={{ borderColor: "var(--border)" }}><Icon name="compare" size={17} /></button>
                   <button type="button" aria-label={t("quickView")} title={t("quickView")} onClick={() => setQuickViewProduct(product)} className={styles.iconButton}><Icon name="eye" size={17} /></button>
@@ -332,7 +332,7 @@ export default function ProductCatalog() {
         {!loading && !error && hasMore && (
           <div className={styles.state}>
             <button type="button" onClick={() => void loadMoreProducts()} disabled={loadingMore}>
-              {loadingMore ? "Loading…" : "Load 20 more products"}
+              {loadingMore ? t("loadingMoreProducts") : t("loadMoreProducts")}
             </button>
           </div>
         )}

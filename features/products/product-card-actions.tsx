@@ -63,12 +63,12 @@ export default function ProductCardActions({
   }
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
-      <button type="button" disabled={unavailable} onClick={addToCart}
+    <div className="product-card-actions" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
+      <button className="product-card-action" type="button" disabled={unavailable} onClick={addToCart}
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 40, padding: "9px 10px", borderRadius: 10, border: "1px solid var(--page-border, var(--border))", background: "var(--page-panel, var(--surface))", color: "inherit", fontWeight: 700, fontSize: 12, cursor: unavailable ? "not-allowed" : "pointer", opacity: unavailable ? .55 : 1 }}>
         <Icon name="cart" size={16} /> {t("addToCart")}
       </button>
-      <button type="button" disabled={unavailable} onClick={buyNow}
+      <button className="product-card-action product-card-action-primary" type="button" disabled={unavailable} onClick={buyNow}
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 40, padding: "9px 10px", borderRadius: 10, border: "1px solid var(--page-accent, var(--primary))", background: "var(--page-accent, var(--primary))", color: "var(--accent-ink, #080b09)", fontWeight: 800, fontSize: 12, cursor: unavailable ? "not-allowed" : "pointer", opacity: unavailable ? .55 : 1 }}>
         <Icon name="sparkles" size={16} /> {t("buyNow")}
       </button>
