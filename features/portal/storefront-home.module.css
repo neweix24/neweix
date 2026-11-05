@@ -126,3 +126,80 @@
     flex: 1 1 auto;
   }
 }
+
+
+/* Compact mobile hero: keep featured products visible near the first fold. */
+@media (max-width: 760px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    min-height: 0;
+    margin: 10px 0 22px;
+    padding: 22px 20px 18px;
+    border-radius: 18px;
+  }
+
+  .heroVisual {
+    display: none;
+  }
+
+  .heroText h1 {
+    max-width: 100%;
+    margin: 10px 0 9px;
+    font-size: clamp(30px, 7.5vw, 40px);
+    letter-spacing: -1.3px;
+    line-height: 1.12;
+  }
+
+  .heroText > p {
+    max-width: 100%;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .heroActions {
+    gap: 9px;
+    margin-top: 16px;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    min-height: 42px;
+  }
+
+  .trustLine {
+    gap: 5px;
+    margin-top: 13px;
+    font-size: 9px;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 420px) {
+  .hero {
+    margin: 8px 0 18px;
+    padding: 18px 15px 15px;
+  }
+
+  .heroText h1 {
+    font-size: clamp(28px, 7.4vw, 34px);
+    letter-spacing: -1px;
+  }
+
+  .heroActions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    margin-top: 13px;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    min-width: 0;
+    min-height: 40px;
+    padding: 0 8px;
+    font-size: 10px;
+  }
+
+  .trustLine {
+    margin-top: 10px;
+  }
+}
