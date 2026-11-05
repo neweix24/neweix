@@ -117,6 +117,27 @@ export async function GET(request: Request) {
       });
     }
 
+    if (action === "delivery_operations") {
+      const consignmentId = params.get("consignmentId") || "";
+      if (!/^[A-Za-z0-9-]{3,80}$/.test(consignmentId)) {
+        return errorResponse("Provide a valid Pathao Consignment ID.", 400);
+      }
+      const admin = await createRuntimeServiceClient();
+      const { data: operations, error } = await admin
+        .from("pathao_delivery_operations")
+        .select("id, consignment_id, operation_type, operation_status, related_consignment_id, notes, created_at")
+        .eq("consignment_id", consignmentId)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) {
+        console.error("Pathao delivery operations history failed:", error.message);
+        return errorResponse("Could not load Pathao operation history.", 503);
+      }
+      return NextResponse.json({ success: true, operations: operations ?? [] }, {
+        headers: { "Cache-Control": "private, no-store" },
+      });
+    }
+
     await getPathaoConfig();
 
     if (action === "stores") {
@@ -249,6 +270,71 @@ export async function POST(request: Request) {
   }
 
   const input = body as Record<string, unknown>;
+
+  if (input.action === "record_delivery_operation") {
+    const allowedTypes = ["reverse_pickup", "return", "exchange", "partial_delivery"] as const;
+    const allowedStatuses = ["requested", "in_progress", "completed", "failed", "recorded"] as const;
+    const consignmentId = typeof input.consignmentId === "string" ? input.consignmentId.trim() : "";
+    const operationType = typeof input.operationType === "string" ? input.operationType : "";
+    const operationStatus = typeof input.operationStatus === "string" ? input.operationStatus : "recorded";
+    const relatedConsignmentId = typeof input.relatedConsignmentId === "string"
+      ? input.relatedConsignmentId.trim()
+      : "";
+    const notes = typeof input.notes === "string" ? input.notes.trim() : "";
+    if (
+      !/^[A-Za-z0-9-]{3,80}$/.test(consignmentId) ||
+      !allowedTypes.includes(operationType as typeof allowedTypes[number]) ||
+      !allowedStatuses.includes(operationStatus as typeof allowedStatuses[number]) ||
+      (relatedConsignmentId !== "" && !/^[A-Za-z0-9-]{3,80}$/.test(relatedConsignmentId)) ||
+      notes.length > 1000
+    ) {
+      return errorResponse("Pathao operation details are invalid.", 400);
+    }
+    const admin = await createRuntimeServiceClient();
+    const { data: order, error: orderError } = await admin
+      .from("orders")
+      .select("id, order_number")
+      .eq("delivery_provider", "pathao")
+      .eq("delivery_consignment_id", consignmentId)
+      .maybeSingle();
+    if (orderError || !order) {
+      return errorResponse("No NEWEIX Pathao order was found for this consignment ID.", 404);
+    }
+    const { data: operation, error: insertError } = await admin
+      .from("pathao_delivery_operations")
+      .insert({
+        order_id: order.id,
+        consignment_id: consignmentId,
+        operation_type: operationType,
+        operation_status: operationStatus,
+        related_consignment_id: relatedConsignmentId || null,
+        notes: notes || null,
+        created_by: staff.userId,
+      })
+      .select("id, consignment_id, operation_type, operation_status, related_consignment_id, notes, created_at")
+      .single();
+    if (insertError || !operation) {
+      console.error("Pathao delivery operation insert failed:", insertError?.message);
+      return errorResponse("Could not record Pathao operation.", 503);
+    }
+    const { error: auditError } = await admin.from("audit_logs").insert({
+      actor_id: staff.userId,
+      action: "pathao.delivery.operation_recorded",
+      target_type: "order",
+      target_id: order.id,
+      details: {
+        order_number: order.order_number,
+        consignment_id: consignmentId,
+        operation_type: operationType,
+        operation_status: operationStatus,
+        related_consignment_id: relatedConsignmentId || null,
+      },
+    });
+    if (auditError) console.error("Pathao operation audit log failed:", auditError.message);
+    return NextResponse.json({ success: true, operation }, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
 
   if (input.action === "record_payout_receipt") {
     if (
