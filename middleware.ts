@@ -133,10 +133,10 @@ export async function middleware(request: NextRequest) {
   if (isCustomerProtected) {
     if (claimsError || typeof userId !== "string" || !userId) {
       if (isCustomerApi) {
-        return NextResponse.json(
+        return copySessionState(NextResponse.json(
           { error: "Authentication required.", code: "AUTHENTICATION_REQUIRED" },
           { status: 401, headers: { "Cache-Control": "private, no-store, max-age=0" } }
-        );
+        ));
       }
 
       const destination = request.nextUrl.clone();
@@ -212,10 +212,10 @@ export async function middleware(request: NextRequest) {
 
     const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
     if (factorsError) {
-      return new NextResponse("MFA verification unavailable.", {
+      return copySessionState(new NextResponse("MFA verification unavailable.", {
         status: 503,
         headers: { "Cache-Control": "private, no-store" },
-      });
+      }));
     }
 
     const verifiedFactor = factors.totp.find((factor) => factor.status === "verified");
@@ -224,10 +224,10 @@ export async function middleware(request: NextRequest) {
     const { data: assurance, error: assuranceError } =
       await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     if (assuranceError) {
-      return new NextResponse("MFA verification unavailable.", {
+      return copySessionState(new NextResponse("MFA verification unavailable.", {
         status: 503,
         headers: { "Cache-Control": "private, no-store" },
-      });
+      }));
     }
     if (assurance.currentLevel !== "aal2") return redirectWithCookies("/auth/mfa");
   }
