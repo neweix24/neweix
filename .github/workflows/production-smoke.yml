@@ -22,6 +22,7 @@ jobs:
     timeout-minutes: 8
     env:
       NEWEIX_SITE_URL: https://neweix.com
+      SUPREME_PRIVATE_PATH: ${{ secrets.SUPREME_PRIVATE_PATH }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
