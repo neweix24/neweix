@@ -121,7 +121,7 @@ set search_path = ''
 as $function$
 begin
   if new.stock <= new.low_stock_threshold
-     and (tg_op = 'INSERT' or old.stock > old.low_stock_threshold) then
+     and (tg_op = 'INSERT' or (new.stock < old.stock and new.stock <= old.low_stock_threshold)) then
     insert into public.supreme_notifications(
       category, severity, event_key, title, body, href, entity_type, entity_id
     ) values (
