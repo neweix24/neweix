@@ -1,5 +1,6 @@
 import { parseX509Certificate } from "./supreme-x509-certificate.ts";
 import {
+  classifyAndroidProvisioningMethod,
   validateX509CertificatePath,
   x509SerialToHex,
 } from "./supreme-x509-chain.ts";
@@ -136,3 +137,85 @@ Deno.test("X.509 serial normalization matches unpadded lower-case hexadecimal", 
   }
   assertThrows(() => x509SerialToHex(new Uint8Array([0x00])), "zero");
 });
+
+type PathPolicyFixture = {
+  name: string;
+  provisioningMethod: "FACTORY_PROVISIONED" | "REMOTELY_PROVISIONED" | "UNKNOWN";
+  valid: boolean;
+  validationTimeMs: number;
+  certificatesBase64: string[];
+  trustAnchorBase64: string;
+};
+
+const pathPolicyIndex = Deno.env.get("SUPREME_PATH_POLICY_FIXTURE_INDEX");
+
+Deno.test({
+  name: "Deno chain roles and Android validity exceptions match pinned Kotlin verifier fixtures",
+  ignore: !pathPolicyIndex,
+  fn: async () => {
+    const fixtures = JSON.parse(
+      await Deno.readTextFile(pathPolicyIndex!),
+    ) as PathPolicyFixture[];
+    if (fixtures.length < 6) {
+      throw new Error("Pinned Google path-policy oracle fixture set is incomplete.");
+    }
+
+    for (const fixture of fixtures) {
+      const chain = fixture.certificatesBase64.map((value) =>
+        parseX509Certificate(fromBase64(value))
+      );
+      const trustAnchor = parseX509Certificate(fromBase64(fixture.trustAnchorBase64));
+      const detectedMethod = classifyAndroidProvisioningMethod(chain[chain.length - 2].subject);
+      if (detectedMethod !== fixture.provisioningMethod) {
+        throw new Error(
+          `${fixture.name}: provisioning method ${detectedMethod} did not match Kotlin ${fixture.provisioningMethod}.`,
+        );
+      }
+
+      let accepted = false;
+      let result: Awaited<ReturnType<typeof validateX509CertificatePath>> | undefined;
+      let rejection = "";
+      try {
+        result = await validateX509CertificatePath(
+          chain,
+          [trustAnchor],
+          emptyStatus(),
+          fixture.validationTimeMs,
+        );
+        accepted = true;
+      } catch (error) {
+        rejection = String(error);
+      }
+
+      if (accepted !== fixture.valid) {
+        throw new Error(
+          `${fixture.name}: Deno accepted=${accepted}, pinned Kotlin accepted=${fixture.valid}; ${rejection}`,
+        );
+      }
+      if (accepted) {
+        if (
+          result!.provisioningMethod !== fixture.provisioningMethod ||
+          result!.chainRolesValidated !== chain.length ||
+          result!.validityCertificatesChecked !== chain.length - 2 ||
+          result!.signatureLinksVerified !== chain.length - 1
+        ) {
+          throw new Error(`${fixture.name}: successful path validation reported incomplete checks.`);
+        }
+      }
+    }
+    console.log(
+      `Matched Deno Android provisioning roles and validity rules against ${fixtures.length} pinned Kotlin-generated reference chains.`,
+    );
+  },
+});
+
+Deno.test("Android chain role classifier rejects malformed distinguished names", () => {
+  let rejected = false;
+  try {
+    classifyAndroidProvisioningMethod(new Uint8Array([0x30, 0x00]));
+  } catch {
+    rejected = true;
+  }
+  if (!rejected) throw new Error("Accepted a malformed X.509 Name.");
+});
+
