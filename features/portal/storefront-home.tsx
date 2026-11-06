@@ -11,6 +11,7 @@ import ProductCardActions from "@/features/products/product-card-actions";
 import { mutateSavedProduct } from "@/lib/customer-saved-products";
 import { useLanguage } from "@/components/language-provider";
 import LanguageSwitcher from "@/components/language-switcher";
+import HomepageSearch from "@/features/portal/homepage-search";
 
 type Product = {
   id: string; name: string; slug: string; price: number;
@@ -274,11 +275,7 @@ export default function StorefrontHome() {
             </nav>}
           </div>
         </div>
-        <Link href="/products" className={styles.headerSearch} role="search" aria-label={t("searchProducts")}>
-          <span className={styles.searchLeadingIcon} aria-hidden="true"><Icon name="search" size={19} /></span>
-          <span className={styles.searchPlaceholder}>{t("searchProducts")}</span>
-          <span className={styles.searchAction} aria-hidden="true"><Icon name="arrow-right" size={18} /></span>
-        </Link>
+        <HomepageSearch categories={categories} />
       </header>
 
       <main className={styles.main}>
