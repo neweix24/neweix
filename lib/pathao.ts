@@ -353,14 +353,16 @@ export type PathaoPriceInput = {
   itemType: number;
   deliveryType: number;
   itemWeightKg: number;
-  recipientCity?: number;
-  recipientZone?: number;
+  recipientCity: number;
+  recipientZone: number;
 };
 
 export async function calculatePathaoPrice(input: PathaoPriceInput) {
   if (!Number.isSafeInteger(input.storeId) || input.storeId < 1 ||
       !Number.isSafeInteger(input.itemType) || !Number.isSafeInteger(input.deliveryType) ||
-      !Number.isFinite(input.itemWeightKg) || input.itemWeightKg <= 0 || input.itemWeightKg > 10) {
+      !Number.isFinite(input.itemWeightKg) || input.itemWeightKg <= 0 || input.itemWeightKg > 10 ||
+      !Number.isSafeInteger(input.recipientCity) || input.recipientCity < 1 ||
+      !Number.isSafeInteger(input.recipientZone) || input.recipientZone < 1) {
     throw new Error("Invalid Pathao price calculation input.");
   }
   return withPathaoToken((config, token) =>
@@ -369,8 +371,8 @@ export async function calculatePathaoPrice(input: PathaoPriceInput) {
       item_type: input.itemType,
       delivery_type: input.deliveryType,
       item_weight: input.itemWeightKg,
-      ...(input.recipientCity ? { recipient_city: input.recipientCity } : {}),
-      ...(input.recipientZone ? { recipient_zone: input.recipientZone } : {}),
+      recipient_city: input.recipientCity,
+      recipient_zone: input.recipientZone,
     }),
   );
 }
