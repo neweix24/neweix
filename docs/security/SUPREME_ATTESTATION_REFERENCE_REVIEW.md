@@ -22,6 +22,19 @@ The pinned implementation is not just a PEM parser plus a WebCrypto signature ch
 
 The existing NEWEIX Deno modules only fetch/parse Google metadata and verify a challenge proof after a trusted verifier has already produced a public key. They do not parse X.509, establish a trust path, parse Android Keymaster/KeyMint extensions, or enforce RKP semantics.
 
+## Additional chain-validation semantics confirmed from pinned source
+
+A closer review of `provider/KeyAttestationCertPath.kt`, `provider/KeyAttestationCertPathValidator.kt`, `provider/RevocationChecker.kt` and `Verifier.kt` establishes several policy details that a Deno port must preserve:
+
+- The submitted Android chain is ordered leaf first and includes its root certificate. The leaf is the target key certificate; the second certificate is the attestation certificate; factory and RKP provisioning can add different intermediate roles before the root. The root must be self-issued, and the path builder excludes the trust anchor from the validated CertPath.
+- The attestation extension belongs on the leaf/target certificate only. The validator rejects an attestation extension on an intermediate and rejects unexpected certificates or an extra fake attestation extension after the target.
+- The validator walks from the trust anchor toward the leaf, checks issuer/subject name chaining and each certificate signature, and applies provisioning-specific role transitions. Factory-provisioned and remotely provisioned (RKP) chains are not interchangeable.
+- Certificate validity handling is intentionally non-standard: the final target/leaf certificate validity is not checked; an expired factory-provisioned certificate is tolerated for key-rotation reasons; an expired RKP certificate is not. A generic RFC 5280 validator may therefore disagree with the maintained Android verifier.
+- The upstream revocation checker compares unpadded lowercase hexadecimal certificate serial numbers against a supplied set. The caller must fetch and validate Google's current status feed and pass a complete trustworthy revoked-serial set; the checker itself does not fetch the feed.
+- The verifier's success result is still not sufficient on its own: its challenge checker, expected AttestationApplicationId constraints and generic security constraints are applied after path validation. NEWEIX must additionally enforce its exact package/signer policy, hardware-backed security level, locked device, Verified boot, and proof of possession.
+
+These behaviors are source-reviewed against the pinned immutable commit; they are not yet implemented as a NEWEIX production verifier. The Deno parser differential fixture job remains a release gate.
+
 ## Required Deno parity work before any security decision
 
 - Select a maintained X.509 implementation that runs in the deployed Supabase Deno runtime and supports custom path validation behavior required by Android attestation.
