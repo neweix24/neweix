@@ -1310,7 +1310,7 @@ body[data-customer-theme="storefront"] {
 .premium-admin-workspace main h2,
 .premium-admin-workspace main h3,
 .premium-admin-workspace main h4{color:var(--navy)}
-.premium-admin-workspace main p{color:var(--muted)}
+/* Keep semantic paragraph colors (success, warning and error states) intact. */
 .premium-admin-workspace main .eyebrow{color:var(--emerald)}
 .premium-admin-workspace main>div>header,
 .premium-admin-workspace main>div>div>header{
