@@ -43,7 +43,7 @@ Deno.test({
     for (const fixture of fixtures) {
       const der = bytesFromBase64(fixture.derBase64);
       const decoded = parseAndroidKeyDescription(der);
-      const jsonPath = `${upstreamRoot}/${fixture.source.replace(/\\.pem$/, ".json")}`;
+      const jsonPath = `${upstreamRoot}/${fixture.source.replace(/\.pem$/, ".json")}`;
       const expected = JSON.parse(await Deno.readTextFile(jsonPath)) as ExpectedJson;
 
       const label = `${fixture.source} (certificate #${fixture.certificateIndex})`;
