@@ -59,16 +59,13 @@ Deno.test({
   ignore: !oracleIndex,
   fn: async () => {
     const fixtures = JSON.parse(await Deno.readTextFile(oracleIndex!)) as OracleFixture[];
+    const certificateFixtures = JSON.parse(await Deno.readTextFile(fixtureIndex!)) as Array<{source:string;certificatesBase64:string[]}>;
     if (fixtures.length === 0) throw new Error("JDK X.509 oracle index is empty.");
     let compared = 0;
     for (const fixture of fixtures) {
       for (let index = 0; index < fixture.certificates.length; index++) {
         const oracle = fixture.certificates[index];
-        const encoded = fromBase64(oracle.tbs);
-        const parsedFixture = await Deno.readTextFile(oracleIndex!);
-        void parsedFixture;
         // The original DER certificate is supplied by the companion fixture index.
-        const certificateFixtures = JSON.parse(await Deno.readTextFile(fixtureIndex!)) as Array<{source:string;certificatesBase64:string[]}>;
         const sourceFixture = certificateFixtures.find((entry) => entry.source === fixture.source);
         if (!sourceFixture || !sourceFixture.certificatesBase64[index]) throw new Error(`${fixture.source}: missing matching PEM certificate.`);
         const parsed = parseX509Certificate(fromBase64(sourceFixture.certificatesBase64[index]));
