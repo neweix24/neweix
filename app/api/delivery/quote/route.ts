@@ -76,7 +76,7 @@ export async function GET(request: Request) {
     if (mappingError) throw mappingError;
     if (!mapping) {
       return NextResponse.json({
-        error: "Pathao delivery is not yet available for this upazila. Please contact support or choose another listed area.",
+        error: "We cannot verify live Pathao delivery pricing for this upazila yet. Pathao service coverage is unconfirmed; please choose a verified destination or contact support.",
       }, { status: 422 });
     }
 
