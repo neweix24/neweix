@@ -134,3 +134,19 @@ These are semantic compatibility vectors copied from upstream's decoded JSON exp
 The pinned Kotlin reference workflow and NEWEIX Deno structural decoder have been run against 23 real upstream PEM certificate fixtures. The harness extracts the key-attestation extension from each target certificate and compares KeyDescription fields, AttestationApplicationId values, and RootOfTrust values against upstream decoded JSON expectations. The latest recorded successful run is workflow `42289300538` on the PR branch.
 
 This result validates the tested extension-decoding semantics only. It does not validate NEWEIX X.509 path building, Google trust-anchor/revocation handling, RKP provisioning-chain roles, or the full verifier decision. The Deno parser remains disconnected from authentication and cannot authorize a Supreme login.
+
+
+## Supreme app identity and hardware policy decoder
+
+A policy-only Deno module now exists at `supabase/functions/_shared/supreme-android-attestation-policy.ts`. It consumes an already decoded `AndroidKeyDescription` and requires all of the following before returning a policy result:
+
+- Exact package name `com.neweix.supreme`, a configured minimum package version, and a configured 32-byte SHA-256 digest of the **production APK signing certificate**. There is no `UnknownPackage` fallback.
+- Exact match to the current 32-byte server challenge embedded in the Android attestation.
+- Matching non-software attestation and KeyMint security levels: TEE or StrongBox.
+- Hardware-enforced EC P-256, 256-bit key, SIGN and VERIFY purposes, SHA-256 digest, and GENERATED origin.
+- Hardware-enforced RootOfTrust with a locked device and VERIFIED boot state.
+- The AttestationApplicationId must be in the software-enforced AuthorizationList, as read by the pinned Google verifier.
+
+The expected production signer digest is deliberately a required runtime input and is not hard-coded: the current APK artifact is debug-signed, and a production signing certificate digest has not yet been configured. An all-zero/missing digest is rejected. The policy tests use synthetic test-only signer values and do not establish the identity of a production APK.
+
+This helper is still not connected to an authentication route. It does not fetch or validate the Google metadata feeds, validate the certificate chain, verify the challenge proof-of-possession, consume an auth challenge, authenticate a password, satisfy AAL2 MFA, or grant a Supabase session/role. No Supreme login behavior has changed. Admin/Manager/Employee/Staff login remains outside this work.
