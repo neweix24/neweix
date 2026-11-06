@@ -1073,7 +1073,7 @@ export async function POST(request: Request) {
     const recipientZone = Number(input.recipientZone);
     if (!Number.isSafeInteger(storeId) || storeId < 1 ||
         ![1, 2].includes(itemType) || ![12, 48].includes(deliveryType) ||
-        !Number.isFinite(itemWeightKg) || itemWeightKg <= 0 || itemWeightKg > 10 ||
+        !Number.isFinite(itemWeightKg) || itemWeightKg < 0.5 || itemWeightKg > 10 ||
         !Number.isSafeInteger(recipientCity) || recipientCity < 1 ||
         !Number.isSafeInteger(recipientZone) || recipientZone < 1) {
       return errorResponse("Invalid Pathao price calculation details.", 400);
