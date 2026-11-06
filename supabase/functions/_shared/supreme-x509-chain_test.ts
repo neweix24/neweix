@@ -212,7 +212,7 @@ Deno.test({
 Deno.test("Android chain role classifier rejects malformed distinguished names", () => {
   let rejected = false;
   try {
-    classifyAndroidProvisioningMethod(new Uint8Array([0x30, 0x00]));
+    classifyAndroidProvisioningMethod(new Uint8Array([0x30, 0x02, 0x30, 0x00]));
   } catch {
     rejected = true;
   }
