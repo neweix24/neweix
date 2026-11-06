@@ -12,6 +12,7 @@ on:
       - "supabase/functions/_shared/supreme-attestation-application-id*"
       - "supabase/functions/_shared/supreme-attestation-der*"
       - "supabase/functions/_shared/supreme-android-provisioning-info*"
+      - "supabase/functions/_shared/supreme-x509-certificate*"
   pull_request:
     branches:
       - main
@@ -23,6 +24,7 @@ on:
       - "supabase/functions/_shared/supreme-attestation-application-id*"
       - "supabase/functions/_shared/supreme-attestation-der*"
       - "supabase/functions/_shared/supreme-android-provisioning-info*"
+      - "supabase/functions/_shared/supreme-x509-certificate*"
   workflow_dispatch:
 
 permissions:
@@ -96,3 +98,5 @@ jobs:
           deno test --allow-env=SUPREME_ATTESTATION_FIXTURE_INDEX,SUPREME_ATTESTATION_UPSTREAM_DIR,SUPREME_RKP_EXPECTED_INDEX \
             --allow-read=android-keyattestation,/tmp/supreme-attestation-fixtures.json,/tmp/supreme-rkp-expected.json \
             supabase/functions/_shared/supreme-android-keydescription_fixture_test.ts
+          deno test --allow-env=SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX --allow-read=/tmp/supreme-attestation-fixtures.json \
+            supabase/functions/_shared/supreme-x509-certificate_test.ts
