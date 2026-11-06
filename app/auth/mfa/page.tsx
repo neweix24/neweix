@@ -56,7 +56,8 @@ export default function MfaPage() {
 
       const user = session?.user;
       if (!user || !session?.access_token) {
-        router.replace("/auth/login");
+        const destination = getSafeSupremeNextPath();
+        router.replace(destination ? `/auth/login?next=${encodeURIComponent(destination)}` : "/auth/login");
         return;
       }
 
