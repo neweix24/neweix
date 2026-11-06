@@ -144,3 +144,58 @@ Deno.test("Google metadata fetcher fails closed when either official feed is una
   }
   if (!rejected) throw new Error("Accepted unavailable Google revocation feed.");
 });
+
+Deno.test("Google metadata fetcher rejects unexpected content types", async () => {
+  const fetcher: typeof fetch = (input) => {
+    const isRoot = String(input).endsWith("/root");
+    return Promise.resolve(new Response(
+      JSON.stringify(isRoot ? [testPem] : { entries: {} }),
+      {
+        status: 200,
+        headers: {
+          "content-type": isRoot ? "text/plain" : "application/json",
+          "cache-control": "public, max-age=1800",
+        },
+      },
+    ));
+  };
+
+  const { fetchGoogleAttestationMetadata } = await import(
+    "./supreme-google-attestation-metadata.ts"
+  );
+  let rejected = false;
+  try {
+    await fetchGoogleAttestationMetadata(fetcher);
+  } catch {
+    rejected = true;
+  }
+  if (!rejected) throw new Error("Accepted non-JSON Google root response.");
+});
+
+Deno.test("Google metadata fetcher rejects oversized declared responses", async () => {
+  const fetcher: typeof fetch = (input) => {
+    const isRoot = String(input).endsWith("/root");
+    return Promise.resolve(new Response(
+      JSON.stringify(isRoot ? [testPem] : { entries: {} }),
+      {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "cache-control": "public, max-age=1800",
+          ...(isRoot ? { "content-length": String(300 * 1024) } : {}),
+        },
+      },
+    ));
+  };
+
+  const { fetchGoogleAttestationMetadata } = await import(
+    "./supreme-google-attestation-metadata.ts"
+  );
+  let rejected = false;
+  try {
+    await fetchGoogleAttestationMetadata(fetcher);
+  } catch {
+    rejected = true;
+  }
+  if (!rejected) throw new Error("Accepted oversized Google root response.");
+});
