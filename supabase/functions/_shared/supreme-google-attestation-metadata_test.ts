@@ -9,7 +9,7 @@ const freshHeaders = new Headers({ "cache-control": "public, max-age=3600" });
 // Minimal DER-shaped bytes are sufficient for parser bounds/encoding tests;
 // X.509 cryptographic validation is intentionally a separate verifier stage.
 const testPem = `-----BEGIN CERTIFICATE-----
-MIIB
+${"A".repeat(172)}
 -----END CERTIFICATE-----`;
 
 Deno.test("Google root parser accepts a bounded PEM list with cache freshness", () => {
