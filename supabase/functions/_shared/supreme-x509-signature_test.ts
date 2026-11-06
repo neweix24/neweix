@@ -1,4 +1,3 @@
-import { assertEquals } from "jsr:@std/assert@1.0.14";
 import { parseX509Certificate } from "./supreme-x509-certificate.ts";
 import { verifyX509CertificateSignature } from "./supreme-x509-signature.ts";
 
@@ -6,6 +5,11 @@ type OracleCertificate = { signatureVerifiedByNext: boolean };
 type OracleFixture = { source: string; certificates: OracleCertificate[] };
 type CertificateFixture = { source: string; certificatesBase64: string[] };
 
+function assertEquals(actual: unknown, expected: unknown, message = "Values differ."): void {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(message);
+  }
+}
 function fromBase64(value: string): Uint8Array {
   return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
 }
