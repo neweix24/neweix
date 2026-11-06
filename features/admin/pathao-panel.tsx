@@ -683,6 +683,8 @@ export default function PathaoPanel() {
         setMappingMessage(
           `Checked ${accumulated.length}/64 districts. ${mappedUpazilas} exact upazila mappings saved. ${failedDivisions} division(s) had temporary/API errors.`,
         );
+        // Give Pathao's merchant API a short recovery window before the next division.
+        await new Promise((resolve) => window.setTimeout(resolve, 1_500));
       }
 
       await loadLocationMappings();
@@ -748,6 +750,9 @@ export default function PathaoPanel() {
           setAreaSyncMessage(`Saved ${totalAreas} Areas from ${totalSyncedZones}/${totalMappedZones} zones. ${failures.length} zones need retry.`);
           return;
         }
+        // Each Worker request already serializes its six Pathao calls. Keep a
+        // further pause between Worker batches to avoid burst rate-limiting.
+        await new Promise((resolve) => window.setTimeout(resolve, 1_800));
       }
       throw new Error("Area sync paused after the safety batch limit. Run Sync again to continue.");
     } catch (error) {
