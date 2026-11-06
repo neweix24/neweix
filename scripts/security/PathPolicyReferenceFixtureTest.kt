@@ -40,6 +40,7 @@ class PathPolicyReferenceFixtureTest {
       Fixture("rkp_valid", CertLists.validRemotelyProvisioned),
       Fixture("factory_expired_intermediate_and_attestation", Chains.expiredFactoryProvisioned.certificatesWithAnchor),
       Fixture("rkp_expired_attestation", Chains.expiredRemotelyProvisioned.certificatesWithAnchor),
+      Fixture("rkp_malformed_provisioning_info", CertLists.malformedProvisioningInfo),
       Fixture("expired_leaf", Chains.expiredLeaf.certificatesWithAnchor),
       Fixture("not_yet_valid_attestation", Chains.notYetValid.certificatesWithAnchor),
     )
@@ -47,7 +48,7 @@ class PathPolicyReferenceFixtureTest {
     val referenceDate = Date.from(FakeCalendar.DEFAULT.now())
     val records = fixtures.map { fixture ->
       val path = KeyAttestationCertPath(fixture.certificates)
-      val valid = try {
+      val pathValid = try {
         val parameters = PKIXParameters(setOf(Certs.rootAnchor)).apply {
           date = referenceDate
           addCertPathChecker(RevocationChecker(emptySet()))
@@ -59,12 +60,25 @@ class PathPolicyReferenceFixtureTest {
       }
 
       val expectedProvisioningMethod = path.provisioningMethod().name
+      val provisioningInfo = try {
+        if (expectedProvisioningMethod == "REMOTELY_PROVISIONED") {
+          com.android.keyattestation.verifier.ProvisioningInfoMap.parseFrom(path.attestationCert())
+        } else {
+          null
+        }
+      } catch (_: Exception) {
+        null
+      }
+      val provisioningInfoValid =
+        expectedProvisioningMethod != "REMOTELY_PROVISIONED" || provisioningInfo != null
+      val valid = pathValid && provisioningInfoValid
       val chain = fixture.certificates.joinToString(",") { certificate ->
         "\"" + Base64.getEncoder().encodeToString(certificate.encoded) + "\""
       }
       val trustAnchor = Base64.getEncoder().encodeToString(Certs.root.encoded)
       assertEquals("Expected chain to terminate in the generated test root", Certs.root, fixture.certificates.last())
-      """{"name":"${fixture.name}","provisioningMethod":"${expectedProvisioningMethod}","valid":$valid,"validationTimeMs":${referenceDate.time},"certificatesBase64":[$chain],"trustAnchorBase64":"$trustAnchor"}"""
+      val provisioningCount = provisioningInfo?.certificatesIssued?.toString() ?: "null"
+      """{"name":"${fixture.name}","provisioningMethod":"${expectedProvisioningMethod}","valid":$valid,"provisioningInfoValid":$provisioningInfoValid,"provisioningCertificatesIssued":$provisioningCount,"validationTimeMs":${referenceDate.time},"certificatesBase64":[$chain],"trustAnchorBase64":"$trustAnchor"}"""
     }
 
     check(records.size == fixtures.size)
