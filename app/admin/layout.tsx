@@ -3,5 +3,5 @@ export default function PanelLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <section>{children}</section>;
+  return <section className="premium-admin-workspace">{children}</section>;
 }
