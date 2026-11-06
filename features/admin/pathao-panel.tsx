@@ -658,6 +658,10 @@ export default function PathaoPanel() {
       }
 
       await loadLocationMappings();
+      if (mappedUpazilas > 0) {
+        // Refresh the live Area catalog immediately after verified City/Zone mappings.
+        await syncAreaCatalog();
+      }
       const fullyMapped = accumulated.filter((item) => item.status === "fully_mapped").length;
       const partiallyMapped = accumulated.filter((item) => item.status === "partially_mapped").length;
       const unmapped = accumulated.filter((item) =>
