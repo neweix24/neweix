@@ -20,6 +20,7 @@ const sections = [
   { href: "/supreme/notifications", label: "Notification Inbox" },
   { href: "/supreme/finance/expenses", label: "Finance & Expenses" },
   { href: "/supreme/delivery-riders", label: "Delivery Riders & Payouts" },
+  { href: "/supreme/delivery-riders/attendance", label: "Rider Attendance" },
   { href: "/supreme/eixpay", label: "EixPay" },
   { href: "/supreme/eixverse", label: "Campaigns" },
   { href: "/supreme/reviews", label: "Reviews" },
