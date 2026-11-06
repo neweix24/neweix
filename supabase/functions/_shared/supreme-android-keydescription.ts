@@ -30,7 +30,7 @@ export type AndroidKeyDescription = {
 
 const KNOWN_AUTHORIZATION_TAGS = new Set([
   1, 2, 3, 4, 5, 6, 10, 11, 200, 203, 400, 401, 402, 405,
-  503, 504, 505, 507, 508, 509, 701, 702, 703, 704, 705, 706,
+  503, 504, 505, 506, 507, 508, 509, 701, 702, 703, 704, 705, 706,
   709, 710, 711, 712, 713, 714, 715, 716, 717, 718, 719, 723, 724,
 ]);
 const SET_OF_INTEGER_TAGS = new Set([1, 4, 5, 6, 203]);
@@ -139,6 +139,8 @@ function parseAuthorizationList(element: DerElement, label: string): AndroidAuth
       if (value.value.length !== 0) {
         throw new TypeError(`Android authorization tag ${field.tagNumber} NULL marker must be empty.`);
       }
+    } else if (field.tagNumber === 506) {
+      // The pinned Android verifier recognizes ALLOW_WHILE_ON_BODY but does not project or validate its payload.
     } else if (field.tagNumber === 704) {
       parseRootOfTrust(value);
     } else if (field.tagNumber === 709) {
