@@ -658,7 +658,6 @@ export default function CheckoutView() {
                 if (values) void loadDeliveryQuote(
                   String(values.get("shipping_district_code") ?? ""),
                   String(values.get("shipping_upazila_code") ?? ""),
-                  "",
                   String(values.get("coupon_code") ?? ""),
                   "neweix_own",
                 );
