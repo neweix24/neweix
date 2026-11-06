@@ -539,9 +539,9 @@ export default function AccountView() {
         .account-main-panel {
           min-width: 0;
           padding: clamp(18px, 2.6vw, 28px);
-          border: 1px solid #e0eae0;
+          border: 1px solid var(--border);
           border-radius: 22px;
-          background: rgba(255,255,255,.97);
+          background: var(--surface-raised);
           box-shadow: 0 14px 38px rgba(20,43,59,.06);
         }
 
@@ -682,7 +682,7 @@ export default function AccountView() {
           border: 0;
           border-radius: 9px;
           background: var(--primary-hover);
-          color: #080b09;
+          color: #ffffff;
           font: inherit;
           font-weight: 700;
           cursor: pointer;
