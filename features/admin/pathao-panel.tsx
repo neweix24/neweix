@@ -599,7 +599,7 @@ export default function PathaoPanel() {
   }
 
 
-  async function autoMapAllDistricts() {
+  async function autoMapAllDistricts(divisionCodes?: string[]) {
     setCoverageSyncRunning(true);
     setCoverageSyncResults([]);
     const scanId = crypto.randomUUID();
@@ -609,7 +609,10 @@ export default function PathaoPanel() {
     let failedDivisions = 0;
 
     try {
-      for (const division of BANGLADESH_ADMIN_AREAS) {
+      const divisionsToScan = divisionCodes?.length
+        ? BANGLADESH_ADMIN_AREAS.filter((division) => divisionCodes.includes(division.code))
+        : BANGLADESH_ADMIN_AREAS;
+      for (const division of divisionsToScan) {
         let result: { error?: string; districts?: Array<Omit<CoverageDistrictResult, "divisionName">>; matchedUpazilaCount?: number } | null = null;
         let requestError = "";
 
@@ -928,6 +931,9 @@ export default function PathaoPanel() {
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => void autoMapAllDistricts()} disabled={coverageSyncRunning || mappingAutoRunning || mappingSaving} className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
             {coverageSyncRunning ? "Scanning 64 districts..." : "Generate mapping candidates for all 64 districts"}
+          </button>
+          <button type="button" onClick={() => void autoMapAllDistricts(["BD-D08"])} disabled={coverageSyncRunning || mappingAutoRunning || mappingSaving} className="rounded-lg border border-amber-700 px-4 py-2 text-sm font-semibold text-amber-900 disabled:opacity-50">
+            Scan Mymensingh division only
           </button>
           <span className="text-xs text-gray-600">Eight divisions · live City/Zone catalog · suggestions remain inactive until verified</span>
         </div>
