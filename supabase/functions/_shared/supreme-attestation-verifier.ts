@@ -7,13 +7,20 @@ import type {
   SupremeAndroidKeyPolicyResult,
 } from "./supreme-android-attestation-policy.ts";
 import { validateSupremeAndroidKeyDescription } from "./supreme-android-attestation-policy.ts";
-import type { GoogleAttestationStatus } from "./supreme-google-attestation-metadata.ts";
+import {
+  assertGoogleAttestationMetadataFresh,
+  type GoogleAttestationRoots,
+  type GoogleAttestationStatus,
+} from "./supreme-google-attestation-metadata.ts";
 import { verifySupremeChallengeProof } from "./supreme-attestation-proof.ts";
 import {
   validateX509CertificatePath,
   type X509PathValidationResult,
 } from "./supreme-x509-chain.ts";
-import type { ParsedX509Certificate } from "./supreme-x509-certificate.ts";
+import {
+  parseX509Certificate,
+  type ParsedX509Certificate,
+} from "./supreme-x509-certificate.ts";
 
 const EC_PUBLIC_KEY_OID = "1.2.840.10045.2.1";
 const P256_NAMED_CURVE_DER = new Uint8Array([
@@ -23,8 +30,8 @@ const P256_NAMED_CURVE_DER = new Uint8Array([
 export type SupremeAttestationVerificationInput = {
   /** Leaf-first Android key-attestation chain, including its self-issued terminator. */
   chain: readonly ParsedX509Certificate[];
-  /** Google root certificates parsed from the current official root feed. */
-  trustedRoots: readonly ParsedX509Certificate[];
+  /** Current Google root feed, including enforced fetch and expiry timestamps. */
+  googleRoots: GoogleAttestationRoots;
   /** Entries parsed from the current official Google status feed. */
   revocationStatus: GoogleAttestationStatus;
   /** Current one-time challenge stored by the server. */
@@ -55,6 +62,22 @@ function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
   let difference = 0;
   for (let index = 0; index < left.length; index++) difference |= left[index] ^ right[index];
   return difference === 0;
+}
+
+function parseGoogleRootCertificate(pem: string): ParsedX509Certificate {
+  const match = pem.match(
+    /^-----BEGIN CERTIFICATE-----\\r?\\n([A-Za-z0-9+/=\\r\\n]+)\\r?\\n-----END CERTIFICATE-----\\r?\\n?$/u,
+  );
+  if (!match) throw new TypeError("Google root metadata contains a malformed PEM certificate.");
+  const base64 = match[1].replace(/[\\r\\n]/gu, "");
+  if (
+    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(base64)
+  ) {
+    throw new TypeError("Google root metadata contains invalid certificate Base64.");
+  }
+  const binary = atob(base64);
+  const der = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  return parseX509Certificate(der);
 }
 
 /**
@@ -102,11 +125,16 @@ export async function verifySupremeAndroidAttestation(
 ): Promise<SupremeAttestationVerificationResult> {
   if (input.chain.length === 0) throw new TypeError("Supreme attestation chain is empty.");
 
+  const validationTimeMs = input.validationTimeMs ?? Date.now();
+  assertGoogleAttestationMetadataFresh(input.googleRoots, validationTimeMs);
+  assertGoogleAttestationMetadataFresh(input.revocationStatus, validationTimeMs);
+  const trustedRoots = input.googleRoots.certificatesPem.map(parseGoogleRootCertificate);
+
   const chain = await validateX509CertificatePath(
     input.chain,
-    input.trustedRoots,
+    trustedRoots,
     input.revocationStatus,
-    input.validationTimeMs,
+    validationTimeMs,
   );
 
   const leaf = input.chain[0];
