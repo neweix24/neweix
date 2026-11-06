@@ -30,12 +30,12 @@ jobs:
 
       - name: Lint the attestation proof module
         run: |
-          deno lint supabase/functions/_shared/supreme-attestation-proof.ts supabase/functions/_shared/supreme-attestation-proof_test.ts
+          deno lint supabase/functions/_shared/supreme-attestation-proof.ts supabase/functions/_shared/supreme-attestation-proof_test.ts supabase/functions/_shared/supreme-google-attestation-metadata.ts supabase/functions/_shared/supreme-google-attestation-metadata_test.ts
 
       - name: Type-check and test the attestation proof module
         run: |
-          deno check supabase/functions/_shared/supreme-attestation-proof.ts supabase/functions/_shared/supreme-attestation-proof_test.ts
-          deno test supabase/functions/_shared/supreme-attestation-proof_test.ts
+          deno check supabase/functions/_shared/supreme-attestation-proof.ts supabase/functions/_shared/supreme-attestation-proof_test.ts supabase/functions/_shared/supreme-google-attestation-metadata.ts supabase/functions/_shared/supreme-google-attestation-metadata_test.ts
+          deno test supabase/functions/_shared/supreme-attestation-proof_test.ts supabase/functions/_shared/supreme-google-attestation-metadata_test.ts
 
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v1
