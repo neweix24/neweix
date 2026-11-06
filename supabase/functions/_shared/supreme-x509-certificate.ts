@@ -7,6 +7,7 @@ export type ParsedX509Certificate = {
   tbsCertificate: Uint8Array;
   serialNumber: Uint8Array;
   signatureAlgorithmOid: string;
+  signatureAlgorithmParameters: Uint8Array | null;
   issuer: Uint8Array;
   validity: Uint8Array;
   subject: Uint8Array;
@@ -107,8 +108,9 @@ export function parseX509Certificate(input: Uint8Array): ParsedX509Certificate {
   const [tbs, outerAlgorithm, signatureValue] = fields;
   if (tbs.tag !== 0x30 || outerAlgorithm.tag !== 0x30 || signatureValue.tag !== 0x03) throw new TypeError("Malformed X.509 Certificate envelope.");
   const outerAlgFields = children(input, outerAlgorithm, budget);
-  if (outerAlgFields.length < 1) throw new TypeError("Missing X.509 signature algorithm OID.");
+  if (outerAlgFields.length < 1 || outerAlgFields.length > 2) throw new TypeError("Invalid X.509 signature AlgorithmIdentifier.");
   const signatureAlgorithmOid = oidToString(input, outerAlgFields[0]);
+  const signatureAlgorithmParameters = outerAlgFields.length === 2 ? raw(input, outerAlgFields[1]) : null;
   const tbsFields = children(input, tbs, budget);
   let index = tbsFields[0]?.tag === 0xa0 ? 1 : 0;
   if (tbsFields.length < index + 6) throw new TypeError("X.509 TBSCertificate is incomplete.");
@@ -117,7 +119,18 @@ export function parseX509Certificate(input: Uint8Array): ParsedX509Certificate {
     throw new TypeError("X.509 TBSCertificate contains invalid mandatory fields.");
   }
   const innerAlgFields = children(input, innerAlgorithm, budget);
-  if (innerAlgFields.length < 1 || oidToString(input, innerAlgFields[0]) !== signatureAlgorithmOid) throw new TypeError("X.509 inner and outer signature algorithms do not match.");
+  if (innerAlgFields.length < 1 || innerAlgFields.length > 2 || oidToString(input, innerAlgFields[0]) !== signatureAlgorithmOid) {
+    throw new TypeError("X.509 inner and outer signature algorithms do not match.");
+  }
+  const innerParameters = innerAlgFields.length === 2 ? raw(input, innerAlgFields[1]) : null;
+  if (
+    (signatureAlgorithmParameters === null) !== (innerParameters === null) ||
+    (signatureAlgorithmParameters !== null && innerParameters !== null &&
+      (signatureAlgorithmParameters.length !== innerParameters.length ||
+        signatureAlgorithmParameters.some((byte, offset) => byte !== innerParameters[offset])))
+  ) {
+    throw new TypeError("X.509 inner and outer signature algorithm parameters do not match.");
+  }
   const spkiFields = children(input, spki, budget);
   if (spkiFields.length !== 2 || spkiFields[0].tag !== 0x30 || spkiFields[1].tag !== 0x03) {
     throw new TypeError("Malformed X.509 SubjectPublicKeyInfo.");
@@ -135,7 +148,7 @@ export function parseX509Certificate(input: Uint8Array): ParsedX509Certificate {
   if (signature.length < 2 || signature[0] !== 0) throw new TypeError("X.509 signature BIT STRING has invalid unused-bit count.");
   return {
     tbsCertificate: raw(input, tbs), serialNumber: input.slice(serial.contentStart, serial.end),
-    signatureAlgorithmOid, issuer: raw(input, issuer), validity: raw(input, validity),
+    signatureAlgorithmOid, signatureAlgorithmParameters, issuer: raw(input, issuer), validity: raw(input, validity),
     subject: raw(input, subject), subjectPublicKeyInfo: raw(input, spki),
     subjectPublicKeyAlgorithmOid, subjectPublicKeyParameters, subjectPublicKey: publicKeyBits.slice(1),
     signature: signature.slice(1),
