@@ -13,12 +13,16 @@ function errorResponse(message: string, status: number) {
   );
 }
 
-async function getSupremeActor() {
+type SupremeActorResult =
+  | { ok: true; userId: string }
+  | { ok: false; error: string; status: 401 | 403 };
+
+async function getSupremeActor(): Promise<SupremeActorResult> {
   const session = await createServerSupabaseClient();
   const { data: { user }, error: userError } = await session.auth.getUser();
 
   if (userError || !user) {
-    return { error: "Authentication required.", status: 401 as const };
+    return { ok: false, error: "Authentication required.", status: 401 };
   }
 
   const { data: profile, error } = await session
@@ -28,17 +32,17 @@ async function getSupremeActor() {
     .maybeSingle();
 
   if (error || !profile || profile.is_active !== true || profile.role !== "supreme") {
-    return { error: "Only an active Supreme account can view this dashboard.", status: 403 as const };
+    return { ok: false, error: "Only an active Supreme account can view this dashboard.", status: 403 };
   }
 
   const { data: assurance, error: mfaError } =
     await session.auth.mfa.getAuthenticatorAssuranceLevel();
 
   if (mfaError || assurance?.currentLevel !== "aal2") {
-    return { error: "Complete MFA verification for the Supreme account.", status: 403 as const };
+    return { ok: false, error: "Complete MFA verification for the Supreme account.", status: 403 };
   }
 
-  return { userId: user.id };
+  return { ok: true, userId: user.id };
 }
 
 async function getServiceClient() {
@@ -66,7 +70,7 @@ function parseDate(value: string | null): string | null | false {
 export async function GET(request: Request) {
   try {
     const actor = await getSupremeActor();
-    if ("error" in actor) return errorResponse(actor.error, actor.status);
+    if (!actor.ok) return errorResponse(actor.error, actor.status);
 
     const params = new URL(request.url).searchParams;
     const startAt = parseDate(params.get("from"));
