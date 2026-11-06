@@ -60,7 +60,8 @@ create table if not exists public.pathao_rider_finance_ledger (
   constraint pathao_rider_ledger_approval_consistency
     check (
       (entry_status in ('approved', 'paid') and approved_by is not null and approved_at is not null)
-      or (entry_status in ('pending', 'void') and approved_by is null and approved_at is null)
+      or (entry_status = 'pending' and approved_by is null and approved_at is null)
+      or entry_status = 'void'
     ),
   constraint pathao_rider_ledger_paid_consistency
     check ((entry_status = 'paid' and paid_at is not null) or (entry_status <> 'paid' and paid_at is null))
