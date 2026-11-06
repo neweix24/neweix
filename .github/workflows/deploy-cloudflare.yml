@@ -105,7 +105,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and deploy OpenNext Worker
+      - name: Build OpenNext Cloudflare Worker
+        run: npx opennextjs-cloudflare build
+
+      # OpenNext's deploy wrapper first requests a temporary edge-preview proxy
+      # from Cloudflare. That remote preview-token endpoint intermittently fails
+      # with error 10013/timeouts in this CI account. This app has no remote
+      # OpenNext cache bindings (R2/KV/D1/DO queue) configured, so after the
+      # supported OpenNext build, deploy its generated worker directly with
+      # Wrangler using the checked-in worker.ts and .open-next/assets config.
+      - name: Deploy generated Worker with Wrangler
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: npm run deploy
+        run: npx wrangler deploy
