@@ -5,8 +5,6 @@ import { BANGLADESH_ADMIN_AREAS, resolveBangladeshAddress } from "@/lib/banglade
 import {
   calculatePathaoPrice,
   createPathaoOrder,
-  getPathaoAreas,
-  getPathaoAreasForZones,
   getPathaoCities,
   getPathaoZones,
   getPathaoZonesForCities,
@@ -132,25 +130,6 @@ export async function GET(request: Request) {
       });
     }
 
-    if (action === "area_catalog") {
-      const admin = await createRuntimeServiceClient();
-      const { data: areas, error } = await admin
-        .from("pathao_area_catalog")
-        .select("id, pathao_city_id, pathao_zone_id, pathao_area_id, pathao_area_name, home_delivery_available, is_active, synced_at")
-        .eq("is_active", true)
-        .order("pathao_city_id", { ascending: true })
-        .order("pathao_zone_id", { ascending: true })
-        .order("pathao_area_name", { ascending: true })
-        .limit(5000);
-      if (error) {
-        console.error("Pathao area catalog query failed:", error.message);
-        return errorResponse("Could not load the Pathao Area catalog. Apply the area catalog migration first.", 503);
-      }
-      return NextResponse.json({ success: true, areas: areas ?? [] }, {
-        headers: { "Cache-Control": "private, no-store" },
-      });
-    }
-
     if (action === "settlement_imports") {
       const admin = await createRuntimeServiceClient();
       const { data: imports, error: importsError } = await admin
@@ -220,13 +199,13 @@ export async function GET(request: Request) {
       });
     }
 
-    if (action === "zones" || action === "areas") {
-      const rawId = params.get(action === "zones" ? "cityId" : "zoneId") || "";
+    if (action === "zones") {
+      const rawId = params.get("cityId") || "";
       const id = Number(rawId);
       if (!/^\d+$/.test(rawId) || !Number.isSafeInteger(id) || id < 1) {
         return errorResponse("A valid location ID is required.", 400);
       }
-      const locations = action === "zones" ? await getPathaoZones(id) : await getPathaoAreas(id);
+      const locations = await getPathaoZones(id);
       return NextResponse.json({ success: true, locations }, {
         headers: { "Cache-Control": "no-store" },
       });
@@ -339,155 +318,6 @@ export async function POST(request: Request) {
 
   const input = body as Record<string, unknown>;
 
-
-  if (input.action === "sync_area_catalog") {
-    const admin = await createRuntimeServiceClient();
-    const { data: mappings, error: mappingsError } = await admin
-      .from("pathao_location_mappings")
-      .select("pathao_city_id, pathao_zone_id")
-      .eq("is_active", true)
-      .eq("is_verified", true)
-      .limit(1000);
-    if (mappingsError) {
-      console.error("Pathao area sync mapping lookup failed:", mappingsError.message);
-      return errorResponse("Could not load verified Pathao City/Zone mappings.", 503);
-    }
-
-    const cityByZone = new Map<number, number>();
-    for (const mapping of mappings ?? []) {
-      const cityId = Number(mapping.pathao_city_id);
-      const zoneId = Number(mapping.pathao_zone_id);
-      if (Number.isSafeInteger(cityId) && cityId > 0 && Number.isSafeInteger(zoneId) && zoneId > 0) {
-        const existingCity = cityByZone.get(zoneId);
-        if (existingCity !== undefined && existingCity !== cityId) {
-          return errorResponse("A Pathao Zone is linked to multiple Cities. Resolve the mapping conflict before syncing Areas.", 409);
-        }
-        cityByZone.set(zoneId, cityId);
-      }
-    }
-
-    const zoneIds = [...cityByZone.keys()];
-    if (zoneIds.length === 0) {
-      return errorResponse("No verified Pathao City/Zone mappings exist yet. Sync district coverage first.", 409);
-    }
-
-    const requestedOffset = Number(input.areaOffset ?? 0);
-    if (!Number.isSafeInteger(requestedOffset) || requestedOffset < 0 || requestedOffset >= zoneIds.length) {
-      return errorResponse("Invalid Pathao Area sync batch offset.", 400);
-    }
-    const batchZoneIds = zoneIds.slice(requestedOffset, requestedOffset + 6);
-    let results;
-    try {
-      results = await getPathaoAreasForZones(batchZoneIds);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Pathao Area catalog request failed.";
-      console.error("Pathao area catalog sync failed:", message);
-      return errorResponse(message, 502);
-    }
-
-    const now = new Date().toISOString();
-    const rows: Array<Record<string, unknown>> = [];
-    const failedZones: Array<{ zoneId: number; error: string }> = [];
-    let successfulZones = 0;
-    for (const result of results) {
-      if (result.error) {
-        failedZones.push({ zoneId: result.zoneId, error: result.error });
-        continue;
-      }
-
-      const zoneRows: Array<Record<string, unknown>> = [];
-      const sourceRows = extractPathaoRows(result.payload);
-      for (const row of sourceRows) {
-        const rawAreaId = row.area_id ?? row.areaId ?? row.id;
-        const areaId = Number(rawAreaId);
-        const areaName = typeof row.area_name === "string"
-          ? row.area_name.trim()
-          : typeof row.areaName === "string"
-            ? row.areaName.trim()
-            : typeof row.name === "string"
-              ? row.name.trim()
-              : "";
-        if (!Number.isSafeInteger(areaId) || areaId < 1 || !areaName) continue;
-        const availability = typeof row.home_delivery_available === "boolean"
-          ? row.home_delivery_available
-          : typeof row.homeDeliveryAvailable === "boolean"
-            ? row.homeDeliveryAvailable
-            : null;
-        zoneRows.push({
-          pathao_city_id: cityByZone.get(result.zoneId),
-          pathao_zone_id: result.zoneId,
-          pathao_area_id: areaId,
-          pathao_area_name: areaName,
-          home_delivery_available: availability,
-          is_active: true,
-          synced_at: now,
-          updated_at: now,
-        });
-      }
-
-      if (zoneRows.length === 0) {
-        const payloadRecord = result.payload && typeof result.payload === "object"
-          ? result.payload as Record<string, unknown>
-          : null;
-        const apiMessage = typeof payloadRecord?.message === "string"
-          ? payloadRecord.message
-          : "Pathao returned no usable Area records (empty list or unexpected response shape).";
-        failedZones.push({
-          zoneId: result.zoneId,
-          error: apiMessage.slice(0, 240),
-        });
-        continue;
-      }
-
-      successfulZones += 1;
-      rows.push(...zoneRows);
-    }
-
-    // Even if every zone in this batch is rate-limited, return the failures and
-    // advance the cursor so one transient batch does not block all later zones.
-
-    let savedCount = 0;
-    if (rows.length > 0) {
-      const { data: saved, error: saveError } = await admin
-        .from("pathao_area_catalog")
-        .upsert(rows, { onConflict: "pathao_zone_id,pathao_area_id" })
-        .select("id");
-      if (saveError || !saved) {
-        console.error("Pathao Area catalog save failed:", saveError?.message);
-        return errorResponse("Could not save the Pathao Area catalog. Apply the area catalog migration first.", 503);
-      }
-      savedCount = saved.length;
-    }
-
-    const { error: auditError } = await admin.from("audit_logs").insert({
-      actor_id: staff.userId,
-      action: "pathao.area_catalog.synced",
-      target_type: "pathao_area_catalog",
-      details: {
-        mapped_zone_count: zoneIds.length,
-        processed_zone_count: batchZoneIds.length,
-        batch_offset: requestedOffset,
-        successful_zone_count: successfulZones,
-        failed_zone_count: failedZones.length,
-        saved_area_count: savedCount,
-        source: "pathao_live_area_list",
-      },
-    });
-    if (auditError) console.error("Pathao Area catalog audit log failed:", auditError.message);
-
-    return NextResponse.json({
-      success: failedZones.length === 0,
-      mappedZoneCount: zoneIds.length,
-      processedZoneCount: batchZoneIds.length,
-      nextOffset: requestedOffset + batchZoneIds.length,
-      hasMore: requestedOffset + batchZoneIds.length < zoneIds.length,
-      syncedZoneCount: successfulZones,
-      failedZoneCount: failedZones.length,
-      failedZones,
-      areaCount: savedCount,
-      message: `Saved ${savedCount} Area records from ${successfulZones}/${zoneIds.length} mapped zones. ${failedZones.length} zones returned errors or no usable Area data.`,
-    }, { headers: { "Cache-Control": "private, no-store" } });
-  }
 
   if (input.action === "auto_map_district") {
     const divisionCode = typeof input.divisionCode === "string" ? input.divisionCode.trim() : "";
