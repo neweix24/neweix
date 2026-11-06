@@ -164,11 +164,9 @@ export default function PathaoPanel() {
   const [stores, setStores] = useState<unknown>(null);
   const [cities, setCities] = useState<LocationOption[]>([]);
   const [zones, setZones] = useState<LocationOption[]>([]);
-  const [areas, setAreas] = useState<LocationOption[]>([]);
   const [storeId, setStoreId] = useState("");
   const [cityId, setCityId] = useState("");
   const [zoneId, setZoneId] = useState("");
-  const [areaId, setAreaId] = useState("");
   const [itemType, setItemType] = useState("2");
   const [deliveryType, setDeliveryType] = useState("48");
   const [weight, setWeight] = useState("0.5");
@@ -222,9 +220,6 @@ export default function PathaoPanel() {
   const [diagnostics, setDiagnostics] = useState<PathaoDiagnostics | null>(null);
   const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
   const [diagnosticsError, setDiagnosticsError] = useState("");
-  const [areaSyncRunning, setAreaSyncRunning] = useState(false);
-  const [areaSyncMessage, setAreaSyncMessage] = useState("");
-  const [areaSyncFailures, setAreaSyncFailures] = useState<Array<{ zoneId: number; error: string }>>([]);
 
 
   async function getJson(url: string) {
@@ -287,22 +282,6 @@ export default function PathaoPanel() {
       setState("error");
     }
   }
-
-  async function loadAreas(nextZoneId: string) {
-    setZoneId(nextZoneId);
-    setAreaId("");
-    setAreas([]);
-    if (!nextZoneId) return;
-    try {
-      const result = await getJson(`/api/admin/pathao?action=areas&zoneId=${encodeURIComponent(nextZoneId)}`);
-      setAreas(extractOptions(result.locations, ["area_id", "areaId", "id"], ["area_name", "areaName", "name"]));
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not load Pathao areas.");
-      setState("error");
-    }
-  }
-
-
 
   async function loadShipments() {
     setShipmentsLoading(true);
@@ -704,60 +683,6 @@ export default function PathaoPanel() {
     }
   }
 
-  async function syncAreaCatalog() {
-    setAreaSyncRunning(true);
-    setAreaSyncFailures([]);
-    setAreaSyncMessage("Syncing Pathao Areas in small, rate-limited batches...");
-    let offset = 0;
-    let totalAreas = 0;
-    let totalSyncedZones = 0;
-    let totalMappedZones = 0;
-    const failures: Array<{ zoneId: number; error: string }> = [];
-    try {
-      // Each request handles at most six zones; sequential batches avoid Worker
-      // subrequest exhaustion and let Pathao's rate-limit window recover.
-      for (let batch = 0; batch < 100; batch += 1) {
-        const response = await fetch("/api/admin/pathao", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store",
-          body: JSON.stringify({ action: "sync_area_catalog", areaOffset: offset }),
-        });
-        const result = await response.json().catch(() => null) as {
-          error?: string;
-          message?: string;
-          areaCount?: number;
-          syncedZoneCount?: number;
-          mappedZoneCount?: number;
-          failedZoneCount?: number;
-          failedZones?: Array<{ zoneId: number; error: string }>;
-          nextOffset?: number;
-          hasMore?: boolean;
-        } | null;
-        if (!response.ok) throw new Error(result?.error || result?.message || "Pathao Area catalog sync failed.");
-        totalAreas += Number(result?.areaCount ?? 0);
-        totalSyncedZones += Number(result?.syncedZoneCount ?? 0);
-        totalMappedZones = Number(result?.mappedZoneCount ?? totalMappedZones);
-        failures.push(...(result?.failedZones ?? []));
-        setAreaSyncFailures([...failures]);
-        offset = Number(result?.nextOffset ?? offset);
-        setAreaSyncMessage(`Processed ${offset}/${totalMappedZones} zones; ${totalAreas} Areas saved. Continuing in safe batches...`);
-        if (!result?.hasMore) {
-          setAreaSyncMessage(`Saved ${totalAreas} Areas from ${totalSyncedZones}/${totalMappedZones} zones. ${failures.length} zones need retry.`);
-          return;
-        }
-        // Each Worker request already serializes its six Pathao calls. Keep a
-        // further pause between Worker batches to avoid burst rate-limiting.
-        await new Promise((resolve) => window.setTimeout(resolve, 1_800));
-      }
-      throw new Error("Area sync paused after the safety batch limit. Run Sync again to continue.");
-    } catch (error) {
-      setAreaSyncMessage(error instanceof Error ? error.message : "Pathao Area catalog sync failed.");
-    } finally {
-      setAreaSyncRunning(false);
-    }
-  }
-
   async function saveLocationMapping(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!mappingDivisionCode || !mappingDistrictCode || !mappingUpazilaCode || !mappingCityId || !mappingZoneId) {
@@ -950,28 +875,6 @@ export default function PathaoPanel() {
           </button>
           <span className="text-xs text-gray-600">Eight divisions · live City/Zone catalog · suggestions remain inactive until verified</span>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void syncAreaCatalog()}
-            disabled={areaSyncRunning || coverageSyncRunning || mappingAutoRunning || mappingSaving || mappings.length === 0}
-            className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-50"
-          >
-            {areaSyncRunning ? "Syncing Pathao Areas..." : "Sync Pathao Area catalog"}
-          </button>
-          <span className="text-xs text-gray-600">Stores live Area IDs and home-delivery availability for verified zones.</span>
-        </div>
-        {areaSyncMessage && <p role="status" className="text-xs text-gray-700">{areaSyncMessage}</p>}
-        {areaSyncFailures.length > 0 && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-            <p className="text-xs font-semibold text-amber-900">Zones needing investigation ({areaSyncFailures.length})</p>
-            <ul className="mt-2 max-h-48 space-y-1 overflow-auto text-xs text-amber-900">
-              {areaSyncFailures.map((failure) => (
-                <li key={failure.zoneId}>Zone {failure.zoneId}: {failure.error}</li>
-              ))}
-            </ul>
-          </div>
-        )}
         {coverageSyncResults.length > 0 && (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
@@ -1311,10 +1214,7 @@ export default function PathaoPanel() {
             <select value={cityId} onChange={(event) => void loadZones(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="">Select city (optional)</option>{cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select>
           </label>
           <label className="text-sm font-medium">Destination zone
-            <select value={zoneId} onChange={(event) => void loadAreas(event.target.value)} disabled={!cityId} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="">Select zone (optional)</option>{zones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}</select>
-          </label>
-          <label className="text-sm font-medium sm:col-span-2">Destination area
-            <select value={areaId} onChange={(event) => setAreaId(event.target.value)} disabled={!zoneId} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="">Select area (optional)</option>{areas.map((area) => <option key={area.id} value={area.id}>{area.name}{area.available === false ? " (Home delivery unavailable)" : ""}</option>)}</select>
+            <select value={zoneId} onChange={(event) => setZoneId(event.target.value)} disabled={!cityId} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="">Select zone (optional)</option>{zones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}</select>
           </label>
         </div>
         <button type="submit" disabled={quoteLoading || !storeId || !weight} className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{quoteLoading ? "Calculating..." : "Calculate Pathao Charge"}</button>
