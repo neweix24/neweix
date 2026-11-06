@@ -33,7 +33,15 @@ Deno.test({
       }
       const chain = fixture.certificatesBase64.map((value) => parseX509Certificate(fromBase64(value)));
       for (let index = 0; index + 1 < chain.length; index++) {
-        const valid = await verifyX509CertificateSignature(chain[index], chain[index + 1]);
+        let valid: boolean;
+        try {
+          valid = await verifyX509CertificateSignature(chain[index], chain[index + 1]);
+        } catch (error) {
+          const prefix = Array.from(chain[index].signature.slice(0, 12), (byte) => byte.toString(16).padStart(2, "0")).join("");
+          throw new Error(
+            `${fixture.source} cert ${index}: sigAlg=${chain[index].signatureAlgorithmOid}, issuerKeyAlg=${chain[index + 1].subjectPublicKeyAlgorithmOid}, signaturePrefix=${prefix}: ${String(error)}`,
+          );
+        }
         assertEquals(valid, oracle.certificates[index].signatureVerifiedByNext, `${fixture.source} cert ${index}: signature result`);
         if (!valid) throw new Error(`${fixture.source} cert ${index}: expected a valid fixture certificate signature.`);
         const changedSignature = chain[index].signature.slice();
