@@ -61,7 +61,7 @@ export async function GET(request: Request) {
     const supabase=await db();
     const [ridersResult,ordersResult,paymentsResult,totalsResult,reportResult]=await Promise.all([
       supabase.from("neweix_delivery_riders").select("id,rider_code,full_name,phone,is_active,created_at").order("created_at",{ascending:false}),
-      supabase.from("orders").select("id,order_number,status,payment_status,delivery_status,delivery_fee,created_at,neweix_delivery_rider_id").eq("delivery_provider","neweix_own").not("status","in","(cancelled,returned)").neq("payment_status","refunded").order("created_at",{ascending:false}).limit(200),
+      supabase.from("orders").select("id,order_number,status,payment_status,delivery_status,delivery_fee,created_at,neweix_delivery_rider_id").eq("delivery_provider","neweix_own").not("status","in","(cancelled,returned)").neq("payment_status","refunded").is("delivered_at",null).order("created_at",{ascending:false}).limit(200),
       supabase.from("delivery_cost_entries").select("id,order_id,rider_id,amount,cost_date,source_reference,notes,created_at").eq("provider","neweix_own").eq("cost_type","rider_payment").order("cost_date",{ascending:false}).limit(200),
       supabase.rpc("supreme_delivery_rider_payout_summary"),
       supabase.rpc("supreme_delivery_rider_daily_report",{p_start_date:from,p_end_date:to}),
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
     }
     const orderMap=new Map((ordersResult.data??[]).map(o=>[o.id,o.order_number]));
     const riderMap=new Map((ridersResult.data??[]).map(r=>[r.id,r.full_name]));
-    const payments=(paymentsResult.data??[]).map(p=>({...p,order_number:orderMap.get(p.order_id)??null,rider_name:riderMap.get(p.rider_id)??"রাইডার অনুপস্থিত"}));
+    const payments=(paymentsResult.data??[]).map(p=>({...p,order_number:orderMap.get(p.order_id)??null,rider_name:riderMap.get(p.rider_id)??"Rider unavailable"}));
     const totals=new Map<string,number>((totalsResult.data??[]).map((row:{rider_id:string;total_paid:number})=>[row.rider_id,Number(row.total_paid)]));
     return NextResponse.json({success:true,riders:(ridersResult.data??[]).map(r=>({...r,total_paid:totals.get(r.id)??0})),orders:ordersResult.data??[],payments,report:{from,to,rows:reportResult.data??[]}},{headers:{"Cache-Control":"private, no-store"}});
   } catch(error) { console.error("Rider GET failed:",error); return fail("A server error occurred.",500); }
