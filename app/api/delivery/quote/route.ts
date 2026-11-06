@@ -22,6 +22,10 @@ function extractFinalPrice(payload: unknown): number | null {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
+  const provider = (searchParams.get("provider") || "pathao").trim();
+  if (provider !== "pathao" && provider !== "neweix_own") {
+    return NextResponse.json({ error: "Select a valid delivery provider." }, { status: 400 });
+  }
   const districtCode = (searchParams.get("district_code") || "").trim();
   const upazilaCode = (searchParams.get("upazila_code") || "").trim();
   const rawPathaoAreaId = (searchParams.get("pathao_area_id") || "").trim();
@@ -64,6 +68,82 @@ export async function GET(request: Request) {
     const supabase = createClient(url, key, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    if (provider === "neweix_own") {
+      const { data: zone, error: zoneError } = await supabase
+        .from("neweix_delivery_zones")
+        .select("id, delivery_fee")
+        .eq("district_code", districtCode)
+        .eq("upazila_code", upazilaCode)
+        .eq("is_active", true)
+        .not("delivery_fee", "is", null)
+        .maybeSingle();
+
+      if (zoneError) throw zoneError;
+      if (!zone || !Number.isSafeInteger(Number(zone.delivery_fee)) || Number(zone.delivery_fee) < 0) {
+        return NextResponse.json({
+          error: "NEWEIX own delivery is not configured for this area. Select Pathao for other supported destinations.",
+        }, { status: 422 });
+      }
+
+      const { data: products, error: productsError } = await supabase
+        .from("products").select("id, stock, is_active, price")
+        .in("id", items.map((item) => item.product_id));
+      if (productsError) throw productsError;
+      if (!products || products.length !== items.length || products.some((product) => product.is_active !== true)) {
+        return NextResponse.json({ error: "One or more cart products are unavailable." }, { status: 409 });
+      }
+
+      const productById = new Map(products.map((product) => [product.id, product]));
+      let trustedSubtotal = 0;
+      for (const item of items) {
+        const product = productById.get(item.product_id);
+        if (!product || Number(product.stock) < item.quantity) {
+          return NextResponse.json({ error: "A cart product has insufficient stock." }, { status: 409 });
+        }
+        const unitPrice = Number(product.price);
+        if (!Number.isSafeInteger(unitPrice) || unitPrice < 0) {
+          return NextResponse.json({ error: "A cart product has an invalid price." }, { status: 409 });
+        }
+        trustedSubtotal += unitPrice * item.quantity;
+        if (!Number.isSafeInteger(trustedSubtotal)) {
+          return NextResponse.json({ error: "Cart subtotal is outside the supported range." }, { status: 422 });
+        }
+      }
+
+      const [settingsResult, couponResult] = await Promise.all([
+        supabase.from("shop_settings").select("key,value").eq("key", "free_delivery_threshold").maybeSingle(),
+        couponCode
+          ? supabase.from("coupons").select("is_active, starts_at, expires_at, usage_limit, usage_count, min_subtotal, discount_type").eq("code", couponCode).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
+      if (settingsResult.error) throw settingsResult.error;
+      if (couponResult.error) throw couponResult.error;
+      const threshold = Math.max(0, Number(settingsResult.data?.value ?? 0));
+      const coupon = couponResult.data;
+      const now = Date.now();
+      const freeShippingCoupon = Boolean(
+        coupon?.is_active === true &&
+        coupon.discount_type === "free_shipping" &&
+        trustedSubtotal >= Number(coupon.min_subtotal ?? 0) &&
+        (!coupon.starts_at || new Date(coupon.starts_at).getTime() <= now) &&
+        (!coupon.expires_at || new Date(coupon.expires_at).getTime() > now) &&
+        (coupon.usage_limit == null || Number(coupon.usage_count) < Number(coupon.usage_limit))
+      );
+      const freeDelivery = (threshold > 0 && trustedSubtotal >= threshold) || freeShippingCoupon;
+      const zoneFee = Number(zone.delivery_fee);
+
+      return NextResponse.json({
+        success: true,
+        delivery_provider: "neweix_own",
+        delivery_zone_id: zone.id,
+        delivery_fee: freeDelivery ? 0 : zoneFee,
+        courier_fee: zoneFee,
+        free_delivery: freeDelivery,
+        currency: "BDT",
+        quote_source: "neweix_own",
+      }, { headers: { "Cache-Control": "no-store" } });
+    }
     const { data: mapping, error: mappingError } = await supabase
       .from("pathao_location_mappings")
       .select("id, pathao_city_id, pathao_zone_id")
@@ -189,24 +269,25 @@ export async function GET(request: Request) {
   } catch (error) {
     const referenceId = crypto.randomUUID();
     const providerMessage = error instanceof Error ? error.message : "Unknown error";
-    const diagnosticCode =
-      /PATHAO_STORE_ID/i.test(providerMessage) ? "PATHAO_STORE_ID_CONFIGURATION" :
-      /credentials|PATHAO_BASE_URL/i.test(providerMessage) ? "PATHAO_CREDENTIAL_CONFIGURATION" :
-      /Pathao API \(401|403\)/i.test(providerMessage) ? "PATHAO_AUTHORIZATION_FAILED" :
-      /Pathao API \(5[0-9]{2}\)/i.test(providerMessage) ? "PATHAO_PROVIDER_UNAVAILABLE" :
-      /Pathao API \([45][0-9]{2}\)/i.test(providerMessage) ? "PATHAO_PROVIDER_REQUEST_REJECTED" :
-      /Supabase configuration/i.test(providerMessage) ? "SUPABASE_CONFIGURATION" :
-      "DELIVERY_QUOTE_INTERNAL_ERROR";
+    const diagnosticCode = provider === "neweix_own"
+      ? (/Supabase configuration/i.test(providerMessage) ? "SUPABASE_CONFIGURATION" : "NEWEIX_DELIVERY_QUOTE_INTERNAL_ERROR")
+      : (/PATHAO_STORE_ID/i.test(providerMessage) ? "PATHAO_STORE_ID_CONFIGURATION" :
+        /credentials|PATHAO_BASE_URL/i.test(providerMessage) ? "PATHAO_CREDENTIAL_CONFIGURATION" :
+        /Pathao API \(401|403\)/i.test(providerMessage) ? "PATHAO_AUTHORIZATION_FAILED" :
+        /Pathao API \(5[0-9]{2}\)/i.test(providerMessage) ? "PATHAO_PROVIDER_UNAVAILABLE" :
+        /Pathao API \([45][0-9]{2}\)/i.test(providerMessage) ? "PATHAO_PROVIDER_REQUEST_REJECTED" :
+        /Supabase configuration/i.test(providerMessage) ? "SUPABASE_CONFIGURATION" :
+        "DELIVERY_QUOTE_INTERNAL_ERROR");
 
     // Keep provider details in server logs only; never return credentials or raw API errors.
     console.error(JSON.stringify({
-      event: "live_pathao_delivery_quote_failed",
+      event: provider === "neweix_own" ? "live_neweix_delivery_quote_failed" : "live_pathao_delivery_quote_failed",
       referenceId,
       diagnosticCode,
       message: providerMessage.slice(0, 500),
     }));
     return NextResponse.json({
-      error: "Live Pathao delivery pricing is temporarily unavailable. Please try again later.",
+      error: provider === "neweix_own" ? "NEWEIX delivery pricing is temporarily unavailable. Please try again later." : "Live Pathao delivery pricing is temporarily unavailable. Please try again later.",
       diagnostic_code: diagnosticCode,
       reference_id: referenceId,
     }, {
