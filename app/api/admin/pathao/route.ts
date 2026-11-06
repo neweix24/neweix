@@ -1332,12 +1332,31 @@ export async function POST(request: Request) {
 
   const weightById = new Map((products ?? []).map((product) => [
     product.id,
-    Number(product.weight_grams) || 500,
+    Number(product.weight_grams),
   ]));
+  const invalidWeightItem = items.some((item) => {
+    const grams = weightById.get(item.product_id);
+    return !Number.isSafeInteger(grams) || Number(grams) < 1;
+  });
+  if (invalidWeightItem) {
+    await admin.from("orders").update({
+      delivery_status: "failed",
+      delivery_error: "One or more order items have a missing or invalid shipping weight.",
+    }).eq("id", orderId).eq("delivery_status", "booking");
+    return errorResponse("Every product in this order must have a valid saved shipping weight before Pathao booking.", 422);
+  }
+
   const itemQuantity = items.reduce((sum, item) => sum + Number(item.quantity), 0);
   const weightGrams = items.reduce((sum, item) =>
-    sum + (weightById.get(item.product_id) ?? 500) * Number(item.quantity), 0);
-  const itemWeightKg = Math.min(10, Math.max(0.5, weightGrams / 1000));
+    sum + Number(weightById.get(item.product_id)) * Number(item.quantity), 0);
+
+  if (!Number.isSafeInteger(weightGrams) || weightGrams < 1) {
+    await admin.from("orders").update({
+      delivery_status: "failed",
+      delivery_error: "The combined parcel weight is invalid.",
+    }).eq("id", orderId).eq("delivery_status", "booking");
+    return errorResponse("The combined parcel weight is invalid. Check product shipping weights.", 422);
+  }
 
   if (weightGrams > 10_000) {
     await admin.from("orders").update({
@@ -1346,6 +1365,10 @@ export async function POST(request: Request) {
     }).eq("id", orderId).eq("delivery_status", "booking");
     return errorResponse("Pathao API supports parcels up to 10 kg.", 400);
   }
+
+  // Keep booking weight aligned with checkout's live quote billing bands:
+  // minimum 0.5 kg, then round the total parcel weight up to 0.5 kg.
+  const itemWeightKg = Math.max(0.5, Math.ceil(weightGrams / 500) * 0.5);
 
   const amountToCollect = order.payment_method === "cod"
     ? Math.max(0, Number(order.total) -
