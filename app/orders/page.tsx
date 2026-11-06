@@ -26,7 +26,10 @@ export default async function OrdersPage() {
       <div className="mx-auto max-w-4xl">
         <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div><p className="eyebrow">NEWEIX · CUSTOMER ACCOUNT</p><h1 className="text-3xl font-bold">My orders</h1><p>View the orders associated with your account here.</p></div>
-          <Link href="/account" className="rounded-xl border px-4 py-2" style={{ borderColor: "var(--border)" }}>Back to account</Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/track-order" className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold" style={{ background: "var(--emerald)", color: "#fff" }}><span>Track an order</span></Link>
+            <Link href="/account" className="rounded-xl border px-4 py-2.5 text-sm font-semibold" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>Back to account</Link>
+          </div>
         </header>
         {error ? (
           <section className="premium-order-card rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}><p role="alert">Could not load orders. Please try again later.</p></section>
@@ -35,8 +38,8 @@ export default async function OrdersPage() {
         ) : (
           <div className="grid gap-4">
             {orders.map((order) => (
-              <article key={order.id} className="rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-                <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs" style={{ color: "var(--muted)" }}>Order number</p><h2 className="text-lg font-bold">{order.order_number}</h2><p className="text-sm">{new Date(order.created_at).toLocaleString("en-BD")}</p></div><span className="rounded-full border px-3 py-1 text-sm" style={{ borderColor: "var(--border)" }}>{statusLabels[order.status] ?? order.status}</span></div>
+              <article key={order.id} className="premium-order-card rounded-2xl border p-5 sm:p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+                <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>Order number</p><h2 className="mt-1 text-lg font-bold">{order.order_number}</h2><p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>{new Date(order.created_at).toLocaleString("en-BD", { dateStyle: "medium", timeStyle: "short" })}</p></div><span className="rounded-full border px-3 py-1.5 text-xs font-bold" style={{ borderColor: "rgba(8,127,99,.25)", background: "rgba(8,127,99,.08)", color: "var(--emerald)" }}>{statusLabels[order.status] ?? order.status}</span></div>
                 <div className="mt-4 grid gap-2 border-t pt-4" style={{ borderColor: "var(--border)" }}>{(order.order_items ?? []).map((item) => <div key={item.id} className="flex justify-between gap-3 text-sm"><span>{item.product_name} × {item.quantity}</span><span>{formatMoney(item.line_total ?? Number(item.unit_price) * item.quantity)}</span></div>)}</div>
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4" style={{ borderColor: "var(--border)" }}><span className="text-sm">Payment: {order.payment_status === "paid" ? "Paid" : order.payment_status === "failed" ? "Failed" : "Pending verification/payment"}</span><div className="flex items-center gap-4"><strong>{formatMoney(order.total)}</strong><Link href={`/orders/${order.id}`} className="text-sm font-semibold" style={{ color: "var(--primary)" }}>View details →</Link></div></div>
               </article>
