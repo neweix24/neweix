@@ -11,6 +11,7 @@ on:
       - "supabase/functions/_shared/supreme-android-keydescription*"
       - "supabase/functions/_shared/supreme-attestation-application-id*"
       - "supabase/functions/_shared/supreme-attestation-der*"
+      - "supabase/functions/_shared/supreme-android-provisioning-info*"
   pull_request:
     branches:
       - main
@@ -21,6 +22,7 @@ on:
       - "supabase/functions/_shared/supreme-android-keydescription*"
       - "supabase/functions/_shared/supreme-attestation-application-id*"
       - "supabase/functions/_shared/supreme-attestation-der*"
+      - "supabase/functions/_shared/supreme-android-provisioning-info*"
   workflow_dispatch:
 
 permissions:
