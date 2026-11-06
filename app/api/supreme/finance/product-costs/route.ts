@@ -10,20 +10,24 @@ function fail(message: string, status: number) {
   return NextResponse.json({ error: message }, { status, headers: { "Cache-Control": "no-store" } });
 }
 
-async function authorize() {
+type SupremeActorResult =
+  | { ok: true; userId: string }
+  | { ok: false; error: string; status: 401 | 403 };
+
+async function authorize(): Promise<SupremeActorResult> {
   const session = await createServerSupabaseClient();
   const { data: { user }, error } = await session.auth.getUser();
-  if (error || !user) return { error: "Authentication required.", status: 401 as const };
+  if (error || !user) return { ok: false, error: "Authentication required.", status: 401 };
   const { data: profile, error: profileError } = await session
     .from("staff_profiles").select("role, is_active").eq("user_id", user.id).maybeSingle();
   if (profileError || !profile || profile.role !== "supreme" || profile.is_active !== true) {
-    return { error: "Only an active Supreme account can manage product costs.", status: 403 as const };
+    return { ok: false, error: "Only an active Supreme account can manage product costs.", status: 403 };
   }
   const { data: assurance, error: mfaError } = await session.auth.mfa.getAuthenticatorAssuranceLevel();
   if (mfaError || assurance?.currentLevel !== "aal2") {
-    return { error: "Complete MFA verification for the Supreme account.", status: 403 as const };
+    return { ok: false, error: "Complete MFA verification for the Supreme account.", status: 403 };
   }
-  return { userId: user.id };
+  return { ok: true, userId: user.id };
 }
 
 async function serviceClient() {
@@ -38,7 +42,7 @@ async function serviceClient() {
 export async function GET() {
   try {
     const actor = await authorize();
-    if ("error" in actor) return fail(actor.error, actor.status);
+    if (!actor.ok) return fail(actor.error, actor.status);
     const supabase = await serviceClient();
     const { data, error } = await supabase.from("products")
       .select("id, name, sku, purchase_cost, price")
