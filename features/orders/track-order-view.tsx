@@ -97,7 +97,7 @@ export default function TrackOrderView() {
     <main className="premium-track-order min-h-screen px-4 py-10 sm:px-6 sm:py-14" style={{ color: "var(--navy)" }}>
       <div className="mx-auto w-full max-w-4xl">
         <nav className="mb-8 flex flex-wrap items-center justify-between gap-3 text-sm font-semibold">
-          <Link href="/" className="inline-flex items-center gap-2"><Icon name="arrow-left" size={16} /> NEWEIX Home</Link>
+          <Link href="/" className="inline-flex items-center gap-2"><Icon name="chevron-left" size={16} /> NEWEIX Home</Link>
           <Link href="/products" style={{ color: "var(--muted)" }}>Browse products <Icon name="arrow-right" size={14} /></Link>
         </nav>
 
@@ -206,9 +206,9 @@ export default function TrackOrderView() {
                 <h2 className="text-xl font-bold">Your delivery, clearly tracked</h2>
                 <p className="mt-2 max-w-sm text-sm leading-6" style={{ color: "var(--muted)" }}>Once you submit your details, the latest order, payment and courier information will appear here.</p>
                 <ul className="mt-6 grid gap-3 text-sm" style={{ color: "var(--muted)" }}>
-                  <li className="flex items-center gap-2"><Icon name="check-circle" size={16} /> Order confirmation status</li>
-                  <li className="flex items-center gap-2"><Icon name="check-circle" size={16} /> Payment verification status</li>
-                  <li className="flex items-center gap-2"><Icon name="check-circle" size={16} /> Courier tracking reference</li>
+                  <li className="flex items-center gap-2"><Icon name="check" size={16} /> Order confirmation status</li>
+                  <li className="flex items-center gap-2"><Icon name="check" size={16} /> Payment verification status</li>
+                  <li className="flex items-center gap-2"><Icon name="check" size={16} /> Courier tracking reference</li>
                 </ul>
               </div>
             )}
