@@ -79,3 +79,11 @@ The maintained Kotlin/JVM verifier remains the reference implementation for expe
 The only candidate that may avoid a new hosting bill is a Deno-native verifier in the existing Supabase Edge Function environment. This is a security-sensitive port, not a shortcut: pin audited dependencies; validate X.509 paths, Android Keymaster/KeyMint extensions, Remote Key Provisioning and Google revocation correctly; and compare decisions against the maintained Kotlin verifier using upstream fixtures. If parity cannot be demonstrated, do not enable app-only login. Keep the current Supreme authentication protections and do not weaken them to fit the budget.
 
 No production signing certificate digest is configured yet. The debug APK remains untrusted for production attestation.
+
+## Pinned reference verifier used by CI
+
+The reference source is Google's public `android/keyattestation` repository at immutable commit `0e3ac2fdd54799d779e1979a96fbcba0361b2089` (observed upstream commit date: 2026-10-30). The repository README identifies the library as a Kotlin verifier for Android key-attestation chains and documents server-side verification, Google trust anchors, revocation status, challenge checking, and additional checks for verified boot and device lock.
+
+The upstream commit reports an **unsigned** Git commit signature status. The SHA pin makes CI source selection reproducible; it does not independently authenticate the publisher or replace source review. Review the pinned source and license before treating it as a trusted dependency. Do not silently update the pin to a moving branch.
+
+The `.github/workflows/supreme-keyattestation-reference.yml` workflow checks out exactly this commit, asserts the checked-out SHA, and runs its Gradle test suite on a Java 21 GitHub-hosted runner. This is a CI reference test only: the runner is not a live verifier and no production authentication traffic is sent to it. The workflow requires no deployment secret and provisions no hosting service.
