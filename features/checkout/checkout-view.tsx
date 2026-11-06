@@ -4,7 +4,7 @@ import Link from "next/link";
 import Icon from "@/components/ui/icon";
 import styles from "./checkout-view.module.css";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import BangladeshAddressFields from "@/features/checkout/bangladesh-address-fields";
 import { useLanguage } from "@/components/language-provider";
@@ -32,6 +32,7 @@ type SavedAddress = {
 };
 
 type PaymentMethod = "cod" | "bkash" | "nagad" | "rocket";
+type DeliveryProvider = "pathao" | "neweix_own";
 
 type PaymentConfig = {
   success: boolean;
@@ -80,6 +81,9 @@ export default function CheckoutView() {
   const [error, setError] = useState("");
   const [deliveryFeeQuote, setDeliveryFeeQuote] = useState<number | null>(null);
   const [deliveryQuoteLoading, setDeliveryQuoteLoading] = useState(false);
+  const [deliveryProvider, setDeliveryProvider] = useState<DeliveryProvider>("pathao");
+  const [submittedDeliveryProvider, setSubmittedDeliveryProvider] = useState<DeliveryProvider>("pathao");
+  const deliveryQuoteRequest = useRef(0);
   const [couponCode, setCouponCode] = useState("");
   const [couponChecking, setCouponChecking] = useState(false);
   const [couponMessage, setCouponMessage] = useState("");
@@ -256,18 +260,21 @@ export default function CheckoutView() {
       ? paymentConfig?.paymentMethods?.[mfsMethod]
       : paymentConfig?.paymentMethods?.[paymentMethod];
 
-  async function loadDeliveryQuote(districtCode: string, upazilaCode: string, pathaoAreaId: string, couponCode = "") {
-    if (!districtCode || !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode) || (pathaoAreaId && !/^[1-9][0-9]*$/.test(pathaoAreaId))) {
+  async function loadDeliveryQuote(districtCode: string, upazilaCode: string, pathaoAreaId: string, couponCode = "", provider: DeliveryProvider = deliveryProvider) {
+    const requestId = ++deliveryQuoteRequest.current;
+    if (!districtCode || !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode) || (provider === "pathao" && pathaoAreaId && !/^[1-9][0-9]*$/.test(pathaoAreaId))) {
       setDeliveryFeeQuote(null);
+      setDeliveryQuoteLoading(false);
       return null;
     }
     setDeliveryQuoteLoading(true);
     setError("");
     try {
       const params = new URLSearchParams({
+        provider,
         district_code: districtCode,
         upazila_code: upazilaCode,
-        ...(pathaoAreaId ? { pathao_area_id: pathaoAreaId } : {}),
+        ...(provider === "pathao" && pathaoAreaId ? { pathao_area_id: pathaoAreaId } : {}),
         subtotal: String(Math.round(total)),
         items: JSON.stringify(cart.map(({ product_id, quantity }) => ({ product_id, quantity }))),
         coupon_code: couponCode.trim().toUpperCase(),
@@ -276,18 +283,21 @@ export default function CheckoutView() {
       const result = await response.json().catch(() => null);
       if (!response.ok || !Number.isFinite(Number(result?.delivery_fee))) {
         const reference = typeof result?.reference_id === "string" ? result.reference_id : "";
-        const message = result?.error || "Could not calculate the live Pathao delivery fee.";
+        const message = result?.error || "Could not calculate the selected delivery fee.";
         throw new Error(reference ? `${message} Support reference: ${reference}` : message);
       }
+      if (requestId !== deliveryQuoteRequest.current) return null;
       const fee = Number(result.delivery_fee);
       setDeliveryFeeQuote(fee);
       return fee;
     } catch (err) {
-      setDeliveryFeeQuote(null);
-      setError(err instanceof Error ? err.message : "Could not calculate the delivery fee.");
+      if (requestId === deliveryQuoteRequest.current) {
+        setDeliveryFeeQuote(null);
+        setError(err instanceof Error ? err.message : "Could not calculate the delivery fee.");
+      }
       return null;
     } finally {
-      setDeliveryQuoteLoading(false);
+      if (requestId === deliveryQuoteRequest.current) setDeliveryQuoteLoading(false);
     }
   }
 
@@ -365,6 +375,7 @@ export default function CheckoutView() {
       String(formData.get("shipping_upazila_code") ?? ""),
       String(formData.get("shipping_pathao_area_id") ?? ""),
       String(formData.get("coupon_code") ?? ""),
+      deliveryProvider,
     );
     if (quote === null) {
       setSubmitting(false);
@@ -389,6 +400,7 @@ export default function CheckoutView() {
     }
 
     const payload = {
+      delivery_provider: deliveryProvider,
       customer_name: String(formData.get("customer_name") ?? "").trim(),
       customer_phone: customerPhone.trim(),
       customer_email: String(formData.get("customer_email") ?? "").trim(),
@@ -442,6 +454,7 @@ export default function CheckoutView() {
       }
       setCart([]);
       setSubmittedPaymentMethod(paymentMethod);
+      setSubmittedDeliveryProvider(deliveryProvider);
       setOrderNumber(createdOrderNumber);
     } catch (err) {
       setError(
@@ -489,7 +502,7 @@ export default function CheckoutView() {
           </p>
         )}
 
-        <p>Delivery: Pathao Courier. An administrator must approve the booking.</p>
+        <p>Delivery: {submittedDeliveryProvider === "neweix_own" ? "NEWEIX own delivery" : "Pathao Courier"}. An administrator must approve the delivery.</p>
         <p>The delivery fee is shown in your order details.</p>
         <Link className="primary-button" href="/"><Icon name="home" size={17} /> Return to homepage</Link>
         <Link className={styles.secondaryLink} href="/track-order"><Icon name="truck" size={17} /> Track your order</Link>
@@ -544,8 +557,8 @@ export default function CheckoutView() {
           <p className={styles.discountRow}><span>Coupon savings</span><strong>−{formatPrice(couponPreview.discount, locale)}</strong></p>
         )}
         <p><strong>Estimated total: {formatPrice(Math.max(0, total - (couponPreview?.discount ?? 0)) + (couponPreview?.free_shipping ? 0 : (deliveryFeeQuote ?? 0)), locale)}</strong></p>
-        <p>Delivery: Pathao Courier</p>
-        <p>Delivery fee: {deliveryQuoteLoading ? "Calculating..." : deliveryFeeQuote === null ? "Select a supported upazila above to calculate the live Pathao fee." : couponPreview?.free_shipping ? "Free delivery (subject to server confirmation)" : formatPrice(deliveryFeeQuote, locale)}</p>
+        <p>Delivery: {deliveryProvider === "neweix_own" ? "NEWEIX own delivery (Mymensingh launch area)" : "Pathao Courier"}</p>
+        <p>Delivery fee: {deliveryQuoteLoading ? "Calculating..." : deliveryFeeQuote === null ? (deliveryProvider === "neweix_own" ? "Select a configured Mymensingh area to check NEWEIX delivery availability." : "Select a supported upazila to calculate the live Pathao fee.") : couponPreview?.free_shipping ? "Free delivery (subject to server confirmation)" : formatPrice(deliveryFeeQuote, locale)}</p>
 
         {missingProducts && <p role="alert">Some product details are unavailable.</p>}
         {stockIssues.length > 0 && <p role="alert">Some products have insufficient stock.</p>}
@@ -584,9 +597,10 @@ export default function CheckoutView() {
           initialDistrict={defaultAddress?.district}
           initialUpazila={defaultAddress?.upazila}
           initialVillage={defaultAddress?.area}
+          enablePathaoAreas={deliveryProvider === "pathao"}
           disabled={submitting}
           onAddressChange={({ districtCode, upazilaCode, pathaoAreaId }) => {
-            if (districtCode && upazilaCode) void loadDeliveryQuote(districtCode, upazilaCode, pathaoAreaId, couponCode);
+            if (districtCode && upazilaCode) void loadDeliveryQuote(districtCode, upazilaCode, pathaoAreaId, couponCode, deliveryProvider);
             else setDeliveryFeeQuote(null);
           }}
         />
@@ -608,7 +622,7 @@ export default function CheckoutView() {
               const district = form?.elements.namedItem("shipping_district_code") as HTMLInputElement | null;
               const upazila = form?.elements.namedItem("shipping_upazila_code") as HTMLInputElement | null;
               const area = form?.elements.namedItem("shipping_pathao_area_id") as HTMLSelectElement | null;
-              void loadDeliveryQuote(district?.value ?? "", upazila?.value ?? "", area?.value ?? "", event.currentTarget.value);
+              void loadDeliveryQuote(district?.value ?? "", upazila?.value ?? "", area?.value ?? "", event.currentTarget.value, deliveryProvider);
             }} />
           <button type="button" className={styles.couponButton}
             onClick={() => void applyCoupon()} disabled={submitting || couponChecking || !couponCode.trim()}>
@@ -626,10 +640,42 @@ export default function CheckoutView() {
         <section className={styles.paymentOptions} aria-labelledby="delivery-heading">
           <h2 id="delivery-heading">Delivery method</h2>
           <label style={{ display: "flex", gap: 10, alignItems: "center", margin: "12px 0" }}>
-            <input type="radio" name="delivery_method" value="pathao" checked readOnly />
-            <span><strong>Pathao Courier</strong> — Home delivery by courier</span>
+            <input type="radio" name="delivery_method" value="pathao" checked={deliveryProvider === "pathao"}
+              onChange={() => {
+                setDeliveryProvider("pathao");
+                setDeliveryFeeQuote(null);
+                const form = document.querySelector("form");
+                const values = form ? new FormData(form) : null;
+                if (values) void loadDeliveryQuote(
+                  String(values.get("shipping_district_code") ?? ""),
+                  String(values.get("shipping_upazila_code") ?? ""),
+                  String(values.get("shipping_pathao_area_id") ?? ""),
+                  String(values.get("coupon_code") ?? ""),
+                  "pathao",
+                );
+              }} disabled={submitting} />
+            <span><strong>Pathao Courier</strong> — courier delivery where verified coverage is available nationwide</span>
           </label>
-          <p>The live delivery fee is fetched from Pathao using your selected upazila and the verified parcel weight. An administrator will review and approve the parcel before booking.</p>
+          <label style={{ display: "flex", gap: 10, alignItems: "center", margin: "12px 0" }}>
+            <input type="radio" name="delivery_method" value="neweix_own" checked={deliveryProvider === "neweix_own"}
+              onChange={() => {
+                setDeliveryProvider("neweix_own");
+                setDeliveryFeeQuote(null);
+                const form = document.querySelector("form");
+                const values = form ? new FormData(form) : null;
+                if (values) void loadDeliveryQuote(
+                  String(values.get("shipping_district_code") ?? ""),
+                  String(values.get("shipping_upazila_code") ?? ""),
+                  "",
+                  String(values.get("coupon_code") ?? ""),
+                  "neweix_own",
+                );
+              }} disabled={submitting} />
+            <span><strong>NEWEIX Own Delivery</strong> — currently configured for Mymensingh</span>
+          </label>
+          <p>{deliveryProvider === "neweix_own"
+            ? "This delivery is operated by NEWEIX. Only active Mymensingh zones with a configured fee can be selected."
+            : "The live fee is checked against Pathao’s verified City/Zone mapping, current parcel weight and price-plan response. An administrator reviews the parcel before booking."}</p>
         </section>
 
         <fieldset className={styles.paymentOptions}>
