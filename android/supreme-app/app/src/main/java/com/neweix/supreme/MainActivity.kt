@@ -30,6 +30,7 @@ class MainActivity : Activity() {
     private var progressBar: ProgressBar? = null
     private var errorPanel: LinearLayout? = null
     private var mainFrameLoadFailed = false
+    private var backInvokedCallback: android.window.OnBackInvokedCallback? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -201,6 +202,16 @@ class MainActivity : Activity() {
         setContentView(root)
         ViewCompat.requestApplyInsets(root)
 
+        // Android 13+ predictive/system back must use the platform dispatcher.
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            val callback = android.window.OnBackInvokedCallback { handleBack() }
+            backInvokedCallback = callback
+            onBackInvokedDispatcher.registerOnBackInvokedCallback(
+                android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                callback
+            )
+        }
+
         if (savedInstanceState != null && browser.restoreState(savedInstanceState) == null) {
             browser.loadUrl(BuildConfig.SITE_ORIGIN + privatePath)
         } else if (savedInstanceState == null) {
@@ -245,8 +256,7 @@ class MainActivity : Activity() {
         super.onSaveInstanceState(outState)
     }
 
-    @Suppress("DEPRECATION")
-    override fun onBackPressed() {
+    private fun handleBack() {
         val browser = webView
         if (errorPanel?.visibility == View.VISIBLE) {
             errorPanel?.visibility = View.GONE
@@ -258,7 +268,18 @@ class MainActivity : Activity() {
         }
     }
 
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        // Android 12 and earlier use the legacy Activity callback.
+        if (android.os.Build.VERSION.SDK_INT < 33) handleBack()
+        else super.onBackPressed()
+    }
+
     override fun onDestroy() {
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            backInvokedCallback?.let(onBackInvokedDispatcher::unregisterOnBackInvokedCallback)
+        }
+        backInvokedCallback = null
         webView?.apply {
             stopLoading()
             webChromeClient = null
