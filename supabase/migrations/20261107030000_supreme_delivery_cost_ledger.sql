@@ -64,7 +64,7 @@ select
   'pathao',
   'delivery_charge',
   'charge',
-  round(r.delivery_charge)::integer,
+  r.delivery_charge,
   coalesce(i.settlement_date, i.imported_at::date),
   'pathao_settlement',
   i.id::text || ':' || r.source_row_number::text,
