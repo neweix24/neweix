@@ -8,7 +8,7 @@ type Product = { id: string; name: string; stock: number; low_stock_threshold?: 
 type Order = { id: string; order_number?: string; created_at: string; status?: string; total?: number; payment_status?: string; shipping_district?: string | null; shipping_upazila?: string | null };
 type DistrictTotal = { district: string; order_value: number; order_count: number };
 type DashboardSummary = { order_count: number; order_value: number; paid_amount: number; pending_payment_count: number; pending_order_count: number; operating_expense_total: number; operating_expense_count: number; district_totals: DistrictTotal[]; recent_orders: Order[] };
-type Period = "today" | "7d" | "month" | "year" | "all";
+type Period = "today" | "7d" | "month" | "year" | "all" | "custom";
 
 const periods: { value: Period; label: string }[] = [
   { value: "today", label: "আজ" },
@@ -16,6 +16,7 @@ const periods: { value: Period; label: string }[] = [
   { value: "month", label: "এই মাস" },
   { value: "year", label: "এই বছর" },
   { value: "all", label: "সব সময়" },
+  { value: "custom", label: "নির্দিষ্ট তারিখ" },
 ];
 
 const shortcuts = [
@@ -26,6 +27,7 @@ const shortcuts = [
   { href: "/supreme/finance/expenses", title: "Finance & Expenses", description: "পণ্যের ক্রয়মূল্য ও পরিচালন ব্যয়", icon: "wallet" },
   { href: "/supreme/eixpay", title: "EixPay", description: "পেমেন্ট ও আর্থিক কার্যক্রম", icon: "wallet" },
   { href: "/supreme/staff", title: "টিম ও অনুমতি", description: "Staff, Manager ও অ্যাক্সেস নিয়ন্ত্রণ", icon: "shield" },
+  { href: "/supreme/notifications", title: "Notification Inbox", description: "অর্ডার, পেমেন্ট ও স্টক সতর্কতা", icon: "bell" },
   { href: "/supreme/audit-logs", title: "নিরাপত্তা ও Audit", description: "কে কখন কী পরিবর্তন করেছে", icon: "shield" },
   { href: "/supreme/system", title: "সিস্টেম মনিটর", description: "সিস্টেম ও ইন্টিগ্রেশন পর্যবেক্ষণ", icon: "settings" },
 ] as const;
@@ -50,9 +52,12 @@ export default function SupremeDashboard() {
   const [productError, setProductError] = useState("");
   const [summaryError, setSummaryError] = useState("");
   const [period, setPeriod] = useState<Period>("7d");
+  const todayInDhaka = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dhaka", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const [customStart, setCustomStart] = useState(todayInDhaka);
+  const [customEnd, setCustomEnd] = useState(todayInDhaka);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  async function loadDashboard(nextPeriod: Period = period) {
+  async function loadDashboard(nextPeriod: Period = period, fromDate = customStart, toDate = customEnd) {
     setLoading(true);
     setProductError("");
     setSummaryError("");
@@ -64,7 +69,18 @@ export default function SupremeDashboard() {
       }),
       (() => {
         const params = new URLSearchParams();
-        if (nextPeriod !== "all") {
+        if (nextPeriod === "custom") {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(toDate) || fromDate > toDate) {
+            throw new Error("সঠিক শুরু ও শেষ তারিখ নির্বাচন করুন।");
+          }
+          const startAt = new Date(fromDate + "T00:00:00+06:00");
+          const endAt = new Date(new Date(toDate + "T00:00:00+06:00").getTime() + 86400000);
+          if (!Number.isFinite(startAt.getTime()) || !Number.isFinite(endAt.getTime())) {
+            throw new Error("তারিখের পরিসর সঠিক নয়।");
+          }
+          params.set("from", startAt.toISOString());
+          params.set("to", endAt.toISOString());
+        } else if (nextPeriod !== "all") {
           params.set("from", startOf(nextPeriod).toISOString());
           params.set("to", new Date().toISOString());
         }
@@ -113,8 +129,13 @@ export default function SupremeDashboard() {
             </button>
           </div>
           <div className="relative mt-6 flex flex-wrap gap-2">
-            {periods.map((item) => <button key={item.value} type="button" onClick={() => { setPeriod(item.value); void loadDashboard(item.value); }} className="rounded-full border px-3.5 py-2 text-xs font-bold transition" style={period === item.value ? { borderColor: "#e3c46a", background: "#e3c46a", color: "#17130a" } : { borderColor: "rgba(255,255,255,.15)", background: "rgba(255,255,255,.04)", color: "#d7deea" }}>{item.label}</button>)}
+            {periods.map((item) => <button key={item.value} type="button" onClick={() => { setPeriod(item.value); if (item.value !== "custom") void loadDashboard(item.value); }} className="rounded-full border px-3.5 py-2 text-xs font-bold transition" style={period === item.value ? { borderColor: "#e3c46a", background: "#e3c46a", color: "#17130a" } : { borderColor: "rgba(255,255,255,.15)", background: "rgba(255,255,255,.04)", color: "#d7deea" }}>{item.label}</button>)}
           </div>
+          {period === "custom" && <div className="relative mt-4 grid gap-3 rounded-2xl border p-3 sm:grid-cols-[1fr_1fr_auto]" style={{ borderColor: "rgba(212,175,55,.24)", background: "rgba(0,0,0,.18)" }}>
+            <label className="grid gap-1 text-xs font-bold text-slate-300">শুরুর তারিখ<input type="date" value={customStart} max={customEnd} onChange={(event) => setCustomStart(event.target.value)} className="min-h-11 rounded-xl border px-3 text-sm text-white" style={{ borderColor: "rgba(255,255,255,.16)", background: "#111a27", colorScheme: "dark" }} /></label>
+            <label className="grid gap-1 text-xs font-bold text-slate-300">শেষ তারিখ<input type="date" value={customEnd} min={customStart} max={todayInDhaka} onChange={(event) => setCustomEnd(event.target.value)} className="min-h-11 rounded-xl border px-3 text-sm text-white" style={{ borderColor: "rgba(255,255,255,.16)", background: "#111a27", colorScheme: "dark" }} /></label>
+            <button type="button" onClick={() => void loadDashboard("custom", customStart, customEnd)} disabled={loading || !customStart || !customEnd || customStart > customEnd} className="self-end rounded-xl px-5 py-3 text-xs font-black disabled:opacity-50" style={{ background: "linear-gradient(110deg,#e5c76d,#a9822c)", color: "#17130a" }}>রিপোর্ট দেখুন</button>
+          </div>}
         </header>
 
         {(productError || summaryError) && <section role="alert" className="rounded-2xl border p-4 text-sm text-rose-200" style={{ borderColor: "rgba(248,113,113,.35)", background: "rgba(127,29,29,.18)" }}>{[productError, summaryError].filter(Boolean).join(" ")}</section>}
