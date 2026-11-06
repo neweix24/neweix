@@ -64,7 +64,7 @@ Deno.test("KeyDescription rejects unsupported security levels and negative versi
 
 Deno.test("AuthorizationList accepts known explicit integer and SET OF tags", () => {
   const purposeSet = tlv([0x31], [...int(2), ...int(3)]);
-  const purpose = tlv([0xbf, 0x01], purposeSet);
+  const purpose = tlv([0xa1], purposeSet);
   const algorithm = tlv([0xa2], int(3));
   const decoded = parseAndroidKeyDescription(keyDescription(seq(purpose, algorithm)));
   const entries = decoded.softwareEnforced.entries;
@@ -75,7 +75,7 @@ Deno.test("AuthorizationList accepts known explicit integer and SET OF tags", ()
 
 Deno.test("AuthorizationList records out-of-order tags but does not silently normalize them", () => {
   const algorithm = tlv([0xa2], int(3));
-  const purpose = tlv([0xbf, 0x01], tlv([0x31], int(2)));
+  const purpose = tlv([0xa1], tlv([0x31], int(2)));
   const decoded = parseAndroidKeyDescription(keyDescription(seq(algorithm, purpose)));
   if (decoded.softwareEnforced.tagsAreAscending) {
     throw new Error("Out-of-order tags were not recorded.");
@@ -85,7 +85,7 @@ Deno.test("AuthorizationList records out-of-order tags but does not silently nor
 Deno.test("AuthorizationList rejects duplicate, unknown and implicit/non-explicit tags", () => {
   const algorithm = tlv([0xa2], int(3));
   throws(() => parseAndroidKeyDescription(keyDescription(seq(algorithm, algorithm))), "duplicate tag");
-  throws(() => parseAndroidKeyDescription(keyDescription(seq(tlv([0xbf, 0x05], int(1))))), "unknown tag");
+  throws(() => parseAndroidKeyDescription(keyDescription(seq(tlv([0xa5], int(1))))), "unknown tag");
   throws(() => parseAndroidKeyDescription(keyDescription(seq(tlv([0x82], [3])))), "implicit tag");
 });
 
@@ -105,11 +105,11 @@ Deno.test("AuthorizationList validates RootOfTrust structure and boot-state rang
 
 Deno.test("AuthorizationList rejects malformed SET OF and NULL marker payloads", () => {
   throws(
-    () => parseAndroidKeyDescription(keyDescription(seq(tlv([0xbf, 0x01], int(1))))),
+    () => parseAndroidKeyDescription(keyDescription(seq(tlv([0xa1], int(1))))),
     "purpose must be SET OF",
   );
   throws(
-    () => parseAndroidKeyDescription(keyDescription(seq(tlv([0xbf, 0x87, 0x77], int(1))))),
+    () => parseAndroidKeyDescription(keyDescription(seq(tlv([0xbf, 0x83, 0x77], int(1))))),
     "unknown tag",
   );
 });
