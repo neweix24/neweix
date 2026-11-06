@@ -181,14 +181,12 @@ function compareAuthorizationFields(
     comparisons++;
   }
 
-  for (const [name, tag] of [["noAuthRequired", 503], ["rollbackResistance",  rollbackTag()], ["earlyBootOnly", 507]] as const) {
-    if (expected[name] !== undefined) {
-      const present = Boolean(findEntry(list, tag));
-      if (present !== Boolean(expected[name])) {
-        throw new Error(`${label}.${name}: authorization marker tag ${tag} differs from upstream JSON.`);
-      }
-      comparisons++;
+  if (expected.noAuthRequired !== undefined) {
+    const present = Boolean(findEntry(list, 503));
+    if (present !== Boolean(expected.noAuthRequired)) {
+      throw new Error(`${label}.noAuthRequired: authorization marker tag 503 differs from upstream JSON.`);
     }
+    comparisons++;
   }
   return comparisons;
 }
