@@ -113,7 +113,14 @@ function compareAuthorizationFields(
     ["algorithms", 2],
     ["keySize", 3],
     ["ecCurve", 10],
+    ["mlDsaVariant", 11],
     ["rsaPublicExponent", 200],
+    ["activeDateTime", 400],
+    ["originationExpireDateTime", 401],
+    ["usageExpireDateTime", 402],
+    ["usageCountLimit", 405],
+    ["userAuthType", 504],
+    ["authTimeout", 505],
     ["creationDateTime", 701],
     ["osVersion", 705],
     ["osPatchLevel", 706],
@@ -129,8 +136,10 @@ function compareAuthorizationFields(
 
   const setFields: Array<[string, number]> = [
     ["purposes", 1],
+    ["blockModes", 4],
     ["digests", 5],
-    ["padding", 6],
+    ["paddings", 6],
+    ["rsaOaepMgfDigests", 203],
   ];
   for (const [name, tag] of setFields) {
     if (expected[name] !== undefined) {
@@ -146,6 +155,7 @@ function compareAuthorizationFields(
     ["attestationIdSerial", 713],
     ["attestationIdImei", 714],
     ["attestationIdMeid", 715],
+    ["attestationIdSecondImei", 723],
     ["attestationIdManufacturer", 716],
     ["attestationIdModel", 717],
     ["moduleHash", 724],
@@ -172,7 +182,8 @@ function compareAuthorizationFields(
     GENERATED: "0",
     DERIVED: "1",
     IMPORTED: "2",
-    UNKNOWN: "3",
+    RESERVED: "3",
+    SECURELY_IMPORTED: "4",
   };
   if (expected.origin !== undefined) {
     const encoded = originNames[String(expected.origin)];
@@ -181,12 +192,21 @@ function compareAuthorizationFields(
     comparisons++;
   }
 
-  if (expected.noAuthRequired !== undefined) {
-    const present = Boolean(findEntry(list, 503));
-    if (present !== Boolean(expected.noAuthRequired)) {
-      throw new Error(`${label}.noAuthRequired: authorization marker tag 503 differs from upstream JSON.`);
+  const markerFields: Array<[string, number]> = [
+    ["noAuthRequired", 503],
+    ["trustedUserPresenceRequired", 507],
+    ["trustedConfirmationRequired", 508],
+    ["unlockedDeviceRequired", 509],
+    ["rollbackResistant", 703],
+  ];
+  for (const [name, tag] of markerFields) {
+    if (expected[name] !== undefined) {
+      const present = Boolean(findEntry(list, tag));
+      if (present !== Boolean(expected[name])) {
+        throw new Error(`${label}.${name}: authorization marker tag ${tag} differs from upstream JSON.`);
+      }
+      comparisons++;
     }
-    comparisons++;
   }
   return comparisons;
 }
