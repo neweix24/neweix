@@ -12,6 +12,14 @@ begin
     raise exception 'Supreme delivery cost RPC is missing';
   end if;
 
+  if pg_catalog.pg_get_functiondef(v_record_fn) not like '%p_amount numeric%' then
+    raise exception 'Delivery cost write RPC must accept decimal numeric amounts';
+  end if;
+
+  if pg_catalog.pg_get_functiondef(v_summary_fn) like '%::bigint%' then
+    raise exception 'Delivery cost summaries must preserve decimal precision';
+  end if;
+
   if pg_catalog.has_function_privilege('anon', v_record_fn, 'EXECUTE')
      or pg_catalog.has_function_privilege('authenticated', v_record_fn, 'EXECUTE')
      or not pg_catalog.has_function_privilege('service_role', v_record_fn, 'EXECUTE') then
