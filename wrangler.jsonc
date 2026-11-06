@@ -32,6 +32,7 @@
   "secrets": {
     "required": [
       "SUPABASE_SERVICE_ROLE_KEY",
+      "SUPREME_PRIVATE_PATH",
       "GOOGLE_CLIENT_ID",
       "GOOGLE_CLIENT_SECRET",
       "YOUTUBE_TOKEN_ENCRYPTION_KEY",
