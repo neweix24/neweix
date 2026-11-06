@@ -694,10 +694,10 @@ export default function PathaoPanel() {
         failedZoneCount?: number;
         failedZones?: Array<{ zoneId: number; error: string }>;
       } | null;
+      setAreaSyncFailures(result?.failedZones ?? []);
       if (!response.ok) {
         throw new Error(result?.error || result?.message || "Pathao Area catalog sync failed.");
       }
-      setAreaSyncFailures(result?.failedZones ?? []);
       setAreaSyncMessage(
         result?.message ||
         `Saved ${result?.areaCount ?? 0} Pathao Areas across ${result?.syncedZoneCount ?? 0}/${result?.mappedZoneCount ?? 0} zones. ${result?.failedZoneCount ?? 0} zones need retry.`,
