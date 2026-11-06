@@ -240,7 +240,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="hero auth-page">
+    <main className="hero auth-page premium-auth-page">
       <p className="eyebrow">NEWEIX · STAFF ACCESS</p>
       <h1>Secure staff sign-in</h1>
       <p className="hero-copy">
