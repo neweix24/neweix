@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/supreme-server-attestation-verifier
+      - feat/supreme-deno-x509-parser
     paths:
       - ".github/workflows/supreme-keyattestation-reference.yml"
       - "docs/security/SUPREME_ANDROID_ATTESTATION_VERIFIER.md"
