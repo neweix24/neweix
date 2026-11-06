@@ -5,8 +5,6 @@ import { BANGLADESH_ADMIN_AREAS, resolveBangladeshAddress } from "@/lib/banglade
 import {
   calculatePathaoPrice,
   createPathaoOrder,
-  getPathaoAreas,
-  getPathaoAreasForZones,
   getPathaoCities,
   getPathaoZones,
   getPathaoZonesForCities,
@@ -132,25 +130,6 @@ export async function GET(request: Request) {
       });
     }
 
-    if (action === "area_catalog") {
-      const admin = await createRuntimeServiceClient();
-      const { data: areas, error } = await admin
-        .from("pathao_area_catalog")
-        .select("id, pathao_city_id, pathao_zone_id, pathao_area_id, pathao_area_name, home_delivery_available, is_active, synced_at")
-        .eq("is_active", true)
-        .order("pathao_city_id", { ascending: true })
-        .order("pathao_zone_id", { ascending: true })
-        .order("pathao_area_name", { ascending: true })
-        .limit(5000);
-      if (error) {
-        console.error("Pathao area catalog query failed:", error.message);
-        return errorResponse("Could not load the Pathao Area catalog. Apply the area catalog migration first.", 503);
-      }
-      return NextResponse.json({ success: true, areas: areas ?? [] }, {
-        headers: { "Cache-Control": "private, no-store" },
-      });
-    }
-
     if (action === "settlement_imports") {
       const admin = await createRuntimeServiceClient();
       const { data: imports, error: importsError } = await admin
@@ -220,13 +199,13 @@ export async function GET(request: Request) {
       });
     }
 
-    if (action === "zones" || action === "areas") {
-      const rawId = params.get(action === "zones" ? "cityId" : "zoneId") || "";
+    if (action === "zones") {
+      const rawId = params.get("cityId") || "";
       const id = Number(rawId);
       if (!/^\d+$/.test(rawId) || !Number.isSafeInteger(id) || id < 1) {
         return errorResponse("A valid location ID is required.", 400);
       }
-      const locations = action === "zones" ? await getPathaoZones(id) : await getPathaoAreas(id);
+      const locations = await getPathaoZones(id);
       return NextResponse.json({ success: true, locations }, {
         headers: { "Cache-Control": "no-store" },
       });
@@ -340,155 +319,6 @@ export async function POST(request: Request) {
   const input = body as Record<string, unknown>;
 
 
-  if (input.action === "sync_area_catalog") {
-    const admin = await createRuntimeServiceClient();
-    const { data: mappings, error: mappingsError } = await admin
-      .from("pathao_location_mappings")
-      .select("pathao_city_id, pathao_zone_id")
-      .eq("is_active", true)
-      .eq("is_verified", true)
-      .limit(1000);
-    if (mappingsError) {
-      console.error("Pathao area sync mapping lookup failed:", mappingsError.message);
-      return errorResponse("Could not load verified Pathao City/Zone mappings.", 503);
-    }
-
-    const cityByZone = new Map<number, number>();
-    for (const mapping of mappings ?? []) {
-      const cityId = Number(mapping.pathao_city_id);
-      const zoneId = Number(mapping.pathao_zone_id);
-      if (Number.isSafeInteger(cityId) && cityId > 0 && Number.isSafeInteger(zoneId) && zoneId > 0) {
-        const existingCity = cityByZone.get(zoneId);
-        if (existingCity !== undefined && existingCity !== cityId) {
-          return errorResponse("A Pathao Zone is linked to multiple Cities. Resolve the mapping conflict before syncing Areas.", 409);
-        }
-        cityByZone.set(zoneId, cityId);
-      }
-    }
-
-    const zoneIds = [...cityByZone.keys()];
-    if (zoneIds.length === 0) {
-      return errorResponse("No verified Pathao City/Zone mappings exist yet. Sync district coverage first.", 409);
-    }
-
-    const requestedOffset = Number(input.areaOffset ?? 0);
-    if (!Number.isSafeInteger(requestedOffset) || requestedOffset < 0 || requestedOffset >= zoneIds.length) {
-      return errorResponse("Invalid Pathao Area sync batch offset.", 400);
-    }
-    const batchZoneIds = zoneIds.slice(requestedOffset, requestedOffset + 6);
-    let results;
-    try {
-      results = await getPathaoAreasForZones(batchZoneIds);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Pathao Area catalog request failed.";
-      console.error("Pathao area catalog sync failed:", message);
-      return errorResponse(message, 502);
-    }
-
-    const now = new Date().toISOString();
-    const rows: Array<Record<string, unknown>> = [];
-    const failedZones: Array<{ zoneId: number; error: string }> = [];
-    let successfulZones = 0;
-    for (const result of results) {
-      if (result.error) {
-        failedZones.push({ zoneId: result.zoneId, error: result.error });
-        continue;
-      }
-
-      const zoneRows: Array<Record<string, unknown>> = [];
-      const sourceRows = extractPathaoRows(result.payload);
-      for (const row of sourceRows) {
-        const rawAreaId = row.area_id ?? row.areaId ?? row.id;
-        const areaId = Number(rawAreaId);
-        const areaName = typeof row.area_name === "string"
-          ? row.area_name.trim()
-          : typeof row.areaName === "string"
-            ? row.areaName.trim()
-            : typeof row.name === "string"
-              ? row.name.trim()
-              : "";
-        if (!Number.isSafeInteger(areaId) || areaId < 1 || !areaName) continue;
-        const availability = typeof row.home_delivery_available === "boolean"
-          ? row.home_delivery_available
-          : typeof row.homeDeliveryAvailable === "boolean"
-            ? row.homeDeliveryAvailable
-            : null;
-        zoneRows.push({
-          pathao_city_id: cityByZone.get(result.zoneId),
-          pathao_zone_id: result.zoneId,
-          pathao_area_id: areaId,
-          pathao_area_name: areaName,
-          home_delivery_available: availability,
-          is_active: true,
-          synced_at: now,
-          updated_at: now,
-        });
-      }
-
-      if (zoneRows.length === 0) {
-        const payloadRecord = result.payload && typeof result.payload === "object"
-          ? result.payload as Record<string, unknown>
-          : null;
-        const apiMessage = typeof payloadRecord?.message === "string"
-          ? payloadRecord.message
-          : "Pathao returned no usable Area records (empty list or unexpected response shape).";
-        failedZones.push({
-          zoneId: result.zoneId,
-          error: apiMessage.slice(0, 240),
-        });
-        continue;
-      }
-
-      successfulZones += 1;
-      rows.push(...zoneRows);
-    }
-
-    // Even if every zone in this batch is rate-limited, return the failures and
-    // advance the cursor so one transient batch does not block all later zones.
-
-    let savedCount = 0;
-    if (rows.length > 0) {
-      const { data: saved, error: saveError } = await admin
-        .from("pathao_area_catalog")
-        .upsert(rows, { onConflict: "pathao_zone_id,pathao_area_id" })
-        .select("id");
-      if (saveError || !saved) {
-        console.error("Pathao Area catalog save failed:", saveError?.message);
-        return errorResponse("Could not save the Pathao Area catalog. Apply the area catalog migration first.", 503);
-      }
-      savedCount = saved.length;
-    }
-
-    const { error: auditError } = await admin.from("audit_logs").insert({
-      actor_id: staff.userId,
-      action: "pathao.area_catalog.synced",
-      target_type: "pathao_area_catalog",
-      details: {
-        mapped_zone_count: zoneIds.length,
-        processed_zone_count: batchZoneIds.length,
-        batch_offset: requestedOffset,
-        successful_zone_count: successfulZones,
-        failed_zone_count: failedZones.length,
-        saved_area_count: savedCount,
-        source: "pathao_live_area_list",
-      },
-    });
-    if (auditError) console.error("Pathao Area catalog audit log failed:", auditError.message);
-
-    return NextResponse.json({
-      success: failedZones.length === 0,
-      mappedZoneCount: zoneIds.length,
-      processedZoneCount: batchZoneIds.length,
-      nextOffset: requestedOffset + batchZoneIds.length,
-      hasMore: requestedOffset + batchZoneIds.length < zoneIds.length,
-      syncedZoneCount: successfulZones,
-      failedZoneCount: failedZones.length,
-      failedZones,
-      areaCount: savedCount,
-      message: `Saved ${savedCount} Area records from ${successfulZones}/${zoneIds.length} mapped zones. ${failedZones.length} zones returned errors or no usable Area data.`,
-    }, { headers: { "Cache-Control": "private, no-store" } });
-  }
-
   if (input.action === "auto_map_district") {
     const divisionCode = typeof input.divisionCode === "string" ? input.divisionCode.trim() : "";
     const districtCode = typeof input.districtCode === "string" ? input.districtCode.trim() : "";
@@ -554,15 +384,15 @@ export async function POST(request: Request) {
       pathao_zone_id: zone.id,
       pathao_city_name: city.city_name as string,
       pathao_zone_name: zone.name,
-      is_verified: true,
-      is_active: true,
-      verified_at: now,
-      verified_by: staff.userId,
+      is_verified: false,
+      is_active: false,
+      verified_at: null,
+      verified_by: null,
       updated_at: now,
     }));
     const { data: saved, error } = await admin
       .from("pathao_location_mappings")
-      .upsert(rows, { onConflict: "district_code,upazila_code" })
+      .upsert(rows, { onConflict: "district_code,upazila_code", ignoreDuplicates: true })
       .select("id, division_code, district_code, upazila_code, pathao_city_id, pathao_zone_id, pathao_city_name, pathao_zone_name, is_verified, is_active, verified_at, updated_at");
     if (error || !saved) {
       console.error("Pathao automatic location mapping failed:", error?.message);
@@ -571,7 +401,7 @@ export async function POST(request: Request) {
 
     const { error: auditError } = await admin.from("audit_logs").insert({
       actor_id: staff.userId,
-      action: "pathao.location_mapping.auto_verified",
+      action: "pathao.location_mapping.candidates_generated",
       target_type: "pathao_location_mapping",
       target_id: saved[0]?.id ?? null,
       details: {
@@ -580,7 +410,7 @@ export async function POST(request: Request) {
         pathao_city_id: Number(cityId),
         matched_count: saved.length,
         skipped_count: district.upazilas.length - saved.length,
-        matching_method: "unique_exact_normalized_name",
+        matching_method: "unique_exact_normalized_name_candidate_only",
       },
     });
     if (auditError) console.error("Pathao automatic mapping audit log failed:", auditError.message);
@@ -591,7 +421,7 @@ export async function POST(request: Request) {
       matchedCount: saved.length,
       skippedCount: district.upazilas.length - saved.length,
       mappings: saved,
-      message: "Only unique exact-name matches were verified against the live Pathao city/zone catalog and saved.",
+      message: "Unique exact-name matches were saved as inactive candidates. An Admin/Supreme user must review and verify each mapping before checkout can use it.",
     }, { headers: { "Cache-Control": "private, no-store" } });
   }
 
@@ -712,10 +542,10 @@ export async function POST(request: Request) {
           pathao_zone_id: zone.id,
           pathao_city_name: String(city.city_name),
           pathao_zone_name: zone.name,
-          is_verified: true,
-          is_active: true,
-          verified_at: now,
-          verified_by: staff.userId,
+          is_verified: false,
+          is_active: false,
+          verified_at: null,
+          verified_by: null,
           updated_at: now,
         });
       }
@@ -723,7 +553,7 @@ export async function POST(request: Request) {
       return {
         districtCode: district.code,
         districtName: district.name,
-        status: matched.length === district.upazilas.length ? "fully_mapped" : matched.length > 0 ? "partially_mapped" : "no_exact_zone_match",
+        status: matched.length === district.upazilas.length ? "fully_matched_candidates" : matched.length > 0 ? "partially_matched_candidates" : "no_exact_zone_match",
         pathaoCityName: String(city.city_name),
         totalUpazilas: district.upazilas.length,
         matchedUpazilas: matched.length,
@@ -738,7 +568,7 @@ export async function POST(request: Request) {
       const admin = await createRuntimeServiceClient();
       const { data: saved, error } = await admin
         .from("pathao_location_mappings")
-        .upsert(rows, { onConflict: "district_code,upazila_code" })
+        .upsert(rows, { onConflict: "district_code,upazila_code", ignoreDuplicates: true })
         .select("id");
       if (error || !saved) {
         console.error("Pathao division coverage sync failed:", error?.message);
@@ -748,14 +578,14 @@ export async function POST(request: Request) {
 
       const { error: auditError } = await admin.from("audit_logs").insert({
         actor_id: staff.userId,
-        action: "pathao.location_mapping.division_synced",
+        action: "pathao.location_mapping.candidates_generated",
         target_type: "pathao_location_mapping",
         details: {
           division_code: divisionCode,
           district_count: districtResults.length,
           matched_upazila_count: savedCount,
           skipped_upazila_count: districtResults.reduce((sum, item) => sum + item.skippedUpazilas.length, 0),
-          matching_method: "unique_exact_normalized_city_and_zone_name",
+          matching_method: "unique_exact_normalized_city_and_zone_name_candidate_only",
         },
       });
       if (auditError) console.error("Pathao division sync audit log failed:", auditError.message);
@@ -769,7 +599,7 @@ export async function POST(request: Request) {
       matchedUpazilaCount: savedCount,
       skippedUpazilaCount: districtResults.reduce((sum, item) => sum + item.skippedUpazilas.length, 0),
       districts: districtResults,
-      message: "Only unique exact Pathao city and zone name matches were saved. Missing or ambiguous locations were left unmapped for manual review.",
+      message: "Unique exact Pathao city and zone name matches were saved as inactive candidates only. Existing mappings were never overwritten; every candidate must be reviewed and manually verified before checkout can use it.",
     }, { headers: { "Cache-Control": "private, no-store" } });
   }
 
@@ -783,6 +613,7 @@ export async function POST(request: Request) {
       !/^BD-D[0-9]{2}$/.test(divisionCode) ||
       !/^BD-D[0-9]{2}-Z[0-9]{2}$/.test(districtCode) ||
       !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode) ||
+      input.confirmMapping !== true ||
       !Number.isSafeInteger(cityId) || Number(cityId) < 1 ||
       !Number.isSafeInteger(zoneId) || Number(zoneId) < 1
     ) {
@@ -809,6 +640,39 @@ export async function POST(request: Request) {
     }
 
     const admin = await createRuntimeServiceClient();
+    const { data: existingMapping, error: existingMappingError } = await admin
+      .from("pathao_location_mappings")
+      .select("id, pathao_city_id, pathao_zone_id, pathao_city_name, pathao_zone_name, is_verified, is_active, verified_at, verified_by, updated_at")
+      .eq("district_code", districtCode)
+      .eq("upazila_code", upazilaCode)
+      .maybeSingle();
+
+    if (existingMappingError) {
+      console.error("Pathao existing mapping lookup failed:", existingMappingError.message);
+      return errorResponse("Could not safely check the existing Pathao mapping. No changes were made.", 503);
+    }
+
+    const correctionReason = typeof input.correctionReason === "string"
+      ? input.correctionReason.trim()
+      : "";
+    const isChangingVerifiedMapping = Boolean(existingMapping?.is_verified) && (
+      Number(existingMapping?.pathao_city_id) !== Number(cityId) ||
+      Number(existingMapping?.pathao_zone_id) !== Number(zoneId) ||
+      existingMapping?.is_active !== true
+    );
+    if (existingMapping?.is_verified && !isChangingVerifiedMapping) {
+      return NextResponse.json({ success: true, mapping: existingMapping, unchanged: true }, {
+        headers: { "Cache-Control": "private, no-store" },
+      });
+    }
+    if (isChangingVerifiedMapping &&
+        (input.confirmCorrection !== true || correctionReason.length < 20 || correctionReason.length > 500)) {
+      return errorResponse(
+        "This upazila already has a verified Pathao mapping. To correct it, explicitly confirm the correction and provide a reason of 20–500 characters. The existing mapping was not changed.",
+        409,
+      );
+    }
+
     const now = new Date().toISOString();
     const { data: mapping, error } = await admin
       .from("pathao_location_mappings")
@@ -836,17 +700,57 @@ export async function POST(request: Request) {
 
     const { error: auditError } = await admin.from("audit_logs").insert({
       actor_id: staff.userId,
-      action: "pathao.location_mapping.verified",
+      action: isChangingVerifiedMapping
+        ? "pathao.location_mapping.corrected"
+        : "pathao.location_mapping.verified",
       target_type: "pathao_location_mapping",
       target_id: mapping.id,
       details: {
         district_code: districtCode,
         upazila_code: upazilaCode,
+        previous_pathao_city_id: isChangingVerifiedMapping ? existingMapping?.pathao_city_id : null,
+        previous_pathao_zone_id: isChangingVerifiedMapping ? existingMapping?.pathao_zone_id : null,
+        previous_pathao_city_name: isChangingVerifiedMapping ? existingMapping?.pathao_city_name : null,
+        previous_pathao_zone_name: isChangingVerifiedMapping ? existingMapping?.pathao_zone_name : null,
         pathao_city_id: Number(cityId),
         pathao_zone_id: Number(zoneId),
+        correction_reason: isChangingVerifiedMapping ? correctionReason : null,
       },
     });
-    if (auditError) console.error("Pathao location mapping audit log failed:", auditError.message);
+    if (auditError) {
+      console.error("Pathao location mapping audit log failed:", auditError.message);
+      if (isChangingVerifiedMapping && existingMapping) {
+        const { error: restoreError } = await admin
+          .from("pathao_location_mappings")
+          .update({
+            pathao_city_id: existingMapping.pathao_city_id,
+            pathao_zone_id: existingMapping.pathao_zone_id,
+            pathao_city_name: existingMapping.pathao_city_name,
+            pathao_zone_name: existingMapping.pathao_zone_name,
+            is_verified: existingMapping.is_verified,
+            is_active: existingMapping.is_active,
+            verified_at: existingMapping.verified_at,
+            verified_by: existingMapping.verified_by,
+            updated_at: existingMapping.updated_at,
+          })
+          .eq("id", mapping.id);
+        if (restoreError) {
+          console.error("Pathao verified mapping rollback failed:", restoreError.message);
+          const { error: disableError } = await admin
+            .from("pathao_location_mappings")
+            .update({ is_active: false })
+            .eq("id", mapping.id);
+          if (disableError) console.error("Pathao mapping fail-closed deactivation failed:", disableError.message);
+        }
+      } else {
+        const { error: disableError } = await admin
+          .from("pathao_location_mappings")
+          .update({ is_verified: false, is_active: false, verified_at: null, verified_by: null })
+          .eq("id", mapping.id);
+        if (disableError) console.error("Pathao candidate fail-closed update failed:", disableError.message);
+      }
+      return errorResponse("The Pathao mapping audit could not be saved. The change was rolled back or disabled; verify the mapping before retrying.", 503);
+    }
 
     return NextResponse.json({ success: true, mapping }, {
       headers: { "Cache-Control": "private, no-store" },
@@ -1198,16 +1102,24 @@ export async function POST(request: Request) {
     const itemWeightKg = Number(input.itemWeightKg);
     const itemType = Number(input.itemType ?? 2);
     const deliveryType = Number(input.deliveryType ?? 48);
-    const recipientCity = input.recipientCity == null ? undefined : Number(input.recipientCity);
-    const recipientZone = input.recipientZone == null ? undefined : Number(input.recipientZone);
+    const recipientCity = Number(input.recipientCity);
+    const recipientZone = Number(input.recipientZone);
     if (!Number.isSafeInteger(storeId) || storeId < 1 ||
         ![1, 2].includes(itemType) || ![12, 48].includes(deliveryType) ||
-        !Number.isFinite(itemWeightKg) || itemWeightKg <= 0 || itemWeightKg > 10 ||
-        (recipientCity !== undefined && (!Number.isSafeInteger(recipientCity) || recipientCity < 1)) ||
-        (recipientZone !== undefined && (!Number.isSafeInteger(recipientZone) || recipientZone < 1))) {
+        !Number.isFinite(itemWeightKg) || itemWeightKg < 0.5 || itemWeightKg > 10 ||
+        !Number.isSafeInteger(recipientCity) || recipientCity < 1 ||
+        !Number.isSafeInteger(recipientZone) || recipientZone < 1) {
       return errorResponse("Invalid Pathao price calculation details.", 400);
     }
     try {
+      const liveCities = extractPathaoRows(await getPathaoCities());
+      if (!liveCities.some((row) => Number(row.city_id) === recipientCity)) {
+        return errorResponse("The selected Pathao city is not present in the live merchant catalog.", 422);
+      }
+      const liveZones = extractPathaoRows(await getPathaoZones(recipientCity));
+      if (!liveZones.some((row) => Number(row.zone_id) === recipientZone)) {
+        return errorResponse("The selected Pathao zone does not belong to the selected live Pathao city.", 422);
+      }
       const quote = await calculatePathaoPrice({
         storeId, itemType, deliveryType, itemWeightKg, recipientCity, recipientZone,
       });
@@ -1396,18 +1308,19 @@ export async function POST(request: Request) {
       (order.delivery_fee_payment_status === "paid" ? Number(order.delivery_fee) : 0))
     : 0;
 
-  const addressParts = recipientAddressOverride
-    ? [recipientAddressOverride]
-    : [
-        order.shipping_address,
-        order.shipping_village,
-        order.shipping_union_other || order.shipping_union,
-        order.shipping_upazila,
-        order.shipping_district || order.shipping_city,
-        order.shipping_division,
-      ];
+  // Always append the structured administrative address, even when an
+  // Admin edits the street/house portion. Pathao's address-first order API
+  // resolves the delivery destination from the complete address string.
+  const addressParts = [
+    recipientAddressOverride || order.shipping_address,
+    order.shipping_village,
+    order.shipping_union_other || order.shipping_union,
+    order.shipping_upazila,
+    order.shipping_district || order.shipping_city,
+    order.shipping_division,
+  ];
   const seenAddressParts = new Set<string>();
-  const address = addressParts
+  const uniqueAddressParts = addressParts
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
     .map((value) => value.trim())
     .filter((value) => {
@@ -1415,8 +1328,22 @@ export async function POST(request: Request) {
       if (seenAddressParts.has(normalized)) return false;
       seenAddressParts.add(normalized);
       return true;
-    })
-    .join(", ");
+    });
+  // Preserve the administrative suffix (village/union/upazila/district/division)
+  // within Pathao's 220-character limit. If the street portion is too long,
+  // shorten only that first segment rather than cutting off the district.
+  const streetAddress = uniqueAddressParts[0] ?? "";
+  const administrativeAddress = uniqueAddressParts.slice(1).join(", ");
+  const streetBudget = 220 - administrativeAddress.length - (administrativeAddress ? 2 : 0);
+  if (streetBudget < 0) {
+    await admin.from("orders").update({
+      delivery_status: "failed",
+      delivery_error: "Administrative address exceeds Pathao's 220-character limit.",
+    }).eq("id", orderId).eq("delivery_status", "booking");
+    return errorResponse("The selected administrative address is too long for Pathao. Review the village, union, upazila, district and division values.", 400);
+  }
+  const boundedStreetAddress = streetAddress.slice(0, Math.max(0, streetBudget)).trim().replace(/[\s,;]+$/, "");
+  const address = [boundedStreetAddress, administrativeAddress].filter(Boolean).join(", ");
   if (address.length < 10 || address.length > 220) {
     await admin.from("orders").update({
       delivery_status: "failed",

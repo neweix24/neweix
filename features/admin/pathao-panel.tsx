@@ -164,11 +164,9 @@ export default function PathaoPanel() {
   const [stores, setStores] = useState<unknown>(null);
   const [cities, setCities] = useState<LocationOption[]>([]);
   const [zones, setZones] = useState<LocationOption[]>([]);
-  const [areas, setAreas] = useState<LocationOption[]>([]);
   const [storeId, setStoreId] = useState("");
   const [cityId, setCityId] = useState("");
   const [zoneId, setZoneId] = useState("");
-  const [areaId, setAreaId] = useState("");
   const [itemType, setItemType] = useState("2");
   const [deliveryType, setDeliveryType] = useState("48");
   const [weight, setWeight] = useState("0.5");
@@ -208,6 +206,9 @@ export default function PathaoPanel() {
   const [mappings, setMappings] = useState<PathaoMapping[]>([]);
   const [mappingsLoading, setMappingsLoading] = useState(false);
   const [mappingSaving, setMappingSaving] = useState(false);
+  const [mappingConfirmed, setMappingConfirmed] = useState(false);
+  const [mappingCorrectionConfirmed, setMappingCorrectionConfirmed] = useState(false);
+  const [mappingCorrectionReason, setMappingCorrectionReason] = useState("");
   const [mappingMessage, setMappingMessage] = useState("");
   const [mappingDivisionCode, setMappingDivisionCode] = useState("");
   const [mappingDistrictCode, setMappingDistrictCode] = useState("");
@@ -222,9 +223,6 @@ export default function PathaoPanel() {
   const [diagnostics, setDiagnostics] = useState<PathaoDiagnostics | null>(null);
   const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
   const [diagnosticsError, setDiagnosticsError] = useState("");
-  const [areaSyncRunning, setAreaSyncRunning] = useState(false);
-  const [areaSyncMessage, setAreaSyncMessage] = useState("");
-  const [areaSyncFailures, setAreaSyncFailures] = useState<Array<{ zoneId: number; error: string }>>([]);
 
 
   async function getJson(url: string) {
@@ -275,9 +273,7 @@ export default function PathaoPanel() {
   async function loadZones(nextCityId: string) {
     setCityId(nextCityId);
     setZoneId("");
-    setAreaId("");
     setZones([]);
-    setAreas([]);
     if (!nextCityId) return;
     try {
       const result = await getJson(`/api/admin/pathao?action=zones&cityId=${encodeURIComponent(nextCityId)}`);
@@ -287,22 +283,6 @@ export default function PathaoPanel() {
       setState("error");
     }
   }
-
-  async function loadAreas(nextZoneId: string) {
-    setZoneId(nextZoneId);
-    setAreaId("");
-    setAreas([]);
-    if (!nextZoneId) return;
-    try {
-      const result = await getJson(`/api/admin/pathao?action=areas&zoneId=${encodeURIComponent(nextZoneId)}`);
-      setAreas(extractOptions(result.locations, ["area_id", "areaId", "id"], ["area_name", "areaName", "name"]));
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not load Pathao areas.");
-      setState("error");
-    }
-  }
-
-
 
   async function loadShipments() {
     setShipmentsLoading(true);
@@ -551,6 +531,8 @@ export default function PathaoPanel() {
   const selectedMappingDivision = BANGLADESH_ADMIN_AREAS.find((item) => item.code === mappingDivisionCode);
   const selectedMappingDistrict = selectedMappingDivision?.districts.find((item) => item.code === mappingDistrictCode);
   const selectedMappingUpazila = selectedMappingDistrict?.upazilas.find((item) => item.code === mappingUpazilaCode);
+  const selectedExistingMapping = mappings.find((item) => item.district_code === mappingDistrictCode && item.upazila_code === mappingUpazilaCode);
+  const isMappingCorrection = Boolean(selectedExistingMapping?.is_verified);
 
   async function loadLocationMappings() {
     setMappingsLoading(true);
@@ -558,7 +540,7 @@ export default function PathaoPanel() {
     try {
       const result = await getJson("/api/admin/pathao?action=location_mappings");
       setMappings(Array.isArray(result.mappings) ? result.mappings as PathaoMapping[] : []);
-      setMappingMessage("Verified delivery-area mappings loaded.");
+      setMappingMessage("Pathao mapping records loaded. Checkout only uses active, manually verified City/Zone pairs.");
     } catch (error) {
       setMappingMessage(error instanceof Error ? error.message : "Could not load delivery-area mappings.");
     } finally {
@@ -606,7 +588,7 @@ export default function PathaoPanel() {
       await loadLocationMappings();
       setMappingMessage(
         result.matchedCount > 0
-          ? `Automatically verified and saved ${result.matchedCount} exact match(es) for ${selectedMappingDistrict?.name ?? "this district"}. ${result.skippedCount} area(s) were left untouched because no unique exact match was found.`
+          ? `Created inactive candidate suggestions ${result.matchedCount} exact match(es) for ${selectedMappingDistrict?.name ?? "this district"}. ${result.skippedCount} area(s) were left untouched because no unique exact match was found.`
           : result.message || "No exact matches found. No mapping was saved."
       );
     } catch (error) {
@@ -622,7 +604,7 @@ export default function PathaoPanel() {
     setCoverageSyncResults([]);
     setMappingMessage("Reading the live Pathao city and zone catalog. Each division will be processed independently; a temporary failure will not stop the remaining districts.");
     const accumulated: CoverageDistrictResult[] = [];
-    let mappedUpazilas = 0;
+    let candidateUpazilas = 0;
     let failedDivisions = 0;
 
     try {
@@ -676,89 +658,31 @@ export default function PathaoPanel() {
           for (const row of rows) {
             accumulated.push({ ...row, divisionName: division.name } as CoverageDistrictResult);
           }
-          mappedUpazilas += Number(result?.matchedUpazilaCount ?? 0);
+          candidateUpazilas += Number(result?.matchedUpazilaCount ?? 0);
         }
 
         setCoverageSyncResults([...accumulated]);
         setMappingMessage(
-          `Checked ${accumulated.length}/64 districts. ${mappedUpazilas} exact upazila mappings saved. ${failedDivisions} division(s) had temporary/API errors.`,
+          `Checked ${accumulated.length}/64 districts. ${candidateUpazilas} exact-name candidates saved inactive; an Admin/Supreme user must manually verify them before checkout can use them. ${failedDivisions} division(s) had temporary/API errors.`,
         );
         // Give Pathao's merchant API a short recovery window before the next division.
         await new Promise((resolve) => window.setTimeout(resolve, 1_500));
       }
 
       await loadLocationMappings();
-      if (mappedUpazilas > 0) {
-        // Refresh the live Area catalog immediately after verified City/Zone mappings.
-        await syncAreaCatalog();
-      }
-      const fullyMapped = accumulated.filter((item) => item.status === "fully_mapped").length;
-      const partiallyMapped = accumulated.filter((item) => item.status === "partially_mapped").length;
+      const fullyMapped = accumulated.filter((item) => item.status === "fully_matched_candidates").length;
+      const partiallyMapped = accumulated.filter((item) => item.status === "partially_matched_candidates").length;
       const unmapped = accumulated.filter((item) =>
-        !["fully_mapped", "partially_mapped", "sync_error"].includes(item.status)
+        !["fully_matched_candidates", "partially_matched_candidates", "sync_error"].includes(item.status)
       ).length;
       const syncErrors = accumulated.filter((item) => item.status === "sync_error").length;
       setMappingMessage(
-        `Coverage scan finished: ${accumulated.length}/64 districts checked; ${fullyMapped} fully mapped, ${partiallyMapped} partially mapped, ${unmapped} need manual review, ${syncErrors} had API/network errors. ${mappedUpazilas} verified upazila mappings saved. Run Sync again to retry failed divisions; existing verified mappings are safely updated.`,
+        `Coverage scan finished: ${accumulated.length}/64 districts checked; ${fullyMapped} districts have full candidate matches, ${partiallyMapped} have partial candidate matches, ${unmapped} need manual review, ${syncErrors} had API/network errors. ${candidateUpazilas} new inactive candidates saved. Run Sync again to retry failed divisions; existing mappings are never overwritten; manually verify all new candidates before enabling checkout.`,
       );
     } catch (error) {
       setMappingMessage(error instanceof Error ? error.message : "Pathao 64-district coverage scan failed.");
     } finally {
       setCoverageSyncRunning(false);
-    }
-  }
-
-  async function syncAreaCatalog() {
-    setAreaSyncRunning(true);
-    setAreaSyncFailures([]);
-    setAreaSyncMessage("Syncing Pathao Areas in small, rate-limited batches...");
-    let offset = 0;
-    let totalAreas = 0;
-    let totalSyncedZones = 0;
-    let totalMappedZones = 0;
-    const failures: Array<{ zoneId: number; error: string }> = [];
-    try {
-      // Each request handles at most six zones; sequential batches avoid Worker
-      // subrequest exhaustion and let Pathao's rate-limit window recover.
-      for (let batch = 0; batch < 100; batch += 1) {
-        const response = await fetch("/api/admin/pathao", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store",
-          body: JSON.stringify({ action: "sync_area_catalog", areaOffset: offset }),
-        });
-        const result = await response.json().catch(() => null) as {
-          error?: string;
-          message?: string;
-          areaCount?: number;
-          syncedZoneCount?: number;
-          mappedZoneCount?: number;
-          failedZoneCount?: number;
-          failedZones?: Array<{ zoneId: number; error: string }>;
-          nextOffset?: number;
-          hasMore?: boolean;
-        } | null;
-        if (!response.ok) throw new Error(result?.error || result?.message || "Pathao Area catalog sync failed.");
-        totalAreas += Number(result?.areaCount ?? 0);
-        totalSyncedZones += Number(result?.syncedZoneCount ?? 0);
-        totalMappedZones = Number(result?.mappedZoneCount ?? totalMappedZones);
-        failures.push(...(result?.failedZones ?? []));
-        setAreaSyncFailures([...failures]);
-        offset = Number(result?.nextOffset ?? offset);
-        setAreaSyncMessage(`Processed ${offset}/${totalMappedZones} zones; ${totalAreas} Areas saved. Continuing in safe batches...`);
-        if (!result?.hasMore) {
-          setAreaSyncMessage(`Saved ${totalAreas} Areas from ${totalSyncedZones}/${totalMappedZones} zones. ${failures.length} zones need retry.`);
-          return;
-        }
-        // Each Worker request already serializes its six Pathao calls. Keep a
-        // further pause between Worker batches to avoid burst rate-limiting.
-        await new Promise((resolve) => window.setTimeout(resolve, 1_800));
-      }
-      throw new Error("Area sync paused after the safety batch limit. Run Sync again to continue.");
-    } catch (error) {
-      setAreaSyncMessage(error instanceof Error ? error.message : "Pathao Area catalog sync failed.");
-    } finally {
-      setAreaSyncRunning(false);
     }
   }
 
@@ -777,6 +701,9 @@ export default function PathaoPanel() {
         cache: "no-store",
         body: JSON.stringify({
           action: "save_location_mapping",
+          confirmMapping: mappingConfirmed,
+          confirmCorrection: mappingCorrectionConfirmed,
+          correctionReason: mappingCorrectionReason.trim(),
           divisionCode: mappingDivisionCode,
           districtCode: mappingDistrictCode,
           upazilaCode: mappingUpazilaCode,
@@ -787,7 +714,7 @@ export default function PathaoPanel() {
       const result = await response.json().catch(() => null);
       if (!response.ok) throw new Error(result?.error || "Could not verify this Pathao area mapping.");
       await loadLocationMappings();
-      setMappingMessage("Pathao city/zone mapping verified and saved. Checkout can now quote this upazila.");
+      setMappingMessage(isMappingCorrection ? "Verified Pathao mapping corrected. Previous and new City/Zone IDs and the reason were recorded in the audit log." : "Pathao City/Zone mapping verified and saved. Checkout can now request live pricing for this upazila.");
     } catch (error) {
       setMappingMessage(error instanceof Error ? error.message : "Could not save the Pathao mapping.");
     } finally {
@@ -861,8 +788,8 @@ export default function PathaoPanel() {
   }, []);
 
   const coverageSummary = {
-    fullyMapped: coverageSyncResults.filter((item) => item.status === "fully_mapped").length,
-    partiallyMapped: coverageSyncResults.filter((item) => item.status === "partially_mapped").length,
+    fullyMapped: coverageSyncResults.filter((item) => item.status === "fully_matched_candidates").length,
+    partiallyMapped: coverageSyncResults.filter((item) => item.status === "partially_matched_candidates").length,
     matchedUpazilas: coverageSyncResults.reduce((total, item) => total + item.matchedUpazilas, 0),
     skippedUpazilas: coverageSyncResults.reduce((total, item) => total + item.skippedUpazilas.length, 0),
     syncErrors: coverageSyncResults.filter((item) => item.status === "sync_error").length,
@@ -913,7 +840,7 @@ export default function PathaoPanel() {
                       environment: "API environment",
                       store_id: "Configured Store ID",
                       store_account_match: "Merchant account Store ID",
-                      location_mappings: "Verified delivery areas",
+                      location_mappings: "Verified City/Zone price mappings",
                     } as Record<string, string>)[key] || key.replace(/_/g, " ")}</span>
                     <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-semibold ${check.ok ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-800"}`}>
                       {check.ok ? "OK" : "Action needed"}
@@ -932,8 +859,8 @@ export default function PathaoPanel() {
       <section className="mt-5 space-y-4 rounded-xl border border-amber-200 bg-amber-50/40 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="font-semibold">Checkout Delivery Area Mapping</h3>
-            <p className="mt-1 max-w-3xl text-xs leading-5 text-gray-600">Checkout only calculates a live Pathao fee for verified Bangladesh upazila → Pathao city/zone mappings. This table starts empty after migration; save each supported upazila here. The API verifies city and zone IDs against Pathao before saving.</p>
+            <h3 className="font-semibold">Pathao City/Zone Pricing Mapping Review</h3>
+            <p className="mt-1 max-w-3xl text-xs leading-5 text-gray-600">Checkout calculates live Pathao fees only for manually verified Bangladesh upazila → Pathao City/Zone mappings. Automatic scans create inactive candidates only; the API rechecks selected City/Zone IDs against Pathao before manual verification.</p>
           </div>
           <button type="button" onClick={() => void loadLocationMappings()} disabled={mappingsLoading} className="rounded-lg border bg-white px-3 py-2 text-xs font-semibold disabled:opacity-50">{mappingsLoading ? "Loading..." : "Refresh Mappings"}</button>
         </div>
@@ -943,45 +870,23 @@ export default function PathaoPanel() {
           disabled={mappingAutoRunning || mappingSaving || !mappingDivisionCode || !mappingDistrictCode || !mappingCityId}
           className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-50"
         >
-          {mappingAutoRunning ? "Matching verified Pathao zones..." : "Auto-match exact upazila names"}
+          {mappingAutoRunning ? "Finding exact-name candidates..." : "Generate exact-name candidates for this district"}
         </button>
         <p className="text-xs leading-5 text-gray-600">
-          Pathao officially reports home delivery across all 64 districts. This scan matches NEWEIX districts and upazilas to the live merchant API catalog; it saves only unique exact city/zone matches and leaves uncertain areas for manual review.
+          Pathao officially reports home delivery across all 64 districts. This scan matches NEWEIX districts and upazilas to the live merchant API catalog; it creates inactive candidates from unique exact City/Zone matches; an Admin/Supreme user must manually verify them before checkout can use them.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => void autoMapAllDistricts()} disabled={coverageSyncRunning || mappingAutoRunning || mappingSaving} className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-            {coverageSyncRunning ? "Scanning 64 districts..." : "Sync Pathao coverage for all 64 districts"}
+            {coverageSyncRunning ? "Scanning 64 districts..." : "Generate mapping candidates for all 64 districts"}
           </button>
-          <span className="text-xs text-gray-600">Eight divisions · live City/Zone catalog · no guessed mappings</span>
+          <span className="text-xs text-gray-600">Eight divisions · live City/Zone catalog · suggestions remain inactive until verified</span>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void syncAreaCatalog()}
-            disabled={areaSyncRunning || coverageSyncRunning || mappingAutoRunning || mappingSaving || mappings.length === 0}
-            className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-50"
-          >
-            {areaSyncRunning ? "Syncing Pathao Areas..." : "Sync Pathao Area catalog"}
-          </button>
-          <span className="text-xs text-gray-600">Stores live Area IDs and home-delivery availability for verified zones.</span>
-        </div>
-        {areaSyncMessage && <p role="status" className="text-xs text-gray-700">{areaSyncMessage}</p>}
-        {areaSyncFailures.length > 0 && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-            <p className="text-xs font-semibold text-amber-900">Zones needing investigation ({areaSyncFailures.length})</p>
-            <ul className="mt-2 max-h-48 space-y-1 overflow-auto text-xs text-amber-900">
-              {areaSyncFailures.map((failure) => (
-                <li key={failure.zoneId}>Zone {failure.zoneId}: {failure.error}</li>
-              ))}
-            </ul>
-          </div>
-        )}
         {coverageSyncResults.length > 0 && (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
               <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Districts checked</p><p className="text-lg font-bold">{coverageSyncResults.length}/64</p></div>
-              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Fully mapped</p><p className="text-lg font-bold">{coverageSummary.fullyMapped}</p></div>
-              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Partially mapped</p><p className="text-lg font-bold">{coverageSummary.partiallyMapped}</p></div>
+              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Exact candidates for all upazilas · review required</p><p className="text-lg font-bold">{coverageSummary.fullyMapped}</p></div>
+              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Partial candidate matches</p><p className="text-lg font-bold">{coverageSummary.partiallyMapped}</p></div>
               <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Exact matches</p><p className="text-lg font-bold">{coverageSummary.matchedUpazilas}</p></div>
               <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Need review / errors</p><p className="text-lg font-bold">{coverageSummary.skippedUpazilas} / {coverageSummary.syncErrors}</p></div>
             </div>
@@ -995,7 +900,7 @@ export default function PathaoPanel() {
                     <td className="p-2">{item.pathaoCityName ?? "Not matched"}</td>
                     <td className="p-2">{item.matchedUpazilas}/{item.totalUpazilas}</td>
                     <td className="p-2">
-                      <div>{item.status === "fully_mapped" ? "Fully mapped" : item.status === "partially_mapped" ? `Partial · ${item.skippedUpazilas.length} need review` : item.status === "sync_error" ? "Sync error" : item.status === "city_not_found" ? "City not found" : item.status === "city_ambiguous" ? "Ambiguous city" : item.status === "zones_unavailable" ? "Zones unavailable" : "No exact zone match"}</div>
+                      <div>{item.status === "fully_matched_candidates" ? "Exact candidates for all upazilas · review required" : item.status === "partially_matched_candidates" ? `Partial · ${item.skippedUpazilas.length} need review` : item.status === "sync_error" ? "Sync error" : item.status === "city_not_found" ? "City not found" : item.status === "city_ambiguous" ? "Ambiguous city" : item.status === "zones_unavailable" ? "Zones unavailable" : "No exact zone match"}</div>
                       {item.error && <div className="mt-1 max-w-sm whitespace-normal break-words text-[11px] leading-4 text-red-700" title={item.error}>{item.error}</div>}
                     </td>
                     <td className="max-w-xs whitespace-normal p-2">{item.skippedUpazilas.length > 0 ? <details><summary className="cursor-pointer font-medium text-amber-800">View {item.skippedUpazilas.length} area(s)</summary><ul className="mt-2 list-disc space-y-1 pl-4 text-gray-600">{item.skippedUpazilas.map((name) => <li key={name}>{name}</li>)}</ul></details> : <span className="text-gray-400">None</span>}</td>
@@ -1006,41 +911,53 @@ export default function PathaoPanel() {
           </div>
         )}
         <p className="text-xs leading-5 text-gray-600">
-          The selected-district matcher below is available for manual correction. Ambiguous or unmatched areas are skipped, never guessed.
+          The form below is the only way to activate a mapping: select the corresponding Bangladesh upazila and live Pathao City/Zone, then verify and save. Ambiguous matches remain inactive.
         </p>
         <form onSubmit={saveLocationMapping} className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-medium">Bangladesh division
-            <select required value={mappingDivisionCode} onChange={(event) => { setMappingDivisionCode(event.target.value); setMappingDistrictCode(""); setMappingUpazilaCode(""); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingDivisionCode} onChange={(event) => { setMappingConfirmed(false); setMappingCorrectionConfirmed(false); setMappingCorrectionReason(""); setMappingDivisionCode(event.target.value); setMappingDistrictCode(""); setMappingUpazilaCode(""); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">Select division</option>
               {BANGLADESH_ADMIN_AREAS.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium">District
-            <select required value={mappingDistrictCode} onChange={(event) => { setMappingDistrictCode(event.target.value); setMappingUpazilaCode(""); }} disabled={!mappingDivisionCode} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingDistrictCode} onChange={(event) => { setMappingConfirmed(false); setMappingCorrectionConfirmed(false); setMappingCorrectionReason(""); setMappingDistrictCode(event.target.value); setMappingUpazilaCode(""); }} disabled={!mappingDivisionCode} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">Select district</option>
               {(selectedMappingDivision?.districts ?? []).map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium">Upazila / area
-            <select required value={mappingUpazilaCode} onChange={(event) => setMappingUpazilaCode(event.target.value)} disabled={!mappingDistrictCode} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingUpazilaCode} onChange={(event) => { setMappingConfirmed(false); setMappingCorrectionConfirmed(false); setMappingCorrectionReason(""); setMappingUpazilaCode(event.target.value); }} disabled={!mappingDistrictCode} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">Select upazila</option>
               {(selectedMappingDistrict?.upazilas ?? []).map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium">Pathao city
-            <select required value={mappingCityId} onChange={(event) => { setMappingCityId(event.target.value); setMappingZoneId(""); setMappingZones([]); if (event.target.value) void loadMappingZones(event.target.value); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingCityId} onChange={(event) => { setMappingConfirmed(false); setMappingCorrectionConfirmed(false); setMappingCorrectionReason(""); setMappingCityId(event.target.value); setMappingZoneId(""); setMappingZones([]); if (event.target.value) void loadMappingZones(event.target.value); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">Fetch/select Pathao city</option>
               {cities.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
             {cities.length === 0 && <span className="mt-1 block text-xs text-gray-500">First select “Fetch Cities” above.</span>}
           </label>
           <label className="text-sm font-medium">Pathao zone
-            <select required value={mappingZoneId} onChange={(event) => setMappingZoneId(event.target.value)} disabled={!mappingCityId || mappingZonesLoading} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingZoneId} onChange={(event) => { setMappingConfirmed(false); setMappingCorrectionConfirmed(false); setMappingCorrectionReason(""); setMappingZoneId(event.target.value); }} disabled={!mappingCityId || mappingZonesLoading} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">{mappingZonesLoading ? "Loading zones..." : "Select Pathao zone"}</option>
               {mappingZones.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
           </label>
-          <button type="submit" disabled={mappingSaving || !selectedMappingUpazila || !mappingCityId || !mappingZoneId} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2">{mappingSaving ? "Verifying & saving..." : "Verify and save area mapping"}</button>
+          <label className="flex items-start gap-2 text-xs leading-5 text-gray-700 sm:col-span-2"><input type="checkbox" checked={mappingConfirmed} onChange={(event) => setMappingConfirmed(event.target.checked)} className="mt-1" />I have checked the selected Pathao City and Zone against the actual destination and confirm this pair is geographically correct for the selected NEWEIX upazila.</label>
+          {isMappingCorrection && (
+            <>
+              <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-900 sm:col-span-2">
+                This upazila already has a verified mapping: {selectedExistingMapping?.pathao_city_name} / {selectedExistingMapping?.pathao_zone_name}. A correction will replace it and write the previous IDs, new IDs and your reason to the audit log.
+              </div>
+              <label className="text-sm font-medium sm:col-span-2">Correction reason (required, 20–500 characters)
+                <textarea value={mappingCorrectionReason} onChange={(event) => setMappingCorrectionReason(event.target.value)} maxLength={500} rows={3} className="mt-1 w-full rounded-lg border px-3 py-2" placeholder="Explain how the existing City/Zone mapping was found to be incorrect and what evidence confirms the replacement." />
+              </label>
+              <label className="flex items-start gap-2 text-xs leading-5 text-amber-900 sm:col-span-2"><input type="checkbox" checked={mappingCorrectionConfirmed} onChange={(event) => setMappingCorrectionConfirmed(event.target.checked)} className="mt-1" />I understand this will replace an existing verified mapping and I have checked the destination against Pathao&apos;s actual service area.</label>
+            </>
+          )}
+          <button type="submit" disabled={mappingSaving || !selectedMappingUpazila || !mappingCityId || !mappingZoneId || !mappingConfirmed || (isMappingCorrection && (!mappingCorrectionConfirmed || mappingCorrectionReason.trim().length < 20))} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2">{mappingSaving ? "Verifying & saving..." : "Verify and save City/Zone mapping"}</button>
         </form>
         {mappingMessage && <p role="status" className="text-xs text-gray-700">{mappingMessage}</p>}
         <div className="overflow-x-auto rounded-lg border bg-white">
@@ -1053,7 +970,7 @@ export default function PathaoPanel() {
               return <tr key={item.id} className="border-b last:border-0"><td className="p-2">{division?.name ?? item.division_code} / {district?.name ?? item.district_code} / {upazila?.name ?? item.upazila_code}</td><td className="p-2">{item.pathao_city_name} ({item.pathao_city_id})</td><td className="p-2">{item.pathao_zone_name} ({item.pathao_zone_id})</td><td className="p-2">{item.is_active && item.is_verified ? "Verified & active" : "Inactive / unverified"}</td></tr>;
             })}</tbody>
           </table>
-          {mappings.length === 0 && <p className="p-3 text-xs text-gray-500">{mappingsLoading ? "Loading mappings..." : "No delivery-area mappings loaded. Refresh to check; add verified upazila mappings above."}</p>}
+          {mappings.length === 0 && <p className="p-3 text-xs text-gray-500">{mappingsLoading ? "Loading mappings..." : "No City/Zone pricing mappings loaded. Refresh to check candidate suggestions and manually verify supported destinations."}</p>}
         </div>
       </section>
 
@@ -1312,13 +1229,10 @@ export default function PathaoPanel() {
             <select value={deliveryType} onChange={(event) => setDeliveryType(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="48">Normal delivery</option><option value="12">On-demand delivery</option></select>
           </label>
           <label className="text-sm font-medium">Destination city
-            <select value={cityId} onChange={(event) => void loadZones(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="">Select city (optional)</option>{cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select>
+            <select required value={cityId} onChange={(event) => void loadZones(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="">Select destination city</option>{cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select>
           </label>
           <label className="text-sm font-medium">Destination zone
-            <select value={zoneId} onChange={(event) => void loadAreas(event.target.value)} disabled={!cityId} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="">Select zone (optional)</option>{zones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}</select>
-          </label>
-          <label className="text-sm font-medium sm:col-span-2">Destination area
-            <select value={areaId} onChange={(event) => setAreaId(event.target.value)} disabled={!zoneId} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="">Select area (optional)</option>{areas.map((area) => <option key={area.id} value={area.id}>{area.name}{area.available === false ? " (Home delivery unavailable)" : ""}</option>)}</select>
+            <select required value={zoneId} onChange={(event) => setZoneId(event.target.value)} disabled={!cityId} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="">Select destination zone</option>{zones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}</select>
           </label>
         </div>
         <button type="submit" disabled={quoteLoading || !storeId || !weight} className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{quoteLoading ? "Calculating..." : "Calculate Pathao Charge"}</button>
@@ -1374,7 +1288,7 @@ export default function PathaoPanel() {
         <p className="mt-2 text-xs leading-5 text-emerald-900">Keep PATHAO_WEBHOOK_SECRET in Cloudflare Worker secrets. Never expose merchant credentials or webhook secrets in browser code. NEWEIX treats webhook events as signals and verifies shipment state with Pathao before applying updates.</p>
       </div>
       {stores !== null && <details className="mt-3"><summary className="cursor-pointer text-sm font-semibold">View Pathao Store Response</summary><pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-gray-50 p-3 text-xs">{JSON.stringify(stores, null, 2)}</pre></details>}
-      {cities.length > 0 && <p className="mt-3 text-xs text-gray-500">{cities.length} Pathao cities loaded. Select a city to load zones and areas.</p>}
+      {cities.length > 0 && <p className="mt-3 text-xs text-gray-500">{cities.length} Pathao cities loaded. Select a city to load its current zones.</p>}
     </section>
   );
 }

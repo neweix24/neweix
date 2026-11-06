@@ -348,80 +348,21 @@ export async function getPathaoZonesForCities(cityIds: number[]): Promise<Pathao
   });
 }
 
-export async function getPathaoAreas(zoneId: number) {
-  if (!Number.isSafeInteger(zoneId) || zoneId < 1) throw new Error("Invalid Pathao zone ID.");
-  return withPathaoToken((config, token) =>
-    pathaoRequest<unknown>(config, `/aladdin/api/v1/zones/${zoneId}/area-list`, token),
-  );
-}
-
-/**
- * Fetch the Pathao area catalog for mapped zones with one merchant token.
- * Per-zone failures are returned independently so one unavailable zone does
- * not prevent the remaining catalog from being refreshed.
- */
-export type PathaoZoneAreasResult = {
-  zoneId: number;
-  payload?: unknown;
-  error?: string;
-};
-
-export async function getPathaoAreasForZones(zoneIds: number[]): Promise<PathaoZoneAreasResult[]> {
-  const uniqueIds = [...new Set(zoneIds)];
-  // Keep each Worker invocation comfortably below Cloudflare's subrequest cap.
-  if (uniqueIds.length > 6 || uniqueIds.some((id) => !Number.isSafeInteger(id) || id < 1)) {
-    throw new Error("Pathao area sync must contain at most 6 valid zone IDs per batch.");
-  }
-  if (uniqueIds.length === 0) return [];
-
-  return withPathaoToken(async (config, token) => {
-    const results: PathaoZoneAreasResult[] = [];
-    for (const zoneId of uniqueIds) {
-      // Serialize requests to avoid triggering Pathao merchant API rate limits.
-      if (results.length > 0) await new Promise((resolve) => setTimeout(resolve, 1_200));
-      let lastError: unknown;
-      for (let attempt = 0; attempt < 3; attempt += 1) {
-        try {
-          const payload = await pathaoRequest<unknown>(
-            config,
-            `/aladdin/api/v1/zones/${zoneId}/area-list`,
-            token,
-          );
-          results.push({ zoneId, payload });
-          lastError = undefined;
-          break;
-        } catch (error) {
-          lastError = error;
-          const message = error instanceof Error ? error.message : "";
-          const isRateLimited = message.includes("Pathao API (429)");
-          if (!isRateLimited || attempt === 2) break;
-          await new Promise((resolve) => setTimeout(resolve, 2_000 * (attempt + 1)));
-        }
-      }
-      if (lastError !== undefined) {
-        results.push({
-          zoneId,
-          error: lastError instanceof Error ? lastError.message : "Pathao area lookup failed.",
-        });
-      }
-    }
-    return results;
-  });
-}
-
 export type PathaoPriceInput = {
   storeId: number;
   itemType: number;
   deliveryType: number;
   itemWeightKg: number;
-  recipientCity?: number;
-  recipientZone?: number;
+  recipientCity: number;
+  recipientZone: number;
 };
 
 export async function calculatePathaoPrice(input: PathaoPriceInput) {
   if (!Number.isSafeInteger(input.storeId) || input.storeId < 1 ||
       !Number.isSafeInteger(input.itemType) || !Number.isSafeInteger(input.deliveryType) ||
-      !Number.isFinite(input.itemWeightKg) || input.itemWeightKg <= 0 || input.itemWeightKg > 10) {
+      !Number.isFinite(input.itemWeightKg) || input.itemWeightKg < 0.5 || input.itemWeightKg > 10 ||
+      !Number.isSafeInteger(input.recipientCity) || input.recipientCity < 1 ||
+      !Number.isSafeInteger(input.recipientZone) || input.recipientZone < 1) {
     throw new Error("Invalid Pathao price calculation input.");
   }
   return withPathaoToken((config, token) =>
@@ -430,8 +371,8 @@ export async function calculatePathaoPrice(input: PathaoPriceInput) {
       item_type: input.itemType,
       delivery_type: input.deliveryType,
       item_weight: input.itemWeightKg,
-      ...(input.recipientCity ? { recipient_city: input.recipientCity } : {}),
-      ...(input.recipientZone ? { recipient_zone: input.recipientZone } : {}),
+      recipient_city: input.recipientCity,
+      recipient_zone: input.recipientZone,
     }),
   );
 }

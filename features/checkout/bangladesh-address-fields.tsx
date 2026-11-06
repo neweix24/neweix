@@ -7,12 +7,6 @@ import {
 } from "@/lib/bangladesh-admin";
 import { useLanguage } from "@/components/language-provider";
 
-type PathaoArea = {
-  pathao_area_id: number;
-  pathao_area_name: string;
-  home_delivery_available: boolean | null;
-};
-
 type Props = {
   initialDivision?: string | null;
   initialDistrict?: string | null;
@@ -23,10 +17,8 @@ type Props = {
     divisionCode: string;
     districtCode: string;
     upazilaCode: string;
-    pathaoAreaId: string;
   }) => void;
   disabled?: boolean;
-  enablePathaoAreas?: boolean;
 };
 
 const selectStyle = {
@@ -41,8 +33,6 @@ const selectStyle = {
   borderRadius: 10,
 };
 
-const UPAZILA_CODE = /^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/;
-
 export default function BangladeshAddressFields({
   initialDivision,
   initialDistrict,
@@ -51,7 +41,6 @@ export default function BangladeshAddressFields({
   initialVillage,
   onAddressChange,
   disabled = false,
-  enablePathaoAreas = true,
 }: Props) {
   const { locale, t } = useLanguage();
   const initial = useMemo(() => findAddressCodesByNames({
@@ -67,10 +56,6 @@ export default function BangladeshAddressFields({
   const [unionCode, setUnionCode] = useState(initial.unionCode);
   const [unionOther, setUnionOther] = useState("");
   const [upazilaOther, setUpazilaOther] = useState(initial.upazilaCode === "other" ? initialUpazila ?? "" : "");
-  const [areas, setAreas] = useState<PathaoArea[]>([]);
-  const [areaLoading, setAreaLoading] = useState(false);
-  const [areaError, setAreaError] = useState("");
-  const [pathaoAreaId, setPathaoAreaId] = useState("");
   const onAddressChangeRef = useRef(onAddressChange);
   onAddressChangeRef.current = onAddressChange;
 
@@ -82,46 +67,8 @@ export default function BangladeshAddressFields({
   const unions = upazila?.unions ?? [];
 
   useEffect(() => {
-    onAddressChangeRef.current?.({ divisionCode, districtCode, upazilaCode, pathaoAreaId });
-  }, [divisionCode, districtCode, upazilaCode, pathaoAreaId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setAreas([]);
-    setPathaoAreaId("");
-    setAreaError("");
-
-    if (!enablePathaoAreas || !districtCode || !UPAZILA_CODE.test(upazilaCode)) {
-      setAreaLoading(false);
-      return () => { cancelled = true; };
-    }
-
-    setAreaLoading(true);
-    const params = new URLSearchParams({ district_code: districtCode, upazila_code: upazilaCode });
-    fetch(`/api/delivery/areas?${params.toString()}`, { cache: "no-store" })
-      .then(async (response) => {
-        const result = await response.json().catch(() => null);
-        if (!response.ok || !result?.success || !Array.isArray(result.areas)) {
-          throw new Error(result?.error || "Could not load Pathao Areas.");
-        }
-        if (!cancelled) {
-          setAreas(result.areas as PathaoArea[]);
-          if (!result.areas.length) {
-            setAreaError(locale === "bn"
-              ? "Area তালিকা এখনো সিঙ্ক হয়নি। Area নির্বাচন ঐচ্ছিক; তবে লাইভ চার্জের জন্য এই উপজেলার City/Zone mapping থাকতে হবে।"
-              : "The Area list is not synced yet. Area selection is optional, but a verified City/Zone mapping is still required for live delivery pricing.");
-          }
-        }
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) setAreaError(error instanceof Error ? error.message : "Could not load Pathao Areas.");
-      })
-      .finally(() => {
-        if (!cancelled) setAreaLoading(false);
-      });
-
-    return () => { cancelled = true; };
-  }, [enablePathaoAreas, districtCode, upazilaCode, locale]);
+    onAddressChangeRef.current?.({ divisionCode, districtCode, upazilaCode });
+  }, [divisionCode, districtCode, upazilaCode]);
 
   function changeDivision(value: string) {
     setDivisionCode(value);
@@ -140,9 +87,6 @@ export default function BangladeshAddressFields({
     setUpazilaCode(value);
     setUnionCode("");
   }
-
-  const areaLabel = locale === "bn" ? "Pathao এরিয়া" : "Pathao Area";
-  const selectAreaLabel = locale === "bn" ? "এরিয়া নির্বাচন করুন" : "Select Pathao Area";
 
   return (
     <section aria-labelledby="address-area-heading">
@@ -179,21 +123,6 @@ export default function BangladeshAddressFields({
         <input id="shipping_upazila_other" name="shipping_upazila_other" required minLength={2} maxLength={120}
           value={upazilaOther} onChange={(event) => setUpazilaOther(event.target.value)}
           disabled={disabled} style={selectStyle} placeholder={t("enterUpazila")} />
-      </>}
-
-      {enablePathaoAreas && UPAZILA_CODE.test(upazilaCode) && <>
-        <label htmlFor="shipping_pathao_area_id">{areaLabel} ({locale === "bn" ? "ঐচ্ছিক" : "optional"})</label>
-        <select id="shipping_pathao_area_id" name="shipping_pathao_area_id"
-          value={pathaoAreaId} onChange={(event) => setPathaoAreaId(event.target.value)}
-          disabled={disabled || areaLoading || areas.length === 0} style={selectStyle}>
-          <option value="">{areaLoading ? (locale === "bn" ? "এরিয়া লোড হচ্ছে..." : "Loading Areas...") : selectAreaLabel}</option>
-          {areas.map((area) => (
-            <option key={area.pathao_area_id} value={String(area.pathao_area_id)}>
-              {area.pathao_area_name}
-            </option>
-          ))}
-        </select>
-        {areaError && <p role="status" style={{ marginTop: -8, color: "var(--muted)" }}>{areaError}</p>}
       </>}
 
       <label htmlFor="shipping_union_code">{t("unionMunicipality")} *</label>

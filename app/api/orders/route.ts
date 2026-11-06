@@ -146,8 +146,6 @@ export async function POST(request: Request) {
   const shippingUnionCode = cleanString(rawBody.shipping_union_code);
   const shippingUnionOther = cleanString(rawBody.shipping_union_other);
   const shippingVillage = cleanString(rawBody.shipping_village);
-  const shippingPathaoAreaId = typeof rawBody.shipping_pathao_area_id === "number" && Number.isSafeInteger(rawBody.shipping_pathao_area_id) && rawBody.shipping_pathao_area_id > 0
-    ? rawBody.shipping_pathao_area_id : null;
   const deliveryProviderValue = rawBody.delivery_provider ?? "pathao";
   if (deliveryProviderValue !== "pathao" && deliveryProviderValue !== "neweix_own") {
     return errorResponse("Select a valid delivery provider.", 400);
@@ -653,24 +651,6 @@ export async function POST(request: Request) {
         return errorResponse("We cannot verify live Pathao delivery pricing for this upazila yet. Pathao service coverage is unconfirmed; please choose a verified destination or contact support.", 422);
       }
 
-      let pathaoArea: { pathao_area_id: number; pathao_area_name: string } | null = null;
-      if (shippingPathaoAreaId !== null) {
-        const { data: areaData, error: pathaoAreaError } = await supabase
-          .from("pathao_area_catalog")
-          .select("pathao_area_id, pathao_area_name")
-          .eq("pathao_city_id", pathaoMapping.pathao_city_id)
-          .eq("pathao_zone_id", pathaoMapping.pathao_zone_id)
-          .eq("pathao_area_id", shippingPathaoAreaId)
-          .eq("is_active", true)
-          .eq("home_delivery_available", true)
-          .maybeSingle();
-        if (pathaoAreaError || !areaData) {
-          console.error("Verified Pathao Area unavailable:", pathaoAreaError?.message ?? "No matching active Area.");
-          return errorResponse("The selected Pathao Area is not available for home delivery in this upazila. Select another Area.", 422);
-        }
-        pathaoArea = areaData;
-      }
-
       const { data: quoteProducts, error: quoteProductsError } = await supabase
         .from("products")
         .select("id, weight_grams, is_active")
@@ -718,8 +698,8 @@ export async function POST(request: Request) {
         p_pathao_city_id: Number(pathaoMapping.pathao_city_id),
         p_pathao_zone_id: Number(pathaoMapping.pathao_zone_id),
         p_pathao_location_mapping_id: pathaoMapping.id,
-        p_pathao_area_id: pathaoArea?.pathao_area_id ?? null,
-        p_pathao_area_name: pathaoArea?.pathao_area_name ?? null,
+        p_pathao_area_id: null,
+        p_pathao_area_name: null,
       });
       data = result.data;
       error = result.error;
