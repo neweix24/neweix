@@ -68,10 +68,12 @@ export async function GET(request: Request) {
     if ((from && !validDate(from)) || (to && !validDate(to)) || (from && to && from > to)) {
       return fail("Select a valid attendance date range.", 400);
     }
-    const todayParts = new Intl.DateTimeFormat("en-CA", {
+    const todayParts = new Intl.DateTimeFormat("en-GB", {
       timeZone: "Asia/Dhaka", year: "numeric", month: "2-digit", day: "2-digit",
-    }).format(new Date());
-    const start = from ?? todayParts;
+    }).formatToParts(new Date());
+    const todayValues = Object.fromEntries(todayParts.map((part) => [part.type, part.value]));
+    const dhakaToday = `${todayValues.year}-${todayValues.month}-${todayValues.day}`;
+    const start = from ?? dhakaToday;
     const end = to ?? start;
     const supabase = await serviceClient();
     const [ridersResult, attendanceResult] = await Promise.all([
