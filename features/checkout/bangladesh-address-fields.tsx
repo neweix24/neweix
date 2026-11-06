@@ -33,8 +33,6 @@ const selectStyle = {
   borderRadius: 10,
 };
 
-const UPAZILA_CODE = /^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/;
-
 export default function BangladeshAddressFields({
   initialDivision,
   initialDistrict,
