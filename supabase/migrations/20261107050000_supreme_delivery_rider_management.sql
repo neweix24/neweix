@@ -76,7 +76,7 @@ begin
   select * into v_order from public.orders where id=p_order_id for update;
   if not found then raise exception 'DELIVERY_ORDER_NOT_FOUND'; end if;
   if v_order.delivery_provider <> 'neweix_own' then raise exception 'NOT_NEWEIX_OWN_DELIVERY'; end if;
-  if v_order.status in ('cancelled','returned','refunded') then raise exception 'DELIVERY_ORDER_TERMINAL'; end if;
+  if v_order.status in ('cancelled','returned') or v_order.payment_status = 'refunded' then raise exception 'DELIVERY_ORDER_TERMINAL'; end if;
   select * into v_rider from public.neweix_delivery_riders where id=p_rider_id and is_active=true for share;
   if not found then raise exception 'DELIVERY_RIDER_NOT_ACTIVE'; end if;
   update public.orders set neweix_delivery_rider_id=p_rider_id where id=p_order_id;
