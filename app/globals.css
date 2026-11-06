@@ -1185,3 +1185,11 @@ body[data-customer-theme="storefront"] {
 .premium-info-page .info-page-footer{border-color:var(--border)}
 .premium-info-page .info-page-footer a{color:var(--emerald)}
 @media(max-width:640px){.premium-account-workspace{padding-bottom:env(safe-area-inset-bottom)}.premium-info-page{padding-top:22px}.premium-info-page .info-page-header{padding:25px 20px}}
+
+
+/* EixVerse keeps its dark ecosystem identity within the shared premium palette */
+.premium-eixverse{background:radial-gradient(ellipse at 88% 0%,rgba(8,127,99,.22),transparent 38rem),linear-gradient(145deg,#102432,#0b191f 58%,#10271f)!important}
+.premium-eixverse header>p:first-child,.premium-eixverse header h1 span,.premium-eixverse section>div>div>p,.premium-eixverse section a{color:#d6bd8d}
+.premium-eixverse header>div a:first-child{background:var(--emerald)!important;color:#fff!important}
+.premium-eixverse header>div a:last-child{border-color:rgba(197,165,106,.34)!important;color:#f7f6f2!important}
+.premium-eixverse section [class*="rounded-3xl"][class*="border"]{border-color:rgba(197,165,106,.2)}
