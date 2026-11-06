@@ -97,9 +97,16 @@ export function parseAndroidProvisioningInfo(input: Uint8Array): AndroidProvisio
   for (let i = 0; i < count; i++) {
     if (++budget.nodes > MAX_NODES) throw new RangeError("CBOR node limit exceeded.");
     const key = readHead(input, offset);
-    if (key.major !== 0) throw new TypeError("Provisioning-info map keys must be unsigned integers.");
-    if (seen.has(key.value)) throw new TypeError("Duplicate provisioning-info map key.");
-    seen.add(key.value);
+    if (key.major !== 0) {
+      // CBOR permits non-integer map keys; upstream ignores every key except unsigned integer 1.
+      offset = skipItem(input, offset, 1, budget);
+      offset = skipItem(input, offset, 1, budget);
+      continue;
+    }
+    if (key.value === 1n && seen.has(key.value)) {
+      throw new TypeError("Duplicate certificates-issued map key.");
+    }
+    if (key.value === 1n) seen.add(key.value);
     offset = key.next;
 
     if (key.value === 1n) {
