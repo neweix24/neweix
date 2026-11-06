@@ -40,20 +40,20 @@ export async function GET() {
   try {
     const actor=await authorize(); if(!actor.ok) return fail(actor.error,actor.status);
     const supabase=await db();
-    const [ridersResult,ordersResult,paymentsResult]=await Promise.all([
+    const [ridersResult,ordersResult,paymentsResult,totalsResult]=await Promise.all([
       supabase.from("neweix_delivery_riders").select("id,rider_code,full_name,phone,is_active,created_at").order("created_at",{ascending:false}),
       supabase.from("orders").select("id,order_number,status,delivery_status,delivery_fee,created_at,neweix_delivery_rider_id").eq("delivery_provider","neweix_own").not("status","in","(cancelled,returned,refunded)").order("created_at",{ascending:false}).limit(200),
       supabase.from("delivery_cost_entries").select("id,order_id,rider_id,amount,cost_date,source_reference,notes,created_at").eq("provider","neweix_own").eq("cost_type","rider_payment").order("cost_date",{ascending:false}).limit(200),
+      supabase.rpc("supreme_delivery_rider_payout_summary"),
     ]);
-    if(ridersResult.error||ordersResult.error||paymentsResult.error) {
-      console.error("Rider dashboard query failed:",ridersResult.error?.message,ordersResult.error?.message,paymentsResult.error?.message);
+    if(ridersResult.error||ordersResult.error||paymentsResult.error||totalsResult.error) {
+      console.error("Rider dashboard query failed:",ridersResult.error?.message,ordersResult.error?.message,paymentsResult.error?.message,totalsResult.error?.message);
       return fail("Could not load rider information.",503);
     }
     const orderMap=new Map((ordersResult.data??[]).map(o=>[o.id,o.order_number]));
     const riderMap=new Map((ridersResult.data??[]).map(r=>[r.id,r.full_name]));
     const payments=(paymentsResult.data??[]).map(p=>({...p,order_number:orderMap.get(p.order_id)??null,rider_name:riderMap.get(p.rider_id)??"রাইডার অনুপস্থিত"}));
-    const totals=new Map<string,number>();
-    for(const p of payments) if(p.rider_id) totals.set(p.rider_id,(totals.get(p.rider_id)??0)+Number(p.amount));
+    const totals=new Map<string,number>((totalsResult.data??[]).map((row:{rider_id:string;total_paid:number})=>[row.rider_id,Number(row.total_paid)]));
     return NextResponse.json({success:true,riders:(ridersResult.data??[]).map(r=>({...r,total_paid:totals.get(r.id)??0})),orders:ordersResult.data??[],payments},{headers:{"Cache-Control":"private, no-store"}});
   } catch(error) { console.error("Rider GET failed:",error); return fail("A server error occurred.",500); }
 }
