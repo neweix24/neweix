@@ -5,6 +5,21 @@ import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import Icon from "@/components/ui/icon";
 
+function getSafeSupremeNextPath(): string | null {
+  const next = new URLSearchParams(window.location.search).get("next");
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return null;
+  try {
+    const target = new URL(next, window.location.origin);
+    if (
+      target.origin !== window.location.origin ||
+      !/^\/[A-Za-z0-9][A-Za-z0-9_-]{31,95}(?:\/.*)?$/.test(target.pathname)
+    ) return null;
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 export default function MfaPage() {
   const router = useRouter();
 
@@ -73,7 +88,9 @@ export default function MfaPage() {
         !currentAssuranceError &&
         currentAssurance?.currentLevel === "aal2"
       ) {
-        window.location.replace("/supreme");
+        const destination = getSafeSupremeNextPath();
+        if (destination) window.location.replace(destination);
+        else setMessage("ব্যক্তিগত Supreme প্রবেশ লিংক পাওয়া যায়নি। অ্যাপ থেকে আবার প্রবেশ করুন।");
         return;
       }
 
@@ -93,7 +110,8 @@ export default function MfaPage() {
       );
 
       if (!factor) {
-        router.replace("/auth/mfa/setup");
+        const destination = getSafeSupremeNextPath();
+        router.replace(destination ? `/auth/mfa/setup?next=${encodeURIComponent(destination)}` : "/auth/login");
         return;
       }
 
