@@ -119,9 +119,16 @@ language plpgsql
 security definer
 set search_path = ''
 as $function$
+declare
+  v_low_stock boolean := false;
 begin
-  if new.stock <= new.low_stock_threshold
-     and (tg_op = 'INSERT' or (new.stock < old.stock and new.stock <= old.low_stock_threshold)) then
+  if tg_op = 'INSERT' then
+    v_low_stock := new.stock <= new.low_stock_threshold;
+  else
+    v_low_stock := new.stock < old.stock and new.stock <= old.low_stock_threshold;
+  end if;
+
+  if v_low_stock then
     insert into public.supreme_notifications(
       category, severity, event_key, title, body, href, entity_type, entity_id
     ) values (
