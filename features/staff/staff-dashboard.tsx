@@ -5,7 +5,7 @@ import Icon from "@/components/ui/icon";
 
 export default function StaffDashboard() {
   return (
-    <main className="min-h-screen px-4 py-10" style={{ background: "var(--bg)", color: "var(--ink)" }}>
+    <main className="premium-staff-workspace min-h-screen px-4 py-10" style={{ background: "var(--bg)", color: "var(--ink)" }}>
       <div className="mx-auto max-w-5xl">
         <header className="mb-8">
           <p className="eyebrow">NEWEIX · STAFF WORKSPACE</p>
