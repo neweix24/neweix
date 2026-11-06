@@ -368,35 +368,43 @@ export type PathaoZoneAreasResult = {
 
 export async function getPathaoAreasForZones(zoneIds: number[]): Promise<PathaoZoneAreasResult[]> {
   const uniqueIds = [...new Set(zoneIds)];
-  if (uniqueIds.length > 200 || uniqueIds.some((id) => !Number.isSafeInteger(id) || id < 1)) {
-    throw new Error("Pathao area sync must contain at most 200 valid zone IDs.");
+  // Keep each Worker invocation comfortably below Cloudflare's subrequest cap.
+  if (uniqueIds.length > 6 || uniqueIds.some((id) => !Number.isSafeInteger(id) || id < 1)) {
+    throw new Error("Pathao area sync must contain at most 6 valid zone IDs per batch.");
   }
   if (uniqueIds.length === 0) return [];
 
   return withPathaoToken(async (config, token) => {
-    const results: PathaoZoneAreasResult[] = new Array(uniqueIds.length);
-    let cursor = 0;
-    const worker = async () => {
-      while (true) {
-        const index = cursor++;
-        if (index >= uniqueIds.length) return;
-        const zoneId = uniqueIds[index];
+    const results: PathaoZoneAreasResult[] = [];
+    for (const zoneId of uniqueIds) {
+      // Serialize requests to avoid triggering Pathao merchant API rate limits.
+      if (results.length > 0) await new Promise((resolve) => setTimeout(resolve, 1_200));
+      let lastError: unknown;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
         try {
           const payload = await pathaoRequest<unknown>(
             config,
             `/aladdin/api/v1/zones/${zoneId}/area-list`,
             token,
           );
-          results[index] = { zoneId, payload };
+          results.push({ zoneId, payload });
+          lastError = undefined;
+          break;
         } catch (error) {
-          results[index] = {
-            zoneId,
-            error: error instanceof Error ? error.message : "Pathao area lookup failed.",
-          };
+          lastError = error;
+          const message = error instanceof Error ? error.message : "";
+          const isRateLimited = message.includes("Pathao API (429)");
+          if (!isRateLimited || attempt === 2) break;
+          await new Promise((resolve) => setTimeout(resolve, 2_000 * (attempt + 1)));
         }
       }
-    };
-    await Promise.all(Array.from({ length: Math.min(4, uniqueIds.length) }, () => worker()));
+      if (lastError !== undefined) {
+        results.push({
+          zoneId,
+          error: lastError instanceof Error ? lastError.message : "Pathao area lookup failed.",
+        });
+      }
+    }
     return results;
   });
 }
