@@ -20,7 +20,7 @@ Deno.test("DER parser reads a sequence with canonical integer children", () => {
 
 Deno.test("DER parser supports high-numbered context-specific tags", () => {
   // [704] EXPLICIT NULL-shaped payload: high-tag number 704 = 0x85 0x40.
-  const parsed = parseDer(bytes(0xbf, 0x85, 0x40, 0x02, 0x01, 0x01));
+  const parsed = parseDer(bytes(0xbf, 0x85, 0x40, 0x03, 0x02, 0x01, 0x01));
   if (parsed.tagClass !== "context" || parsed.tagNumber !== 704 || !parsed.constructed) {
     throw new Error("Failed to parse high-numbered context tag.");
   }
