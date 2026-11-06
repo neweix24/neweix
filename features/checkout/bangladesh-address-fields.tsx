@@ -106,8 +106,8 @@ export default function BangladeshAddressFields({
           setAreas(result.areas as PathaoArea[]);
           if (!result.areas.length) {
             setAreaError(locale === "bn"
-              ? "এই উপজেলায় Pathao-এর যাচাইকৃত হোম ডেলিভারি Area এখনো পাওয়া যায়নি।"
-              : "No verified Pathao home-delivery Areas are available for this upazila yet.");
+              ? "Area তালিকা এখনো সিঙ্ক হয়নি। পূর্ণ ঠিকানা দিয়ে অর্ডার করা যাবে; Pathao ঠিকানা থেকে এলাকা শনাক্ত করবে।"
+              : "The Area list is not synced yet. You can still order with a full address; Pathao can identify the delivery area.");
           }
         }
       })
@@ -180,8 +180,8 @@ export default function BangladeshAddressFields({
       </>}
 
       {UPAZILA_CODE.test(upazilaCode) && <>
-        <label htmlFor="shipping_pathao_area_id">{areaLabel} *</label>
-        <select id="shipping_pathao_area_id" name="shipping_pathao_area_id" required
+        <label htmlFor="shipping_pathao_area_id">{areaLabel} ({locale === "bn" ? "ঐচ্ছিক" : "optional"})</label>
+        <select id="shipping_pathao_area_id" name="shipping_pathao_area_id"
           value={pathaoAreaId} onChange={(event) => setPathaoAreaId(event.target.value)}
           disabled={disabled || areaLoading || areas.length === 0} style={selectStyle}>
           <option value="">{areaLoading ? (locale === "bn" ? "এরিয়া লোড হচ্ছে..." : "Loading Areas...") : selectAreaLabel}</option>
