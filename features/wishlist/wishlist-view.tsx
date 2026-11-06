@@ -54,19 +54,40 @@ export default function WishlistView() {
   }
 
   return (
-    <main className="premium-wishlist min-h-screen px-4 py-10 sm:px-6" style={{ background: "radial-gradient(ellipse at 85% 0%, rgba(182,255,74,.14), transparent 38%), linear-gradient(145deg,#fbfff7,#f3fff5 58%,#f5fbff)", color: "var(--ink)" }}>
-      <div className="mx-auto max-w-6xl">
-        <header className="premium-wishlist-header mb-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border p-7 sm:p-10" style={{ borderColor: "#dfeade", background: "radial-gradient(ellipse at 100% 0%,rgba(182,255,74,.18),transparent 45%),linear-gradient(135deg,#fff,#f5ffef)", boxShadow: "0 14px 38px rgba(45,110,65,.07)" }}>
-          <div><Link href="/" className="text-sm font-bold" style={{ color: "var(--primary)" }}>← NEWEIX</Link><p className="mt-5 text-xs tracking-[.2em]" style={{ color: "var(--muted)" }}>YOUR SAVED ITEMS</p><h1 className="mt-2 text-3xl font-black sm:text-4xl">My wishlist</h1><p className="mt-2" style={{ color: "var(--muted)" }}>Your saved products appear here.</p></div>
-          <Link href="/products" className="rounded-xl border px-4 py-3 text-sm font-semibold" style={{ borderColor: "var(--border)" }}>Continue shopping</Link>
+    <main className="premium-wishlist min-h-screen px-4 py-10 sm:px-6 sm:py-14" style={{ background: "var(--porcelain)", color: "var(--navy)" }}>
+      <div className="mx-auto max-w-7xl">
+        <header className="premium-wishlist-header mb-8 flex flex-wrap items-end justify-between gap-5 rounded-3xl border p-6 sm:p-9" style={{ borderColor: "var(--border)", background: "radial-gradient(ellipse at 100% 0%, rgba(197,165,106,.15), transparent 42%), linear-gradient(135deg, var(--surface-raised), var(--surface-soft))", boxShadow: "0 18px 50px rgba(20,43,59,.06)" }}>
+          <div className="max-w-2xl">
+            <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold" style={{ color: "var(--emerald)" }}><Icon name="chevron-left" size={16} /> NEWEIX Home</Link>
+            <p className="mt-6 text-xs font-bold uppercase tracking-[.2em]" style={{ color: "var(--gold)" }}>Your saved collection</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">My wishlist</h1>
+            <p className="mt-3 text-sm leading-6 sm:text-base" style={{ color: "var(--muted)" }}>Keep the products you love in one place and come back when you are ready.</p>
+            <p className="mt-4 text-xs font-semibold" style={{ color: "var(--muted)" }}>{saved.length} {saved.length === 1 ? "product" : "products"} saved</p>
+          </div>
+          <Link href="/products" className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold" style={{ background: "var(--emerald)", color: "#fff" }}>Continue shopping <Icon name="arrow-right" size={16} /></Link>
         </header>
-        {loading && <p role="status">Loading your wishlist…</p>}
-        {error && <p role="alert" className="mb-4 rounded-xl border p-4" style={{ borderColor: "var(--danger)", color: "var(--danger)", background: "var(--surface-raised)" }}>{error}</p>}
-        {!loading && saved.length === 0 && <section className="rounded-2xl border p-8 text-center" style={{ borderColor: "var(--border)", background: "var(--surface)" }}><h2 className="text-xl font-bold">You have not saved any products yet</h2><p className="mt-2" style={{ color: "var(--muted)" }}>Select the ♡ icon on a product to save it to your wishlist.</p><Link href="/products" className="mt-5 inline-flex rounded-xl px-5 py-3 font-bold" style={{ background: "var(--primary)", color: "#080b09" }}>Browse products</Link></section>}
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {saved.map((product) => <article key={product.id} className="premium-wishlist-card overflow-hidden rounded-3xl border transition duration-200 hover:-translate-y-1" style={{ borderColor: "#e0eae0", background: "rgba(255,255,255,.96)", boxShadow: "0 12px 30px rgba(45,110,65,.06)" }}>
-            <Link href={`/products/${encodeURIComponent(product.slug)}`} className="flex aspect-[4/3] items-center justify-center overflow-hidden p-3" style={{ background: "linear-gradient(145deg,#f5faef,#f2faf7)" }}>{product.image_urls?.[0] ? <img src={product.image_urls[0]} alt={product.name} loading="lazy" className="h-full w-full object-cover" /> : <span>NEWEIX</span>}</Link>
-            <div className="p-5"><Link href={`/products/${encodeURIComponent(product.slug)}`} className="font-bold">{product.name}</Link><p className="mt-2 text-lg font-black" style={{ color: "#28764b" }}>{money(Number(product.price))}</p><p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>{product.stock > 0 ? `In stock · ${product.stock}` : "Out of stock"}</p><div className="mt-3"><ProductCardActions productId={product.id} stock={product.stock} /></div><button type="button" onClick={() => remove(product.id)} className="mt-3 rounded-xl border px-4 py-2.5 text-sm font-bold" style={{ borderColor: "#e3caca", color: "#9b4141", background: "#fffafa" }}><Icon name="trash" size={16} /> Remove from wishlist</button></div>
+
+        {loading && <p role="status" className="rounded-2xl border p-5 text-sm" style={{ borderColor: "var(--border)", background: "var(--surface-raised)" }}>Loading your wishlist…</p>}
+        {error && <p role="alert" className="mb-5 rounded-xl border p-4 text-sm" style={{ borderColor: "var(--danger)", color: "var(--danger)", background: "var(--surface-raised)" }}>{error}</p>}
+        {!loading && saved.length === 0 && <section className="rounded-3xl border px-6 py-14 text-center sm:py-20" style={{ borderColor: "var(--border)", background: "var(--surface-raised)", boxShadow: "0 14px 38px rgba(20,43,59,.045)" }}>
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: "rgba(8,127,99,.09)", color: "var(--emerald)" }}><Icon name="heart" size={30} /></span>
+          <h2 className="mt-5 text-xl font-bold">Your wishlist is waiting</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6" style={{ color: "var(--muted)" }}>Tap the heart on any product to save it here. Your favourite finds will be easy to revisit.</p>
+          <Link href="/products" className="mt-6 inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold" style={{ background: "var(--emerald)", color: "#fff" }}>Explore products <Icon name="arrow-right" size={16} /></Link>
+        </section>}
+
+        <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {saved.map((product) => <article key={product.id} className="premium-wishlist-card group overflow-hidden rounded-3xl border transition duration-200 hover:-translate-y-1" style={{ borderColor: "var(--border)", background: "var(--surface-raised)", boxShadow: "0 12px 32px rgba(20,43,59,.05)" }}>
+            <Link href={`/products/${encodeURIComponent(product.slug)}`} className="relative flex aspect-[4/3] items-center justify-center overflow-hidden p-4" style={{ background: "linear-gradient(145deg, var(--surface-soft), var(--surface))" }}>
+              {product.image_urls?.[0] ? <img src={product.image_urls[0]} alt={product.name} loading="lazy" className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.04]" /> : <span className="text-sm font-black tracking-widest" style={{ color: "var(--muted)" }}>NEWEIX</span>}
+            </Link>
+            <div className="p-5">
+              <Link href={`/products/${encodeURIComponent(product.slug)}`} className="line-clamp-2 font-bold leading-6 hover:underline">{product.name}</Link>
+              <p className="mt-3 text-lg font-black" style={{ color: "var(--emerald)" }}>{money(Number(product.price))}</p>
+              <p className="mt-1 text-xs font-semibold" style={{ color: product.stock > 0 ? "var(--success)" : "var(--danger)" }}>{product.stock > 0 ? `In stock · ${product.stock}` : "Out of stock"}</p>
+              <div className="mt-4"><ProductCardActions productId={product.id} stock={product.stock} /></div>
+              <button type="button" onClick={() => remove(product.id)} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold transition hover:bg-red-50" style={{ borderColor: "var(--border)", color: "var(--muted)", background: "var(--surface)" }}><Icon name="trash" size={15} /> Remove from wishlist</button>
+            </div>
           </article>)}
         </section>
       </div>

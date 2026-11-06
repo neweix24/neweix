@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Icon from "@/components/ui/icon";
 import { useEffect, useMemo, useState } from "react";
 import { loadSavedProductLists, mutateSavedProduct, readSavedProductLists, writeSavedProductLists } from "@/lib/customer-saved-products";
 
@@ -87,42 +88,47 @@ export default function CompareView() {
   }
 
   return (
-    <main className="premium-compare min-h-screen px-4 py-10 sm:px-6" style={{ background: "radial-gradient(ellipse at 85% 0%, rgba(182,255,74,.14), transparent 38%), linear-gradient(145deg,#fbfff7,#f3fff5 58%,#f5fbff)", color: "var(--ink)" }}>
+    <main className="premium-compare min-h-screen px-4 py-10 sm:px-6 sm:py-14" style={{ background: "var(--porcelain)", color: "var(--navy)" }}>
       <div className="mx-auto max-w-7xl">
-        <header className="premium-compare-header mb-8 flex flex-wrap items-end justify-between gap-4 rounded-3xl border p-7 sm:p-10" style={{ borderColor: "#dfeade", background: "radial-gradient(ellipse at 100% 0%,rgba(182,255,74,.18),transparent 45%),linear-gradient(135deg,#fff,#f5ffef)", boxShadow: "0 14px 38px rgba(45,110,65,.07)" }}>
-          <div>
-            <Link href="/products" className="text-sm font-semibold" style={{ color: "var(--primary)" }}>← All products</Link>
-            <p className="mt-5 text-xs tracking-[.2em]" style={{ color: "var(--muted)" }}>PRODUCT COMPARISON</p>
-            <h1 className="mt-2 text-3xl font-black sm:text-4xl">Compare products</h1>
-            <p className="mt-2" style={{ color: "var(--muted)" }}>Compare up to 4 products side by side before making a decision.</p>
+        <header className="premium-compare-header mb-8 flex flex-wrap items-end justify-between gap-5 rounded-3xl border p-6 sm:p-9" style={{ borderColor: "var(--border)", background: "radial-gradient(ellipse at 100% 0%, rgba(197,165,106,.15), transparent 42%), linear-gradient(135deg, var(--surface-raised), var(--surface-soft))", boxShadow: "0 18px 50px rgba(20,43,59,.06)" }}>
+          <div className="max-w-2xl">
+            <Link href="/products" className="inline-flex items-center gap-2 text-sm font-bold" style={{ color: "var(--emerald)" }}><Icon name="chevron-left" size={16} /> All products</Link>
+            <p className="mt-6 text-xs font-bold uppercase tracking-[.2em]" style={{ color: "var(--gold)" }}>Smarter shopping decisions</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Compare products</h1>
+            <p className="mt-3 text-sm leading-6 sm:text-base" style={{ color: "var(--muted)" }}>Compare up to {LIMIT} products side by side and choose with confidence.</p>
           </div>
-          {selected.length > 0 && <button type="button" onClick={clear} className="rounded-xl border px-4 py-3 text-sm font-semibold" style={{ borderColor: "var(--border)" }}>Clear list</button>}
+          <div className="flex items-center gap-3">
+            <span className="rounded-full border px-3 py-2 text-xs font-bold" style={{ borderColor: "var(--border)", background: "var(--surface-raised)", color: "var(--muted)" }}>{selected.length} / {LIMIT} selected</span>
+            {selected.length > 0 && <button type="button" onClick={clear} className="rounded-xl border px-4 py-2.5 text-sm font-semibold" style={{ borderColor: "var(--border)", background: "var(--surface-raised)", color: "var(--navy)" }}>Clear list</button>}
+          </div>
         </header>
-        {loading && <p role="status">Loading product information…</p>}
-        {error && <p role="alert" className="mb-4 rounded-xl border p-4" style={{ borderColor: "var(--danger)", color: "var(--danger)", background: "var(--surface-raised)" }}>{error}</p>}
-        {!loading && selected.length === 0 && <section className="rounded-2xl border p-8 text-center" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-          <h2 className="text-xl font-bold">No products to compare</h2>
-          <p className="mt-2" style={{ color: "var(--muted)" }}>Add products by selecting “Compare” in the product catalog.</p>
-          <Link href="/products" className="mt-5 inline-flex rounded-xl px-5 py-3 font-bold" style={{ background: "var(--primary)", color: "#080b09" }}>Browse products</Link>
+
+        {loading && <p role="status" className="rounded-2xl border p-5 text-sm" style={{ borderColor: "var(--border)", background: "var(--surface-raised)" }}>Loading product information…</p>}
+        {error && <p role="alert" className="mb-5 rounded-xl border p-4 text-sm" style={{ borderColor: "var(--danger)", color: "var(--danger)", background: "var(--surface-raised)" }}>{error}</p>}
+        {!loading && selected.length === 0 && <section className="rounded-3xl border px-6 py-14 text-center sm:py-20" style={{ borderColor: "var(--border)", background: "var(--surface-raised)", boxShadow: "0 14px 38px rgba(20,43,59,.045)" }}>
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: "rgba(8,127,99,.09)", color: "var(--emerald)" }}><Icon name="compare" size={30} /></span>
+          <h2 className="mt-5 text-xl font-bold">Build your comparison</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6" style={{ color: "var(--muted)" }}>Choose Compare on products in the catalog. Add up to four items to review their price, availability and details together.</p>
+          <Link href="/products" className="mt-6 inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold" style={{ background: "var(--emerald)", color: "#fff" }}>Browse products <Icon name="arrow-right" size={16} /></Link>
         </section>}
-        {!loading && selected.length > 0 && <div className="premium-compare-table overflow-x-auto rounded-3xl border" style={{ borderColor: "#dfeade", background: "rgba(255,255,255,.97)", boxShadow: "0 14px 38px rgba(45,110,65,.07)" }}>
+        {!loading && selected.length > 0 && <div className="premium-compare-table overflow-x-auto rounded-3xl border" style={{ borderColor: "var(--border)", background: "var(--surface-raised)", boxShadow: "0 14px 38px rgba(20,43,59,.055)" }}>
           <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-            <thead style={{ background: "#f5fbf1" }}><tr><th className="w-36 border-b p-4" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>Feature</th>
+            <thead style={{ background: "var(--surface-soft)" }}><tr><th className="w-36 border-b p-4 text-xs font-bold uppercase tracking-wider" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>Feature</th>
               {selected.map((product) => <th key={product.id} className="min-w-48 border-b p-4 align-top" style={{ borderColor: "var(--border)" }}>
-                <Link href={`/products/${encodeURIComponent(product.slug)}`} className="font-bold hover:underline">{product.name}</Link>
-                <button type="button" onClick={() => remove(product.id)} className="mt-2 block text-xs font-medium" style={{ color: "var(--danger)" }}>Remove from comparison</button>
+                <Link href={`/products/${encodeURIComponent(product.slug)}`} className="font-bold hover:underline" style={{ color: "var(--navy)" }}>{product.name}</Link>
+                <button type="button" onClick={() => remove(product.id)} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold" style={{ color: "var(--danger)" }}><Icon name="close" size={13} /> Remove</button>
               </th>)}
             </tr></thead>
             <tbody>
-              <tr><th className="border-b p-4" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>Image</th>{selected.map((p) => <td key={p.id} className="border-b p-4" style={{ borderColor: "var(--border)" }}><Link href={`/products/${encodeURIComponent(p.slug)}`} className="flex h-40 items-center justify-center overflow-hidden rounded-2xl p-2" style={{ background: "linear-gradient(145deg,#f5faef,#f2faf7)" }}>{p.image_urls?.[0] ? <img src={p.image_urls[0]} alt={p.name} className="h-full w-full object-contain" loading="lazy" /> : <span>NEWEIX</span>}</Link></td>)}</tr>
-              <tr><th className="border-b p-4" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>Price</th>{selected.map((p) => <td key={p.id} className="border-b p-4 text-base font-black" style={{ borderColor: "var(--border)", color: "#28764b" }}>{money(p.price)}{p.compare_at_price != null && p.compare_at_price > p.price && <del className="ml-2 block text-xs font-normal" style={{ color: "var(--muted)" }}>{money(p.compare_at_price)}</del>}</td>)}</tr>
-              <tr><th className="border-b p-4" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>Stock</th>{selected.map((p) => <td key={p.id} className="border-b p-4" style={{ borderColor: "var(--border)" }}>{p.stock > 0 ? `In stock · ${p.stock}` : "Out of stock"}</td>)}</tr>
-              <tr><th className="border-b p-4" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>Description</th>{selected.map((p) => <td key={p.id} className="border-b p-4 align-top leading-6" style={{ borderColor: "var(--border)" }}>{p.description || "No description available"}</td>)}</tr>
-              <tr><th className="p-4" style={{ color: "var(--muted)" }}>Product page</th>{selected.map((p) => <td key={p.id} className="p-4"><Link href={`/products/${encodeURIComponent(p.slug)}`} className="font-semibold underline" style={{ color: "var(--primary)" }}>View details</Link></td>)}</tr>
+              <tr><th className="border-b p-4 text-xs font-bold uppercase tracking-wider" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>Image</th>{selected.map((p) => <td key={p.id} className="border-b p-4" style={{ borderColor: "var(--border)" }}><Link href={`/products/${encodeURIComponent(p.slug)}`} className="flex h-40 items-center justify-center overflow-hidden rounded-2xl p-3" style={{ background: "var(--surface-soft)" }}>{p.image_urls?.[0] ? <img src={p.image_urls[0]} alt={p.name} className="h-full w-full object-contain" loading="lazy" /> : <span className="text-xs font-bold tracking-widest" style={{ color: "var(--muted)" }}>NEWEIX</span>}</Link></td>)}</tr>
+              <tr><th className="border-b p-4 text-xs font-bold uppercase tracking-wider" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>Price</th>{selected.map((p) => <td key={p.id} className="border-b p-4 text-base font-black" style={{ borderColor: "var(--border)", color: "var(--emerald)" }}>{money(p.price)}{p.compare_at_price != null && p.compare_at_price > p.price && <del className="ml-2 block text-xs font-normal" style={{ color: "var(--muted)" }}>{money(p.compare_at_price)}</del>}</td>)}</tr>
+              <tr><th className="border-b p-4 text-xs font-bold uppercase tracking-wider" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>Availability</th>{selected.map((p) => <td key={p.id} className="border-b p-4 font-semibold" style={{ borderColor: "var(--border)", color: p.stock > 0 ? "var(--success)" : "var(--danger)" }}>{p.stock > 0 ? `In stock · ${p.stock}` : "Out of stock"}</td>)}</tr>
+              <tr><th className="border-b p-4 text-xs font-bold uppercase tracking-wider" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>Description</th>{selected.map((p) => <td key={p.id} className="border-b p-4 align-top leading-6" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>{p.description || "No description available"}</td>)}</tr>
+              <tr><th className="p-4 text-xs font-bold uppercase tracking-wider" style={{ color: "var(--muted)" }}>Product page</th>{selected.map((p) => <td key={p.id} className="p-4"><Link href={`/products/${encodeURIComponent(p.slug)}`} className="inline-flex items-center gap-2 font-bold" style={{ color: "var(--emerald)" }}>View details <Icon name="arrow-right" size={14} /></Link></td>)}</tr>
             </tbody>
           </table>
         </div>}
-        <p className="mt-4 text-xs" style={{ color: "var(--muted)" }}>Your comparison list is saved in this browser. You can compare up to {LIMIT}টি পণ্য রাখা যাবে।</p>
+        <p className="mt-4 text-xs" style={{ color: "var(--muted)" }}>Your comparison list is saved in this browser. You can compare up to {LIMIT} products.</p>
       </div>
     </main>
   );
