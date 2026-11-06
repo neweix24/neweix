@@ -105,3 +105,9 @@ Until Gate D is deployed and verified, app-only Supreme login is **not enabled**
 A bounded DER TLV parser now exists at `supabase/functions/_shared/supreme-attestation-der.ts`, with negative tests for malformed/non-minimal lengths, high-numbered context-specific tags, trailing bytes, nesting depth, node count, input size and canonical non-negative INTEGERs.
 
 This module is syntax-only. It does not parse the full Android KeyDescription/AuthorizationList schema, validate X.509 certificates or paths, authenticate Google roots, enforce RKP rules, or authorize a Supreme login. It must not be called as a verifier or used to accept an attestation. The next implementation step is to build strict schema-specific decoders on top of it and compare all decisions with the pinned Kotlin reference; the release gate remains unchanged.
+
+## Android KeyDescription schema decoder groundwork
+
+The Deno candidate now includes `supreme-android-keydescription.ts`. It decodes the inner DER value of the Android key-attestation extension OID `1.3.6.1.4.1.11129.2.1.17` and enforces the eight-field `KeyDescription` envelope, known `AuthorizationList` context tags, explicit tagging, duplicate-tag rejection, supported universal payload types, and the basic `RootOfTrust` field shape. It records AuthorizationList tag ordering rather than silently sorting it.
+
+This is still a structural decoder, not a verifier. In particular, it does not yet decode and validate the nested CBOR `AttestationApplicationId`, compare package/signing-certificate digests, validate certificate paths or Google trust anchors, check chain placement/RKP provisioning semantics, or decide whether a device is acceptable. The parser is not connected to any authentication route. Its accepted structure must be tested against upstream valid and invalid certificate fixtures before it can contribute to an attestation decision.
