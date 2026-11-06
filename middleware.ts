@@ -12,8 +12,77 @@ export async function middleware(request: NextRequest) {
   }
 
   const pathname = request.nextUrl.pathname;
+  const configuredSupremePath = process.env.SUPREME_PRIVATE_PATH;
+  // The private entry must be one high-entropy path segment. Never accept a
+  // public-looking or nested value that could overlap storefront routes.
+  const hasValidPrivateSupremePath =
+    typeof configuredSupremePath === "string" &&
+    /^\/control-[A-Fa-f0-9]{48}$/.test(configuredSupremePath);
+  const hasInvalidPrivateSupremePath =
+    typeof configuredSupremePath === "string" &&
+    configuredSupremePath.length > 0 &&
+    !hasValidPrivateSupremePath;
+  const hasMissingPrivateSupremePath =
+    process.env.NODE_ENV === "production" &&
+    !hasValidPrivateSupremePath;
+  const isCanonicalSupremePath =
+    pathname === "/supreme" || pathname.startsWith("/supreme/");
+  const isPrivateSupremePath =
+    hasValidPrivateSupremePath &&
+    (pathname === configuredSupremePath ||
+      pathname.startsWith(configuredSupremePath + "/"));
+
+  // If a configured private path is malformed, fail closed instead of
+  // silently exposing the legacy /supreme route.
+  if ((hasInvalidPrivateSupremePath || hasMissingPrivateSupremePath) && isCanonicalSupremePath) {
+    return new NextResponse("Supreme access is temporarily unavailable.", {
+      status: 503,
+      headers: { "Cache-Control": "private, no-store, max-age=0", "X-Robots-Tag": "noindex, nofollow" },
+    });
+  }
+
+  // Once the private path is configured, direct requests to the old public
+  // route are not served. The authenticated private alias is rewritten below.
+  if (hasValidPrivateSupremePath && isCanonicalSupremePath) {
+    const privatePath = configuredSupremePath!;
+    // Existing in-workspace links still target the internal /supreme route.
+    // Redirect those same-origin navigations back onto the private URL so the
+    // browser never leaves the private path. Direct/external requests get 404.
+    const referer = request.headers.get("referer");
+    let cameFromPrivateEntry = false;
+    if (referer) {
+      try {
+        const refererUrl = new URL(referer);
+        cameFromPrivateEntry =
+          refererUrl.origin === request.nextUrl.origin &&
+          (refererUrl.pathname === privatePath ||
+            refererUrl.pathname.startsWith(privatePath + "/"));
+      } catch {
+        cameFromPrivateEntry = false;
+      }
+    }
+    if (cameFromPrivateEntry) {
+      const privateDestination = request.nextUrl.clone();
+      privateDestination.pathname =
+        privatePath + pathname.slice("/supreme".length);
+      const redirectResponse = NextResponse.redirect(privateDestination, 307);
+      redirectResponse.headers.set("Cache-Control", "private, no-store, max-age=0");
+      redirectResponse.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+      return redirectResponse;
+    }
+    return new NextResponse(null, {
+      status: 404,
+      headers: { "Cache-Control": "private, no-store, max-age=0", "X-Robots-Tag": "noindex, nofollow" },
+    });
+  }
+
   const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
-  const isSupremePath = pathname === "/supreme" || pathname.startsWith("/supreme/");
+  const isSupremePath =
+    isCanonicalSupremePath || isPrivateSupremePath;
+  if (isPrivateSupremePath) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+    response.headers.set("Cache-Control", "private, no-store, max-age=0");
+  }
   const isWorkforcePath =
     pathname === "/staff" || pathname.startsWith("/staff/") ||
     pathname === "/manager" || pathname.startsWith("/manager/") ||
@@ -91,6 +160,12 @@ export async function middleware(request: NextRequest) {
   // Validate signed claims and allow Supabase SSR to refresh expired sessions.
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;
+  // Refreshing auth cookies can replace the response object; reapply the
+  // private-route indexing policy after claim validation.
+  if (isPrivateSupremePath) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+    response.headers.set("Cache-Control", "private, no-store, max-age=0");
+  }
 
   const hasAuthenticatedSession = typeof userId === "string" && userId.length > 0;
   if (!isApiPath || isCustomerProtected || hasAuthenticatedSession || response.cookies.getAll().length > 0) {
@@ -101,7 +176,7 @@ export async function middleware(request: NextRequest) {
   // redirects returned after session validation.
   function copySessionState(target: NextResponse) {
     response.cookies.getAll().forEach((cookie) => target.cookies.set(cookie));
-    for (const name of ["Cache-Control", "Expires", "Pragma"]) {
+    for (const name of ["Cache-Control", "Expires", "Pragma", "X-Robots-Tag"]) {
       const value = response.headers.get(name);
       if (value) target.headers.set(name, value);
     }
@@ -180,6 +255,9 @@ export async function middleware(request: NextRequest) {
     const destination = request.nextUrl.clone();
     destination.pathname = path;
     destination.search = "";
+    if (isPrivateSupremePath && (path === "/auth/mfa" || path === "/auth/mfa/setup")) {
+      destination.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
+    }
     const redirectResponse = NextResponse.redirect(destination);
     return copySessionState(redirectResponse);
   }
@@ -231,6 +309,18 @@ export async function middleware(request: NextRequest) {
       }));
     }
     if (assurance.currentLevel !== "aal2") return redirectWithCookies("/auth/mfa");
+  }
+
+  if (isPrivateSupremePath && hasValidPrivateSupremePath) {
+    const privatePath = configuredSupremePath!;
+    const destination = request.nextUrl.clone();
+    destination.pathname =
+      "/supreme" + pathname.slice(privatePath.length);
+    const rewriteResponse = NextResponse.rewrite(destination);
+    rewriteResponse.headers.set("Cache-Control", "private, no-store, max-age=0");
+    rewriteResponse.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+    response.cookies.getAll().forEach((cookie) => rewriteResponse.cookies.set(cookie));
+    return rewriteResponse;
   }
 
   return response;
