@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Icon, { type IconName } from "@/components/ui/icon";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Product = { id: string; name: string; stock: number; low_stock_threshold?: number };
 type Order = { id: string; order_number?: string; created_at: string; status?: string; total?: number; payment_status?: string; shipping_district?: string | null; shipping_upazila?: string | null };
