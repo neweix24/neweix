@@ -122,10 +122,10 @@ export default function NeweixDeliveryZonesManager() {
 
       <section className="rounded-2xl border p-5 sm:p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
         <h2 className="text-xl font-bold">Add an expansion area</h2>
-        <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>Add an upazila from NEWEIX’s Bangladesh area list. It stays inactive until you configure and activate its actual delivery fee.</p>
+        <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>Phase 1 is limited to Mymensingh district. Added areas stay inactive until you configure and activate their actual delivery fee.</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <label className="text-xs font-semibold">Division
-            <select className={fieldClass + " mt-1"} value={divisionCode} disabled={adding || savingId !== ""} onChange={(event) => {
+            <select className={fieldClass + " mt-1"} value={divisionCode} disabled={true} onChange={(event) => {
               const next = event.target.value;
               const nextDivision = BANGLADESH_ADMIN_AREAS.find((item) => item.code === next);
               const nextDistrict = nextDivision?.districts[0];
@@ -135,7 +135,7 @@ export default function NeweixDeliveryZonesManager() {
             </select>
           </label>
           <label className="text-xs font-semibold">District
-            <select className={fieldClass + " mt-1"} value={districtCode} disabled={adding || savingId !== "" || !districts.length} onChange={(event) => {
+            <select className={fieldClass + " mt-1"} value={districtCode} disabled={true} onChange={(event) => {
               const next = districts.find((item) => item.code === event.target.value);
               setDistrictCode(event.target.value); setUpazilaCode(next?.upazilas[0]?.code ?? "");
             }}>
