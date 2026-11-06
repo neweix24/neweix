@@ -603,7 +603,8 @@ export default function CheckoutView() {
               const form = event.currentTarget.form;
               const district = form?.elements.namedItem("shipping_district_code") as HTMLInputElement | null;
               const upazila = form?.elements.namedItem("shipping_upazila_code") as HTMLInputElement | null;
-              void loadDeliveryQuote(district?.value ?? "", upazila?.value ?? "", event.currentTarget.value);
+              const area = form?.elements.namedItem("shipping_pathao_area_id") as HTMLSelectElement | null;
+              void loadDeliveryQuote(district?.value ?? "", upazila?.value ?? "", area?.value ?? "", event.currentTarget.value);
             }} />
           <button type="button" className={styles.couponButton}
             onClick={() => void applyCoupon()} disabled={submitting || couponChecking || !couponCode.trim()}>
