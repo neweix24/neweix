@@ -22,6 +22,9 @@ export async function middleware(request: NextRequest) {
     typeof configuredSupremePath === "string" &&
     configuredSupremePath.length > 0 &&
     !hasValidPrivateSupremePath;
+  const hasMissingPrivateSupremePath =
+    process.env.NODE_ENV === "production" &&
+    !hasValidPrivateSupremePath;
   const isCanonicalSupremePath =
     pathname === "/supreme" || pathname.startsWith("/supreme/");
   const isPrivateSupremePath =
@@ -31,7 +34,7 @@ export async function middleware(request: NextRequest) {
 
   // If a configured private path is malformed, fail closed instead of
   // silently exposing the legacy /supreme route.
-  if (hasInvalidPrivateSupremePath && isCanonicalSupremePath) {
+  if ((hasInvalidPrivateSupremePath || hasMissingPrivateSupremePath) && isCanonicalSupremePath) {
     return new NextResponse("Supreme access is temporarily unavailable.", {
       status: 503,
       headers: { "Cache-Control": "private, no-store, max-age=0", "X-Robots-Tag": "noindex, nofollow" },
