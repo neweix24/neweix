@@ -8,9 +8,10 @@ export const dynamic = "force-dynamic";
 
 const ALLOWED_ROLES = ["admin", "manager", "employee", "staff"] as const;
 const MAX_BODY_BYTES = 4096;
+const NO_STORE_HEADERS = { "Cache-Control": "private, no-store, max-age=0" };
 
 function errorResponse(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
+  return NextResponse.json({ error: message }, { status, headers: NO_STORE_HEADERS });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -284,7 +285,7 @@ export async function POST(request: Request) {
           role,
         },
       },
-      { status: 201 }
+      { status: 201, headers: NO_STORE_HEADERS }
     );
   } catch {
     return errorResponse("সার্ভারে সমস্যা হয়েছে।", 500);
