@@ -6,14 +6,21 @@ const MAX_ROOT_CERTIFICATES = 16;
 const MAX_STATUS_ENTRIES = 100_000;
 const MAX_CACHE_AGE_SECONDS = 24 * 60 * 60;
 
-export type GoogleAttestationRoots = {
-  certificatesPem: string[];
+export type GoogleAttestationFreshness = {
+  /** Origin response time adjusted backwards by the HTTP Age header. */
+  fetchedAtMs: number;
+  /** Exclusive instant after which this metadata must no longer be used. */
+  expiresAtMs: number;
+  /** Advertised max-age after applying the local 24-hour cap. */
   maxAgeSeconds: number;
 };
 
-export type GoogleAttestationStatus = {
+export type GoogleAttestationRoots = GoogleAttestationFreshness & {
+  certificatesPem: string[];
+};
+
+export type GoogleAttestationStatus = GoogleAttestationFreshness & {
   entries: Map<string, { status: "REVOKED" | "SUSPENDED"; reason?: string; expires?: string }>;
-  maxAgeSeconds: number;
 };
 
 function parseJsonObject(value: unknown, label: string): Record<string, unknown> {
@@ -23,15 +30,66 @@ function parseJsonObject(value: unknown, label: string): Record<string, unknown>
   return value as Record<string, unknown>;
 }
 
-function parseCacheAge(headers: Headers): number {
+function parseCacheFreshness(
+  headers: Headers,
+  nowMs: number,
+): GoogleAttestationFreshness {
+  if (!Number.isFinite(nowMs)) throw new TypeError("Invalid Google metadata clock.");
   const cacheControl = headers.get("cache-control") ?? "";
-  const match = cacheControl.match(/(?:^|,)\s*max-age=(\d+)(?:\s*(?:,|$))/iu);
+  const directives = cacheControl.split(",").map((item) => item.trim());
+  const maxAgeDirectives = directives.filter((item) => /^max-age=/iu.test(item));
+  if (maxAgeDirectives.length !== 1) {
+    throw new Error("Google attestation metadata must have exactly one max-age directive.");
+  }
+  const match = maxAgeDirectives[0].match(/^max-age=(\\d+)$/iu);
   if (!match) throw new Error("Google attestation metadata has no valid max-age.");
-  const seconds = Number(match[1]);
-  if (!Number.isSafeInteger(seconds) || seconds <= 0) {
+  const advertisedSeconds = Number(match[1]);
+  if (!Number.isSafeInteger(advertisedSeconds) || advertisedSeconds <= 0) {
     throw new Error("Google attestation metadata max-age is invalid.");
   }
-  return Math.min(seconds, MAX_CACHE_AGE_SECONDS);
+
+  const ageHeader = headers.get("age");
+  let ageSeconds = 0;
+  if (ageHeader !== null) {
+    if (!/^\\d+$/u.test(ageHeader)) {
+      throw new Error("Google attestation metadata Age header is invalid.");
+    }
+    ageSeconds = Number(ageHeader);
+    if (!Number.isSafeInteger(ageSeconds) || ageSeconds < 0) {
+      throw new Error("Google attestation metadata Age header is invalid.");
+    }
+  }
+
+  const maxAgeSeconds = Math.min(advertisedSeconds, MAX_CACHE_AGE_SECONDS);
+  if (ageSeconds >= maxAgeSeconds) {
+    throw new Error("Google attestation metadata is already stale.");
+  }
+  const fetchedAtMs = nowMs - ageSeconds * 1000;
+  const expiresAtMs = fetchedAtMs + maxAgeSeconds * 1000;
+  if (!Number.isFinite(fetchedAtMs) || !Number.isFinite(expiresAtMs) || expiresAtMs <= nowMs) {
+    throw new Error("Google attestation metadata freshness window is invalid.");
+  }
+  return { fetchedAtMs, expiresAtMs, maxAgeSeconds };
+}
+
+/** Reject metadata before use when its cache lifetime has elapsed or is inconsistent. */
+export function assertGoogleAttestationMetadataFresh(
+  metadata: GoogleAttestationFreshness,
+  validationTimeMs = Date.now(),
+): void {
+  if (
+    !Number.isFinite(validationTimeMs) ||
+    !Number.isFinite(metadata.fetchedAtMs) ||
+    !Number.isFinite(metadata.expiresAtMs) ||
+    !Number.isSafeInteger(metadata.maxAgeSeconds) ||
+    metadata.maxAgeSeconds <= 0 ||
+    metadata.expiresAtMs <= metadata.fetchedAtMs ||
+    metadata.expiresAtMs - metadata.fetchedAtMs > metadata.maxAgeSeconds * 1000 ||
+    validationTimeMs < metadata.fetchedAtMs ||
+    validationTimeMs >= metadata.expiresAtMs
+  ) {
+    throw new Error("Google attestation metadata is stale, expired or has an invalid freshness window.");
+  }
 }
 
 function decodeBase64(value: string): Uint8Array {
@@ -62,6 +120,7 @@ function parsePemCertificate(value: unknown): string {
 export function parseGoogleAttestationRoots(
   value: unknown,
   headers: Headers,
+  nowMs = Date.now(),
 ): GoogleAttestationRoots {
   if (!Array.isArray(value) || value.length < 1 || value.length > MAX_ROOT_CERTIFICATES) {
     throw new TypeError("Google attestation root set has an invalid size.");
@@ -70,13 +129,14 @@ export function parseGoogleAttestationRoots(
   if (new Set(certificatesPem).size !== certificatesPem.length) {
     throw new TypeError("Google attestation root set contains duplicates.");
   }
-  return { certificatesPem, maxAgeSeconds: parseCacheAge(headers) };
+  return { certificatesPem, ...parseCacheFreshness(headers, nowMs) };
 }
 
 /** Parse Google's status feed. Both REVOKED and SUSPENDED serials are rejected. */
 export function parseGoogleAttestationStatus(
   value: unknown,
   headers: Headers,
+  nowMs = Date.now(),
 ): GoogleAttestationStatus {
   const root = parseJsonObject(value, "Google attestation status");
   const entriesValue = parseJsonObject(root.entries, "Google attestation status entries");
@@ -126,7 +186,7 @@ export function parseGoogleAttestationStatus(
       ...(typeof item.expires === "string" ? { expires: item.expires } : {}),
     });
   }
-  return { entries, maxAgeSeconds: parseCacheAge(headers) };
+  return { entries, ...parseCacheFreshness(headers, nowMs) };
 }
 
 async function fetchJson(
