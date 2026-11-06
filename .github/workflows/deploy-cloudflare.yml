@@ -2,7 +2,7 @@ name: Deploy NEWEIX to Cloudflare Workers
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "feat/neweix-supreme-mobile-workspace"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
