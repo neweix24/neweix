@@ -76,6 +76,9 @@ export async function POST(request: Request) {
     const district = division?.districts.find((item) => item.code === districtCode);
     const upazila = district?.upazilas.find((item) => item.code === upazilaCode);
     if (!division || !district || !upazila) return responseError("Select a valid division, district and upazila.", 400);
+    if (division.code !== "BD-D08" || district.code !== "BD-D08-Z62") {
+      return responseError("NEWEIX own delivery is currently limited to Mymensingh district.", 409);
+    }
 
     const admin = await createRuntimeServiceClient();
     const { data, error } = await admin.from("neweix_delivery_zones").upsert({
@@ -102,11 +105,13 @@ export async function POST(request: Request) {
       if (existing.error || !existing.data) return responseError("The delivery zone could not be confirmed.", 503);
       zone = existing.data;
     }
-    const { error: auditError } = await admin.from("audit_logs").insert({
-      actor_id: staff.userId, action: "delivery.zone_added", target_type: "neweix_delivery_zone",
-      target_id: zone.id, details: { division_code: division.code, district_code: district.code, upazila_code: upazila.code },
-    });
-    if (auditError) console.error("Delivery-zone create audit log failed:", auditError.message);
+    if (data) {
+      const { error: auditError } = await admin.from("audit_logs").insert({
+        actor_id: staff.userId, action: "delivery.zone_added", target_type: "neweix_delivery_zone",
+        target_id: zone.id, details: { division_code: division.code, district_code: district.code, upazila_code: upazila.code },
+      });
+      if (auditError) console.error("Delivery-zone create audit log failed:", auditError.message);
+    }
     return NextResponse.json({ success: true, zone }, { status: 201, headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("NEWEIX delivery-zone POST failed:", error);
