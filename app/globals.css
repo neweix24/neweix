@@ -1133,3 +1133,30 @@ body[data-customer-theme="storefront"] {
 .neweix-storefront-nav-label{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(min-width:760px){.neweix-storefront-bottom-nav{right:clamp(20px,8vw,120px);bottom:18px;left:clamp(20px,8vw,120px);min-height:64px;padding:6px 12px;border:1px solid var(--border);border-radius:18px;box-shadow:0 12px 38px rgba(20,43,59,.11)}.neweix-storefront-bottom-nav a{min-height:50px;flex-direction:row;gap:9px;font-size:12px}.neweix-storefront-shell{padding-bottom:100px}}
 @media(max-width:380px){.neweix-storefront-bottom-nav{padding-right:2px;padding-left:2px}.neweix-storefront-bottom-nav a{font-size:9px}.neweix-storefront-nav-icon{width:24px}}
+
+
+/* NEWEIX premium customer journey: orders, tracking, wishlist and comparison */
+.premium-orders,.premium-order-detail,.premium-track-order,.premium-wishlist,.premium-compare{background:radial-gradient(ellipse at 88% 0%,rgba(8,127,99,.065),transparent 34rem),var(--porcelain)!important;color:var(--navy)!important}
+.premium-orders h1,.premium-orders h2,.premium-order-detail h1,.premium-order-detail h2,.premium-track-order h1,.premium-track-order h2,.premium-wishlist h1,.premium-wishlist h2,.premium-compare h1,.premium-compare h2{color:var(--navy)}
+.premium-orders .eyebrow,.premium-order-detail .eyebrow{color:var(--emerald)}
+.premium-orders a,.premium-order-detail a,.premium-track-order nav a:first-child,.premium-wishlist>div>header a:first-child,.premium-compare>div>header a:first-child{color:var(--emerald)}
+.premium-order-card,.premium-order-detail section,.premium-track-card,.premium-wishlist-header,.premium-wishlist-card,.premium-compare-header,.premium-compare-table,.premium-orders>div>section,.premium-wishlist>div>section,.premium-compare>div>section{border-color:var(--border)!important;background:var(--surface-raised)!important;box-shadow:0 12px 34px rgba(20,43,59,.055)!important}
+.premium-order-card,.premium-order-detail section,.premium-wishlist-card{border-radius:20px}
+.premium-order-card p,.premium-order-detail p,.premium-track-order p,.premium-wishlist p,.premium-compare p{color:var(--muted)}
+.premium-order-card strong,.premium-order-detail strong{color:var(--navy)}
+.premium-order-card a,.premium-order-detail a,.premium-orders .primary-button,.premium-order-detail a[style*="background"]{color:#fff!important}
+.premium-orders .primary-button,.premium-order-detail a[style*="background"]{background:var(--emerald)!important}
+.premium-track-order input{border-color:var(--border)!important;background:var(--surface)!important;color:var(--navy)!important}
+.premium-track-order input:focus{border-color:var(--emerald)!important;box-shadow:0 0 0 3px rgba(8,127,99,.12)}
+.premium-track-order button[type=submit],.premium-wishlist a[style*="background"],.premium-compare a[style*="background"]{background:var(--emerald)!important;color:#fff!important}
+.premium-track-order button[type=submit]:hover,.premium-wishlist a[style*="background"]:hover,.premium-compare a[style*="background"]:hover{background:var(--primary-hover)!important}
+.premium-track-order [aria-live=polite],.premium-track-order .premium-track-card{border-color:var(--border)!important;background:var(--surface-raised)!important}
+.premium-wishlist-card a,.premium-compare-table a{color:var(--navy)}
+.premium-wishlist-card button{border-color:var(--border)!important}
+.premium-wishlist-card button:hover{border-color:rgba(8,127,99,.4)!important;background:rgba(8,127,99,.06)!important}
+.premium-compare-table thead{background:var(--surface-soft)!important}
+.premium-compare-table th,.premium-compare-table td{border-color:var(--border)!important}
+.premium-compare-table th{color:var(--muted)}
+.premium-compare-table td{color:var(--navy)}
+.premium-compare-table td[style*="color"]{color:var(--emerald)!important}
+@media(max-width:640px){.premium-orders,.premium-order-detail,.premium-track-order,.premium-wishlist,.premium-compare{padding-top:24px!important}.premium-wishlist-header,.premium-compare-header{border-radius:19px!important}}
