@@ -41,10 +41,10 @@ The existing Deno proof-of-possession and Google metadata modules are supporting
    - Do not assume a fixed chain length or fixed RSA-only root: Remote Key Provisioning changes chain structure and algorithms.
 
 4. **Android attestation extension**
-   - Parse the ordered X.509 chain and locate the first key-attestation extension encountered when walking from the trust-anchor side toward the leaf. Do not blindly read the leaf: Android's current guidance says the extension may be on a non-leaf certificate.
-   - If a provisioning-information extension is present, enforce Android's required relationship between that certificate and the immediately subsequent key-attestation certificate; parse and validate the provisioning extension rather than ignoring it. Pin the exact provisioning-extension OID and schema from the current AOSP specification during implementation; do not guess it.
-   - Reject chains with no trusted key-attestation extension, malformed or duplicate/untrusted later extensions, or an extension in a position inconsistent with the provisioning-information rules.
-   - Require key-attestation extension OID `1.3.6.1.4.1.11129.2.1.17` on the selected certificate.
+   - Require the documented Android Keystore chain order: index 0 is the target/leaf certificate containing the key-attestation extension; index 1 is the attestation certificate; provisioning intermediates follow as applicable; the final entry is the root trust anchor. The pinned Google verifier explicitly models these roles.
+   - Require key-attestation extension OID `1.3.6.1.4.1.11129.2.1.17` on the target/leaf certificate only. Reject it on the attestation certificate or any intermediate, and reject an extra certificate after the target. Do not search for a substitute extension elsewhere in the chain.
+   - For remotely provisioned chains, parse the provisioning-information extension from the index-1 attestation certificate. Its OID is `1.3.6.1.4.1.11129.2.1.30`; AOSP specifies a CBOR map containing certificates-issued and validated-attested-entity fields, with an optional lost-device flag. Bound its size and types and define explicit policy for a device reported as lost. This CBOR extension is distinct from the leaf's DER KeyDescription extension.
+   - Reproduce the pinned verifier's role sequence for software, factory-provisioned and remotely provisioned chains, plus its exact root-to-leaf issuer/subject, signature, validity and revocation behavior. Do not treat factory and RKP paths as interchangeable.
    - Support legacy Keymaster and current KeyMint structures, including non-strict authorization-list ordering.
    - Require both attestation and key security levels to be TrustedEnvironment or StrongBox.
    - Require EC P-256, SHA-256 digest, generated key origin, and SIGN + VERIFY purposes in the hardware-enforced authorization list.
@@ -78,8 +78,8 @@ Before enforcement:
 The verifier must have automated positive and negative fixtures for:
 - valid TEE and valid StrongBox chains;
 - both currently trusted Google roots, including the root introduced for 2026;
-- valid Remote Key Provisioning chains with variable intermediate count, provisioning-information extension present/absent, and key-attestation extension on a non-leaf certificate;
-- reject a chain where the key-attestation extension is only on an untrusted later certificate or violates the provisioning-information adjacency rule;
+- valid Remote Key Provisioning chains with the pinned verifier's expected intermediate roles, provisioning-information extension on the attestation certificate, and key-attestation extension on the target/leaf certificate;
+- reject a chain with the key-attestation extension missing from the target/leaf, duplicated on an intermediate, or with unexpected certificates/roles; reject malformed provisioning-information CBOR;
 - invalid signature, wrong issuer, untrusted root, expired leaf/intermediate/root;
 - every chain certificate revoked, status-feed unavailable, malformed, or stale;
 - absent/malformed attestation extension and unsupported extension encoding;
