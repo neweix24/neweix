@@ -187,8 +187,29 @@ export async function GET(request: Request) {
       pathao_area_name: area?.pathao_area_name ?? null,
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    console.error("Live Pathao delivery quote failed:", error instanceof Error ? error.message : "Unknown error");
-    return NextResponse.json({ error: "Live Pathao delivery pricing is temporarily unavailable. Please try again later." }, {
+    const referenceId = crypto.randomUUID();
+    const providerMessage = error instanceof Error ? error.message : "Unknown error";
+    const diagnosticCode =
+      /PATHAO_STORE_ID/i.test(providerMessage) ? "PATHAO_STORE_ID_CONFIGURATION" :
+      /credentials|PATHAO_BASE_URL/i.test(providerMessage) ? "PATHAO_CREDENTIAL_CONFIGURATION" :
+      /Pathao API \(401|403\)/i.test(providerMessage) ? "PATHAO_AUTHORIZATION_FAILED" :
+      /Pathao API \(5[0-9]{2}\)/i.test(providerMessage) ? "PATHAO_PROVIDER_UNAVAILABLE" :
+      /Pathao API \([45][0-9]{2}\)/i.test(providerMessage) ? "PATHAO_PROVIDER_REQUEST_REJECTED" :
+      /Supabase configuration/i.test(providerMessage) ? "SUPABASE_CONFIGURATION" :
+      "DELIVERY_QUOTE_INTERNAL_ERROR";
+
+    // Keep provider details in server logs only; never return credentials or raw API errors.
+    console.error(JSON.stringify({
+      event: "live_pathao_delivery_quote_failed",
+      referenceId,
+      diagnosticCode,
+      message: providerMessage.slice(0, 500),
+    }));
+    return NextResponse.json({
+      error: "Live Pathao delivery pricing is temporarily unavailable. Please try again later.",
+      diagnostic_code: diagnosticCode,
+      reference_id: referenceId,
+    }, {
       status: 503,
       headers: { "Cache-Control": "no-store" },
     });
