@@ -21,6 +21,11 @@ function bytesFromBase64(value: string): Uint8Array {
 function bytesToHex(value: Uint8Array): string {
   return Array.from(value, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
+function parseUpstreamJson(text: string): ExpectedJson {
+  // Upstream fixture companions are JSONC and may start with // explanatory comments.
+  const withoutLineComments = text.replace(/^\\s*\\/\\/[^\\r\\n]*(?:\\r?\\n|$)/gm, "");
+  return JSON.parse(withoutLineComments) as ExpectedJson;
+}
 function securityLevel(value: string): number {
   switch (value) {
     case "SOFTWARE": return 0;
@@ -45,7 +50,7 @@ Deno.test({
       const der = bytesFromBase64(fixture.derBase64);
       const decoded = parseAndroidKeyDescription(der);
       const jsonPath = `${upstreamRoot}/${fixture.source.replace(/\.pem$/, ".json")}`;
-      const expected = JSON.parse(await Deno.readTextFile(jsonPath)) as ExpectedJson;
+      const expected = parseUpstreamJson(await Deno.readTextFile(jsonPath));
 
       const label = `${fixture.source} (certificate #${fixture.certificateIndex})`;
       if (decoded.attestationVersion !== BigInt(expected.attestationVersion)) {
