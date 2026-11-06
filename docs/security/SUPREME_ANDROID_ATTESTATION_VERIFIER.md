@@ -32,6 +32,7 @@ This is a JavaScript/Deno implementation, not Google's maintained Kotlin verifie
    - Recompute SHA-256(raw challenge) and match the stored hash.
    - Verify the attestation extension contains the exact raw challenge.
    - Verify the leaf public key validates the signature over the exact UTF-8 payload `NEWEIX-SUPREME-ATTESTATION-V1\\n<challenge UUID>\\n<base64url challenge without padding>` using `SHA256withECDSA`. The signature is standard ASN.1 DER ECDSA.
+   - The Deno shared module `supabase/functions/_shared/supreme-attestation-proof.ts` strictly decodes the 32-byte challenge and canonical UUID, builds this domain-separated payload, converts Android's DER ECDSA signature to WebCrypto's fixed-width P-1363 representation, and verifies proof-of-possession. It is deliberately downstream of certificate-chain and attestation-policy validation; it does not establish certificate trust.
    - Reject expired, unknown, already-consumed, malformed, or mismatched challenges.
 
 3. **Certificate path and revocation**
