@@ -44,3 +44,15 @@ The existing NEWEIX Deno modules only fetch/parse Google metadata and verify a c
 ## Why the implementation is deliberately staged
 
 A false positive in attestation could grant Supreme access to a browser, emulator, modified APK or untrusted device. A false negative only blocks the Supreme app temporarily. Until the Deno implementation demonstrates parity with the maintained reference, fail-closed behavior is the correct choice under the zero-budget constraint.
+
+## Exact upstream implementation points confirmed in source review
+
+The pinned source review confirmed these concrete components:
+
+- `Verifier.kt`: orchestrates parsing, path validation, challenge checking, attestation-extension parsing and constraint evaluation. It returns a typed result; a path-valid chain alone is not an authorization decision.
+- `provider/KeyAttestationCertPathValidator.kt`: implements a custom `CertPathValidatorSpi`. The source explicitly explains that some older Android chains do not fully conform to RFC 5280. It validates issuer/subject chaining, certificate signatures, validity and expected chain roles, including remotely provisioned (RKP) paths.
+- `provider/RevocationChecker.kt`: rejects revoked certificate serials during path checking. The caller must supply a fresh, trustworthy revocation set; an empty or stale fallback is not acceptable for NEWEIX.
+- `VerifierTest.kt` and `provider/KeyAttestationCertPathValidatorTest.kt`: exercise the verifier and path-validation behavior, including valid fixture chains, wrong trust anchors, wrong issuer, invalid signature, certificate validity and RKP paths.
+- Upstream fixture corpus includes real chain samples under `testdata/blueline/sdk28`, `testdata/akita/sdk34`, `testdata/caiman/sdk36`, `testdata/frankel/sdk37`, `testdata/tegu/sdk36` and `testdata/tokay/sdk37`, plus intentionally invalid samples under `testdata/invalid`.
+
+This source review is why the NEWEIX implementation must not replace path validation with a simple sequence of certificate signature checks. The Kotlin reference CI success proves the pinned upstream project tests pass in CI; it does not prove a NEWEIX Deno verifier exists or is equivalent.
