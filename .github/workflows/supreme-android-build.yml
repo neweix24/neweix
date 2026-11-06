@@ -9,6 +9,7 @@ on:
       - ".github/workflows/supreme-android-build.yml"
   pull_request:
     branches:
+      - main
       - feat/neweix-supreme-private-entry-mainline
       - feat/neweix-supreme-private-entry-mainline-v2
     paths:
