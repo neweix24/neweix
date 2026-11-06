@@ -167,8 +167,30 @@ export default function NeweixDeliveryZonesManager() {
         {loading ? <p className="text-sm" style={{ color: "var(--muted)" }}>Loading delivery zones…</p> : zones.length === 0 ? (
           <p className="text-sm" style={{ color: "var(--muted)" }}>No own-delivery zones are configured.</p>
         ) : (
-          <div className="space-y-3">
-            {zones.map((zone) => (
+          <>
+            <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)" }}><p className="text-xs" style={{ color: "var(--muted)" }}>Total areas</p><p className="mt-1 text-2xl font-bold">{zones.length}</p></div>
+              <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)" }}><p className="text-xs" style={{ color: "var(--muted)" }}>Active</p><p className="mt-1 text-2xl font-bold">{activeCount}</p></div>
+              <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)" }}><p className="text-xs" style={{ color: "var(--muted)" }}>Fee configured</p><p className="mt-1 text-2xl font-bold">{configuredCount}</p></div>
+              <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)" }}><p className="text-xs" style={{ color: "var(--muted)" }}>Fee missing</p><p className="mt-1 text-2xl font-bold">{missingFeeCount}</p></div>
+            </div>
+            <div className="mb-4 grid gap-3 sm:grid-cols-[1fr_220px]">
+              <label className="text-xs font-semibold">Search area
+                <input className={fieldClass + " mt-1"} type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search upazila, district or zone code" />
+              </label>
+              <label className="text-xs font-semibold">Filter by status
+                <select className={fieldClass + " mt-1"} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}>
+                  <option value="all">All areas ({zones.length})</option>
+                  <option value="active">Active ({activeCount})</option>
+                  <option value="fee">Fee set · inactive ({configuredCount - activeCount})</option>
+                  <option value="missing">Fee not set ({missingFeeCount})</option>
+                </select>
+              </label>
+            </div>
+            {filteredZones.length === 0 ? (
+              <p className="rounded-xl border p-4 text-sm" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>No areas match this search or status filter.</p>
+            ) : <div className="space-y-3">
+            {filteredZones.map((zone) => (
               <article key={zone.id} className="grid gap-3 rounded-xl border p-4 sm:grid-cols-[1fr_180px_auto_auto] sm:items-end" style={{ borderColor: "var(--border)" }}>
                 <div>
                   <p className="text-sm font-bold">{zone.upazila_name_bn} · {zone.upazila_name}</p>
@@ -195,7 +217,8 @@ export default function NeweixDeliveryZonesManager() {
                 </button>
               </article>
             ))}
-          </div>
+            </div>}
+          </>
         )}
       </section>
     </div>
