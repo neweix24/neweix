@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function ManagerPage() {
   const staff = await requireStaff(["manager"]);
   return (
-    <main className="min-h-screen px-4 py-10 sm:px-6">
+    <main className="premium-workforce-workspace min-h-screen px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-5xl space-y-6">
         <header className="rounded-2xl border p-6">
           <p className="eyebrow">NEWEIX · MANAGER WORKSPACE</p>
