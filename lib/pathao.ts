@@ -81,16 +81,47 @@ async function pathaoRequest<T>(
   path: string,
   accessToken?: string,
 ): Promise<T> {
-  const response = await fetch(`${config.baseUrl}${path}`, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
-    cache: "no-store",
-    signal: AbortSignal.timeout(12_000),
-  });
+  let response: Response | null = null;
+  let lastNetworkError: unknown = null;
+
+  // Pathao intermittently rate-limits zone-list requests (HTTP 429). Retry
+  // transient failures with bounded backoff instead of fanning out requests.
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      response = await fetch(`${config.baseUrl}${path}`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(12_000),
+      });
+      lastNetworkError = null;
+    } catch (error) {
+      lastNetworkError = error;
+      if (attempt === 3) throw new Error("Pathao network request failed after 4 attempts.");
+      await new Promise((resolve) => setTimeout(resolve, 800 * (attempt + 1)));
+      continue;
+    }
+
+    if (response.ok || ![429, 500, 502, 503, 504].includes(response.status) || attempt === 3) {
+      break;
+    }
+
+    const retryAfter = Number(response.headers.get("retry-after"));
+    const delayMs = Number.isFinite(retryAfter) && retryAfter > 0
+      ? Math.min(10_000, retryAfter * 1000)
+      : Math.min(8_000, 1_000 * (2 ** attempt));
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+
+  if (!response) {
+    throw new Error(lastNetworkError instanceof Error
+      ? `Pathao network request failed: ${lastNetworkError.message}`
+      : "Pathao network request failed.");
+  }
 
   const payload: unknown = await response.json().catch(() => null);
   if (!response.ok) {
@@ -343,7 +374,9 @@ export async function getPathaoZonesForCities(cityIds: number[]): Promise<Pathao
         }
       }
     };
-    await Promise.all(Array.from({ length: Math.min(4, uniqueIds.length) }, () => worker()));
+    // Keep zone lookups serial: Pathao has returned HTTP 429 under parallel
+    // coverage scans. Bounded retries above handle temporary throttling.
+    await worker();
     return results;
   });
 }

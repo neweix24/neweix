@@ -640,7 +640,9 @@ export default function PathaoPanel() {
             requestError = error instanceof Error ? error.message : "Network request failed.";
             if (attempt === 3) break;
           }
-          await new Promise((resolve) => window.setTimeout(resolve, attempt * 1200));
+          // Avoid immediately repeating a request while Pathao is throttling
+          // or the Worker is recovering from a transient upstream failure.
+          await new Promise((resolve) => window.setTimeout(resolve, attempt * 4_000));
         }
 
         let divisionRows: CoverageDistrictResult[] = [];
@@ -697,7 +699,8 @@ export default function PathaoPanel() {
           `Checked ${accumulated.length}/64 districts. ${candidateUpazilas} exact-name candidates saved inactive; an Admin/Supreme user must manually verify them before checkout can use them. ${failedDivisions} division(s) had temporary/API errors.`,
         );
         // Give Pathao's merchant API a short recovery window before the next division.
-        await new Promise((resolve) => window.setTimeout(resolve, 1_500));
+        // Let Pathao's rate-limit window recover between division batches.
+        await new Promise((resolve) => window.setTimeout(resolve, 3_000));
       }
 
       await loadLocationMappings();
