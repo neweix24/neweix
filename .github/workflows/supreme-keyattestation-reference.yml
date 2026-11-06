@@ -16,6 +16,7 @@ on:
       - "supabase/functions/_shared/supreme-x509-certificate*"
       - "supabase/functions/_shared/supreme-x509-signature*"
       - "supabase/functions/_shared/supreme-x509-chain*"
+      - "supabase/functions/_shared/supreme-android-attestation-policy*"
   pull_request:
     branches:
       - main
@@ -123,3 +124,4 @@ jobs:
             supabase/functions/_shared/supreme-x509-signature_test.ts
           deno test --allow-env=SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX,SUPREME_GOOGLE_ROOTS_FIXTURE_PATH,SUPREME_PATH_POLICY_FIXTURE_INDEX --allow-read=android-keyattestation/roots.json,/tmp/supreme-attestation-fixtures.json,/tmp/supreme-path-policy-fixtures.json \
             supabase/functions/_shared/supreme-x509-chain_test.ts
+          deno test supabase/functions/_shared/supreme-android-attestation-policy_test.ts
