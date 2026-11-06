@@ -443,16 +443,8 @@ export async function POST(request: Request) {
       rows.push(...zoneRows);
     }
 
-    if (successfulZones === 0) {
-      return NextResponse.json({
-        success: false,
-        syncedZoneCount: 0,
-        failedZoneCount: failedZones.length,
-        failedZones,
-        areaCount: 0,
-        message: "Pathao returned no usable Area records for any mapped zone. Check the per-zone errors and API response format.",
-      }, { status: 502, headers: { "Cache-Control": "private, no-store" } });
-    }
+    // Even if every zone in this batch is rate-limited, return the failures and
+    // advance the cursor so one transient batch does not block all later zones.
 
     let savedCount = 0;
     if (rows.length > 0) {
