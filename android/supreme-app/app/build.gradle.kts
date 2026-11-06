@@ -20,8 +20,8 @@ android {
         applicationId = "com.neweix.supreme"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
 
         buildConfigField("String", "SITE_ORIGIN", "\"https://neweix.com\"")
         buildConfigField("String", "SUPREME_PRIVATE_PATH", "\"$supremePrivatePath\"")
