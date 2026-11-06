@@ -14,17 +14,23 @@ jobs:
   build-preview:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Android app source
         uses: actions/checkout@v4
+        with:
+          ref: feat/neweix-supreme-android-mainline-v4
+          persist-credentials: false
 
       - name: Validate private path secret
         env:
           SUPREME_PRIVATE_PATH: ${{ secrets.SUPREME_PRIVATE_PATH }}
         run: |
-          if [[ ! "$SUPREME_PRIVATE_PATH" =~ ^/control-[A-Fa-f0-9]{48}$ ]]; then
-            echo "::error::Repository secret SUPREME_PRIVATE_PATH is missing or invalid."
+          if [[ "$SUPREME_PRIVATE_PATH" =~ ^[A-Fa-f0-9]{48}$ ]]; then
+            SUPREME_PRIVATE_PATH="/control-$SUPREME_PRIVATE_PATH"
+          elif [[ ! "$SUPREME_PRIVATE_PATH" =~ ^/control-[A-Fa-f0-9]{48}$ ]]; then
+            echo "::error::SUPREME_PRIVATE_PATH must be 48 hex characters, optionally prefixed with /control-."
             exit 1
           fi
+          echo "SUPREME_PRIVATE_PATH=$SUPREME_PRIVATE_PATH" >> "$GITHUB_ENV"
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -42,10 +48,8 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Assemble debug APK
+      - name: Assemble internal debug APK
         working-directory: android/supreme-app
-        env:
-          SUPREME_PRIVATE_PATH: ${{ secrets.SUPREME_PRIVATE_PATH }}
         run: gradle --no-daemon :app:assembleDebug
 
       - name: Upload internal test APK
