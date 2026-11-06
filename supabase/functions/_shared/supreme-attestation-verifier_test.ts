@@ -22,9 +22,9 @@ function emptyStatus(validationTimeMs = Date.now()): GoogleAttestationStatus {
 }
 function rootMetadata(der: Uint8Array, validationTimeMs: number): GoogleAttestationRoots {
   const base64 = btoa(String.fromCharCode(...der));
-  const wrapped = base64.match(/.{1,64}/gu)?.join("\\n") ?? base64;
+  const wrapped = base64.match(/.{1,64}/gu)?.join("\n") ?? base64;
   return {
-    certificatesPem: [`-----BEGIN CERTIFICATE-----\\n${wrapped}\\n-----END CERTIFICATE-----\\n`],
+    certificatesPem: [`-----BEGIN CERTIFICATE-----\n${wrapped}\n-----END CERTIFICATE-----\n`],
     fetchedAtMs: validationTimeMs - 1_000,
     expiresAtMs: validationTimeMs + 3_599_000,
     maxAgeSeconds: 3600,
