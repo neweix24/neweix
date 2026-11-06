@@ -79,8 +79,8 @@ public final class ExtractAndroidAttestationFixtures {
           }
         }
         byte[] innerDer = unwrapOctetString(extension);
-        String source = root.relativize(pem).toString().replace('\\\\', '/');
-        records.add("{\\"source\\":\\"" + jsonEscape(source) + "\\",\\"certificateIndex\\":0,\\"derBase64\\":\\"" + Base64.getEncoder().encodeToString(innerDer) + "\\"}");
+        String source = root.relativize(pem).toString().replace('\\', '/');
+        records.add(String.format("{\"source\":\"%s\",\"certificateIndex\":0,\"derBase64\":\"%s\"}", jsonEscape(source), Base64.getEncoder().encodeToString(innerDer)));
       }
     }
 
