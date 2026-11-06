@@ -18,6 +18,7 @@ import java.util.stream.Stream;
  */
 public final class ExtractAndroidAttestationFixtures {
   private static final String OID = "1.3.6.1.4.1.11129.2.1.17";
+  private static final String PROVISIONING_OID = "1.3.6.1.4.1.11129.2.1.30";
 
   private static byte[] unwrapOctetString(byte[] encoded) throws IOException {
     if (encoded.length < 2 || (encoded[0] & 0xff) != 0x04) {
@@ -79,8 +80,18 @@ public final class ExtractAndroidAttestationFixtures {
           }
         }
         byte[] innerDer = unwrapOctetString(extension);
+        String provisioningField = "";
+        if (x509Certificates.size() > 1) {
+          byte[] provisioningExtension = x509Certificates.get(1).getExtensionValue(PROVISIONING_OID);
+          if (provisioningExtension != null) {
+            byte[] provisioningCbor = unwrapOctetString(provisioningExtension);
+            provisioningField = String.format(",\\"provisioningInfoBase64\\":\\"%s\\"",
+                Base64.getEncoder().encodeToString(provisioningCbor));
+          }
+        }
         String source = root.relativize(pem).toString().replace('\\', '/');
-        records.add(String.format("{\"source\":\"%s\",\"certificateIndex\":0,\"derBase64\":\"%s\"}", jsonEscape(source), Base64.getEncoder().encodeToString(innerDer)));
+        records.add(String.format("{\\"source\\":\\"%s\\",\\"certificateIndex\\":0,\\"derBase64\\":\\"%s\\"%s}",
+            jsonEscape(source), Base64.getEncoder().encodeToString(innerDer), provisioningField));
       }
     }
 
