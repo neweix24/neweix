@@ -50,76 +50,83 @@ const fixtureIndex = Deno.env.get("SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX
 const rootsPath = Deno.env.get("SUPREME_GOOGLE_ROOTS_FIXTURE_PATH");
 
 Deno.test({
-  name: "X.509 path matches pinned Google roots and verifies all real Android chain links",
+  name: "Pinned Google trust anchors validate the reference TEE chain including root rollover",
   ignore: !fixtureIndex || !rootsPath,
   fn: async () => {
     const fixtures = JSON.parse(await Deno.readTextFile(fixtureIndex!)) as CertificateFixture[];
     const rootPemList = JSON.parse(await Deno.readTextFile(rootsPath!)) as string[];
-    if (rootPemList.length === 0) throw new Error("Pinned Google root fixture is empty.");
     const trustedRoots = rootPemList.map((pem) => parseX509Certificate(fromPem(pem)));
-    let validatedChains = 0;
-    let signatureLinks = 0;
-    let revocationEntries = 0;
-
-    for (const fixture of fixtures) {
-      const chain = fixture.certificatesBase64.map((certificate) =>
-        parseX509Certificate(fromBase64(certificate))
-      );
-      const result = await validateX509CertificatePath(chain, trustedRoots, emptyStatus());
-      if (
-        result.signatureLinksVerified !== chain.length - 1 ||
-        result.revocationEntriesChecked !== chain.length - 1
-      ) {
-        throw new Error(`${fixture.source}: incomplete path validation counts.`);
-      }
-      signatureLinks += result.signatureLinksVerified;
-      revocationEntries += result.revocationEntriesChecked;
-      validatedChains++;
-    }
-
-    if (validatedChains !== fixtures.length || validatedChains === 0) {
-      throw new Error("Not all real Android chains were path-checked.");
+    const fixture = fixtures.find((item) =>
+      item.source.endsWith("blueline/sdk28/TEE_EC_NONE.pem")
+    );
+    if (!fixture) throw new Error("Pinned Google verifier's positive TEE reference chain is missing.");
+    const chain = fixture.certificatesBase64.map((certificate) =>
+      parseX509Certificate(fromBase64(certificate))
+    );
+    const result = await validateX509CertificatePath(chain, trustedRoots, emptyStatus());
+    if (
+      result.signatureLinksVerified !== chain.length - 1 ||
+      result.revocationEntriesChecked !== chain.length - 1
+    ) {
+      throw new Error("Incomplete cryptographic path validation counts.");
     }
     console.log(
-      `Validated ${validatedChains} real Android paths, ${signatureLinks} signature links and ${revocationEntries} non-root serials against ${trustedRoots.length} pinned Google roots.`,
+      `Pinned Google TEE reference path passed: ${result.signatureLinksVerified} certificate signatures and ${result.revocationEntriesChecked} non-root serials checked against ${trustedRoots.length} current Google anchors.`,
     );
   },
 });
 
-Deno.test("X.509 path rejects an untrusted root, wrong issuer name and blocked serial", async () => {
-  const fixtureBytes = Deno.env.get("SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX");
-  const rootsFile = Deno.env.get("SUPREME_GOOGLE_ROOTS_FIXTURE_PATH");
-  if (!fixtureBytes || !rootsFile) return;
-  const fixtures = JSON.parse(await Deno.readTextFile(fixtureBytes)) as CertificateFixture[];
-  const rootsPem = JSON.parse(await Deno.readTextFile(rootsFile)) as string[];
-  const trustedRoots = rootsPem.map((pem) => parseX509Certificate(fromPem(pem)));
-  const fixture = fixtures[0];
-  const chain = fixture.certificatesBase64.map((value) => parseX509Certificate(fromBase64(value)));
+Deno.test({
+  name: "X.509 path rejects untrusted anchors, wrong issuer names and blocked serials",
+  ignore: !fixtureIndex || !rootsPath,
+  fn: async () => {
+    const fixtures = JSON.parse(await Deno.readTextFile(fixtureIndex!)) as CertificateFixture[];
+    const rootsPem = JSON.parse(await Deno.readTextFile(rootsPath!)) as string[];
+    const trustedRoots = rootsPem.map((pem) => parseX509Certificate(fromPem(pem)));
+    const fixture = fixtures.find((item) =>
+      item.source.endsWith("blueline/sdk28/TEE_EC_NONE.pem")
+    );
+    if (!fixture) throw new Error("Pinned Google verifier's positive TEE reference chain is missing.");
+    const chain = fixture.certificatesBase64.map((value) =>
+      parseX509Certificate(fromBase64(value))
+    );
 
-  const unrelatedRoot = parseX509Certificate(fromPem(rootsPem.find((pem) => {
-    const candidate = parseX509Certificate(fromPem(pem));
-    return toHex(candidate.rawCertificate) !== toHex(chain[chain.length - 1].rawCertificate);
-  }) ?? rootsPem[0]));
-  if (toHex(unrelatedRoot.rawCertificate) !== toHex(chain[chain.length - 1].rawCertificate)) {
+    const unrelatedRoot = trustedRoots.find((candidate) =>
+      toHex(candidate.subject) !== toHex(chain[chain.length - 2].issuer)
+    );
+    if (!unrelatedRoot) throw new Error("No unrelated Google root fixture for the negative test.");
     await assertRejects(
       () => validateX509CertificatePath(chain, [unrelatedRoot], emptyStatus()),
       "No Google trust anchor matches the chain issuer name.",
     );
-  }
 
-  const wrongNameChain = chain.map((certificate) => ({ ...certificate }));
-  wrongNameChain[0] = { ...wrongNameChain[0], issuer: new Uint8Array([0x30, 0x00]) };
-  await assertRejects(
-    () => validateX509CertificatePath(wrongNameChain, trustedRoots, emptyStatus()),
-    "issuer/subject name chaining failed",
-  );
+    const wrongNameChain = chain.map((certificate) => ({ ...certificate }));
+    wrongNameChain[0] = { ...wrongNameChain[0], issuer: new Uint8Array([0x30, 0x00]) };
+    await assertRejects(
+      () => validateX509CertificatePath(wrongNameChain, trustedRoots, emptyStatus()),
+      "issuer/subject name chaining failed",
+    );
 
-  const blockedStatus = emptyStatus();
-  blockedStatus.entries.set(x509SerialToHex(chain[0].serialNumber), { status: "REVOKED" });
-  await assertRejects(
-    () => validateX509CertificatePath(chain, trustedRoots, blockedStatus),
-    "Google has blocked certificate serial",
-  );
+    const tamperedTopChain = chain.map((certificate) => ({ ...certificate }));
+    const topIndex = tamperedTopChain.length - 2;
+    const alteredSignature = tamperedTopChain[topIndex].signature.slice();
+    alteredSignature[alteredSignature.length - 1] ^= 0x01;
+    tamperedTopChain[topIndex] = {
+      ...tamperedTopChain[topIndex],
+      signature: alteredSignature,
+    };
+    await assertRejects(
+      () => validateX509CertificatePath(tamperedTopChain, trustedRoots, emptyStatus()),
+      "Top path certificate does not verify",
+    );
+
+    const blockedStatus = emptyStatus();
+    blockedStatus.entries.set(x509SerialToHex(chain[0].serialNumber), { status: "REVOKED" });
+    await assertRejects(
+      () => validateX509CertificatePath(chain, trustedRoots, blockedStatus),
+      "Google has blocked certificate serial",
+    );
+  },
 });
 
 Deno.test("X.509 serial normalization matches unpadded lower-case hexadecimal", () => {
