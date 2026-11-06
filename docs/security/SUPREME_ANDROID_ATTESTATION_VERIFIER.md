@@ -30,7 +30,7 @@ This is a JavaScript/Deno implementation, not Google's maintained Kotlin verifie
 2. **Challenge binding**
    - Accept a challenge ID, the raw 32-byte challenge returned by the challenge endpoint, the certificate chain, and a signature made by the newly generated Android Keystore private key.
    - Recompute SHA-256(raw challenge) and match the stored hash.
-   - Verify the attestation extension contains the exact raw challenge.
+   - Locate the first trusted key-attestation extension according to Android's chain rules and verify it contains the exact raw challenge. Do not assume the extension is always on the leaf certificate.
    - Verify the leaf public key validates the signature over the exact UTF-8 payload `NEWEIX-SUPREME-ATTESTATION-V1\\n<challenge UUID>\\n<base64url challenge without padding>` using `SHA256withECDSA`. The signature is standard ASN.1 DER ECDSA.
    - The Deno shared module `supabase/functions/_shared/supreme-attestation-proof.ts` strictly decodes the 32-byte challenge and canonical UUID, builds this domain-separated payload, converts Android's DER ECDSA signature to WebCrypto's fixed-width P-1363 representation, and verifies proof-of-possession. It is deliberately downstream of certificate-chain and attestation-policy validation; it does not establish certificate trust.
    - Reject expired, unknown, already-consumed, malformed, or mismatched challenges.
@@ -44,7 +44,10 @@ This is a JavaScript/Deno implementation, not Google's maintained Kotlin verifie
    - Do not assume a fixed chain length or fixed RSA-only root: Remote Key Provisioning changes chain structure and algorithms.
 
 4. **Android attestation extension**
-   - Require extension OID `1.3.6.1.4.1.11129.2.1.17` on the leaf certificate.
+   - Parse the ordered X.509 chain and locate the first key-attestation extension encountered when walking from the trust-anchor side toward the leaf. Do not blindly read the leaf: Android's current guidance says the extension may be on a non-leaf certificate.
+   - If a provisioning-information extension is present, enforce Android's required relationship between that certificate and the immediately subsequent key-attestation certificate; parse and validate the provisioning extension rather than ignoring it. Pin the exact provisioning-extension OID and schema from the current AOSP specification during implementation; do not guess it.
+   - Reject chains with no trusted key-attestation extension, malformed or duplicate/untrusted later extensions, or an extension in a position inconsistent with the provisioning-information rules.
+   - Require key-attestation extension OID `1.3.6.1.4.1.11129.2.1.17` on the selected certificate.
    - Support legacy Keymaster and current KeyMint structures, including non-strict authorization-list ordering.
    - Require both attestation and key security levels to be TrustedEnvironment or StrongBox.
    - Require EC P-256, SHA-256 digest, generated key origin, and SIGN + VERIFY purposes in the hardware-enforced authorization list.
@@ -78,7 +81,8 @@ Before enforcement:
 The verifier must have automated positive and negative fixtures for:
 - valid TEE and valid StrongBox chains;
 - both currently trusted Google roots, including the root introduced for 2026;
-- valid Remote Key Provisioning chains with variable intermediate count;
+- valid Remote Key Provisioning chains with variable intermediate count, provisioning-information extension present/absent, and key-attestation extension on a non-leaf certificate;
+- reject a chain where the key-attestation extension is only on an untrusted later certificate or violates the provisioning-information adjacency rule;
 - invalid signature, wrong issuer, untrusted root, expired leaf/intermediate/root;
 - every chain certificate revoked, status-feed unavailable, malformed, or stale;
 - absent/malformed attestation extension and unsupported extension encoding;
