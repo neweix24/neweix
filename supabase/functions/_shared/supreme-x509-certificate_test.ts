@@ -1,4 +1,3 @@
-import { assertEquals, assertThrows } from "jsr:@std/assert@1.0.14";
 import { parseX509Certificate } from "./supreme-x509-certificate.ts";
 
 type OracleExtension = { oid: string; critical: boolean; value: string };
@@ -8,6 +7,20 @@ type OracleCertificate = {
 };
 type OracleFixture = { source: string; certificates: OracleCertificate[] };
 
+function assertEquals(actual: unknown, expected: unknown, message = "Values differ."): void {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(message);
+  }
+}
+function assertThrows(fn: () => unknown, expected: new (...args: never[]) => Error): void {
+  try {
+    fn();
+  } catch (error) {
+    if (error instanceof expected) return;
+    throw new Error(`Unexpected error type: ${String(error)}`);
+  }
+  throw new Error("Expected function to throw.");
+}
 function fromBase64(value: string): Uint8Array {
   return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
 }
