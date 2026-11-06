@@ -5,11 +5,14 @@ import SupremeWorkspaceNavigation from "@/features/supreme/supreme-workspace-nav
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Supreme Control",
-  description: "Secure NEWEIX Supreme business control workspace.",
-  manifest: `${process.env.SUPREME_PRIVATE_PATH || "/supreme"}/manifest.webmanifest`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const privatePath = process.env.SUPREME_PRIVATE_PATH || "/supreme";
+  return {
+    title: "Supreme Control",
+    description: "Secure NEWEIX Supreme business control workspace.",
+    manifest: `${privatePath}/manifest.webmanifest`,
+  };
+}
 
 export default async function SupremeLayout({ children }: { children: React.ReactNode }) {
   await requireStaff(["supreme"]);
