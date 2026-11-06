@@ -257,7 +257,7 @@ export default function CheckoutView() {
       : paymentConfig?.paymentMethods?.[paymentMethod];
 
   async function loadDeliveryQuote(districtCode: string, upazilaCode: string, pathaoAreaId: string, couponCode = "") {
-    if (!districtCode || !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode) || !/^[1-9][0-9]*$/.test(pathaoAreaId)) {
+    if (!districtCode || !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode) || (pathaoAreaId && !/^[1-9][0-9]*$/.test(pathaoAreaId))) {
       setDeliveryFeeQuote(null);
       return null;
     }
@@ -267,7 +267,7 @@ export default function CheckoutView() {
       const params = new URLSearchParams({
         district_code: districtCode,
         upazila_code: upazilaCode,
-        pathao_area_id: pathaoAreaId,
+        ...(pathaoAreaId ? { pathao_area_id: pathaoAreaId } : {}),
         subtotal: String(Math.round(total)),
         items: JSON.stringify(cart.map(({ product_id, quantity }) => ({ product_id, quantity }))),
         coupon_code: couponCode.trim().toUpperCase(),
@@ -395,7 +395,9 @@ export default function CheckoutView() {
       shipping_division_code: String(formData.get("shipping_division_code") ?? ""),
       shipping_district_code: String(formData.get("shipping_district_code") ?? ""),
       shipping_upazila_code: String(formData.get("shipping_upazila_code") ?? ""),
-      shipping_pathao_area_id: Number(formData.get("shipping_pathao_area_id") ?? 0),
+      shipping_pathao_area_id: formData.get("shipping_pathao_area_id")
+        ? Number(formData.get("shipping_pathao_area_id"))
+        : null,
       shipping_upazila_other: String(formData.get("shipping_upazila_other") ?? "").trim(),
       shipping_union_code: String(formData.get("shipping_union_code") ?? ""),
       shipping_union_other: String(formData.get("shipping_union_other") ?? "").trim(),
@@ -582,7 +584,7 @@ export default function CheckoutView() {
           initialVillage={defaultAddress?.area}
           disabled={submitting}
           onAddressChange={({ districtCode, upazilaCode, pathaoAreaId }) => {
-            if (districtCode && upazilaCode && pathaoAreaId) void loadDeliveryQuote(districtCode, upazilaCode, pathaoAreaId, couponCode);
+            if (districtCode && upazilaCode) void loadDeliveryQuote(districtCode, upazilaCode, pathaoAreaId, couponCode);
             else setDeliveryFeeQuote(null);
           }}
         />
