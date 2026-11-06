@@ -144,7 +144,6 @@ Deno.test({
     const chain = fixture.certificatesBase64.map((value) =>
       parseX509Certificate(fromBase64(value))
     );
-    const root = parseX509Certificate(fromBase64(fixture.trustAnchorBase64));
     const challenge = crypto.getRandomValues(new Uint8Array(32));
     const signer = Uint8Array.from({ length: 32 }, (_, index) => index + 1);
     await assertRejects(
