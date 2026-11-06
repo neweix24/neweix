@@ -5,9 +5,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 type DeliveryOrder = { id: string; order_number: string; delivery_provider: "pathao" | "neweix_own"; status: string; delivery_status: string | null; delivery_fee: number | null; pathao_estimated_fee: number | null };
 type CostEntry = { id: string; order_id: string; order_number: string | null; provider: string; cost_type: string; entry_kind: string; amount: number; cost_date: string; source_type: string };
 type Summary = { pathao_cost: number; neweix_own_cost: number; total_delivery_cost: number; entry_count: number };
-const money = (value: number) => new Intl.NumberFormat("bn-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 2 }).format(value);
+const money = (value: number) => new Intl.NumberFormat("en-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 2 }).format(value);
 const today = () => new Date(Date.now() + 21600000).toISOString().slice(0, 10);
-const labels: Record<string, string> = { delivery_charge: "ডেলিভারি চার্জ", return_charge: "রিটার্ন চার্জ", rider_payment: "রাইডার পেমেন্ট", fuel: "জ্বালানি", toll: "টোল", packaging: "প্যাকেজিং", other: "Other" };
+const labels: Record<string, string> = { delivery_charge: "Delivery charge", return_charge: "Return charge", rider_payment: "Rider payout", fuel: "Fuel", toll: "Toll", packaging: "Packaging", other: "Other" };
 
 export default function SupremeDeliveryCostsManager() {
   const [orders, setOrders] = useState<DeliveryOrder[]>([]);
@@ -32,13 +32,13 @@ export default function SupremeDeliveryCostsManager() {
     try {
       const response = await fetch("/api/supreme/finance/delivery-costs", { cache: "no-store" });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "ডেলিভারি Charge লোড করা যায়নি।");
+      if (!response.ok) throw new Error(payload.error || "Could not load delivery costs.");
       setOrders(payload.orders ?? []);
       setEntries(payload.entries ?? []);
       setSummary(payload.summary ?? null);
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "তথ্য লোড করা যায়নি।");
+      setError(cause instanceof Error ? cause.message : "Could not load delivery costs.");
     } finally { setLoading(false); }
   }, []);
 
@@ -46,7 +46,7 @@ export default function SupremeDeliveryCostsManager() {
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selected) { setError("প্রথমে একটি Select an order।"); return; }
+    if (!selected) { setError("Select an order first."); return; }
     setSaving(true); setError(""); setNotice("");
     try {
       const response = await fetch("/api/supreme/finance/delivery-costs", {
@@ -54,11 +54,11 @@ export default function SupremeDeliveryCostsManager() {
         body: JSON.stringify({ order_id: selected.id, provider: selected.delivery_provider, cost_type: costType, entry_kind: entryKind, amount: Number(amount), cost_date: costDate, source_type: sourceType, source_reference: reference.trim() || null, notes: notes.trim() || null }),
       });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Charge সংরক্ষণ করা যায়নি।");
+      if (!response.ok) throw new Error(payload.error || "Could not save the delivery cost.");
       setAmount(""); setReference(""); setNotes("");
-      setNotice("প্রকৃত ডেলিভারি Charge সংরক্ষণ হয়েছে।");
+      setNotice("Actual delivery cost saved.");
       await load();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Charge সংরক্ষণ করা যায়নি।"); }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not save the delivery cost."); }
     finally { setSaving(false); }
   }
 
@@ -82,18 +82,18 @@ export default function SupremeDeliveryCostsManager() {
           <label className="text-sm text-slate-300 sm:col-span-2">Order<select required value={orderId} onChange={(e) => setOrderId(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-white"><option value="">Select an order</option>{orders.map((order) => <option key={order.id} value={order.id}>{order.order_number} · {order.delivery_provider === "pathao" ? "Pathao" : "NEWEIX"} · {order.delivery_status ?? order.status}</option>)}</select></label>
           {selected && <p className="sm:col-span-2 text-xs text-slate-400">Customer delivery fee: {money(Number(selected.delivery_fee ?? 0))} · This is not an actual cost.</p>}
           <label className="text-sm text-slate-300">Cost category<select value={costType} onChange={(e) => setCostType(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-white">{Object.entries(labels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-          <label className="text-sm text-slate-300">Entry type<select value={entryKind} onChange={(e) => setEntryKind(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-white"><option value="charge">Charge</option><option value="refund">Charge ফেরত/সমন্বয়</option></select></label>
+          <label className="text-sm text-slate-300">Entry type<select value={entryKind} onChange={(e) => setEntryKind(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-white"><option value="charge">Charge</option><option value="refund">Charge Refund/সমন্বয়</option></select></label>
           <label className="text-sm text-slate-300">Amount (BDT)<input required type="number" min="1" max="1000000000" step="0.01" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-white" /></label>
-          <label className="text-sm text-slate-300">Chargeের Date<input required type="date" value={costDate} onChange={(e) => setCostDate(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-white" /></label>
+          <label className="text-sm text-slate-300">Cost date<input required type="date" value={costDate} onChange={(e) => setCostDate(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-white" /></label>
           <label className="text-sm text-slate-300">Evidence source<select value={sourceType} onChange={(e) => setSourceType(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-white"><option value="manual_receipt">Receipt</option><option value="cashbook">Cashbook</option><option value="other">Other</option></select></label>
-          <label className="text-sm text-slate-300">Receipt / Reference নম্বর (ঐচ্ছিক)<input maxLength={160} value={reference} onChange={(e) => setReference(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-white" /></label>
+          <label className="text-sm text-slate-300">Receipt / reference number (optional)<input maxLength={160} value={reference} onChange={(e) => setReference(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-white" /></label>
           <label className="text-sm text-slate-300 sm:col-span-2">Notes (optional)<textarea maxLength={1000} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-white" /></label>
-          <button disabled={saving || !selected} className="rounded-xl bg-amber-300 px-5 py-3 font-bold text-slate-950 disabled:opacity-50 sm:col-span-2">{saving ? "সংরক্ষণ হচ্ছে..." : "প্রকৃত Charge সংরক্ষণ করুন"}</button>
+          <button disabled={saving || !selected} className="rounded-xl bg-amber-300 px-5 py-3 font-bold text-slate-950 disabled:opacity-50 sm:col-span-2">{saving ? "Saving..." : "Save actual cost"}</button>
         </form>
       </section>
       <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
-        <div className="border-b border-slate-800 p-4"><h2 className="font-bold">সাম্প্রতিক Chargeের খতিয়ান</h2><p className="mt-1 text-xs text-slate-400">আগে import করা matched Pathao settlement delivery charge-ও এখানে দেখা যাবে।</p></div>
-        {loading ? <p className="p-5 text-sm text-slate-400">Loading...</p> : entries.length === 0 ? <p className="p-5 text-sm text-slate-400">এখনো কোনো প্রকৃত ডেলিভারি Charge রেকর্ড নেই।</p> : <div className="overflow-x-auto"><table className="w-full min-w-[700px] text-left text-sm"><thead className="bg-slate-900 text-xs text-slate-400"><tr><th className="p-3">Date</th><th className="p-3">Order</th><th className="p-3">প্রোভাইডার</th><th className="p-3">Category</th><th className="p-3">Source</th><th className="p-3 text-right">Amount</th></tr></thead><tbody>{entries.map((entry) => <tr key={entry.id} className="border-t border-slate-800"><td className="p-3">{entry.cost_date}</td><td className="p-3">{entry.order_number ?? "Order লিংক অনুপস্থিত"}</td><td className="p-3">{entry.provider === "pathao" ? "Pathao" : "NEWEIX"}</td><td className="p-3">{labels[entry.cost_type] ?? entry.cost_type}{entry.entry_kind === "refund" ? " · ফেরত" : ""}</td><td className="p-3">{entry.source_type}</td><td className="p-3 text-right font-semibold">{entry.entry_kind === "refund" ? "−" : ""}{money(Number(entry.amount))}</td></tr>)}</tbody></table></div>}
+        <div className="border-b border-slate-800 p-4"><h2 className="font-bold">Recent delivery cost entries</h2><p className="mt-1 text-xs text-slate-400">Previously imported matched Pathao settlement charges also appear here.</p></div>
+        {loading ? <p className="p-5 text-sm text-slate-400">Loading...</p> : entries.length === 0 ? <p className="p-5 text-sm text-slate-400">No actual delivery costs have been recorded yet.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[700px] text-left text-sm"><thead className="bg-slate-900 text-xs text-slate-400"><tr><th className="p-3">Date</th><th className="p-3">Order</th><th className="p-3">Provider</th><th className="p-3">Category</th><th className="p-3">Source</th><th className="p-3 text-right">Amount</th></tr></thead><tbody>{entries.map((entry) => <tr key={entry.id} className="border-t border-slate-800"><td className="p-3">{entry.cost_date}</td><td className="p-3">{entry.order_number ?? "Order link unavailable"}</td><td className="p-3">{entry.provider === "pathao" ? "Pathao" : "NEWEIX"}</td><td className="p-3">{labels[entry.cost_type] ?? entry.cost_type}{entry.entry_kind === "refund" ? " · Refund" : ""}</td><td className="p-3">{entry.source_type}</td><td className="p-3 text-right font-semibold">{entry.entry_kind === "refund" ? "−" : ""}{money(Number(entry.amount))}</td></tr>)}</tbody></table></div>}
       </section>
     </main>
   );
