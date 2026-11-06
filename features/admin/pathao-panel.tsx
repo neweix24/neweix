@@ -777,16 +777,23 @@ export default function PathaoPanel() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     let cancelled = false;
-    const syncKey = "neweix:pathao-coverage-sync:v1";
+    const syncKey = "neweix:pathao-coverage-sync:v2";
 
     async function ensureCoverageMappings() {
       try {
         const result = await getJson("/api/admin/pathao?action=location_mappings");
-        if (cancelled || (Array.isArray(result.mappings) && result.mappings.some((mapping: PathaoMapping) => mapping.is_verified && mapping.is_active))) return;
+        if (cancelled) return;
+        const activeDistricts = new Set(
+          (Array.isArray(result.mappings) ? result.mappings : [])
+            .filter((mapping: PathaoMapping) => mapping.is_verified && mapping.is_active)
+            .map((mapping: PathaoMapping) => mapping.district_code),
+        );
+        if (activeDistricts.size >= 64) return;
         if (window.sessionStorage.getItem(syncKey) === "attempted") return;
 
-        // Checkout rejects every upazila while no verified Pathao mappings exist.
-        // Run the conservative live-catalog matcher once per browser session.
+        // Continue the nationwide scan when only some districts are mapped.
+        // The live matcher saves unique exact Pathao City/Zone matches only;
+        // ambiguous or unsupported districts remain visible for manual review.
         window.sessionStorage.setItem(syncKey, "attempted");
         await autoMapAllDistricts();
       } catch {
