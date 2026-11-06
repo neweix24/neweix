@@ -17,6 +17,7 @@ const sections = [
   { href: "/admin/customer-data-requests", label: "Privacy requests" },
   { href: "/supreme/staff", label: "Staff & roles" },
   { href: "/supreme/manager-nominations", label: "Manager approvals" },
+  { href: "/supreme/notifications", label: "Notification Inbox" },
   { href: "/supreme/finance/expenses", label: "Finance & Expenses" },
   { href: "/supreme/eixpay", label: "EixPay" },
   { href: "/supreme/eixverse", label: "Campaigns" },
