@@ -65,12 +65,32 @@ export async function validateX509CertificatePath(
   if (!equalBytes(root.issuer, root.subject)) {
     throw new TypeError("Final X.509 certificate is not self-issued.");
   }
-  if (!trustedRoots.some((trustedRoot) => equalBytes(root.rawCertificate, trustedRoot.rawCertificate))) {
-    throw new TypeError("Final X.509 certificate is not an exact Google trust anchor.");
+
+  // The pinned Google provider treats the last input certificate as the
+  // self-issued chain terminator, but uses a configured TrustAnchor selected
+  // by the issuer of the last non-root certificate. The supplied root DER is
+  // therefore not required to equal Google's current reissued root certificate.
+  const topPathCertificate = chain[chain.length - 2];
+  const matchingAnchors = trustedRoots.filter((anchor) =>
+    equalBytes(topPathCertificate.issuer, anchor.subject)
+  );
+  if (matchingAnchors.length === 0) {
+    throw new TypeError("No Google trust anchor matches the chain issuer name.");
   }
 
-  let signatureLinksVerified = 0;
-  for (let index = 0; index < chain.length - 1; index++) {
+  let selectedAnchor: ParsedX509Certificate | null = null;
+  for (const candidate of matchingAnchors) {
+    if (await verifyX509CertificateSignature(topPathCertificate, candidate)) {
+      selectedAnchor = candidate;
+      break;
+    }
+  }
+  if (!selectedAnchor) {
+    throw new TypeError("Top path certificate does not verify under a matching Google trust anchor.");
+  }
+
+  let signatureLinksVerified = 1;
+  for (let index = 0; index < chain.length - 2; index++) {
     const certificate = chain[index];
     const issuer = chain[index + 1];
     if (!equalBytes(certificate.issuer, issuer.subject)) {
