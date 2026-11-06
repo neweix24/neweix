@@ -164,7 +164,7 @@ revoke all on function public.supreme_record_delivery_cost(
   uuid,uuid,text,text,text,numeric,date,text,text,text
 ) from public, anon, authenticated, service_role;
 grant execute on function public.supreme_record_delivery_cost(
-  uuid,uuid,text,text,text,integer,date,text,text,text
+  uuid,uuid,text,text,text,numeric,date,text,text,text
 ) to service_role;
 
 create or replace function public.supreme_delivery_cost_summary(
