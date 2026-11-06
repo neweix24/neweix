@@ -136,7 +136,9 @@ export function parseX509Certificate(input: Uint8Array): ParsedX509Certificate {
   return {
     tbsCertificate: raw(input, tbs), serialNumber: input.slice(serial.contentStart, serial.end),
     signatureAlgorithmOid, issuer: raw(input, issuer), validity: raw(input, validity),
-    subject: raw(input, subject), subjectPublicKeyInfo: raw(input, spki),\n    subjectPublicKeyAlgorithmOid, subjectPublicKeyParameters, subjectPublicKey: publicKeyBits.slice(1),\n    signature: signature.slice(1),
+    subject: raw(input, subject), subjectPublicKeyInfo: raw(input, spki),
+    subjectPublicKeyAlgorithmOid, subjectPublicKeyParameters, subjectPublicKey: publicKeyBits.slice(1),
+    signature: signature.slice(1),
     extensions: extField ? parseExtensions(input, extField, budget) : [],
   };
 }
