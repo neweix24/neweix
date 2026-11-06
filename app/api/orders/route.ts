@@ -146,6 +146,8 @@ export async function POST(request: Request) {
   const shippingUnionCode = cleanString(rawBody.shipping_union_code);
   const shippingUnionOther = cleanString(rawBody.shipping_union_other);
   const shippingVillage = cleanString(rawBody.shipping_village);
+  const shippingPathaoAreaId = typeof rawBody.shipping_pathao_area_id === "number" && Number.isSafeInteger(rawBody.shipping_pathao_area_id)
+    ? rawBody.shipping_pathao_area_id : 0;
 
   if (!shippingDivisionCode || !shippingDistrictCode || !shippingUpazilaCode
       || !shippingUnionCode || !shippingVillage) {
@@ -589,6 +591,23 @@ export async function POST(request: Request) {
       return errorResponse("Pathao delivery is not yet available for this upazila.", 422);
     }
 
+    if (shippingPathaoAreaId < 1) {
+      return errorResponse("Select a Pathao delivery Area before placing the order.", 422);
+    }
+    const { data: pathaoArea, error: pathaoAreaError } = await supabase
+      .from("pathao_area_catalog")
+      .select("pathao_area_id, pathao_area_name")
+      .eq("pathao_city_id", pathaoMapping.pathao_city_id)
+      .eq("pathao_zone_id", pathaoMapping.pathao_zone_id)
+      .eq("pathao_area_id", shippingPathaoAreaId)
+      .eq("is_active", true)
+      .eq("home_delivery_available", true)
+      .maybeSingle();
+    if (pathaoAreaError || !pathaoArea) {
+      console.error("Verified Pathao Area unavailable:", pathaoAreaError?.message ?? "No matching active Area.");
+      return errorResponse("The selected Pathao Area is not available for home delivery in this upazila. Select another Area.", 422);
+    }
+
     const { data: quoteProducts, error: quoteProductsError } = await supabase
       .from("products")
       .select("id, weight_grams, is_active")
@@ -666,6 +685,8 @@ export async function POST(request: Request) {
           p_pathao_city_id: Number(pathaoMapping.pathao_city_id),
           p_pathao_zone_id: Number(pathaoMapping.pathao_zone_id),
           p_pathao_location_mapping_id: pathaoMapping.id,
+          p_pathao_area_id: Number(pathaoArea.pathao_area_id),
+          p_pathao_area_name: pathaoArea.pathao_area_name,
         }
       );
 
