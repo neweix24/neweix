@@ -117,6 +117,15 @@ Deno.test("AuthorizationList tag 709 decodes the nested DER AttestationApplicati
   ) throw new Error("Nested AttestationApplicationId was not decoded.");
 });
 
+Deno.test("AuthorizationList decodes Android second-IMEI tag 723 as OCTET STRING", () => {
+  const secondImei = tlv([0xbf, 0x85, 0x53], octets(1, 2, 3));
+  const decoded = parseAndroidKeyDescription(keyDescription(seq(), seq(secondImei)));
+  const entry = decoded.hardwareEnforced.entries[0];
+  if (entry?.tagNumber !== 723 || entry.value.value.join(",") !== "1,2,3") {
+    throw new Error("Second-IMEI tag 723 was not decoded as an OCTET STRING.");
+  }
+});
+
 Deno.test("AuthorizationList rejects malformed SET OF and NULL marker payloads", () => {
   throws(
     () => parseAndroidKeyDescription(keyDescription(seq(tlv([0xa1], int(1))))),
