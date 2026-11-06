@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Supreme Control",
   description: "Secure NEWEIX Supreme business control workspace.",
-  manifest: "/supreme/manifest.webmanifest",
+  manifest: `${process.env.SUPREME_PRIVATE_PATH || "/supreme"}/manifest.webmanifest`,
 };
 
 export default async function SupremeLayout({ children }: { children: React.ReactNode }) {
