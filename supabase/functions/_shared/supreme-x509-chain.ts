@@ -1,5 +1,10 @@
 import { parseDer, type DerElement } from "./supreme-attestation-der.ts";
 import type { GoogleAttestationStatus } from "./supreme-google-attestation-metadata.ts";
+import {
+  ANDROID_PROVISIONING_INFO_OID,
+  parseAndroidProvisioningInfo,
+  type AndroidProvisioningInfo,
+} from "./supreme-android-provisioning-info.ts";
 import { isGoogleAttestationSerialBlocked } from "./supreme-google-attestation-metadata.ts";
 import { verifyX509CertificateSignature } from "./supreme-x509-signature.ts";
 import type { ParsedX509Certificate } from "./supreme-x509-certificate.ts";
@@ -19,6 +24,7 @@ export type AndroidProvisioningMethod =
 export type X509PathValidationResult = {
   trustAnchorMatched: true;
   provisioningMethod: AndroidProvisioningMethod;
+  provisioningInfo: AndroidProvisioningInfo | null;
   chainRolesValidated: number;
   validityCertificatesChecked: number;
   signatureLinksVerified: number;
@@ -310,6 +316,34 @@ function validateCertificateValidity(
  * KeyDescription content policy, APK identity, challenge proof, MFA, and login
  * authorization remain separate validation stages.
  */
+/**
+ * Parse RKP provisioning data only after chain signatures, trust anchor and
+ * revocation checks have succeeded. Google places this extension on the
+ * attestation certificate at index 1, not on the leaf or an intermediate.
+ */
+function validateRkpProvisioningExtension(
+  chain: readonly ParsedX509Certificate[],
+  provisioningMethod: AndroidProvisioningMethod,
+): AndroidProvisioningInfo | null {
+  const located = chain.flatMap((certificate, index) =>
+    certificate.extensions
+      .filter((extension) => extension.oid === ANDROID_PROVISIONING_INFO_OID)
+      .map((extension) => ({ certificateIndex: index, extension }))
+  );
+  if (provisioningMethod === "REMOTELY_PROVISIONED") {
+    if (located.length !== 1 || located[0].certificateIndex !== 1) {
+      throw new TypeError(
+        "RKP provisioning-info extension must appear exactly once on the attestation certificate at index 1.",
+      );
+    }
+    return parseAndroidProvisioningInfo(located[0].extension.value);
+  }
+  if (located.length !== 0) {
+    throw new TypeError("RKP provisioning-info extension is unexpected on a non-RKP chain.");
+  }
+  return null;
+}
+
 export async function validateX509CertificatePath(
   chain: readonly ParsedX509Certificate[],
   trustedRoots: readonly ParsedX509Certificate[],
@@ -387,9 +421,15 @@ export async function validateX509CertificatePath(
     revocationEntriesChecked++;
   }
 
+  const provisioningInfo = validateRkpProvisioningExtension(
+    chain,
+    provisioningMethod,
+  );
+
   return {
     trustAnchorMatched: true,
     provisioningMethod,
+    provisioningInfo,
     chainRolesValidated: chain.length - 1,
     validityCertificatesChecked,
     signatureLinksVerified,
