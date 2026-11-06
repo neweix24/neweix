@@ -67,6 +67,23 @@ Deno.test("accepts bounded unknown future fields without losing required policy 
   );
 });
 
+Deno.test("skips bounded future CBOR float values", () => {
+  assertEquals(
+    parseAndroidProvisioningInfo(new Uint8Array([
+      0xa3, 0x01, 0x01, 0x04, 0x63, 0x54, 0x45, 0x45, 0x07,
+      0xfa, 0x3f, 0x80, 0x00, 0x00,
+    ])),
+    { certificatesIssued: 1n, validatedAttestedEntity: "TEE" },
+  );
+});
+
+Deno.test("enforces nesting and node budgets for unknown future values", () => {
+  assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([
+    0xa3, 0x01, 0x01, 0x04, 0x63, 0x54, 0x45, 0x45,
+    0x07, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x00,
+  ])));
+});
+
 Deno.test("rejects oversized input", () => {
   assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array(4097)));
 });
