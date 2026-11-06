@@ -24,6 +24,7 @@ const shortcuts = [
   { href: "/admin/inventory", title: "স্টক ও গুদাম", description: "স্টক, গুদাম ও পণ্য বরাদ্দ", icon: "package" },
   { href: "/admin/customers", title: "কাস্টমার", description: "কাস্টমার তথ্য ও CRM", icon: "user" },
   { href: "/supreme/finance/expenses", title: "Finance & Expenses", description: "পণ্যের ক্রয়মূল্য ও পরিচালন ব্যয়", icon: "wallet" },
+  { href: "/supreme/finance/delivery-costs", title: "Delivery Cost Reconciliation", description: "Pathao ও নিজস্ব ডেলিভারির প্রকৃত খরচ", icon: "wallet" },
   { href: "/supreme/eixpay", title: "EixPay", description: "পেমেন্ট ও আর্থিক কার্যক্রম", icon: "wallet" },
   { href: "/supreme/staff", title: "টিম ও অনুমতি", description: "Staff, Manager ও অ্যাক্সেস নিয়ন্ত্রণ", icon: "shield" },
   { href: "/supreme/audit-logs", title: "নিরাপত্তা ও Audit", description: "কে কখন কী পরিবর্তন করেছে", icon: "shield" },
