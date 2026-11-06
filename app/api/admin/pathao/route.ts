@@ -1244,6 +1244,27 @@ export async function POST(request: Request) {
     : "";
 
   const admin = await createRuntimeServiceClient();
+
+  // An order with warehouse fulfillment groups may need more than one pickup
+  // origin. The legacy one-consignment flow accepts one Store ID only, so
+  // never let it book the entire order from an arbitrary single warehouse.
+  // Fail closed if the allocation lookup itself is unavailable.
+  const { data: existingFulfillments, error: fulfillmentLookupError } = await admin
+    .from("order_fulfillments")
+    .select("id")
+    .eq("order_id", orderId)
+    .limit(1);
+  if (fulfillmentLookupError) {
+    console.error("Pathao warehouse fulfillment guard failed:", fulfillmentLookupError.message);
+    return errorResponse("Could not verify this order's dispatch warehouse allocation. Try again later.", 503);
+  }
+  if (existingFulfillments?.length) {
+    return errorResponse(
+      "This order has warehouse stock allocated. Single-Store Pathao booking is disabled until separate bookings for each dispatch warehouse are available.",
+      409
+    );
+  }
+
   const { data: reserved, error: reserveError } = await admin.rpc(
     "reserve_pathao_order_booking",
     { p_order_id: orderId, p_actor_id: staff.userId }
