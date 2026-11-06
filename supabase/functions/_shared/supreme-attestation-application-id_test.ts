@@ -115,18 +115,29 @@ Deno.test("AttestationApplicationId rejects duplicate package names and signer d
   ])), "duplicate signer digest");
 });
 
-Deno.test("AttestationApplicationId rejects negative, non-canonical and oversized versions", () => {
+Deno.test("AttestationApplicationId rejects negative and non-canonical versions", () => {
   throws(() => parseAttestationApplicationId(appId([
     seq(octets([0x61]), tlv(0x02, [0xff])),
   ], [])), "negative version");
   throws(() => parseAttestationApplicationId(appId([
     seq(octets([0x61]), tlv(0x02, [0x00, 0x01])),
   ], [])), "non-canonical version");
-  throws(() => parseAttestationApplicationId(appId([
+  const largeVersion = parseAttestationApplicationId(appId([
     seq(octets([0x61]), tlv(0x02, [0x00, 0x80, 0x00, 0x00, 0x00])),
-  ], [])), "oversized version");
+  ], []));
+  if (largeVersion.packages[0].version !== 2_147_483_648n) {
+    throw new Error("Package version should preserve upstream BigInteger values.");
+  }
 });
 
-Deno.test("AttestationApplicationId requires 32-byte SHA-256 signer digests", () => {
-  throws(() => parseAttestationApplicationId(appId([], [octets([1, 2, 3])])), "wrong digest length");
+Deno.test("AttestationApplicationId preserves upstream signer octets but policy requires SHA-256", () => {
+  const decoded = parseAttestationApplicationId(appId([], [octets([1, 2, 3])]));
+  if (decoded.signatureDigests[0].length !== 3) {
+    throw new Error("Parser must preserve the upstream ASN.1 octet-string representation.");
+  }
+  if (matchesAttestationApplicationId(decoded, {
+    packageName: "com.neweix.supreme",
+    minimumVersion: 1n,
+    signingCertificateSha256: new Uint8Array(32),
+  })) throw new Error("Non-SHA-256 signer digest must not satisfy production policy.");
 });
