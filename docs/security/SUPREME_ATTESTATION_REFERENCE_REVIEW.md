@@ -109,3 +109,32 @@ The pinned upstream `KeyAttestationCertPath` source defines the `KeyStore.getCer
 The fixture extractor now reads the provisioning extension from certificate index 1 and emits its inner CBOR alongside the leaf KeyDescription DER when present. This permits the Deno CBOR parser to run against actual RKP certificate material rather than hand-authored CBOR examples. This extraction remains test-only and performs no path validation. The Deno test currently confirms bounded structural parsing of the extracted CBOR; it is not yet a semantic differential comparison of every RKP field with an independently decoded upstream oracle.
 
 The upstream validator's path semantics are more specific than generic PKIX: chain classification uses provisioning method and issuer identity; each certificate's issuer/subject chaining and signature are checked in root-to-leaf order; validity handling intentionally excludes the final target certificate and tolerates expired factory-provisioned certificates; only the target may carry the attestation extension; and RKP chains have distinct intermediate/server steps. Any Deno port must match these rules and upstream positive/negative fixtures, including malformed and fake-extension chains, before it can be trusted. Do not replace this with a generic `X509Certificate.verify()` loop.
+
+
+### Upstream chain-validator conformance matrix
+
+The pinned upstream `KeyAttestationCertPathValidatorTest` contains the following chain-policy cases. A NEWEIX implementation must preserve the same outcomes rather than substituting generic PKIX defaults:
+
+| Upstream case | Required outcome |
+|---|---|
+| `validChain_returnsSuccess` | Accept a valid factory-provisioned chain. |
+| `remotelyProvisioned_returnsSuccess` | Accept a valid RKP chain. |
+| `additionalAnchors_returnsSuccess` | Accept when a valid configured trust anchor is among multiple anchors. |
+| `notSelfIssuedTrustAnchor_succeeds` | Do not require the trust anchor to be self-issued. |
+| `wrongIssuer_throwsCertPathValidatorException` | Reject issuer/subject mismatch. |
+| `wrongSignature_throwsCertPathValidatorException` | Reject an invalid certificate signature. |
+| `wrongAlgorithm_throwsCertPathValidatorException` | Reject unsupported/invalid signature algorithm. |
+| `notYetValid_throwsCertPathValidatorException` | Reject a not-yet-valid non-leaf certificate. |
+| `expiredFactory_succeeds` | Preserve upstream factory-chain expiry exception. |
+| `expiredRkp_throwsCertPathValidatorException` | Reject expired RKP chain certificates. |
+| `expiredLeaf_returnsSuccess` | Match upstream behavior: target leaf validity is not checked by this path validator. |
+| `bluelineSdk28_factoryProvisioned_expiryIgnored` | Preserve legacy factory-provisioned fixture behavior. |
+| `caimanSdk36_remoteProvisioned_expiryHonored` | Enforce expiry for modern RKP fixture. |
+| `p256Sha384Intermediate_succeeds` | Accept supported P-256/SHA-384 intermediate signatures. |
+| `forgedKeybox_throwsCertPathValidatorException` | Reject forged keybox chain. |
+| `extraLeaf_throwsCertPathValidatorException` | Reject an unexpected extra leaf certificate. |
+| `certAfterLeaf_throwsCertPathValidatorException` | Reject invalid certificate ordering. |
+| `multipleWrongAnchors_throwsCertPathValidatorException` / `singleWrongAnchor_throwsCertPathValidatorException` | Reject chains that do not terminate at an accepted anchor. |
+| `additionalCertPathChecker_isCalled` | Ensure configured additional path checkers execute. |
+
+The upstream suite also checks null path, null parameters/date, and wrong parameter type as API-contract failures. These tests are a required future conformance target. The current NEWEIX Deno code has not implemented certificate path validation; this table is a specification only, not a claim of parity.
