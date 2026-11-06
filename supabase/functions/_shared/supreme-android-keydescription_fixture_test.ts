@@ -233,7 +233,7 @@ Deno.test({
         }
         provisioningInfoComparisons++;
       }
-      const jsonPath = `${upstreamRoot}/${fixture.source.replace(/\\.pem$/, ".json")}`;
+      const jsonPath = `${upstreamRoot}/${fixture.source.replace(/\.pem$/, ".json")}`;
       const expected = parseUpstreamJson(await Deno.readTextFile(jsonPath));
 
       const label = `${fixture.source} (certificate #${fixture.certificateIndex})`;
