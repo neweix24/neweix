@@ -67,3 +67,36 @@
 .summary{grid-column:2;grid-row:1 / span 2}
 .cartEmptyNote{padding:20px 12px;color:#748075;font-size:13px;line-height:1.6}
 @media(max-width:680px){.savedSection{grid-column:1;grid-row:auto;padding:16px}.summary{grid-column:1;grid-row:auto;order:-1}.savedItem{grid-template-columns:68px minmax(0,1fr)}.savedImage,.savedImageFallback{width:68px;height:68px}}
+
+
+/* NEWEIX premium cart — navy, emerald, champagne and porcelain */
+.page{background:radial-gradient(ellipse at 88% 0%,rgba(8,127,99,.07),transparent 34rem),var(--porcelain);color:var(--navy)}
+.header{border-color:rgba(197,165,106,.34);background:radial-gradient(ellipse at 100% 0%,rgba(197,165,106,.12),transparent 42%),linear-gradient(135deg,var(--surface-raised),var(--surface));box-shadow:0 16px 42px rgba(20,43,59,.06)}
+.eyebrow{color:var(--emerald)}
+.header h1,.sectionHeading h2,.summary h2,.empty h2,.details h3{color:var(--navy)}
+.intro,.sectionHeading span,.trustRow,.summaryRow,.summaryNote,.secureNote,.empty p,.cartEmptyNote{color:var(--muted)}
+.continue{border-color:var(--border);background:var(--surface-raised);color:var(--navy)}
+.continue:hover{border-color:var(--emerald);color:var(--emerald)}
+.trustRow svg,.secureNote svg{color:var(--emerald)}
+.items,.summary,.savedSection,.empty{border-color:var(--border);background:var(--surface-raised);box-shadow:0 12px 34px rgba(20,43,59,.055)}
+.item,.savedItem{border-color:var(--border)}
+.image,.imageFallback,.savedImage,.savedImageFallback{background:var(--surface-soft)}
+.imageFallback,.savedImageFallback{color:var(--navy)}
+.unitPrice{color:var(--navy)}
+.unitPrice span{color:var(--muted)}
+.quantity{border-color:var(--border);background:var(--surface)}
+.quantity button{color:var(--emerald)}
+.quantity span{color:var(--navy)}
+.lineTotal,.summaryTotal strong{color:var(--emerald)}
+.summaryRow strong,.summaryTotal{color:var(--navy)}
+.summaryTotal,.secureNote{border-color:var(--border)}
+.checkout,.primaryAction,.warning button{border:0;background:var(--emerald);color:#fff;box-shadow:0 9px 22px rgba(8,127,99,.15)}
+.checkout:hover,.primaryAction:hover{background:var(--primary-hover)}
+.checkoutDisabled{border:1px solid var(--border);background:var(--surface-soft);color:var(--muted)}
+.backLink{color:var(--emerald)}
+.emptyIcon{background:rgba(8,127,99,.09);color:var(--emerald)}
+.notice,.state{border-color:var(--border);background:var(--surface-raised);color:var(--navy)}
+.saveLater,.restore{border-color:var(--border);background:var(--surface);color:var(--emerald)}
+.saveLater:hover,.restore:hover:not(:disabled){border-color:rgba(8,127,99,.45);background:rgba(8,127,99,.07)}
+@media(max-width:680px){.header{border-radius:19px}.summary{background:var(--surface-raised)}}
+@media(prefers-reduced-motion:no-preference){.checkout,.primaryAction,.continue{transition:transform .18s ease,box-shadow .18s ease,background .18s ease}.checkout:hover,.primaryAction:hover{transform:translateY(-1px);box-shadow:0 13px 26px rgba(8,127,99,.2)}}
