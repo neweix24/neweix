@@ -107,7 +107,7 @@ export async function POST(request: Request) {
     if (typeof input.provider !== "string" || !PROVIDERS.includes(input.provider as typeof PROVIDERS[number])) return fail("Select a valid delivery provider.", 400);
     if (typeof input.cost_type !== "string" || !COST_TYPES.includes(input.cost_type as typeof COST_TYPES[number])) return fail("Select a valid cost category.", 400);
     if (typeof input.entry_kind !== "string" || !ENTRY_KINDS.includes(input.entry_kind as typeof ENTRY_KINDS[number])) return fail("Select charge or refund.", 400);
-    if (!Number.isSafeInteger(input.amount) || Number(input.amount) <= 0 || Number(input.amount) > 1000000000) return fail("Enter a valid amount in BDT.", 400);
+    if (typeof input.amount !== "number" || !Number.isFinite(input.amount) || input.amount <= 0 || input.amount > 1000000000 || Math.round(input.amount * 100) !== input.amount * 100) return fail("Enter a valid amount in BDT (up to 2 decimal places).", 400);
     if (typeof input.cost_date !== "string" || !validDate(input.cost_date)) return fail("Select a valid cost date.", 400);
     if (typeof input.source_type !== "string" || !SOURCES.includes(input.source_type as typeof SOURCES[number])) return fail("Select a valid source type.", 400);
     const reference = input.source_reference == null || input.source_reference === "" ? null : typeof input.source_reference === "string" ? input.source_reference.trim() : undefined;
