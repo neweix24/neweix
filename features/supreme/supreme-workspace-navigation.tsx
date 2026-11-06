@@ -19,6 +19,7 @@ const sections = [
   { href: "/supreme/manager-nominations", label: "Manager approvals" },
   { href: "/supreme/notifications", label: "Notification Inbox" },
   { href: "/supreme/finance/expenses", label: "Finance & Expenses" },
+  { href: "/supreme/delivery-riders", label: "Delivery Riders & Payouts" },
   { href: "/supreme/eixpay", label: "EixPay" },
   { href: "/supreme/eixverse", label: "Campaigns" },
   { href: "/supreme/reviews", label: "Reviews" },
