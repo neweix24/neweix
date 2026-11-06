@@ -31,7 +31,7 @@ begin
   if not exists (
     select 1 from pg_trigger
     where tgrelid = 'public.orders'::regclass
-      and tgname = 'orders_capture_financial_event_timestamps'
+      and tgname = 'neweix_plus_capture_delivery_time'
       and not tgisinternal
   ) or not exists (
     select 1 from pg_trigger

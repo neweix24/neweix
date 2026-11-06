@@ -19,7 +19,9 @@ create index if not exists customer_return_requests_refunded_at_finance_idx
   on public.customer_return_requests (refunded_at desc)
   where status = 'refunded' and refunded_at is not null;
 
-create or replace function public.capture_order_financial_event_timestamps()
+-- Extend the existing delivery-time trigger rather than installing a
+-- competing trigger for the same order status transition.
+create or replace function private.neweix_plus_capture_delivery_time()
 returns trigger
 language plpgsql
 security definer
@@ -33,29 +35,21 @@ begin
     if new.status::text = 'returned' and new.returned_at is null then
       new.returned_at := pg_catalog.now();
     end if;
-    return new;
+  else
+    if new.status::text = 'delivered'
+       and old.status::text is distinct from new.status::text
+       and new.delivered_at is null then
+      new.delivered_at := pg_catalog.now();
+    end if;
+    if new.status::text = 'returned'
+       and old.status::text is distinct from new.status::text
+       and new.returned_at is null then
+      new.returned_at := pg_catalog.now();
+    end if;
   end if;
-
-  if new.status::text = 'delivered'
-     and old.status::text is distinct from new.status::text
-     and new.delivered_at is null then
-    new.delivered_at := pg_catalog.now();
-  end if;
-
-  if new.status::text = 'returned'
-     and old.status::text is distinct from new.status::text
-     and new.returned_at is null then
-    new.returned_at := pg_catalog.now();
-  end if;
-
   return new;
 end;
 $function$;
-
-drop trigger if exists orders_capture_financial_event_timestamps on public.orders;
-create trigger orders_capture_financial_event_timestamps
-before insert or update of status on public.orders
-for each row execute function public.capture_order_financial_event_timestamps();
 
 create or replace function public.capture_return_refund_timestamp()
 returns trigger
@@ -78,8 +72,6 @@ create trigger customer_return_requests_capture_refunded_at
 before insert or update of status on public.customer_return_requests
 for each row execute function public.capture_return_refund_timestamp();
 
-revoke all on function public.capture_order_financial_event_timestamps()
-  from public, anon, authenticated;
 revoke all on function public.capture_return_refund_timestamp()
   from public, anon, authenticated;
 
