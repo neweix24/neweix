@@ -41,6 +41,7 @@ export async function middleware(request: NextRequest) {
   // Once the private path is configured, direct requests to the old public
   // route are not served. The authenticated private alias is rewritten below.
   if (hasValidPrivateSupremePath && isCanonicalSupremePath) {
+    const privatePath = configuredSupremePath!;
     // Existing in-workspace links still target the internal /supreme route.
     // Redirect those same-origin navigations back onto the private URL so the
     // browser never leaves the private path. Direct/external requests get 404.
@@ -51,8 +52,8 @@ export async function middleware(request: NextRequest) {
         const refererUrl = new URL(referer);
         cameFromPrivateEntry =
           refererUrl.origin === request.nextUrl.origin &&
-          (refererUrl.pathname === configuredSupremePath ||
-            refererUrl.pathname.startsWith(configuredSupremePath + "/"));
+          (refererUrl.pathname === privatePath ||
+            refererUrl.pathname.startsWith(privatePath + "/"));
       } catch {
         cameFromPrivateEntry = false;
       }
@@ -60,7 +61,7 @@ export async function middleware(request: NextRequest) {
     if (cameFromPrivateEntry) {
       const privateDestination = request.nextUrl.clone();
       privateDestination.pathname =
-        configuredSupremePath + pathname.slice("/supreme".length);
+        privatePath + pathname.slice("/supreme".length);
       const redirectResponse = NextResponse.redirect(privateDestination, 307);
       redirectResponse.headers.set("Cache-Control", "private, no-store, max-age=0");
       redirectResponse.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
@@ -305,9 +306,10 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isPrivateSupremePath && hasValidPrivateSupremePath) {
+    const privatePath = configuredSupremePath!;
     const destination = request.nextUrl.clone();
     destination.pathname =
-      "/supreme" + pathname.slice(configuredSupremePath.length);
+      "/supreme" + pathname.slice(privatePath.length);
     const rewriteResponse = NextResponse.rewrite(destination);
     rewriteResponse.headers.set("Cache-Control", "private, no-store, max-age=0");
     rewriteResponse.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
