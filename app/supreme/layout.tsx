@@ -21,6 +21,7 @@ const sections = [
   { href: "/admin/customers", label: "Customer CRM" },
   { href: "/admin/customer-data-requests", label: "Privacy requests" },
   { href: "/supreme/staff", label: "Staff & roles" },
+  { href: "/supreme/manager-nominations", label: "Manager approvals" },
   { href: "/supreme/eixpay", label: "EixPay" },
   { href: "/supreme/eixverse", label: "Campaigns" },
   { href: "/supreme/reviews", label: "Reviews" },
