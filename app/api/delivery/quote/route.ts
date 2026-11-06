@@ -47,7 +47,7 @@ export async function GET(request: Request) {
 
   if (!/^BD-D[0-9]{2}-Z[0-9]{2}$/.test(districtCode) ||
       !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode) ||
-      (rawPathaoAreaId && (!Number.isSafeInteger(pathaoAreaId) || (pathaoAreaId ?? 0) < 1)) ||
+      (rawPathaoAreaId && (pathaoAreaId === null || !Number.isSafeInteger(pathaoAreaId) || pathaoAreaId < 1)) ||
       (couponCode && !/^[A-Z0-9_-]{3,40}$/.test(couponCode))) {
     return NextResponse.json({ error: "Select a supported district and upazila." }, { status: 400 });
   }
