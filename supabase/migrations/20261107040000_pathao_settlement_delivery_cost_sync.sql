@@ -145,4 +145,51 @@ for each row execute function private.capture_pathao_settlement_delivery_cost();
 comment on function private.capture_pathao_settlement_delivery_cost() is
   'Atomically copies matched Pathao delivery charges from settlement imports into the actual delivery cost ledger; unmatched rows are excluded.';
 
+create or replace function public.supreme_delivery_cost_summary(
+  p_start_at timestamptz default null,
+  p_end_at timestamptz default null
+)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  with entries as (
+    select provider, cost_type, entry_kind, amount
+    from public.delivery_cost_entries
+    where (p_start_at is null or cost_date >= (p_start_at at time zone 'Asia/Dhaka')::date)
+      and (p_end_at is null or cost_date < (p_end_at at time zone 'Asia/Dhaka')::date
+        + case when (p_end_at at time zone 'Asia/Dhaka')::time = time '00:00:00' then 0 else 1 end)
+  ),
+  totals as (
+    select
+      coalesce(sum(case when provider = 'pathao' and entry_kind = 'charge' then amount
+                        when provider = 'pathao' and entry_kind = 'refund' then -amount else 0 end),0)::numeric(14,2) as pathao_cost,
+      coalesce(sum(case when provider = 'neweix_own' and entry_kind = 'charge' then amount
+                        when provider = 'neweix_own' and entry_kind = 'refund' then -amount else 0 end),0)::numeric(14,2) as own_delivery_cost,
+      coalesce(sum(case when entry_kind = 'charge' then amount else -amount end),0)::numeric(14,2) as total_cost,
+      count(*)::bigint as entry_count
+    from entries
+  )
+  select pg_catalog.jsonb_build_object(
+    'pathao_cost', t.pathao_cost,
+    'neweix_own_cost', t.own_delivery_cost,
+    'total_delivery_cost', t.total_cost,
+    'entry_count', t.entry_count,
+    'delivery_costs_complete', false,
+    'status', 'actual_recorded_costs_only'
+  ) from totals t;
+$function$;
+
+revoke all on function public.supreme_delivery_cost_summary(timestamptz, timestamptz)
+  from public, anon, authenticated, service_role;
+grant execute on function public.supreme_delivery_cost_summary(timestamptz, timestamptz)
+  to service_role;
+
+comment on column public.delivery_cost_entries.amount is
+  'Positive amount in BDT, preserving up to two decimal places; refunds use entry_kind=refund.';
+comment on function public.supreme_delivery_cost_summary(timestamptz, timestamptz) is
+  'Reports exact recorded costs only. delivery_costs_complete remains false until all deliveries are reconciled.';
+
 commit;
