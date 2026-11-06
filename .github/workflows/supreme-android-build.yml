@@ -1,18 +1,13 @@
 name: Supreme Android app build
 
 on:
-  pull_request:
-    branches:
-      - feat/neweix-supreme-apk-security
-    paths:
-      - "android/supreme-app/**"
-      - ".github/workflows/supreme-android-build.yml"
   push:
     branches:
       - feat/neweix-supreme-android-app
     paths:
       - "android/supreme-app/**"
       - ".github/workflows/supreme-android-build.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
