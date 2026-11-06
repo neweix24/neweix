@@ -37,7 +37,7 @@ function startOf(period: Period) {
   const start = new Date(now);
   if (period === "today") start.setHours(0, 0, 0, 0);
   if (period === "7d") start.setDate(start.getDate() - 6);
-  if (period === "month") start.setDate(1);
+  if (period === "month") { start.setDate(1); start.setHours(0, 0, 0, 0); }
   if (period === "year") { start.setMonth(0, 1); start.setHours(0, 0, 0, 0); }
   return start;
 }
