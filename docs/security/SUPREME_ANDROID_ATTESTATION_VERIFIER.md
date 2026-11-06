@@ -9,16 +9,13 @@ Only the signed NEWEIX Supreme Android application, running on a device that pro
 
 A private URL, WebView User-Agent, package name supplied by the client, static APK secret, or custom HTTP header is not proof of app identity.
 
-## Runtime decision
+## Runtime decision — superseded by the zero-cost constraint
 
-Keep the public storefront and Cloudflare Worker as the application edge. Evaluate a dedicated Supabase Edge Function (Deno) for certificate verification so the verifier can use pinned npm packages without adding certificate-parsing dependencies to the Next.js/Cloudflare bundle.
+The earlier Deno-port proposal below is not an approved verifier implementation. The separate decision record at `docs/security/SUPREME_ATTESTATION_RUNTIME_DECISION.md` is authoritative.
 
-Candidate components:
-- `pkijs` + its single shared `asn1js` dependency for X.509 parsing and RFC 5280 certificate-path validation.
-- `@peculiar/asn1-android` + `@peculiar/asn1-schema` for Android Keymaster/KeyMint attestation extension schemas, including non-standard field ordering.
-- Google’s published root set and revoked-serial status endpoint as live trust data.
+The project must not add a paid JVM host or paid Cloudflare plan. A Deno-native implementation in the existing Supabase Edge Function environment is only a candidate for avoiding new hosting costs; it is not trusted merely because it runs server-side. It must implement full X.509 path validation and Android Keymaster/KeyMint policy, then pass the same valid and invalid fixture corpus as the maintained Android Kotlin verifier. Any mismatch, missing fixture, stale trust metadata, or verifier outage must fail closed.
 
-This is a JavaScript/Deno implementation, not Google's maintained Kotlin verifier. It must be treated as a security-sensitive port and must pass the acceptance tests below before it can gate login. If it cannot match the official verifier on the supplied fixture corpus, stop and use the maintained Kotlin verifier in a separately trusted runtime rather than weakening checks.
+The existing Deno proof-of-possession and Google metadata modules are supporting components only. They do not validate certificate paths or establish Android hardware attestation. No authentication route may treat them as a successful attestation decision.
 
 ## Required verification protocol
 
