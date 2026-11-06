@@ -12,11 +12,15 @@ function fail(message: string, status: number) {
   });
 }
 
-async function authorize() {
+type WarehouseAllocationAuthorization =
+  | { userId: string }
+  | { error: string; status: number };
+
+async function authorize(): Promise<WarehouseAllocationAuthorization> {
   const session = await createServerSupabaseClient();
   const { data, error } = await session.auth.getClaims();
   const userId = data?.claims?.sub;
-  if (error || typeof userId !== "string") return { error: "Authentication required.", status: 401 as const };
+  if (error || typeof userId !== "string") return { error: "Authentication required.", status: 401 };
 
   const { data: profile, error: profileError } = await session
     .from("staff_profiles")
