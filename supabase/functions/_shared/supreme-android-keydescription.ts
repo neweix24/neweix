@@ -35,7 +35,7 @@ const KNOWN_AUTHORIZATION_TAGS = new Set([
 ]);
 const SET_OF_INTEGER_TAGS = new Set([1, 4, 5, 6, 203]);
 const NULL_MARKER_TAGS = new Set([503, 507, 508, 509, 703]);
-const OCTET_STRING_TAGS = new Set([709, 710, 711, 712, 713, 714, 715, 716, 717, 724]);
+const OCTET_STRING_TAGS = new Set([709, 710, 711, 712, 713, 714, 715, 716, 717, 723, 724]);
 
 function expectUniversal(
   element: DerElement,
