@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/neweix-supreme-android-mainline
+      - feat/supreme-server-attestation-verifier
     paths:
       - "android/supreme-app/**"
       - ".github/workflows/supreme-android-build.yml"
