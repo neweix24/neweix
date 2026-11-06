@@ -88,17 +88,21 @@ jobs:
           javac -d /tmp/supreme-attestation-classes scripts/security/ExtractAndroidAttestationFixtures.java
           java -cp /tmp/supreme-attestation-classes ExtractAndroidAttestationFixtures \
             android-keyattestation /tmp/supreme-attestation-fixtures.json
+          javac -d /tmp/supreme-attestation-classes scripts/security/ExtractX509OracleFixtures.java
+          java -cp /tmp/supreme-attestation-classes ExtractX509OracleFixtures \
+            android-keyattestation /tmp/supreme-x509-oracle.json
 
       - name: Compare Deno parser with real Android certificate fixture outputs
         working-directory: .
         env:
           SUPREME_ATTESTATION_FIXTURE_INDEX: /tmp/supreme-attestation-fixtures.json
           SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX: /tmp/supreme-attestation-fixtures.json
+          SUPREME_X509_ORACLE_INDEX: /tmp/supreme-x509-oracle.json
           SUPREME_ATTESTATION_UPSTREAM_DIR: android-keyattestation
           SUPREME_RKP_EXPECTED_INDEX: /tmp/supreme-rkp-expected.json
         run: |
           deno test --allow-env=SUPREME_ATTESTATION_FIXTURE_INDEX,SUPREME_ATTESTATION_UPSTREAM_DIR,SUPREME_RKP_EXPECTED_INDEX \
             --allow-read=android-keyattestation,/tmp/supreme-attestation-fixtures.json,/tmp/supreme-rkp-expected.json \
             supabase/functions/_shared/supreme-android-keydescription_fixture_test.ts
-          deno test --allow-env=SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX --allow-read=/tmp/supreme-attestation-fixtures.json \
+          deno test --allow-env=SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX,SUPREME_X509_ORACLE_INDEX --allow-read=/tmp/supreme-attestation-fixtures.json,/tmp/supreme-x509-oracle.json \
             supabase/functions/_shared/supreme-x509-certificate_test.ts
