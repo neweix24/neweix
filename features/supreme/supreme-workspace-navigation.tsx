@@ -18,6 +18,7 @@ const sections = [
   { href: "/supreme/staff", label: "Staff & roles" },
   { href: "/supreme/manager-nominations", label: "Manager approvals" },
   { href: "/supreme/finance/expenses", label: "Finance & Expenses" },
+  { href: "/supreme/delivery-riders", label: "Delivery Riders & Payouts" },
   { href: "/supreme/eixpay", label: "EixPay" },
   { href: "/supreme/eixverse", label: "Campaigns" },
   { href: "/supreme/reviews", label: "Reviews" },
