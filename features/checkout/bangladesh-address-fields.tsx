@@ -106,8 +106,8 @@ export default function BangladeshAddressFields({
           setAreas(result.areas as PathaoArea[]);
           if (!result.areas.length) {
             setAreaError(locale === "bn"
-              ? "Area তালিকা এখনো সিঙ্ক হয়নি। পূর্ণ ঠিকানা দিয়ে অর্ডার করা যাবে; Pathao ঠিকানা থেকে এলাকা শনাক্ত করবে।"
-              : "The Area list is not synced yet. You can still order with a full address; Pathao can identify the delivery area.");
+              ? "Area তালিকা এখনো সিঙ্ক হয়নি। Area নির্বাচন ঐচ্ছিক; তবে লাইভ চার্জের জন্য এই উপজেলার City/Zone mapping থাকতে হবে।"
+              : "The Area list is not synced yet. Area selection is optional, but a verified City/Zone mapping is still required for live delivery pricing.");
           }
         }
       })
