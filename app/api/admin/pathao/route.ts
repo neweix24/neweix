@@ -734,7 +734,14 @@ export async function POST(request: Request) {
             updated_at: existingMapping.updated_at,
           })
           .eq("id", mapping.id);
-        if (restoreError) console.error("Pathao verified mapping rollback failed:", restoreError.message);
+        if (restoreError) {
+          console.error("Pathao verified mapping rollback failed:", restoreError.message);
+          const { error: disableError } = await admin
+            .from("pathao_location_mappings")
+            .update({ is_active: false })
+            .eq("id", mapping.id);
+          if (disableError) console.error("Pathao mapping fail-closed deactivation failed:", disableError.message);
+        }
       } else {
         const { error: disableError } = await admin
           .from("pathao_location_mappings")
