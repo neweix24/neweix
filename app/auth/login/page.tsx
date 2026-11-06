@@ -124,7 +124,7 @@ export default function LoginPage() {
       const target = new URL(next, window.location.origin);
       if (
         target.origin !== window.location.origin ||
-        !/^\/[A-Za-z0-9][A-Za-z0-9_-]{31,95}(?:\/.*)?$/.test(target.pathname)
+        !/^\/control-[A-Fa-f0-9]{48}(?:\/.*)?$/.test(target.pathname)
       ) {
         return null;
       }
