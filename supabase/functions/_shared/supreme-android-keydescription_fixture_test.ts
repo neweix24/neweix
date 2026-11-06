@@ -220,7 +220,8 @@ Deno.test({
   fn: async () => {
     const fixtures = JSON.parse(await Deno.readTextFile(fixtureIndex!)) as Fixture[];
     if (fixtures.length === 0) throw new Error("No real certificate fixtures were extracted.");
-    let authorizationComparisons = 0;\n    let provisioningInfoComparisons = 0;
+    let authorizationComparisons = 0;
+    let provisioningInfoComparisons = 0;
 
     for (const fixture of fixtures) {
       const der = bytesFromBase64(fixture.derBase64);
