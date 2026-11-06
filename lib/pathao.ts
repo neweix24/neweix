@@ -333,6 +333,52 @@ export async function getPathaoAreas(zoneId: number) {
   );
 }
 
+/**
+ * Fetch the Pathao area catalog for mapped zones with one merchant token.
+ * Per-zone failures are returned independently so one unavailable zone does
+ * not prevent the remaining catalog from being refreshed.
+ */
+export type PathaoZoneAreasResult = {
+  zoneId: number;
+  payload?: unknown;
+  error?: string;
+};
+
+export async function getPathaoAreasForZones(zoneIds: number[]): Promise<PathaoZoneAreasResult[]> {
+  const uniqueIds = [...new Set(zoneIds)];
+  if (uniqueIds.length > 200 || uniqueIds.some((id) => !Number.isSafeInteger(id) || id < 1)) {
+    throw new Error("Pathao area sync must contain at most 200 valid zone IDs.");
+  }
+  if (uniqueIds.length === 0) return [];
+
+  return withPathaoToken(async (config, token) => {
+    const results: PathaoZoneAreasResult[] = new Array(uniqueIds.length);
+    let cursor = 0;
+    const worker = async () => {
+      while (true) {
+        const index = cursor++;
+        if (index >= uniqueIds.length) return;
+        const zoneId = uniqueIds[index];
+        try {
+          const payload = await pathaoRequest<unknown>(
+            config,
+            `/aladdin/api/v1/zones/${zoneId}/area-list`,
+            token,
+          );
+          results[index] = { zoneId, payload };
+        } catch (error) {
+          results[index] = {
+            zoneId,
+            error: error instanceof Error ? error.message : "Pathao area lookup failed.",
+          };
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(4, uniqueIds.length) }, () => worker()));
+    return results;
+  });
+}
+
 export type PathaoPriceInput = {
   storeId: number;
   itemType: number;
