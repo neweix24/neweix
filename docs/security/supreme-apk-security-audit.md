@@ -33,6 +33,8 @@
 - A configurable private entry path is now implemented in `middleware.ts` using the server-only `SUPREME_PRIVATE_PATH` binding.
 - The configured path must be one segment beginning with `/` and followed by 32–96 alphanumeric, underscore, or hyphen characters. Example format only: `/control-<random-hex>`.
 - Requests to the configured private path are authenticated as Supreme + AAL2, then internally rewritten to the existing `/supreme` route. The browser remains on the private path.
+- Existing in-workspace links to internal `/supreme/**` paths are redirected back to the private alias only when the same-origin Referer is already within the private workspace; direct/external requests receive 404.
+- Login, MFA challenge, and MFA setup preserve the private destination through the full authentication round trip. Private responses carry `no-store` and `X-Robots-Tag: noindex` headers.
 - Direct requests to `/supreme/**` return 404 once the private path is configured. A malformed configured value fails closed with 503 on the legacy route.
 - The Supreme PWA manifest and service-worker scope now use the configured private path; the service worker script itself contains no private path.
 - `wrangler.jsonc` now declares `SUPREME_PRIVATE_PATH` as a required Cloudflare secret. It is deliberately not stored in Git.
@@ -68,6 +70,10 @@
 5. Build the Android app shell and integrate authentication.
 6. Run typecheck, lint, tests, Cloudflare OpenNext preview, and authenticated/unauthenticated smoke tests.
 7. Produce a signed APK and installation/recovery instructions.
+
+## Supreme API review
+
+All seven current `app/api/supreme/**/route.ts` handlers independently verify the authenticated user, active Supreme staff profile, and AAL2 before privileged reads or mutations. Sensitive responses use `private, no-store`; the staff-provisioning route was updated in this branch to apply the same cache policy to every success and error response. The EixVerse campaign endpoint accepts structured payloads and delegates business validation to its database RPC; its DB function and privilege tests remain part of the deeper migration review.
 
 ## Not done yet
 
