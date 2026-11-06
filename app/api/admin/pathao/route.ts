@@ -1226,16 +1226,17 @@ export async function POST(request: Request) {
       (order.delivery_fee_payment_status === "paid" ? Number(order.delivery_fee) : 0))
     : 0;
 
-  const addressParts = recipientAddressOverride
-    ? [recipientAddressOverride]
-    : [
-        order.shipping_address,
-        order.shipping_village,
-        order.shipping_union_other || order.shipping_union,
-        order.shipping_upazila,
-        order.shipping_district || order.shipping_city,
-        order.shipping_division,
-      ];
+  // Always append the structured administrative address, even when an
+  // Admin edits the street/house portion. Pathao's address-first order API
+  // resolves the delivery destination from the complete address string.
+  const addressParts = [
+    recipientAddressOverride || order.shipping_address,
+    order.shipping_village,
+    order.shipping_union_other || order.shipping_union,
+    order.shipping_upazila,
+    order.shipping_district || order.shipping_city,
+    order.shipping_division,
+  ];
   const seenAddressParts = new Set<string>();
   const address = addressParts
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
