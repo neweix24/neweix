@@ -642,7 +642,7 @@ export async function POST(request: Request) {
     const admin = await createRuntimeServiceClient();
     const { data: existingMapping, error: existingMappingError } = await admin
       .from("pathao_location_mappings")
-      .select("id, pathao_city_id, pathao_zone_id, pathao_city_name, pathao_zone_name, is_verified, is_active")
+      .select("id, pathao_city_id, pathao_zone_id, pathao_city_name, pathao_zone_name, is_verified, is_active, verified_at, verified_by, updated_at")
       .eq("district_code", districtCode)
       .eq("upazila_code", upazilaCode)
       .maybeSingle();
@@ -717,7 +717,33 @@ export async function POST(request: Request) {
         correction_reason: isChangingVerifiedMapping ? correctionReason : null,
       },
     });
-    if (auditError) console.error("Pathao location mapping audit log failed:", auditError.message);
+    if (auditError) {
+      console.error("Pathao location mapping audit log failed:", auditError.message);
+      if (isChangingVerifiedMapping && existingMapping) {
+        const { error: restoreError } = await admin
+          .from("pathao_location_mappings")
+          .update({
+            pathao_city_id: existingMapping.pathao_city_id,
+            pathao_zone_id: existingMapping.pathao_zone_id,
+            pathao_city_name: existingMapping.pathao_city_name,
+            pathao_zone_name: existingMapping.pathao_zone_name,
+            is_verified: existingMapping.is_verified,
+            is_active: existingMapping.is_active,
+            verified_at: existingMapping.verified_at,
+            verified_by: existingMapping.verified_by,
+            updated_at: existingMapping.updated_at,
+          })
+          .eq("id", mapping.id);
+        if (restoreError) console.error("Pathao verified mapping rollback failed:", restoreError.message);
+      } else {
+        const { error: disableError } = await admin
+          .from("pathao_location_mappings")
+          .update({ is_verified: false, is_active: false, verified_at: null, verified_by: null })
+          .eq("id", mapping.id);
+        if (disableError) console.error("Pathao candidate fail-closed update failed:", disableError.message);
+      }
+      return errorResponse("The Pathao mapping audit could not be saved. The change was rolled back or disabled; verify the mapping before retrying.", 503);
+    }
 
     return NextResponse.json({ success: true, mapping }, {
       headers: { "Cache-Control": "private, no-store" },
