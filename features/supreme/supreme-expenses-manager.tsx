@@ -69,8 +69,6 @@ export default function SupremeExpensesManager() {
 
   useEffect(() => { void load(); }, [load]);
 
-  useEffect(() => { void loadCosts(); }, [loadCosts]);
-
   const loadCosts = useCallback(async () => {
     try {
       const response = await fetch("/api/supreme/finance/product-costs", { cache: "no-store" });
@@ -83,6 +81,8 @@ export default function SupremeExpensesManager() {
       setCostMessage(err instanceof Error ? err.message : "পণ্যের ক্রয়মূল্য লোড হয়নি।");
     }
   }, []);
+
+  useEffect(() => { void loadCosts(); }, [loadCosts]);
 
   async function saveCost(productId: string) {
     const value = costDrafts[productId] ?? "";
