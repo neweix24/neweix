@@ -87,7 +87,7 @@ public final class ExtractX509OracleFixtures {
     }
     if (records.isEmpty()) throw new IllegalStateException("No X.509 fixtures found.");
     Files.createDirectories(output.getParent());
-    Files.writeString(output, "[" + String.join(",", records) + "]\\n");
+    Files.writeString(output, "[" + String.join(",", records) + "]\n");
     System.out.println("Extracted JDK X.509 oracle values for " + records.size() + " Android chains.");
   }
 }
