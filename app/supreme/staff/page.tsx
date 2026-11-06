@@ -8,7 +8,7 @@ export default async function SupremeStaffPage() {
   await requireStaff(["supreme"]);
 
   return (
-    <main className="hero auth-page">
+    <main className="hero auth-page premium-supreme-page">
       <p className="eyebrow">NEWEIX · SUPREME PANEL</p>
 
       <h1>Admin & Staff Management</h1>
