@@ -62,6 +62,16 @@ jobs:
         working-directory: android-keyattestation
         run: ./gradlew --no-daemon --stacktrace test
 
+      - name: Extract RKP fixture oracle values using the pinned upstream Kotlin verifier
+        working-directory: android-keyattestation
+        env:
+          SUPREME_UPSTREAM_TESTDATA: ${{ github.workspace }}/android-keyattestation/testdata
+          SUPREME_RKP_EXPECTED_INDEX: /tmp/supreme-rkp-expected.json
+        run: |
+          set -euo pipefail
+          cp ../scripts/security/ProvisioningInfoReferenceFixtureTest.kt src/test/kotlin/ProvisioningInfoReferenceFixtureTest.kt
+          ./gradlew --no-daemon --stacktrace test --tests com.android.keyattestation.verifier.ProvisioningInfoReferenceFixtureTest
+
       - name: Set up Deno for real-certificate parser differential tests
         uses: denoland/setup-deno@v2
         with:
@@ -81,7 +91,8 @@ jobs:
         env:
           SUPREME_ATTESTATION_FIXTURE_INDEX: /tmp/supreme-attestation-fixtures.json
           SUPREME_ATTESTATION_UPSTREAM_DIR: android-keyattestation
+          SUPREME_RKP_EXPECTED_INDEX: /tmp/supreme-rkp-expected.json
         run: |
-          deno test --allow-env=SUPREME_ATTESTATION_FIXTURE_INDEX,SUPREME_ATTESTATION_UPSTREAM_DIR \
-            --allow-read=android-keyattestation,/tmp/supreme-attestation-fixtures.json \
+          deno test --allow-env=SUPREME_ATTESTATION_FIXTURE_INDEX,SUPREME_ATTESTATION_UPSTREAM_DIR,SUPREME_RKP_EXPECTED_INDEX \
+            --allow-read=android-keyattestation,/tmp/supreme-attestation-fixtures.json,/tmp/supreme-rkp-expected.json \
             supabase/functions/_shared/supreme-android-keydescription_fixture_test.ts
