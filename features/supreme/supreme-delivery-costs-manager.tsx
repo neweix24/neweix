@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 type DeliveryOrder = { id: string; order_number: string; delivery_provider: "pathao" | "neweix_own"; status: string; delivery_status: string | null; delivery_fee: number | null; pathao_estimated_fee: number | null };
 type CostEntry = { id: string; order_id: string; order_number: string | null; provider: string; cost_type: string; entry_kind: string; amount: number; cost_date: string; source_type: string };
 type Summary = { pathao_cost: number; neweix_own_cost: number; total_delivery_cost: number; entry_count: number };
-const money = (value: number) => new Intl.NumberFormat("bn-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(value);
+const money = (value: number) => new Intl.NumberFormat("bn-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 2 }).format(value);
 const today = () => new Date(Date.now() + 21600000).toISOString().slice(0, 10);
 const labels: Record<string, string> = { delivery_charge: "ডেলিভারি চার্জ", return_charge: "রিটার্ন চার্জ", rider_payment: "রাইডার পেমেন্ট", fuel: "জ্বালানি", toll: "টোল", packaging: "প্যাকেজিং", other: "অন্যান্য" };
 
