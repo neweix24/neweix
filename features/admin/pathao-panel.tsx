@@ -682,31 +682,47 @@ export default function PathaoPanel() {
   async function syncAreaCatalog() {
     setAreaSyncRunning(true);
     setAreaSyncFailures([]);
-    setAreaSyncMessage("Fetching live Pathao Areas for all verified mapped zones...");
+    setAreaSyncMessage("Syncing Pathao Areas in small, rate-limited batches...");
+    let offset = 0;
+    let totalAreas = 0;
+    let totalSyncedZones = 0;
+    let totalMappedZones = 0;
+    const failures: Array<{ zoneId: number; error: string }> = [];
     try {
-      const response = await fetch("/api/admin/pathao", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store",
-        body: JSON.stringify({ action: "sync_area_catalog" }),
-      });
-      const result = await response.json().catch(() => null) as {
-        error?: string;
-        message?: string;
-        areaCount?: number;
-        syncedZoneCount?: number;
-        mappedZoneCount?: number;
-        failedZoneCount?: number;
-        failedZones?: Array<{ zoneId: number; error: string }>;
-      } | null;
-      setAreaSyncFailures(result?.failedZones ?? []);
-      if (!response.ok) {
-        throw new Error(result?.error || result?.message || "Pathao Area catalog sync failed.");
+      // Each request handles at most six zones; sequential batches avoid Worker
+      // subrequest exhaustion and let Pathao's rate-limit window recover.
+      for (let batch = 0; batch < 100; batch += 1) {
+        const response = await fetch("/api/admin/pathao", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({ action: "sync_area_catalog", areaOffset: offset }),
+        });
+        const result = await response.json().catch(() => null) as {
+          error?: string;
+          message?: string;
+          areaCount?: number;
+          syncedZoneCount?: number;
+          mappedZoneCount?: number;
+          failedZoneCount?: number;
+          failedZones?: Array<{ zoneId: number; error: string }>;
+          nextOffset?: number;
+          hasMore?: boolean;
+        } | null;
+        if (!response.ok) throw new Error(result?.error || result?.message || "Pathao Area catalog sync failed.");
+        totalAreas += Number(result?.areaCount ?? 0);
+        totalSyncedZones += Number(result?.syncedZoneCount ?? 0);
+        totalMappedZones = Number(result?.mappedZoneCount ?? totalMappedZones);
+        failures.push(...(result?.failedZones ?? []));
+        setAreaSyncFailures([...failures]);
+        offset = Number(result?.nextOffset ?? offset);
+        setAreaSyncMessage(`Processed ${offset}/${totalMappedZones} zones; ${totalAreas} Areas saved. Continuing in safe batches...`);
+        if (!result?.hasMore) {
+          setAreaSyncMessage(`Saved ${totalAreas} Areas from ${totalSyncedZones}/${totalMappedZones} zones. ${failures.length} zones need retry.`);
+          return;
+        }
       }
-      setAreaSyncMessage(
-        result?.message ||
-        `Saved ${result?.areaCount ?? 0} Pathao Areas across ${result?.syncedZoneCount ?? 0}/${result?.mappedZoneCount ?? 0} zones. ${result?.failedZoneCount ?? 0} zones need retry.`,
-      );
+      throw new Error("Area sync paused after the safety batch limit. Run Sync again to continue.");
     } catch (error) {
       setAreaSyncMessage(error instanceof Error ? error.message : "Pathao Area catalog sync failed.");
     } finally {
