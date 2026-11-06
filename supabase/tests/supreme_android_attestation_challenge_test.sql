@@ -27,16 +27,13 @@ begin
   ) returning id into v_id;
 
   insert into public.supreme_app_attestation_challenges (
-    challenge_hash, requester_ip_hash, expires_at
+    challenge_hash, requester_ip_hash, created_at, expires_at
   ) values (
-    v_expired_hash, repeat('d', 64), clock_timestamp() + interval '2 minutes'
+    v_expired_hash,
+    repeat('d', 64),
+    clock_timestamp() - interval '10 minutes',
+    clock_timestamp() - interval '1 second'
   ) returning id into v_expired_id;
-
-  -- Keep the table's expires_at > created_at invariant intact, then age this
-  -- challenge to exercise the consume-time expiry guard.
-  update public.supreme_app_attestation_challenges
-     set expires_at = clock_timestamp() - interval '1 second'
-   where id = v_expired_id;
 
   v_previous_role := current_setting('request.jwt.claim.role', true);
   v_previous_claims := current_setting('request.jwt.claims', true);
