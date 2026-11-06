@@ -31,7 +31,7 @@ This is a JavaScript/Deno implementation, not Google's maintained Kotlin verifie
    - Accept a challenge ID, the raw 32-byte challenge returned by the challenge endpoint, the certificate chain, and a signature made by the newly generated Android Keystore private key.
    - Recompute SHA-256(raw challenge) and match the stored hash.
    - Verify the attestation extension contains the exact raw challenge.
-   - Verify the leaf public key validates the signature over a domain-separated payload containing the challenge ID and challenge.
+   - Verify the leaf public key validates the signature over the exact UTF-8 payload `NEWEIX-SUPREME-ATTESTATION-V1\\n<challenge UUID>\\n<base64url challenge without padding>` using `SHA256withECDSA`. The signature is standard ASN.1 DER ECDSA.
    - Reject expired, unknown, already-consumed, malformed, or mismatched challenges.
 
 3. **Certificate path and revocation**
