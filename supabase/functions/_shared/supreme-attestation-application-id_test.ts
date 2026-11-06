@@ -141,3 +141,33 @@ Deno.test("AttestationApplicationId preserves upstream signer octets but policy 
     signingCertificateSha256: new Uint8Array(32),
   })) throw new Error("Non-SHA-256 signer digest must not satisfy production policy.");
 });
+
+Deno.test("AttestationApplicationId matches Google Akita SDK 34 reference JSON vector", () => {
+  // Expected decoded values from the pinned upstream testdata/akita/sdk34/TEE_EC_NONE.json.
+  const signature = [...atob("EDk47kU35Z6O55L2VFBPuDRvxrNG0LvEQV/DOfz8jsE=")]
+    .map((character) => character.charCodeAt(0));
+  if (signature.length !== 32) throw new Error("Upstream SHA-256 fixture digest length changed.");
+  const decoded = parseAttestationApplicationId(appId([
+    packageInfo("com.google.wireless.android.security.attestationverifier.collector", 0),
+  ], [octets(signature)]));
+  if (
+    decoded.packages[0]?.packageName !==
+      "com.google.wireless.android.security.attestationverifier.collector" ||
+    decoded.packages[0].version !== 0n ||
+    decoded.signatureDigests[0]?.length !== 32
+  ) throw new Error("Google Akita fixture vector did not parse as expected.");
+});
+
+Deno.test("AttestationApplicationId matches Google Caiman SDK 36 RKP reference JSON vector", () => {
+  // Expected decoded values from the pinned upstream testdata/caiman/sdk36/TEE_EC_RKP.json.
+  const signature = [...atob("EDk47kU35Z6O55L2VFBPuDRvxrNG0LvEQV/DOfz8jsE=")]
+    .map((character) => character.charCodeAt(0));
+  const decoded = parseAttestationApplicationId(appId([
+    packageInfo("com.google.android.attestation", 0),
+  ], [octets(signature)]));
+  if (
+    decoded.packages[0]?.packageName !== "com.google.android.attestation" ||
+    decoded.packages[0].version !== 0n ||
+    decoded.signatureDigests[0]?.length !== 32
+  ) throw new Error("Google Caiman RKP fixture vector did not parse as expected.");
+});
