@@ -7,6 +7,9 @@ on:
     paths:
       - ".github/workflows/supreme-keyattestation-reference.yml"
       - "docs/security/SUPREME_ANDROID_ATTESTATION_VERIFIER.md"
+      - "scripts/security/**"
+      - "supabase/functions/_shared/supreme-android-keydescription*"
+      - "supabase/functions/_shared/supreme-attestation-application-id*"
   pull_request:
     branches:
       - main
@@ -48,3 +51,25 @@ jobs:
       - name: Run upstream verifier test suite
         working-directory: android-keyattestation
         run: ./gradlew --no-daemon --stacktrace test
+
+      - name: Set up Deno for real-certificate parser differential tests
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Extract real Android attestation extensions from upstream PEM fixtures
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/supreme-attestation-classes
+          javac -d /tmp/supreme-attestation-classes scripts/security/ExtractAndroidAttestationFixtures.java
+          java -cp /tmp/supreme-attestation-classes ExtractAndroidAttestationFixtures \
+            android-keyattestation /tmp/supreme-attestation-fixtures.json
+
+      - name: Compare Deno parser with real Android certificate fixture outputs
+        env:
+          SUPREME_ATTESTATION_FIXTURE_INDEX: /tmp/supreme-attestation-fixtures.json
+          SUPREME_ATTESTATION_UPSTREAM_DIR: android-keyattestation
+        run: |
+          deno test --allow-env=SUPREME_ATTESTATION_FIXTURE_INDEX,SUPREME_ATTESTATION_UPSTREAM_DIR \
+            --allow-read=android-keyattestation,/tmp/supreme-attestation-fixtures.json \
+            supabase/functions/_shared/supreme-android-keydescription_fixture_test.ts
