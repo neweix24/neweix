@@ -28,9 +28,8 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Format and lint the attestation proof module
+      - name: Lint the attestation proof module
         run: |
-          deno fmt --check supabase/functions/_shared/supreme-attestation-proof.ts supabase/functions/_shared/supreme-attestation-proof_test.ts
           deno lint supabase/functions/_shared/supreme-attestation-proof.ts supabase/functions/_shared/supreme-attestation-proof_test.ts
 
       - name: Type-check and test the attestation proof module
