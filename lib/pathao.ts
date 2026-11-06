@@ -94,12 +94,34 @@ async function pathaoRequest<T>(
 
   const payload: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    const message =
-      payload && typeof payload === "object" && "message" in payload &&
-      typeof payload.message === "string"
-        ? payload.message
-        : "Pathao API request failed.";
-    throw new Error(`Pathao API (${response.status}): ${message}`);
+    const record = payload && typeof payload === "object"
+      ? payload as Record<string, unknown>
+      : null;
+    const message = typeof record?.message === "string"
+      ? record.message
+      : "Pathao API request failed.";
+    const errorDetails = record?.errors && typeof record.errors === "object"
+      ? Object.entries(record.errors as Record<string, unknown>)
+          .slice(0, 4)
+          .map(([field, value]) => {
+            const detail = Array.isArray(value)
+              ? value.filter((item) => typeof item === "string").join(", ")
+              : typeof value === "string"
+                ? value
+                : JSON.stringify(value);
+            return detail ? `${field}: ${detail.slice(0, 160)}` : "";
+          })
+          .filter(Boolean)
+          .join("; ")
+      : "";
+    const requestId = [record?.request_id, record?.trace_id]
+      .find((value) => typeof value === "string");
+    const diagnostic = [
+      message,
+      errorDetails,
+      typeof requestId === "string" ? `Request ID: ${requestId.slice(0, 100)}` : "",
+    ].filter(Boolean).join(" | ");
+    throw new Error(`Pathao API (${response.status}): ${diagnostic.slice(0, 600)}`);
   }
   return payload as T;
 }
