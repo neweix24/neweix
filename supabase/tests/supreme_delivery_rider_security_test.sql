@@ -4,8 +4,9 @@ declare
   v_create regprocedure := pg_catalog.to_regprocedure('public.supreme_create_delivery_rider(uuid,text,text,text)');
   v_assign regprocedure := pg_catalog.to_regprocedure('public.supreme_assign_delivery_rider(uuid,uuid,uuid)');
   v_pay regprocedure := pg_catalog.to_regprocedure('public.supreme_record_rider_payment(uuid,uuid,uuid,numeric,date,text,text,text)');
+  v_summary regprocedure := pg_catalog.to_regprocedure('public.supreme_delivery_rider_payout_summary()');
 begin
-  if v_create is null or v_assign is null or v_pay is null then
+  if v_create is null or v_assign is null or v_pay is null or v_summary is null then
     raise exception 'Supreme rider RPC is missing';
   end if;
   if pg_catalog.has_function_privilege('anon',v_create,'EXECUTE') or pg_catalog.has_function_privilege('authenticated',v_create,'EXECUTE')
@@ -19,6 +20,10 @@ begin
   if pg_catalog.has_function_privilege('anon',v_pay,'EXECUTE') or pg_catalog.has_function_privilege('authenticated',v_pay,'EXECUTE')
      or not pg_catalog.has_function_privilege('service_role',v_pay,'EXECUTE') then
     raise exception 'Rider payment RPC grants are not server-only';
+  end if;
+  if pg_catalog.has_function_privilege('anon',v_summary,'EXECUTE') or pg_catalog.has_function_privilege('authenticated',v_summary,'EXECUTE')
+     or not pg_catalog.has_function_privilege('service_role',v_summary,'EXECUTE') then
+    raise exception 'Rider payout summary RPC grants are not server-only';
   end if;
   if pg_catalog.has_table_privilege('anon','public.neweix_delivery_riders','SELECT')
      or pg_catalog.has_table_privilege('authenticated','public.neweix_delivery_riders','SELECT')
