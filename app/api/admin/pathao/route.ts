@@ -640,6 +640,34 @@ export async function POST(request: Request) {
     }
 
     const admin = await createRuntimeServiceClient();
+    const { data: existingMapping, error: existingMappingError } = await admin
+      .from("pathao_location_mappings")
+      .select("id, pathao_city_id, pathao_zone_id, is_verified, is_active")
+      .eq("district_code", districtCode)
+      .eq("upazila_code", upazilaCode)
+      .maybeSingle();
+
+    if (existingMappingError) {
+      console.error("Pathao existing mapping lookup failed:", existingMappingError.message);
+      return errorResponse("Could not safely check the existing Pathao mapping. No changes were made.", 503);
+    }
+
+    if (existingMapping?.is_verified) {
+      if (
+        Number(existingMapping.pathao_city_id) === Number(cityId) &&
+        Number(existingMapping.pathao_zone_id) === Number(zoneId) &&
+        existingMapping.is_active
+      ) {
+        return NextResponse.json({ success: true, mapping: existingMapping, unchanged: true }, {
+          headers: { "Cache-Control": "private, no-store" },
+        });
+      }
+      return errorResponse(
+        "This upazila already has a verified Pathao mapping. It was not overwritten. A separate audited correction workflow is required to change an existing verified mapping.",
+        409,
+      );
+    }
+
     const now = new Date().toISOString();
     const { data: mapping, error } = await admin
       .from("pathao_location_mappings")
