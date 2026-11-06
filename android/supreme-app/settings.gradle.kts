@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NEWEIX-Supreme"
+rootProject.name = "Supreme"
 include(":app")
