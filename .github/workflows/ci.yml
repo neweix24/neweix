@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["main", "feat/neweix-supreme-mobile-workspace"]
+    branches: ["main", "feat/neweix-supreme-mobile-workspace", "feat/neweix-supreme-dashboard-phase-1"]
   pull_request:
     branches: ["main", "feat/neweix-supreme-mobile-workspace"]
 
