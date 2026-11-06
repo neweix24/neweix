@@ -130,7 +130,7 @@ export default function ForgotPasswordPage() {
         onLoad={() => setTurnstileReady(true)}
         onError={() => setMessage("Could not load security verification. Refresh the page.")}
       />
-      <main className="hero auth-page">
+      <main className="hero auth-page premium-auth-page">
         <p className="eyebrow">NEWEIX · ACCOUNT RECOVERY</p>
         <h1>Reset password</h1>
         <p className="hero-copy">
