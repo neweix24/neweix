@@ -12,7 +12,7 @@ create table if not exists public.delivery_cost_entries (
     'toll', 'packaging', 'other'
   )),
   entry_kind text not null default 'charge' check (entry_kind in ('charge', 'refund')),
-  amount integer not null check (amount > 0 and amount <= 1000000000),
+  amount numeric(12,2) not null check (amount > 0 and amount <= 1000000000),
   cost_date date not null,
   source_type text not null check (source_type in (
     'pathao_settlement', 'manual_receipt', 'cashbook', 'other'
@@ -210,9 +210,9 @@ grant execute on function public.supreme_delivery_cost_summary(timestamptz, time
   to service_role;
 
 comment on table public.delivery_cost_entries is
-  'Append-only actual delivery cost ledger in BDT. Quotes and customer delivery fees are never treated as actual cost.';
+  'Append-only actual delivery cost ledger in BDT, preserving up to two decimal places. Quotes and customer delivery fees are never treated as actual cost.';
 comment on column public.delivery_cost_entries.amount is
-  'Positive integer BDT amount; refunds are represented by entry_kind=refund.';
+  'Positive BDT amount with up to two decimal places; refunds are represented by entry_kind=refund.';
 comment on function public.supreme_delivery_cost_summary(timestamptz, timestamptz) is
   'Reports recorded costs only. delivery_costs_complete remains false until all deliveries are reconciled.';
 
