@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Icon from "@/components/ui/icon";
 import styles from "./supreme-workspace-navigation.module.css";
 
@@ -28,6 +28,16 @@ const sections = [
 export default function SupremeWorkspaceNavigation() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/supreme/notifications", { cache: "no-store" })
+      .then(async (response) => response.ok ? response.json() : null)
+      .then((data) => { if (active && data) setUnreadCount(Number(data.unread_count ?? 0)); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
 
   return (
     <>
@@ -39,12 +49,15 @@ export default function SupremeWorkspaceNavigation() {
           </Link>
           <div className={styles.actions}>
             <Link
-              href="/supreme/audit-logs"
+              href="/supreme/notifications"
               className={styles.iconButton}
-              aria-label="Notifications and recent activity"
-              title="Notifications and recent activity"
+              aria-label={unreadCount > 0 ? "Notifications, unread alerts" : "Notifications"}
+              title="Supreme notifications"
             >
-              <Icon name="bell" size={21} />
+              <span className="relative inline-flex">
+                <Icon name="bell" size={21} />
+                {unreadCount > 0 && <span className="absolute -right-3 -top-2 grid min-h-[17px] min-w-[17px] place-items-center rounded-full px-1 text-[9px] font-black" style={{ background: "#c43b3b", color: "#fff" }}>{unreadCount > 99 ? "99+" : unreadCount}</span>}
+              </span>
             </Link>
             <button
               type="button"
