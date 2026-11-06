@@ -75,7 +75,9 @@ function integerToWidth(element: DerElement, width: number): Uint8Array {
 function ecdsaDerToP1363(signature: Uint8Array, width: number): Uint8Array {
   const root = parseDer(signature, { maxInputBytes: 1024, maxDepth: 3, maxNodes: 4 });
   if (root.tagClass !== "universal" || root.tagNumber !== 16 || !root.constructed || root.children.length !== 2) {
-    throw new TypeError("Malformed DER ECDSA signature sequence.");
+    throw new TypeError(
+      `Malformed DER ECDSA signature sequence (class=${root.tagClass}, tag=${root.tagNumber}, constructed=${root.constructed}, children=${root.children.length}, bytes=${signature.length}, first=${signature[0]?.toString(16)}).`,
+    );
   }
   const r = integerToWidth(root.children[0], width);
   const s = integerToWidth(root.children[1], width);
