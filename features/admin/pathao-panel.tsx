@@ -116,6 +116,7 @@ type CoverageDistrictResult = {
   totalUpazilas: number;
   matchedUpazilas: number;
   skippedUpazilas: string[];
+  error?: string;
 };
 
 type Shipment = {
@@ -890,7 +891,10 @@ export default function PathaoPanel() {
                   <td className="p-2 font-medium">{item.districtName}</td>
                   <td className="p-2">{item.pathaoCityName ?? "Not matched"}</td>
                   <td className="p-2">{item.matchedUpazilas}/{item.totalUpazilas}</td>
-                  <td className="p-2">{item.status === "fully_mapped" ? "Fully mapped" : item.status === "partially_mapped" ? `Partial · ${item.skippedUpazilas.length} need review` : item.status === "sync_error" ? "Sync error" : item.status === "city_not_found" ? "City not found" : item.status === "city_ambiguous" ? "Ambiguous city" : item.status === "zones_unavailable" ? "Zones unavailable" : "No exact zone match"}</td>
+                  <td className="p-2">
+                    <div>{item.status === "fully_mapped" ? "Fully mapped" : item.status === "partially_mapped" ? `Partial · ${item.skippedUpazilas.length} need review` : item.status === "sync_error" ? "Sync error" : item.status === "city_not_found" ? "City not found" : item.status === "city_ambiguous" ? "Ambiguous city" : item.status === "zones_unavailable" ? "Zones unavailable" : "No exact zone match"}</div>
+                    {item.error && <div className="mt-1 max-w-sm whitespace-normal break-words text-[11px] leading-4 text-red-700" title={item.error}>{item.error}</div>}
+                  </td>
                 </tr>
               ))}</tbody>
             </table>
