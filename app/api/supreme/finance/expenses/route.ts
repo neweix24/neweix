@@ -18,11 +18,15 @@ function responseError(message: string, status: number) {
   );
 }
 
-async function authorizeSupreme() {
+type SupremeActorResult =
+  | { ok: true; userId: string }
+  | { ok: false; error: string; status: 401 | 403 };
+
+async function authorizeSupreme(): Promise<SupremeActorResult> {
   const session = await createServerSupabaseClient();
   const { data: { user }, error: userError } = await session.auth.getUser();
 
-  if (userError || !user) return { error: "Authentication required.", status: 401 as const };
+  if (userError || !user) return { ok: false, error: "Authentication required.", status: 401 };
 
   const { data: profile, error } = await session
     .from("staff_profiles")
@@ -31,17 +35,17 @@ async function authorizeSupreme() {
     .maybeSingle();
 
   if (error || !profile || profile.is_active !== true || profile.role !== "supreme") {
-    return { error: "Only an active Supreme account can manage operating expenses.", status: 403 as const };
+    return { ok: false, error: "Only an active Supreme account can manage operating expenses.", status: 403 };
   }
 
   const { data: assurance, error: mfaError } =
     await session.auth.mfa.getAuthenticatorAssuranceLevel();
 
   if (mfaError || assurance?.currentLevel !== "aal2") {
-    return { error: "Complete MFA verification for the Supreme account.", status: 403 as const };
+    return { ok: false, error: "Complete MFA verification for the Supreme account.", status: 403 };
   }
 
-  return { userId: user.id };
+  return { ok: true, userId: user.id };
 }
 
 async function getServiceClient() {
@@ -67,7 +71,7 @@ function validDate(value: unknown): value is string {
 export async function GET(request: Request) {
   try {
     const actor = await authorizeSupreme();
-    if ("error" in actor) return responseError(actor.error, actor.status);
+    if (!actor.ok) return responseError(actor.error, actor.status);
 
     const params = new URL(request.url).searchParams;
     const from = params.get("from");
