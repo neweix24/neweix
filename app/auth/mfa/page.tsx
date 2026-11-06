@@ -160,7 +160,9 @@ export default function MfaPage() {
       }
 
       // 8. যাচাই সফল হলে Supreme Dashboard-এ যাওয়া
-      window.location.replace("/supreme");
+      const destination = getSafeSupremeNextPath();
+      if (destination) window.location.replace(destination);
+      else setMessage("ব্যক্তিগত Supreme প্রবেশ লিংক পাওয়া যায়নি। অ্যাপ থেকে আবার প্রবেশ করুন।");
     } catch {
       setMessage(
         "যাচাইকরণে সমস্যা হয়েছে। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।"
