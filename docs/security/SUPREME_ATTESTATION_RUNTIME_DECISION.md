@@ -100,3 +100,30 @@ A runtime/API review was performed before selecting any Deno implementation:
 **Decision:** do not treat any of these APIs/libraries as a drop-in replacement for `android/keyattestation`. A Deno feasibility spike may use one of them for bounded ASN.1/X.509 parsing, but must not return an attestation acceptance decision until Android-specific path validation and extension semantics have been independently implemented and differentially tested against the pinned Kotlin oracle. Generic `X509Certificate.verify()` or a stock RFC 5280 chain engine alone is insufficient.
 
 No new runtime dependency was added in this assessment. Avoiding an unreviewed dependency is preferable to adding a parser that creates a false impression of security completeness.
+
+
+## Deno X.509 feasibility spike (2026-11-07)
+
+A first bounded structural X.509 parser has been added at
+`supabase/functions/_shared/supreme-x509-certificate.ts`. It extracts the
+signed TBSCertificate bytes, serial number, issuer and subject encodings,
+validity, SubjectPublicKeyInfo, signature algorithm OID, signature BIT STRING,
+and extension OIDs/values. The fixture extractor now exports complete DER
+certificate chains from the pinned upstream PEM corpus, and a Deno test parses
+those real chains and checks that the Android Key Attestation extension occurs
+exactly once on the leaf.
+
+This is **only a parser feasibility milestone**. It does not verify certificate
+signatures, construct or validate a certification path, select Google trust
+anchors, enforce Android-specific RKP chain roles, apply Google's certificate
+validity exceptions, check revocation, or authorize an app. The parser must not
+be used by an authentication endpoint to accept a device.
+
+Next implementation gates are: (1) compare parsed X.509 fields and exact signed
+bytes against a trusted independent implementation; (2) implement and
+differentially test signature verification and Android-specific path building;
+(3) reproduce the pinned Kotlin verifier's unusual certificate validity and
+chain-role semantics; (4) compare every acceptance/rejection result with the
+Kotlin oracle across valid and invalid fixtures; and (5) benchmark within
+Supabase Edge Function CPU and memory limits. Any parity gap or runtime limit
+keeps app-only Supreme login disabled.
