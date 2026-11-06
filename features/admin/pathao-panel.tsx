@@ -602,6 +602,7 @@ export default function PathaoPanel() {
   async function autoMapAllDistricts() {
     setCoverageSyncRunning(true);
     setCoverageSyncResults([]);
+    const scanId = crypto.randomUUID();
     setMappingMessage("Reading the live Pathao city and zone catalog. Each division will be processed independently; a temporary failure will not stop the remaining districts.");
     const accumulated: CoverageDistrictResult[] = [];
     let candidateUpazilas = 0;
@@ -639,26 +640,53 @@ export default function PathaoPanel() {
           await new Promise((resolve) => window.setTimeout(resolve, attempt * 1200));
         }
 
+        let divisionRows: CoverageDistrictResult[] = [];
         if (requestError) {
           failedDivisions += 1;
-          for (const district of division.districts) {
-            accumulated.push({
-              divisionName: division.name,
-              districtCode: district.code,
-              districtName: district.name,
-              status: "sync_error",
-              pathaoCityName: null,
-              totalUpazilas: district.upazilas.length,
-              matchedUpazilas: 0,
-              skippedUpazilas: district.upazilas.map((item) => item.name),
-            });
-          }
+          divisionRows = division.districts.map((district) => ({
+            divisionName: division.name,
+            districtCode: district.code,
+            districtName: district.name,
+            status: "sync_error",
+            pathaoCityName: null,
+            totalUpazilas: district.upazilas.length,
+            matchedUpazilas: 0,
+            skippedUpazilas: district.upazilas.map((item) => item.name),
+            error: requestError,
+          }));
         } else {
           const rows = Array.isArray(result?.districts) ? result.districts : [];
-          for (const row of rows) {
-            accumulated.push({ ...row, divisionName: division.name } as CoverageDistrictResult);
-          }
+          divisionRows = rows.map((row) => ({ ...row, divisionName: division.name } as CoverageDistrictResult));
           candidateUpazilas += Number(result?.matchedUpazilaCount ?? 0);
+        }
+        accumulated.push(...divisionRows);
+
+        try {
+          const historyResponse = await fetch("/api/admin/pathao", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            cache: "no-store",
+            body: JSON.stringify({
+              action: "record_coverage_scan",
+              scanId,
+              divisionCode: division.code,
+              districts: divisionRows.map((row) => ({
+                districtCode: row.districtCode,
+                status: row.status,
+                pathaoCityName: row.pathaoCityName,
+                matchedUpazilas: row.matchedUpazilas,
+                skippedUpazilas: row.skippedUpazilas,
+                error: row.error ?? (requestError || null),
+              })),
+            }),
+          });
+          if (!historyResponse.ok) {
+            const historyError = await historyResponse.json().catch(() => null);
+            throw new Error(historyError?.error || "Could not save scan history.");
+          }
+        } catch (historyError) {
+          console.error("Pathao scan history could not be saved:", historyError);
+          setMappingMessage("Scan is continuing, but this division's history could not be saved. Check database migration status.");
         }
 
         setCoverageSyncResults([...accumulated]);
@@ -761,6 +789,28 @@ export default function PathaoPanel() {
 
     async function ensureCoverageMappings() {
       try {
+        const history = await getJson("/api/admin/pathao?action=coverage_scan_history");
+        if (!cancelled && Array.isArray(history.rows) && history.rows.length > 0) {
+          const latestScanId = history.rows[0].scan_id;
+          const latestRows = history.rows.filter((row: Record<string, unknown>) => row.scan_id === latestScanId);
+          const restored: CoverageDistrictResult[] = latestRows.flatMap((row: Record<string, unknown>) => {
+            const division = BANGLADESH_ADMIN_AREAS.find((item) => item.code === row.division_code);
+            const district = division?.districts.find((item) => item.code === row.district_code);
+            if (!division || !district) return [];
+            return [{
+              divisionName: division.name,
+              districtCode: district.code,
+              districtName: district.name,
+              status: String(row.status),
+              pathaoCityName: typeof row.pathao_city_name === "string" ? row.pathao_city_name : null,
+              totalUpazilas: Number(row.total_upazilas),
+              matchedUpazilas: Number(row.matched_upazilas),
+              skippedUpazilas: Array.isArray(row.skipped_upazilas) ? row.skipped_upazilas as string[] : [],
+              error: typeof row.error === "string" ? row.error : undefined,
+            }];
+          });
+          setCoverageSyncResults(restored);
+        }
         const result = await getJson("/api/admin/pathao?action=location_mappings");
         if (cancelled) return;
         const activeDistricts = new Set(
