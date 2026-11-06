@@ -20,6 +20,8 @@ export default function NeweixDeliveryZonesManager() {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "fee" | "missing">("all");
 
   const division = useMemo(() => BANGLADESH_ADMIN_AREAS.find((item) => item.code === divisionCode), [divisionCode]);
   const districts = division?.districts ?? [];
@@ -97,6 +99,20 @@ export default function NeweixDeliveryZonesManager() {
       setSavingId("");
     }
   }
+
+  const activeCount = zones.filter((zone) => zone.is_active).length;
+  const configuredCount = zones.filter((zone) => zone.delivery_fee !== null).length;
+  const missingFeeCount = zones.length - configuredCount;
+  const filteredZones = zones.filter((zone) => {
+    const term = search.trim().toLocaleLowerCase();
+    const matchesSearch = !term || [zone.upazila_name, zone.upazila_name_bn, zone.district_name, zone.zone_code]
+      .some((value) => value.toLocaleLowerCase().includes(term));
+    const matchesStatus = statusFilter === "all"
+      || (statusFilter === "active" && zone.is_active)
+      || (statusFilter === "fee" && !zone.is_active && zone.delivery_fee !== null)
+      || (statusFilter === "missing" && zone.delivery_fee === null);
+    return matchesSearch && matchesStatus;
+  });
 
   const fieldClass = "w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500";
   return (
