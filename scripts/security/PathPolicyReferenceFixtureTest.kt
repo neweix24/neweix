@@ -64,7 +64,7 @@ class PathPolicyReferenceFixtureTest {
       }
       val trustAnchor = Base64.getEncoder().encodeToString(Certs.root.encoded)
       assertEquals("Expected chain to terminate in the generated test root", Certs.root, fixture.certificates.last())
-      """{"name":"${fixture.name}","provisioningMethod":"${expectedProvisioningMethod}","valid":$valid,"certificatesBase64":[$chain],"trustAnchorBase64":"$trustAnchor"}"""
+      """{"name":"${fixture.name}","provisioningMethod":"${expectedProvisioningMethod}","valid":$valid,"validationTimeMs":${referenceDate.time},"certificatesBase64":[$chain],"trustAnchorBase64":"$trustAnchor"}"""
     }
 
     check(records.size == fixtures.size)
