@@ -304,19 +304,6 @@ function validateCertificateValidity(
 }
 
 /**
- * Validate the bounded Android X.509 path rules from the pinned Google verifier.
- * Input is leaf-first and includes a final self-issued certificate. That final
- * certificate is checked for self-issuance but is not part of the validated
- * CertPath; the configured Google trust anchor is selected by matching the
- * issuer of the highest non-root path certificate and then verifying its
- * signature with the anchor key.
- *
- * This stage checks chain roles, target-only attestation extension placement,
- * Android-specific validity exceptions, signatures, and Google status entries.
- * KeyDescription content policy, APK identity, challenge proof, MFA, and login
- * authorization remain separate validation stages.
- */
-/**
  * Parse RKP provisioning data only after chain signatures, trust anchor and
  * revocation checks have succeeded. Google places this extension on the
  * attestation certificate at index 1, not on the leaf or an intermediate.
@@ -344,6 +331,20 @@ function validateRkpProvisioningExtension(
   return null;
 }
 
+/**
+ * Validate the bounded Android X.509 path rules from the pinned Google verifier.
+ * Input is leaf-first and includes a final self-issued certificate. That final
+ * certificate is checked for self-issuance but is not part of the validated
+ * CertPath; the configured Google trust anchor is selected by matching the
+ * issuer of the highest non-root path certificate and then verifying its
+ * signature with the anchor key.
+ *
+ * This stage checks chain roles, target-only attestation extension placement,
+ * Android-specific validity exceptions, signatures, non-root revocation and,
+ * for RKP, the attestation certificate's provisioning-info extension.
+ * KeyDescription content policy, APK identity, challenge proof, MFA, and login
+ * authorization remain separate validation stages.
+ */
 export async function validateX509CertificatePath(
   chain: readonly ParsedX509Certificate[],
   trustedRoots: readonly ParsedX509Certificate[],
