@@ -32,6 +32,23 @@ begin
   end if;
 
   if not exists (
+    select 1 from pg_trigger
+    where tgname = 'pathao_settlement_delivery_cost_sync'
+      and tgrelid = 'public.pathao_settlement_rows'::regclass
+      and not tgisinternal
+  ) then
+    raise exception 'Automatic Pathao settlement-to-ledger trigger is missing';
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'delivery_cost_entries'
+      and column_name = 'amount' and data_type = 'numeric'
+  ) then
+    raise exception 'Delivery cost amount must preserve settlement decimal precision';
+  end if;
+
+  if not exists (
     select 1 from pg_indexes
     where schemaname = 'public'
       and indexname = 'delivery_cost_settlement_row_uidx'
