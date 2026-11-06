@@ -1193,3 +1193,28 @@ body[data-customer-theme="storefront"] {
 .premium-eixverse header>div a:first-child{background:var(--emerald)!important;color:#fff!important}
 .premium-eixverse header>div a:last-child{border-color:rgba(197,165,106,.34)!important;color:#f7f6f2!important}
 .premium-eixverse section [class*="rounded-3xl"][class*="border"]{border-color:rgba(197,165,106,.2)}
+
+
+/* Premium role workspaces: admin, staff, workforce and Supreme */
+.premium-admin-workspace,.premium-role-workspace,.premium-staff-workspace,.premium-workforce-workspace,.premium-supreme-workspace{color:var(--navy)}
+.premium-admin-workspace main,.premium-role-workspace main,.premium-staff-workspace main,.premium-workforce-workspace main,.premium-supreme-workspace main{background:radial-gradient(ellipse at 90% 0%,rgba(8,127,99,.075),transparent 36rem),var(--porcelain)!important;color:var(--navy)!important}
+.premium-admin-workspace h1,.premium-admin-workspace h2,.premium-role-workspace h1,.premium-role-workspace h2,.premium-staff-workspace h1,.premium-staff-workspace h2,.premium-workforce-workspace h1,.premium-workforce-workspace h2,.premium-supreme-workspace h1,.premium-supreme-workspace h2{color:var(--navy)}
+.premium-admin-workspace .eyebrow,.premium-role-workspace .eyebrow,.premium-staff-workspace .eyebrow,.premium-workforce-workspace .eyebrow{color:var(--emerald)}
+.premium-admin-workspace main>div>header,.premium-staff-workspace main>div>header,.premium-workforce-workspace main>div>header{border-color:var(--border)!important;border-radius:24px;background:linear-gradient(135deg,#fffefa,#f0f4ee)!important;box-shadow:0 16px 42px rgba(20,43,59,.065)!important}
+.premium-admin-workspace main>div>section a,.premium-staff-workspace main a,.premium-workforce-workspace main section>*,.premium-workforce-workspace main form{border-color:var(--border)!important;border-radius:18px}
+.premium-admin-workspace main>div>section a,.premium-staff-workspace main a,.premium-workforce-workspace main section>*,.premium-workforce-workspace main form{background:var(--surface-raised)!important;box-shadow:0 10px 30px rgba(20,43,59,.045)}
+.premium-admin-workspace main a,.premium-staff-workspace main a,.premium-workforce-workspace main a{color:var(--emerald)}
+.premium-admin-workspace main button,.premium-staff-workspace main button,.premium-workforce-workspace main button{border-radius:12px}
+.premium-workforce-workspace main input,.premium-workforce-workspace main select,.premium-workforce-workspace main textarea{border-color:var(--border)!important;border-radius:11px;background:var(--surface)!important;color:var(--navy)!important}
+.premium-workforce-workspace main input:focus,.premium-workforce-workspace main select:focus,.premium-workforce-workspace main textarea:focus{border-color:var(--emerald)!important;outline:3px solid rgba(8,127,99,.11)}
+.premium-supreme-workspace>header{border-color:rgba(197,165,106,.25)!important;background:rgba(20,43,59,.97)!important;color:#fffefa!important}
+.premium-supreme-workspace>header a,.premium-supreme-workspace>header span{color:#fffefa}
+.premium-supreme-workspace>header nav a{border-color:rgba(197,165,106,.25)!important;background:rgba(255,255,255,.07)!important;color:#fffefa!important}
+.premium-supreme-workspace>header nav a:hover{border-color:var(--gold)!important;background:rgba(8,127,99,.28)!important}
+.premium-supreme-workspace footer{border-color:rgba(197,165,106,.2)!important;background:#102432;color:#d8d2c4!important}
+.premium-supreme-dashboard{background:radial-gradient(ellipse at 88% 0%,rgba(8,127,99,.12),transparent 38rem),var(--porcelain)!important;color:var(--navy)!important}
+.premium-supreme-dashboard>div>header{border-color:var(--border)!important;background:radial-gradient(ellipse at 100% 0%,rgba(197,165,106,.17),transparent 48%),linear-gradient(135deg,#fffefa,#f0f4ee)!important;box-shadow:0 16px 42px rgba(20,43,59,.07)!important}
+.premium-supreme-dashboard>div>header button{background:var(--emerald)!important;color:white!important;box-shadow:0 9px 22px rgba(8,127,99,.17)!important}
+.premium-supreme-dashboard article,.premium-supreme-dashboard a{border-color:var(--border)!important}
+.premium-supreme-dashboard article{background:var(--surface-raised)!important;box-shadow:0 10px 30px rgba(20,43,59,.05)!important}
+@media(max-width:640px){.premium-admin-workspace main,.premium-staff-workspace main,.premium-workforce-workspace main,.premium-supreme-dashboard{padding-top:22px!important}.premium-supreme-workspace>header nav{scrollbar-width:thin}.premium-admin-workspace main>div>header,.premium-staff-workspace main>div>header,.premium-workforce-workspace main>div>header{padding:22px!important}}
