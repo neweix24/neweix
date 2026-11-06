@@ -613,6 +613,7 @@ export async function POST(request: Request) {
       !/^BD-D[0-9]{2}$/.test(divisionCode) ||
       !/^BD-D[0-9]{2}-Z[0-9]{2}$/.test(districtCode) ||
       !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode) ||
+      input.confirmMapping !== true ||
       !Number.isSafeInteger(cityId) || Number(cityId) < 1 ||
       !Number.isSafeInteger(zoneId) || Number(zoneId) < 1
     ) {
