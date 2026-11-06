@@ -13,10 +13,11 @@ export const metadata: Metadata = {
 
 export default async function SupremeLayout({ children }: { children: React.ReactNode }) {
   await requireStaff(["supreme"]);
+  const privatePath = process.env.SUPREME_PRIVATE_PATH || "/supreme";
 
   return (
     <div className="premium-supreme-workspace min-h-screen" style={{ background: "var(--bg)", color: "var(--ink)" }}>
-      <ServiceWorkerRegister />
+      <ServiceWorkerRegister privatePath={privatePath} />
       <SupremeWorkspaceNavigation />
       <div className="pb-24 sm:pb-28">{children}</div>
     </div>
