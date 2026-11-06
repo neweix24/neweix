@@ -1229,10 +1229,10 @@ export default function PathaoPanel() {
             <select value={deliveryType} onChange={(event) => setDeliveryType(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="48">Normal delivery</option><option value="12">On-demand delivery</option></select>
           </label>
           <label className="text-sm font-medium">Destination city
-            <select value={cityId} onChange={(event) => void loadZones(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="">Select city (optional)</option>{cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select>
+            <select required value={cityId} onChange={(event) => void loadZones(event.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="">Select destination city</option>{cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select>
           </label>
           <label className="text-sm font-medium">Destination zone
-            <select value={zoneId} onChange={(event) => setZoneId(event.target.value)} disabled={!cityId} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="">Select zone (optional)</option>{zones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}</select>
+            <select required value={zoneId} onChange={(event) => setZoneId(event.target.value)} disabled={!cityId} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="">Select destination zone</option>{zones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}</select>
           </label>
         </div>
         <button type="submit" disabled={quoteLoading || !storeId || !weight} className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{quoteLoading ? "Calculating..." : "Calculate Pathao Charge"}</button>
