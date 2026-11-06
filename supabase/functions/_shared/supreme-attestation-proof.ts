@@ -112,6 +112,9 @@ export function decodeEcdsaDerSignature(
     if (integer.length > coordinateSize) {
       throw new TypeError("ECDSA integer exceeds curve size.");
     }
+    if (integer.every((byte) => byte === 0)) {
+      throw new TypeError("ECDSA scalar must be non-zero.");
+    }
 
     const padded = new Uint8Array(coordinateSize);
     padded.set(integer, coordinateSize - integer.length);
