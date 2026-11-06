@@ -4,13 +4,31 @@ import {
   verifySupremeAndroidAttestation,
 } from "./supreme-attestation-verifier.ts";
 import { verifySupremeChallengeProof } from "./supreme-attestation-proof.ts";
-import type { GoogleAttestationStatus } from "./supreme-google-attestation-metadata.ts";
+import type {
+  GoogleAttestationRoots,
+  GoogleAttestationStatus,
+} from "./supreme-google-attestation-metadata.ts";
 
 function fromBase64(value: string): Uint8Array {
   return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
 }
-function emptyStatus(): GoogleAttestationStatus {
-  return { entries: new Map(), maxAgeSeconds: 3600 };
+function emptyStatus(validationTimeMs = Date.now()): GoogleAttestationStatus {
+  return {
+    entries: new Map(),
+    fetchedAtMs: validationTimeMs - 1_000,
+    expiresAtMs: validationTimeMs + 3_599_000,
+    maxAgeSeconds: 3600,
+  };
+}
+function rootMetadata(der: Uint8Array, validationTimeMs: number): GoogleAttestationRoots {
+  const base64 = btoa(String.fromCharCode(...der));
+  const wrapped = base64.match(/.{1,64}/gu)?.join("\\n") ?? base64;
+  return {
+    certificatesPem: [`-----BEGIN CERTIFICATE-----\\n${wrapped}\\n-----END CERTIFICATE-----\\n`],
+    fetchedAtMs: validationTimeMs - 1_000,
+    expiresAtMs: validationTimeMs + 3_599_000,
+    maxAgeSeconds: 3600,
+  };
 }
 function rawEcdsaToDer(raw: Uint8Array): Uint8Array {
   function integer(value: Uint8Array): number[] {
@@ -132,8 +150,8 @@ Deno.test({
     await assertRejects(
       () => verifySupremeAndroidAttestation({
         chain,
-        trustedRoots: [root],
-        revocationStatus: emptyStatus(),
+        googleRoots: rootMetadata(fromBase64(fixture.trustAnchorBase64), fixture.validationTimeMs),
+        revocationStatus: emptyStatus(fixture.validationTimeMs),
         validationTimeMs: fixture.validationTimeMs,
         challengeId: "b8f3e5b2-1b5a-4a7e-8a1a-2d0c6f4e9b11",
         proofSignature: new Uint8Array([0x30, 0x00]),
