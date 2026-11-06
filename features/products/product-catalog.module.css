@@ -146,7 +146,7 @@
 :global(.product-card-action){min-width:0;white-space:nowrap;transition:transform .16s ease,background .16s ease,border-color .16s ease}
 :global(.product-card-action):hover:not(:disabled){transform:translateY(-1px)}
 :global(.product-card-action):focus-visible{outline:3px solid #8bbd4f;outline-offset:2px}
-:global(:global(.product-card-action)-primary){background:#111!important;border-color:#111!important;color:#fff!important}
+:global(.product-card-action-primary){background:#111!important;border-color:#111!important;color:#fff!important}
 :global(.product-card-action):disabled{filter:grayscale(1)}
 .header nav{min-width:0;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none}
 .header nav::-webkit-scrollbar{display:none}
@@ -167,7 +167,7 @@
  .details p{min-height:34px;font-size:10px;line-height:1.55}
  .bottom{margin-top:12px;gap:8px}
  .bottom strong{font-size:14px}
- :global(:global(.product-card-action)s){gap:6px!important;margin-top:8px!important}
+ :global(.product-card-actions){gap:6px!important;margin-top:8px!important}
  :global(.product-card-action){min-height:38px!important;padding:7px 5px!important;border-radius:9px!important;font-size:10px!important;gap:4px!important}
  :global(.product-card-action) svg{width:14px;height:14px}
 }
@@ -176,7 +176,7 @@
  .grid{gap:8px}
  .details{padding:8px}
  .productTools .iconButton{width:32px;min-width:32px;height:32px;min-height:32px}
- :global(:global(.product-card-action)s){grid-template-columns:1fr!important}
+ :global(.product-card-actions){grid-template-columns:1fr!important}
  :global(.product-card-action){min-height:36px!important}
 }
 @media(prefers-reduced-motion:reduce){
@@ -228,7 +228,7 @@
 .iconButton:hover:not(:disabled),.iconButton[aria-pressed=true]{border-color:var(--emerald);background:rgba(8,127,99,.08);color:var(--emerald)}
 .productTools .iconButton{background:var(--surface-raised);color:var(--navy)}
 .productTools .iconButton:focus-visible,:global(.product-card-action):focus-visible{outline:3px solid rgba(8,127,99,.18)}
-:global(:global(.product-card-action)-primary){border-color:var(--navy)!important;background:var(--navy)!important;color:#fff!important}
+:global(.product-card-action-primary){border-color:var(--navy)!important;background:var(--navy)!important;color:#fff!important}
 .discountBadge{background:#b42318}
 .card .bottom strong{color:var(--emerald)!important}
 @media(max-width:640px){.header{background:var(--surface-raised)}.searchSubmit{background:var(--emerald);color:#fff}}
@@ -278,10 +278,10 @@
 .bottom{align-items:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
 .bottom strong{font-size:17px;font-weight:900;letter-spacing:-.3px}
 .bottom del{margin-top:3px;font-size:11px}
-:global(:global(.product-card-action)s){display:grid!important;grid-template-columns:1fr 1fr;gap:7px!important;margin-top:12px!important}
+:global(.product-card-actions){display:grid!important;grid-template-columns:1fr 1fr;gap:7px!important;margin-top:12px!important}
 :global(.product-card-action){width:100%!important;min-width:0!important;min-height:42px!important;padding:8px 9px!important;border-radius:11px!important;font-size:11px!important;font-weight:800!important}
-:global(:global(.product-card-action)-primary){background:var(--navy)!important;border-color:var(--navy)!important}
-:global(:global(.product-card-action)-primary):hover:not(:disabled){background:#203e51!important}
+:global(.product-card-action-primary){background:var(--navy)!important;border-color:var(--navy)!important}
+:global(.product-card-action-primary):hover:not(:disabled){background:#203e51!important}
 :global(.product-card-action):disabled{opacity:.42;filter:grayscale(.45)}
 .notice{border-radius:13px;box-shadow:0 7px 20px rgba(20,43,59,.04)}
 .state{border:1px dashed var(--border);border-radius:18px;background:rgba(255,254,250,.72)}
@@ -308,7 +308,7 @@
  .grid{gap:9px}
  .productTools .iconButton{width:32px;min-width:32px;height:32px;min-height:32px}
  .details{padding:9px}
- :global(:global(.product-card-action)s){gap:5px!important}
+ :global(.product-card-actions){gap:5px!important}
  :global(.product-card-action){min-height:38px!important;font-size:9px!important}
 }
 @media(prefers-reduced-motion:reduce){.card,.image img,.header nav a{transition:none}.card:hover,.card:hover .image img{transform:none}}
