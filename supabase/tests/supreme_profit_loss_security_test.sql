@@ -23,6 +23,9 @@ begin
     where table_schema = 'public' and table_name = 'orders' and column_name = 'returned_at'
   ) or not exists (
     select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'orders' and column_name = 'delivered_at_source'
+  ) or not exists (
+    select 1 from information_schema.columns
     where table_schema = 'public' and table_name = 'customer_return_requests' and column_name = 'refunded_at'
   ) then
     raise exception 'Financial event timestamp columns are missing';

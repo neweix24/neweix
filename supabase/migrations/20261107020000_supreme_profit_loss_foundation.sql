@@ -4,7 +4,22 @@ begin;
 
 alter table public.orders
   add column if not exists delivered_at timestamptz,
-  add column if not exists returned_at timestamptz;
+  add column if not exists returned_at timestamptz,
+  add column if not exists delivered_at_source text not null default 'unknown';
+
+-- The earlier NEWEIX Plus migration backfilled historical delivered_at values
+-- from updated_at. Preserve them as estimates; only future status transitions
+-- are treated as verified delivery-event timestamps.
+update public.orders
+   set delivered_at_source = 'legacy_estimated'
+ where delivered_at is not null
+   and delivered_at_source = 'unknown';
+
+alter table public.orders
+  drop constraint if exists orders_delivered_at_source_check;
+alter table public.orders
+  add constraint orders_delivered_at_source_check
+  check (delivered_at_source in ('unknown','legacy_estimated','status_transition')) not valid;
 
 alter table public.customer_return_requests
   add column if not exists refunded_at timestamptz;
@@ -29,17 +44,18 @@ set search_path = ''
 as $function$
 begin
   if tg_op = 'INSERT' then
-    if new.status::text = 'delivered' and new.delivered_at is null then
-      new.delivered_at := pg_catalog.now();
+    if new.status::text = 'delivered' then
+      new.delivered_at := coalesce(new.delivered_at, pg_catalog.now());
+      new.delivered_at_source := 'status_transition';
     end if;
     if new.status::text = 'returned' and new.returned_at is null then
       new.returned_at := pg_catalog.now();
     end if;
   else
     if new.status::text = 'delivered'
-       and old.status::text is distinct from new.status::text
-       and new.delivered_at is null then
-      new.delivered_at := pg_catalog.now();
+       and old.status::text is distinct from new.status::text then
+      new.delivered_at := coalesce(new.delivered_at, pg_catalog.now());
+      new.delivered_at_source := 'status_transition';
     end if;
     if new.status::text = 'returned'
        and old.status::text is distinct from new.status::text
@@ -89,6 +105,7 @@ as $function$
     select o.id, o.subtotal, o.discount
     from public.orders o
     where o.delivered_at is not null
+      and o.delivered_at_source = 'status_transition'
       and (p_start_at is null or o.delivered_at >= p_start_at)
       and (p_end_at is null or o.delivered_at < p_end_at)
   ),
@@ -127,7 +144,7 @@ as $function$
         as unknown_restock_cost_lines,
       (select pg_catalog.count(*) from public.orders o
         where o.status::text in ('delivered','returned')
-          and o.delivered_at is null
+          and o.delivered_at_source is distinct from 'status_transition'
           and (p_start_at is null or o.created_at >= p_start_at)
           and (p_end_at is null or o.created_at < p_end_at))::bigint
         as deliveries_missing_event_time,
