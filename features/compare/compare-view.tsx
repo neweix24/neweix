@@ -116,7 +116,7 @@ export default function CompareView() {
             <thead style={{ background: "var(--surface-soft)" }}><tr><th className="w-36 border-b p-4 text-xs font-bold uppercase tracking-wider" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>Feature</th>
               {selected.map((product) => <th key={product.id} className="min-w-48 border-b p-4 align-top" style={{ borderColor: "var(--border)" }}>
                 <Link href={`/products/${encodeURIComponent(product.slug)}`} className="font-bold hover:underline" style={{ color: "var(--navy)" }}>{product.name}</Link>
-                <button type="button" onClick={() => remove(product.id)} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold" style={{ color: "var(--danger)" }}><Icon name="x" size={13} /> Remove</button>
+                <button type="button" onClick={() => remove(product.id)} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold" style={{ color: "var(--danger)" }}><Icon name="close" size={13} /> Remove</button>
               </th>)}
             </tr></thead>
             <tbody>
