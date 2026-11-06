@@ -1079,6 +1079,14 @@ export async function POST(request: Request) {
       return errorResponse("Invalid Pathao price calculation details.", 400);
     }
     try {
+      const liveCities = extractPathaoRows(await getPathaoCities());
+      if (!liveCities.some((row) => Number(row.city_id) === recipientCity)) {
+        return errorResponse("The selected Pathao city is not present in the live merchant catalog.", 422);
+      }
+      const liveZones = extractPathaoRows(await getPathaoZones(recipientCity));
+      if (!liveZones.some((row) => Number(row.zone_id) === recipientZone)) {
+        return errorResponse("The selected Pathao zone does not belong to the selected live Pathao city.", 422);
+      }
       const quote = await calculatePathaoPrice({
         storeId, itemType, deliveryType, itemWeightKg, recipientCity, recipientZone,
       });
