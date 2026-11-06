@@ -554,15 +554,15 @@ export async function POST(request: Request) {
       pathao_zone_id: zone.id,
       pathao_city_name: city.city_name as string,
       pathao_zone_name: zone.name,
-      is_verified: true,
-      is_active: true,
-      verified_at: now,
-      verified_by: staff.userId,
+      is_verified: false,
+      is_active: false,
+      verified_at: null,
+      verified_by: null,
       updated_at: now,
     }));
     const { data: saved, error } = await admin
       .from("pathao_location_mappings")
-      .upsert(rows, { onConflict: "district_code,upazila_code" })
+      .upsert(rows, { onConflict: "district_code,upazila_code", ignoreDuplicates: true })
       .select("id, division_code, district_code, upazila_code, pathao_city_id, pathao_zone_id, pathao_city_name, pathao_zone_name, is_verified, is_active, verified_at, updated_at");
     if (error || !saved) {
       console.error("Pathao automatic location mapping failed:", error?.message);
@@ -571,7 +571,7 @@ export async function POST(request: Request) {
 
     const { error: auditError } = await admin.from("audit_logs").insert({
       actor_id: staff.userId,
-      action: "pathao.location_mapping.auto_verified",
+      action: "pathao.location_mapping.candidates_generated",
       target_type: "pathao_location_mapping",
       target_id: saved[0]?.id ?? null,
       details: {
@@ -580,7 +580,7 @@ export async function POST(request: Request) {
         pathao_city_id: Number(cityId),
         matched_count: saved.length,
         skipped_count: district.upazilas.length - saved.length,
-        matching_method: "unique_exact_normalized_name",
+        matching_method: "unique_exact_normalized_name_candidate_only",
       },
     });
     if (auditError) console.error("Pathao automatic mapping audit log failed:", auditError.message);
@@ -591,7 +591,7 @@ export async function POST(request: Request) {
       matchedCount: saved.length,
       skippedCount: district.upazilas.length - saved.length,
       mappings: saved,
-      message: "Only unique exact-name matches were verified against the live Pathao city/zone catalog and saved.",
+      message: "Unique exact-name matches were saved as inactive candidates. An Admin/Supreme user must review and verify each mapping before checkout can use it.",
     }, { headers: { "Cache-Control": "private, no-store" } });
   }
 
@@ -712,10 +712,10 @@ export async function POST(request: Request) {
           pathao_zone_id: zone.id,
           pathao_city_name: String(city.city_name),
           pathao_zone_name: zone.name,
-          is_verified: true,
-          is_active: true,
-          verified_at: now,
-          verified_by: staff.userId,
+          is_verified: false,
+          is_active: false,
+          verified_at: null,
+          verified_by: null,
           updated_at: now,
         });
       }
@@ -723,7 +723,7 @@ export async function POST(request: Request) {
       return {
         districtCode: district.code,
         districtName: district.name,
-        status: matched.length === district.upazilas.length ? "fully_mapped" : matched.length > 0 ? "partially_mapped" : "no_exact_zone_match",
+        status: matched.length === district.upazilas.length ? "fully_matched_candidates" : matched.length > 0 ? "partially_matched_candidates" : "no_exact_zone_match",
         pathaoCityName: String(city.city_name),
         totalUpazilas: district.upazilas.length,
         matchedUpazilas: matched.length,
@@ -738,7 +738,7 @@ export async function POST(request: Request) {
       const admin = await createRuntimeServiceClient();
       const { data: saved, error } = await admin
         .from("pathao_location_mappings")
-        .upsert(rows, { onConflict: "district_code,upazila_code" })
+        .upsert(rows, { onConflict: "district_code,upazila_code", ignoreDuplicates: true })
         .select("id");
       if (error || !saved) {
         console.error("Pathao division coverage sync failed:", error?.message);
@@ -748,14 +748,14 @@ export async function POST(request: Request) {
 
       const { error: auditError } = await admin.from("audit_logs").insert({
         actor_id: staff.userId,
-        action: "pathao.location_mapping.division_synced",
+        action: "pathao.location_mapping.candidates_generated",
         target_type: "pathao_location_mapping",
         details: {
           division_code: divisionCode,
           district_count: districtResults.length,
           matched_upazila_count: savedCount,
           skipped_upazila_count: districtResults.reduce((sum, item) => sum + item.skippedUpazilas.length, 0),
-          matching_method: "unique_exact_normalized_city_and_zone_name",
+          matching_method: "unique_exact_normalized_city_and_zone_name_candidate_only",
         },
       });
       if (auditError) console.error("Pathao division sync audit log failed:", auditError.message);
@@ -769,7 +769,7 @@ export async function POST(request: Request) {
       matchedUpazilaCount: savedCount,
       skippedUpazilaCount: districtResults.reduce((sum, item) => sum + item.skippedUpazilas.length, 0),
       districts: districtResults,
-      message: "Only unique exact Pathao city and zone name matches were saved. Missing or ambiguous locations were left unmapped for manual review.",
+      message: "Unique exact Pathao city and zone name matches were saved as inactive candidates only. Existing mappings were never overwritten; every candidate must be reviewed and manually verified before checkout can use it.",
     }, { headers: { "Cache-Control": "private, no-store" } });
   }
 
