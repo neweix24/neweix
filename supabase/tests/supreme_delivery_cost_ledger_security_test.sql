@@ -16,7 +16,9 @@ begin
     raise exception 'Delivery cost write RPC must accept decimal numeric amounts';
   end if;
 
-  if pg_catalog.pg_get_functiondef(v_summary_fn) like '%::bigint%' then
+  if pg_catalog.pg_get_functiondef(v_summary_fn) not like '%::numeric(14,2) as pathao_cost%'
+     or pg_catalog.pg_get_functiondef(v_summary_fn) not like '%::numeric(14,2) as own_delivery_cost%'
+     or pg_catalog.pg_get_functiondef(v_summary_fn) not like '%::numeric(14,2) as total_cost%' then
     raise exception 'Delivery cost summaries must preserve decimal precision';
   end if;
 
