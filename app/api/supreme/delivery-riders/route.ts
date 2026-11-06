@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 function validDate(value: string | null): value is string {
   if (!value) return false;
-  const match = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return false;
   const year=Number(match[1]),month=Number(match[2]),day=Number(match[3]);
   const date=new Date(0); date.setUTCHours(0,0,0,0); date.setUTCFullYear(year,month-1,day);
@@ -39,6 +39,7 @@ function mapError(message?: string) {
   if (message?.includes("SUPREME_ACTOR_NOT_AUTHORIZED")) return fail("Supreme authorization required.",403);
   if (message?.includes("DELIVERY_ORDER_NOT_FOUND")) return fail("Order not found.",404);
   if (message?.includes("NOT_NEWEIX_OWN_DELIVERY")) return fail("This order is not assigned to NEWEIX delivery.",409);
+  if (message?.includes("DELIVERY_ALREADY_COMPLETED")) return fail("This order is already marked delivered and cannot be reassigned.",409);
   if (message?.includes("DELIVERY_ORDER_TERMINAL")) return fail("A cancelled, returned or refunded order cannot be assigned.",409);
   if (message?.includes("DELIVERY_RIDER_NOT_ACTIVE")) return fail("The selected rider is inactive or missing.",409);
   if (message?.includes("RIDER_ORDER_ASSIGNMENT_MISMATCH")) return fail("Assign this rider to the order before recording payment.",409);
