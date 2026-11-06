@@ -126,10 +126,6 @@ function makeDescription(options: FixtureOptions = {}) {
   }
   if (options.applicationIdInHardware) {
     hardwareEntries.push(appIdEntry);
-    hardwareEntries.sort((left, right) => {
-      // The input fixtures are generated in ascending tag order; tag 709 is last.
-      return left.length - right.length;
-    });
   }
   if (!options.includeApplicationId) softwareEntries.length = 0;
 
