@@ -3,7 +3,7 @@ name: Supreme Android app build
 on:
   push:
     branches:
-      - feat/neweix-supreme-android-mainline
+      - feat/neweix-supreme-android-mainline-v4
     paths:
       - "android/supreme-app/**"
       - ".github/workflows/supreme-android-build.yml"
