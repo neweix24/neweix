@@ -69,3 +69,12 @@ The pinned source review confirmed these concrete components:
 - Upstream fixture corpus includes real chain samples under `testdata/blueline/sdk28`, `testdata/akita/sdk34`, `testdata/caiman/sdk36`, `testdata/frankel/sdk37`, `testdata/tegu/sdk36` and `testdata/tokay/sdk37`, plus intentionally invalid samples under `testdata/invalid`.
 
 This source review is why the NEWEIX implementation must not replace path validation with a simple sequence of certificate signature checks. The Kotlin reference CI success proves the pinned upstream project tests pass in CI; it does not prove a NEWEIX Deno verifier exists or is equivalent.
+
+
+## Differential fixture run — verified CI result
+
+The NEWEIX workflow `.github/workflows/supreme-keyattestation-reference.yml` now runs the pinned Kotlin reference suite and extracts the Android key-attestation extension from the upstream PEM certificate corpus. It then parses those real extension DER values with the NEWEIX Deno KeyDescription decoder and compares the decoded output with the companion upstream JSON expectations.
+
+The successful run on the PR head associated with workflow run `42289300538` completed both the upstream verifier suite and the real-certificate differential step. The harness covered 23 certificate fixtures. Comparisons include the KeyDescription version/security-level/challenge fields, AttestationApplicationId package/version/signer digest data, and RootOfTrust verified-boot key, device-locked flag, verified-boot state and optional verified-boot hash where present.
+
+This is a structural-extension differential check only. It does **not** mean that NEWEIX validates X.509 trust paths, Google's trust anchors, revocation, RKP provisioning roles, certificate validity, or the complete upstream verifier decision. The Kotlin reference suite passing in CI does not execute Kotlin as the production NEWEIX verifier. No attestation endpoint or Supreme authentication route accepts these parser results.
