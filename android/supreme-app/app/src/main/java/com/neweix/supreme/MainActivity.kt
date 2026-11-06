@@ -3,6 +3,7 @@ package com.neweix.supreme
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
@@ -19,6 +20,10 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import kotlin.math.max
 
 class MainActivity : Activity() {
     private var webView: WebView? = null
@@ -124,7 +129,16 @@ class MainActivity : Activity() {
             }
         }
 
-        val root = FrameLayout(this)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
+        if (android.os.Build.VERSION.SDK_INT >= 29) {
+            window.isNavigationBarContrastEnforced = false
+        }
+
+        val root = FrameLayout(this).apply {
+            setBackgroundColor(Color.rgb(11, 18, 32))
+        }
         val bar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
             isIndeterminate = false
             max = 100
@@ -172,10 +186,20 @@ class MainActivity : Activity() {
             )
         )
 
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val safe = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            view.setPadding(safe.left, safe.top, safe.right, max(safe.bottom, ime.bottom))
+            insets
+        }
+
         webView = browser
         progressBar = bar
         errorPanel = error
         setContentView(root)
+        ViewCompat.requestApplyInsets(root)
 
         if (savedInstanceState != null && browser.restoreState(savedInstanceState) == null) {
             browser.loadUrl(BuildConfig.SITE_ORIGIN + privatePath)
