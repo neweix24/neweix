@@ -36,6 +36,7 @@ This is a JavaScript/Deno implementation, not Google's maintained Kotlin verifie
    - Reject expired, unknown, already-consumed, malformed, or mismatched challenges.
 
 3. **Certificate path and revocation**
+   - The shared Deno module `supreme-google-attestation-metadata.ts` now fetches Google's published root and status JSON over HTTPS with redirect rejection, timeouts, bounded streaming response reads, content-type checks, cache-freshness parsing, and strict schema validation. It rejects both `REVOKED` and `SUSPENDED` serials. This metadata loader is not itself an X.509 path validator.
    - Parse every DER certificate with strict size/count limits.
    - Validate signatures, issuer/subject path, certificate validity windows, CA constraints, and path to one of Google's currently published trust anchors.
    - Reject a chain if any certificate serial is listed as revoked by Google's current status feed.
