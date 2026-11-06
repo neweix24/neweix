@@ -1,5 +1,8 @@
 import { parseDer, type DerElement } from "./supreme-attestation-der.ts";
-import type { GoogleAttestationStatus } from "./supreme-google-attestation-metadata.ts";
+import {
+  assertGoogleAttestationMetadataFresh,
+  type GoogleAttestationStatus,
+} from "./supreme-google-attestation-metadata.ts";
 import {
   ANDROID_PROVISIONING_INFO_OID,
   parseAndroidProvisioningInfo,
@@ -360,9 +363,7 @@ export async function validateX509CertificatePath(
   if (trustedRoots.length < 1 || trustedRoots.length > 16) {
     throw new TypeError("Google trust-anchor set is empty or exceeds its bound.");
   }
-  if (revocationStatus.maxAgeSeconds <= 0) {
-    throw new TypeError("Google revocation metadata has no positive freshness window.");
-  }
+  assertGoogleAttestationMetadataFresh(revocationStatus, validationTimeMs);
 
   const root = chain[chain.length - 1];
   if (!equalBytes(root.issuer, root.subject)) {
