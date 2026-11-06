@@ -210,6 +210,9 @@ export default function PathaoPanel() {
   const [mappingAutoRunning, setMappingAutoRunning] = useState(false);
   const [coverageSyncRunning, setCoverageSyncRunning] = useState(false);
   const [coverageSyncResults, setCoverageSyncResults] = useState<CoverageDistrictResult[]>([]);
+  const [areaSyncRunning, setAreaSyncRunning] = useState(false);
+  const [areaSyncMessage, setAreaSyncMessage] = useState("");
+
 
   async function getJson(url: string) {
     const response = await fetch(url, { cache: "no-store" });
@@ -670,6 +673,38 @@ export default function PathaoPanel() {
     }
   }
 
+  async function syncAreaCatalog() {
+    setAreaSyncRunning(true);
+    setAreaSyncMessage("Fetching live Pathao Areas for all verified mapped zones...");
+    try {
+      const response = await fetch("/api/admin/pathao", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({ action: "sync_area_catalog" }),
+      });
+      const result = await response.json().catch(() => null) as {
+        error?: string;
+        message?: string;
+        areaCount?: number;
+        syncedZoneCount?: number;
+        mappedZoneCount?: number;
+        failedZoneCount?: number;
+      } | null;
+      if (!response.ok) {
+        throw new Error(result?.error || result?.message || "Pathao Area catalog sync failed.");
+      }
+      setAreaSyncMessage(
+        result?.message ||
+        `Saved ${result?.areaCount ?? 0} Pathao Areas across ${result?.syncedZoneCount ?? 0}/${result?.mappedZoneCount ?? 0} zones. ${result?.failedZoneCount ?? 0} zones need retry.`,
+      );
+    } catch (error) {
+      setAreaSyncMessage(error instanceof Error ? error.message : "Pathao Area catalog sync failed.");
+    } finally {
+      setAreaSyncRunning(false);
+    }
+  }
+
   async function saveLocationMapping(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!mappingDivisionCode || !mappingDistrictCode || !mappingUpazilaCode || !mappingCityId || !mappingZoneId) {
@@ -808,6 +843,18 @@ export default function PathaoPanel() {
           </button>
           <span className="text-xs text-gray-600">Eight divisions · live City/Zone catalog · no guessed mappings</span>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void syncAreaCatalog()}
+            disabled={areaSyncRunning || coverageSyncRunning || mappingAutoRunning || mappingSaving || mappings.length === 0}
+            className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-50"
+          >
+            {areaSyncRunning ? "Syncing Pathao Areas..." : "Sync Pathao Area catalog"}
+          </button>
+          <span className="text-xs text-gray-600">Stores live Area IDs and home-delivery availability for verified zones.</span>
+        </div>
+        {areaSyncMessage && <p role="status" className="text-xs text-gray-700">{areaSyncMessage}</p>}
         {coverageSyncResults.length > 0 && (
           <div className="overflow-x-auto rounded-lg border bg-white">
             <table className="w-full min-w-[760px] text-left text-xs">
