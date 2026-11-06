@@ -3,6 +3,12 @@ const UUID_V4 =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const BASE64URL_32_BYTES = /^[A-Za-z0-9_-]{43}$/;
 
+function toArrayBuffer(value: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(value.byteLength);
+  copy.set(value);
+  return copy.buffer;
+}
+
 /**
  * Strictly decodes the unpadded base64url representation used by the Android
  * app. Re-encoding prevents accepting alternate/non-canonical encodings.
@@ -155,8 +161,8 @@ export async function verifySupremeChallengeProof(
     return await crypto.subtle.verify(
       { name: "ECDSA", hash: "SHA-256" },
       publicKey,
-      signature,
-      payload,
+      toArrayBuffer(signature),
+      toArrayBuffer(payload),
     );
   } catch {
     return false;
