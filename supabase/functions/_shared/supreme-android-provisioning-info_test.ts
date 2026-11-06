@@ -1,4 +1,19 @@
-import { assertEquals, assertThrows } from "jsr:@std/assert";
+function assertEquals(actual: unknown, expected: unknown): void {
+  if (JSON.stringify(actual, (_key, value) => typeof value === "bigint" ? value.toString() : value) !==
+      JSON.stringify(expected, (_key, value) => typeof value === "bigint" ? value.toString() : value)) {
+    throw new Error(`Expected ${String(expected)}, received ${String(actual)}.`);
+  }
+}
+function assertThrows(fn: () => unknown): void {
+  let threw = false;
+  try {
+    fn();
+  } catch {
+    threw = true;
+  }
+  if (!threw) throw new Error("Expected function to throw.");
+}
+
 import { parseAndroidProvisioningInfo } from "./supreme-android-provisioning-info.ts";
 
 Deno.test("parses required RKP provisioning fields", () => {
