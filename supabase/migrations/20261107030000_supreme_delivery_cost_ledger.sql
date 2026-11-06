@@ -67,7 +67,7 @@ select
   round(r.delivery_charge)::integer,
   coalesce(i.settlement_date, i.imported_at::date),
   'pathao_settlement',
-  coalesce(i.settlement_reference, i.source_filename) || ':' || r.source_row_number::text,
+  i.id::text || ':' || r.source_row_number::text,
   i.id,
   r.id,
   'Imported from previously reconciled Pathao settlement row.',
