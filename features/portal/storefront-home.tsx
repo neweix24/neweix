@@ -266,6 +266,8 @@ export default function StorefrontHome() {
               <Link href="/track-order" onClick={() => setQuickMenuOpen(false)}><Icon name="truck" size={17} />{t("trackMyOrder")}</Link>
               <Link href="/wishlist" onClick={() => setQuickMenuOpen(false)}><Icon name="heart" size={17} />{t("wishlist")}<b>{wishlistCount}</b></Link>
               <Link href="/cart" onClick={() => setQuickMenuOpen(false)}><Icon name="cart" size={17} />{t("shoppingCart")}<b>{cartCount}</b></Link>
+              <Link href="/compare" onClick={() => setQuickMenuOpen(false)}><Icon name="compare" size={17} />Compare products</Link>
+              <Link href="/account" onClick={() => setQuickMenuOpen(false)}><Icon name="user" size={17} />My account</Link>
               <div className={styles.quickMenuLanguage}><Icon name="globe" size={17} /><LanguageSwitcher /></div>
               <Link href="/account/eixpay" onClick={() => setQuickMenuOpen(false)}><Icon name="wallet" size={17} />Wallet · Eixon</Link>
               <Link href="/account/neweix-plus" onClick={() => setQuickMenuOpen(false)}><Icon name="membership" size={17} />Neweix+</Link>
