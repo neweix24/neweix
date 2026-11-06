@@ -1442,14 +1442,23 @@ export async function POST(request: Request) {
       specialInstruction,
     });
 
+    const bookedAt = new Date().toISOString();
+    const actualPathaoFee = Number.isSafeInteger(result.delivery_fee) && Number(result.delivery_fee) >= 0
+      ? Number(result.delivery_fee)
+      : null;
+
     const { error: saveError } = await admin.from("orders").update({
       delivery_provider: "pathao",
       delivery_status: "booked",
       delivery_consignment_id: result.consignment_id,
       delivery_tracking_code: result.consignment_id,
-      delivery_booked_at: new Date().toISOString(),
+      delivery_booked_at: bookedAt,
+      ...(actualPathaoFee === null ? {} : {
+        pathao_actual_fee: actualPathaoFee,
+        pathao_actual_fee_recorded_at: bookedAt,
+      }),
       delivery_error: null,
-      updated_at: new Date().toISOString(),
+      updated_at: bookedAt,
     }).eq("id", orderId).eq("delivery_status", "booking");
 
     if (saveError) {
