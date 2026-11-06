@@ -13,7 +13,6 @@ export type AttestationApplicationId = {
 const MAX_PACKAGES = 32;
 const MAX_SIGNATURES = 10;
 const MAX_DER_BYTES = 16 * 1024;
-const MAX_PACKAGE_VERSION = 2_147_483_647n;
 
 function expectUniversal(
   element: DerElement,
@@ -60,9 +59,6 @@ function expectVersion(element: DerElement): bigint {
   }
   let value = 0n;
   for (const byte of bytes) value = (value << 8n) | BigInt(byte);
-  if (value > MAX_PACKAGE_VERSION) {
-    throw new RangeError("Package version exceeds the Android verifier's supported range.");
-  }
   return value;
 }
 
@@ -117,9 +113,6 @@ export function parseAttestationApplicationId(
   const digestSet = new Set<string>();
   const signatureDigests = signatureElements.map((element) => {
     const digest = expectOctets(element, "signature digest");
-    if (digest.length !== 32) {
-      throw new TypeError("APK signing-certificate digest must be a 32-byte SHA-256 value.");
-    }
     const key = Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
     if (digestSet.has(key)) {
       throw new TypeError("AttestationApplicationId contains a duplicate signature digest.");
@@ -153,6 +146,7 @@ export function matchesAttestationApplicationId(
   if (!packageMatches) return false;
 
   return actual.signatureDigests.some((digest) =>
+    digest.length === 32 &&
     digest.length === expected.signingCertificateSha256.length &&
     digest.every((byte, index) => byte === expected.signingCertificateSha256[index])
   );
