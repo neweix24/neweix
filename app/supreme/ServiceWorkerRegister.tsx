@@ -11,7 +11,7 @@ export default function ServiceWorkerRegister({ privatePath }: { privatePath: st
       .catch((error: unknown) => {
         console.error("NEWEIX Supreme service worker registration failed:", error);
       });
-  }, []);
+  }, [privatePath]);
 
   return null;
 }
