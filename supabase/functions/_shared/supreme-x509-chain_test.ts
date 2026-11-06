@@ -103,7 +103,7 @@ Deno.test("X.509 path rejects an untrusted root, wrong issuer name and blocked s
   if (toHex(unrelatedRoot.rawCertificate) !== toHex(chain[chain.length - 1].rawCertificate)) {
     await assertRejects(
       () => validateX509CertificatePath(chain, [unrelatedRoot], emptyStatus()),
-      "not an exact Google trust anchor",
+      "No Google trust anchor matches the chain issuer name.",
     );
   }
 
