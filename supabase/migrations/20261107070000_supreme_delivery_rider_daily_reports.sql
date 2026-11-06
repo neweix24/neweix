@@ -176,6 +176,7 @@ as $function$
           and o.delivered_at is null
           and o.status not in ('cancelled','returned')
           and o.payment_status <> 'refunded'
+          and (a.assigned_at at time zone 'Asia/Dhaka')::date between p_start_date and p_end_date
       )::bigint as pending_orders,
       count(*) filter (
         where a.assignment_source='tracked'
