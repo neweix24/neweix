@@ -153,7 +153,7 @@ export default function MfaPage() {
   }
 
   return (
-    <main className="hero auth-page">
+    <main className="hero auth-page premium-auth-page">
       <p className="eyebrow">NEWEIX · SUPREME SECURITY</p>
 
       <h1>দুই ধাপের যাচাইকরণ</h1>
