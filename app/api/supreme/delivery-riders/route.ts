@@ -42,7 +42,7 @@ export async function GET() {
     const supabase=await db();
     const [ridersResult,ordersResult,paymentsResult,totalsResult]=await Promise.all([
       supabase.from("neweix_delivery_riders").select("id,rider_code,full_name,phone,is_active,created_at").order("created_at",{ascending:false}),
-      supabase.from("orders").select("id,order_number,status,delivery_status,delivery_fee,created_at,neweix_delivery_rider_id").eq("delivery_provider","neweix_own").not("status","in","(cancelled,returned,refunded)").order("created_at",{ascending:false}).limit(200),
+      supabase.from("orders").select("id,order_number,status,payment_status,delivery_status,delivery_fee,created_at,neweix_delivery_rider_id").eq("delivery_provider","neweix_own").not("status","in","(cancelled,returned)").neq("payment_status","refunded").order("created_at",{ascending:false}).limit(200),
       supabase.from("delivery_cost_entries").select("id,order_id,rider_id,amount,cost_date,source_reference,notes,created_at").eq("provider","neweix_own").eq("cost_type","rider_payment").order("cost_date",{ascending:false}).limit(200),
       supabase.rpc("supreme_delivery_rider_payout_summary"),
     ]);
