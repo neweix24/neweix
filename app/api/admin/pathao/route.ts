@@ -58,22 +58,30 @@ async function authorizeAdmin(): Promise<AdminAuthResult> {
 
 
 function extractPathaoRows(payload: unknown): Array<Record<string, unknown>> {
-  if (Array.isArray(payload)) {
-    return payload.filter((item): item is Record<string, unknown> =>
+  const rowArray = (value: unknown): Array<Record<string, unknown>> | null => {
+    if (!Array.isArray(value)) return null;
+    return value.filter((item): item is Record<string, unknown> =>
       Boolean(item) && typeof item === "object" && !Array.isArray(item)
     );
-  }
-  if (!payload || typeof payload !== "object") return [];
-  const record = payload as Record<string, unknown>;
-  const data = record.data;
-  if (Array.isArray(data)) return extractPathaoRows(data);
-  if (data && typeof data === "object") {
-    const nested = data as Record<string, unknown>;
-    if (Array.isArray(nested.data)) return extractPathaoRows(nested.data);
-    if (Array.isArray(nested.locations)) return extractPathaoRows(nested.locations);
-  }
-  if (Array.isArray(record.locations)) return extractPathaoRows(record.locations);
-  return [];
+  };
+
+  const visit = (value: unknown, depth: number): Array<Record<string, unknown>> => {
+    if (depth > 6 || !value || typeof value !== "object") return [];
+    const direct = rowArray(value);
+    if (direct) return direct;
+
+    const record = value as Record<string, unknown>;
+    // Pathao's documented response is data.data, but tolerate common
+    // wrappers used by API gateways and SDK response serializers.
+    for (const key of ["data", "areas", "area_list", "areaList", "locations", "result", "results"]) {
+      if (!(key in record)) continue;
+      const rows = visit(record[key], depth + 1);
+      if (rows.length > 0) return rows;
+    }
+    return [];
+  };
+
+  return visit(payload, 0);
 }
 
 function normalizePathaoPhone(value: string) {
@@ -381,8 +389,10 @@ export async function POST(request: Request) {
         failedZones.push({ zoneId: result.zoneId, error: result.error });
         continue;
       }
-      successfulZones += 1;
-      for (const row of extractPathaoRows(result.payload)) {
+
+      const zoneRows: Array<Record<string, unknown>> = [];
+      const sourceRows = extractPathaoRows(result.payload);
+      for (const row of sourceRows) {
         const rawAreaId = row.area_id ?? row.areaId ?? row.id;
         const areaId = Number(rawAreaId);
         const areaName = typeof row.area_name === "string"
@@ -398,7 +408,7 @@ export async function POST(request: Request) {
           : typeof row.homeDeliveryAvailable === "boolean"
             ? row.homeDeliveryAvailable
             : null;
-        rows.push({
+        zoneRows.push({
           pathao_city_id: cityByZone.get(result.zoneId),
           pathao_zone_id: result.zoneId,
           pathao_area_id: areaId,
@@ -409,6 +419,23 @@ export async function POST(request: Request) {
           updated_at: now,
         });
       }
+
+      if (zoneRows.length === 0) {
+        const payloadRecord = result.payload && typeof result.payload === "object"
+          ? result.payload as Record<string, unknown>
+          : null;
+        const apiMessage = typeof payloadRecord?.message === "string"
+          ? payloadRecord.message
+          : "Pathao returned no usable Area records (empty list or unexpected response shape).";
+        failedZones.push({
+          zoneId: result.zoneId,
+          error: apiMessage.slice(0, 240),
+        });
+        continue;
+      }
+
+      successfulZones += 1;
+      rows.push(...zoneRows);
     }
 
     if (successfulZones === 0) {
@@ -418,7 +445,7 @@ export async function POST(request: Request) {
         failedZoneCount: failedZones.length,
         failedZones,
         areaCount: 0,
-        message: "Pathao Area catalog could not be fetched for any mapped zone.",
+        message: "Pathao returned no usable Area records for any mapped zone. Check the per-zone errors and API response format.",
       }, { status: 502, headers: { "Cache-Control": "private, no-store" } });
     }
 
@@ -456,7 +483,7 @@ export async function POST(request: Request) {
       failedZoneCount: failedZones.length,
       failedZones,
       areaCount: savedCount,
-      message: `Fetched Pathao Areas for ${successfulZones}/${zoneIds.length} mapped zones and saved ${savedCount} Area records.`,
+      message: `Saved ${savedCount} Area records from ${successfulZones}/${zoneIds.length} mapped zones. ${failedZones.length} zones returned errors or no usable Area data.`,
     }, { headers: { "Cache-Control": "private, no-store" } });
   }
 

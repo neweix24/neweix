@@ -212,6 +212,7 @@ export default function PathaoPanel() {
   const [coverageSyncResults, setCoverageSyncResults] = useState<CoverageDistrictResult[]>([]);
   const [areaSyncRunning, setAreaSyncRunning] = useState(false);
   const [areaSyncMessage, setAreaSyncMessage] = useState("");
+  const [areaSyncFailures, setAreaSyncFailures] = useState<Array<{ zoneId: number; error: string }>>([]);
 
 
   async function getJson(url: string) {
@@ -675,6 +676,7 @@ export default function PathaoPanel() {
 
   async function syncAreaCatalog() {
     setAreaSyncRunning(true);
+    setAreaSyncFailures([]);
     setAreaSyncMessage("Fetching live Pathao Areas for all verified mapped zones...");
     try {
       const response = await fetch("/api/admin/pathao", {
@@ -690,7 +692,9 @@ export default function PathaoPanel() {
         syncedZoneCount?: number;
         mappedZoneCount?: number;
         failedZoneCount?: number;
+        failedZones?: Array<{ zoneId: number; error: string }>;
       } | null;
+      setAreaSyncFailures(result?.failedZones ?? []);
       if (!response.ok) {
         throw new Error(result?.error || result?.message || "Pathao Area catalog sync failed.");
       }
@@ -855,6 +859,16 @@ export default function PathaoPanel() {
           <span className="text-xs text-gray-600">Stores live Area IDs and home-delivery availability for verified zones.</span>
         </div>
         {areaSyncMessage && <p role="status" className="text-xs text-gray-700">{areaSyncMessage}</p>}
+        {areaSyncFailures.length > 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <p className="text-xs font-semibold text-amber-900">Zones needing investigation ({areaSyncFailures.length})</p>
+            <ul className="mt-2 max-h-48 space-y-1 overflow-auto text-xs text-amber-900">
+              {areaSyncFailures.map((failure) => (
+                <li key={failure.zoneId}>Zone {failure.zoneId}: {failure.error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         {coverageSyncResults.length > 0 && (
           <div className="overflow-x-auto rounded-lg border bg-white">
             <table className="w-full min-w-[760px] text-left text-xs">
