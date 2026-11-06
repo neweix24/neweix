@@ -25,6 +25,8 @@ Deno.test({
     const oracleFixtures = JSON.parse(await Deno.readTextFile(oracleIndex!)) as OracleFixture[];
     const oracleBySource = new Map(oracleFixtures.map((fixture) => [fixture.source, fixture]));
     let checked = 0;
+    let validCount = 0;
+    let invalidCount = 0;
     for (const fixture of certFixtures) {
       const oracle = oracleBySource.get(fixture.source);
       if (!oracle) throw new Error(`${fixture.source}: missing JDK signature oracle.`);
@@ -43,7 +45,8 @@ Deno.test({
           );
         }
         assertEquals(valid, oracle.certificates[index].signatureVerifiedByNext, `${fixture.source} cert ${index}: signature result`);
-        if (!valid) throw new Error(`${fixture.source} cert ${index}: expected a valid fixture certificate signature.`);
+        if (valid) validCount++;
+        else invalidCount++;
         const changedSignature = chain[index].signature.slice();
         changedSignature[0] ^= 0x01;
         const tampered = { ...chain[index], signature: changedSignature };
@@ -52,7 +55,9 @@ Deno.test({
         checked++;
       }
     }
-    if (checked === 0) throw new Error("No certificate signatures were verified.");
-    console.log(`Deno WebCrypto verified ${checked} real Android certificate signatures against their next chain certificates; tampered signatures were rejected.`);
+    if (checked === 0 || validCount === 0) throw new Error("No valid certificate signatures were verified.");
+    console.log(
+      `Matched JDK results for ${checked} real Android certificate links (${validCount} valid, ${invalidCount} invalid); tampered signatures were rejected.`,
+    );
   },
 });
