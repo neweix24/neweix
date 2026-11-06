@@ -73,7 +73,8 @@ export default function ProductCardActions({
         title={t("addToCart")}
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 44, minWidth: 44, minHeight: 42, padding: 0, borderRadius: 12, border: "1px solid #d7e4da", background: "#f4f8f4", color: "#236342", cursor: unavailable ? "not-allowed" : "pointer", opacity: unavailable ? .5 : 1 }}
       >
-        <Icon name="cart" size={19} />
+        <Icon name="cart" size={17} />
+        <span>{t("addToCart")}</span>
       </button>
       <button
         className="product-card-action product-card-action-primary"
@@ -84,7 +85,8 @@ export default function ProductCardActions({
         title={t("buyNow")}
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 44, minWidth: 44, minHeight: 42, padding: 0, borderRadius: 12, border: "1px solid #176b43", background: "#176b43", color: "#fff", cursor: unavailable ? "not-allowed" : "pointer", opacity: unavailable ? .5 : 1 }}
       >
-        <Icon name="sparkles" size={18} />
+        <Icon name="sparkles" size={17} />
+        <span>{t("buyNow")}</span>
       </button>
       {message && <p role="status" aria-live="polite" style={{ margin: 0, fontSize: 11, color: "var(--muted)" }}>{message}</p>}
     </div>
