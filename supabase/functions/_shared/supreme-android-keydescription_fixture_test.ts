@@ -26,6 +26,7 @@ function securityLevel(value: string): number {
     case "SOFTWARE": return 0;
     case "TRUSTED_ENVIRONMENT": return 1;
     case "STRONGBOX": return 2;
+    case "STRONG_BOX": return 2;
     default: throw new Error(`Unknown upstream security level: ${value}`);
   }
 }
