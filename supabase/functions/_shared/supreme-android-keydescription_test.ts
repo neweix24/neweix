@@ -103,6 +103,20 @@ Deno.test("AuthorizationList validates RootOfTrust structure and boot-state rang
   );
 });
 
+Deno.test("AuthorizationList tag 709 decodes the nested DER AttestationApplicationId", () => {
+  const packageName = octets(...new TextEncoder().encode("com.neweix.supreme"));
+  const packageVersion = int(12);
+  const packageInfo = seq(packageName, packageVersion);
+  const appId = seq(tlv([0x31], packageInfo), tlv([0x31], []));
+  const appIdTag = tlv([0xbf, 0x85, 0x45], octets(...appId));
+  const decoded = parseAndroidKeyDescription(keyDescription(seq(), seq(appIdTag)));
+  const parsed = decoded.hardwareEnforced.entries[0]?.attestationApplicationId;
+  if (
+    parsed?.packages[0]?.packageName !== "com.neweix.supreme" ||
+    parsed.packages[0].version !== 12n
+  ) throw new Error("Nested AttestationApplicationId was not decoded.");
+});
+
 Deno.test("AuthorizationList rejects malformed SET OF and NULL marker payloads", () => {
   throws(
     () => parseAndroidKeyDescription(keyDescription(seq(tlv([0xa1], int(1))))),
