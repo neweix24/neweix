@@ -2,7 +2,7 @@ name: Supabase database migration tests
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["main", "feat/neweix-supreme-mobile-workspace"]
   push:
     branches: ["main"]
   workflow_dispatch:
