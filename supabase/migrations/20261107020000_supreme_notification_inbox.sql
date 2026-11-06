@@ -40,7 +40,7 @@ begin
     ) values (
       'orders', 'info', 'order.created:' || new.id::text,
       'নতুন অর্ডার এসেছে',
-      'অর্ডার ' || new.order_number || ' · ৳' || new.total::text,
+      'নতুন অর্ডার গ্রহণ করা হয়েছে: ' || new.order_number || '।'
       '/admin/orders', 'order', new.id::text
     )
     on conflict (event_key) do nothing;
