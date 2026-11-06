@@ -18,8 +18,9 @@ const protectedPages = [
   "/admin",
   "/admin/orders",
   "/admin/integrations",
-  "/supreme",
 ];
+
+const supremePrivatePath = process.env.SUPREME_PRIVATE_PATH || "";
 
 const protectedCustomerPages = [
   "/wishlist",
@@ -154,6 +155,26 @@ for (const path of protectedPages) {
   });
 }
 
+if (supremePrivatePath) {
+  await runCheck("Legacy Supreme route is hidden", "/supreme", async (response) => {
+    return response.status === 404
+      ? { ok: true }
+      : { ok: false, reason: `Expected HTTP 404, received ${response.status}` };
+  });
+
+  await runCheck("Private Supreme entry requires authentication", supremePrivatePath, async (response) => {
+    const location = response.headers.get("location") || "";
+    const redirectedToLogin = response.status >= 300 && response.status < 400 &&
+      location.includes("/auth/login") &&
+      location.includes(encodeURIComponent(supremePrivatePath));
+    return redirectedToLogin
+      ? { ok: true }
+      : { ok: false, reason: `Expected login redirect preserving private path, received HTTP ${response.status} (${location || "no Location header"})` };
+  });
+} else {
+  process.stdout.write("SKIP  Supreme private-route smoke checks — set SUPREME_PRIVATE_PATH in the smoke-test environment.\\n");
+}
+
 for (const path of protectedCustomerPages) {
   await runCheck(`Customer-protected page ${path}`, path, async (response) => {
     const location = response.headers.get("location") || "";
@@ -191,7 +212,7 @@ for (const path of protectedCustomerApis) {
   });
 }
 
-process.stdout.write(`\nSmoke test summary: ${publicPages.length + protectedPages.length + protectedCustomerPages.length + protectedApis.length + protectedCustomerApis.length + 2 - failures.length} passed, ${failures.length} failed.\n`);
+process.stdout.write(`\nSmoke test summary: ${publicPages.length + protectedPages.length + protectedCustomerPages.length + protectedApis.length + protectedCustomerApis.length + 2 + (supremePrivatePath ? 2 : 0) - failures.length} passed, ${failures.length} failed.\n`);
 if (failures.length > 0) {
   process.stderr.write(JSON.stringify(failures, null, 2) + "\n");
   process.exitCode = 1;
