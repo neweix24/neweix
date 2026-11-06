@@ -2,9 +2,9 @@ name: Supabase database migration tests
 
 on:
   pull_request:
-    branches: ["main", "feat/neweix-supreme-mobile-workspace"]
+    branches: ["main", "feat/neweix-supreme-mobile-workspace", "feat/supreme-server-attestation-verifier"]
   push:
-    branches: ["main", "feat/neweix-supreme-dashboard-phase-1", "feat/neweix-supreme-dashboard-phase-1-mainline"]
+    branches: ["main", "feat/neweix-supreme-dashboard-phase-1", "feat/neweix-supreme-dashboard-phase-1-mainline", "feat/supreme-server-attestation-verifier"]
   workflow_dispatch:
 
 permissions:
@@ -147,5 +147,11 @@ jobs:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/supreme_notification_security_test.sql
+
+      - name: Verify Supreme Android attestation challenge replay protection
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/supreme_android_attestation_challenge_test.sql
 
       # GitHub-hosted runners are ephemeral; Docker containers are discarded after the job.
