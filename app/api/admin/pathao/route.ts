@@ -679,6 +679,23 @@ export async function POST(request: Request) {
         zoneIndex.set(key, [...(zoneIndex.get(key) ?? []), { id, name }]);
       }
 
+      // Distinguish a genuinely unmatched district from a successful HTTP
+      // response whose payload is empty or does not match Pathao's zone schema.
+      if (zoneIndex.size === 0) {
+        return {
+          districtCode: district.code,
+          districtName: district.name,
+          status: "zones_unavailable",
+          pathaoCityName: String(city.city_name),
+          totalUpazilas: district.upazilas.length,
+          matchedUpazilas: 0,
+          skippedUpazilas: district.upazilas.map((item) => item.name),
+          error: zones.length === 0
+            ? "Pathao returned an empty or unrecognized zone list for this City."
+            : `Pathao returned ${zones.length} zone rows, but none contained a valid zone_id and zone_name.`,
+        };
+      }
+
       const matched = district.upazilas.flatMap((upazila) => {
         const candidates = zoneIndex.get(normalize(upazila.name)) ?? [];
         return candidates.length === 1 ? [{ upazila, zone: candidates[0] }] : [];
