@@ -172,7 +172,7 @@ if (supremePrivatePath) {
       : { ok: false, reason: `Expected login redirect preserving private path, received HTTP ${response.status} (${location || "no Location header"})` };
   });
 } else {
-  process.stdout.write("SKIP  Supreme private-route smoke checks — set SUPREME_PRIVATE_PATH in the smoke-test environment.\\n");
+  process.stdout.write("SKIP  Supreme private-route smoke checks — set SUPREME_PRIVATE_PATH in the smoke-test environment.\n");
 }
 
 for (const path of protectedCustomerPages) {
