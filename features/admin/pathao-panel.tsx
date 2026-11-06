@@ -206,6 +206,7 @@ export default function PathaoPanel() {
   const [mappings, setMappings] = useState<PathaoMapping[]>([]);
   const [mappingsLoading, setMappingsLoading] = useState(false);
   const [mappingSaving, setMappingSaving] = useState(false);
+  const [mappingConfirmed, setMappingConfirmed] = useState(false);
   const [mappingMessage, setMappingMessage] = useState("");
   const [mappingDivisionCode, setMappingDivisionCode] = useState("");
   const [mappingDistrictCode, setMappingDistrictCode] = useState("");
@@ -696,6 +697,7 @@ export default function PathaoPanel() {
         cache: "no-store",
         body: JSON.stringify({
           action: "save_location_mapping",
+          confirmMapping: mappingConfirmed,
           divisionCode: mappingDivisionCode,
           districtCode: mappingDistrictCode,
           upazilaCode: mappingUpazilaCode,
@@ -907,37 +909,38 @@ export default function PathaoPanel() {
         </p>
         <form onSubmit={saveLocationMapping} className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-medium">Bangladesh division
-            <select required value={mappingDivisionCode} onChange={(event) => { setMappingDivisionCode(event.target.value); setMappingDistrictCode(""); setMappingUpazilaCode(""); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingDivisionCode} onChange={(event) => { setMappingConfirmed(false); setMappingDivisionCode(event.target.value); setMappingDistrictCode(""); setMappingUpazilaCode(""); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">Select division</option>
               {BANGLADESH_ADMIN_AREAS.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium">District
-            <select required value={mappingDistrictCode} onChange={(event) => { setMappingDistrictCode(event.target.value); setMappingUpazilaCode(""); }} disabled={!mappingDivisionCode} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingDistrictCode} onChange={(event) => { setMappingConfirmed(false); setMappingDistrictCode(event.target.value); setMappingUpazilaCode(""); }} disabled={!mappingDivisionCode} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">Select district</option>
               {(selectedMappingDivision?.districts ?? []).map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium">Upazila / area
-            <select required value={mappingUpazilaCode} onChange={(event) => setMappingUpazilaCode(event.target.value)} disabled={!mappingDistrictCode} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingUpazilaCode} onChange={(event) => { setMappingConfirmed(false); setMappingUpazilaCode(event.target.value); }} disabled={!mappingDistrictCode} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">Select upazila</option>
               {(selectedMappingDistrict?.upazilas ?? []).map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium">Pathao city
-            <select required value={mappingCityId} onChange={(event) => { setMappingCityId(event.target.value); setMappingZoneId(""); setMappingZones([]); if (event.target.value) void loadMappingZones(event.target.value); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingCityId} onChange={(event) => { setMappingConfirmed(false); setMappingCityId(event.target.value); setMappingZoneId(""); setMappingZones([]); if (event.target.value) void loadMappingZones(event.target.value); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">Fetch/select Pathao city</option>
               {cities.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
             {cities.length === 0 && <span className="mt-1 block text-xs text-gray-500">First select “Fetch Cities” above.</span>}
           </label>
           <label className="text-sm font-medium">Pathao zone
-            <select required value={mappingZoneId} onChange={(event) => setMappingZoneId(event.target.value)} disabled={!mappingCityId || mappingZonesLoading} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingZoneId} onChange={(event) => { setMappingConfirmed(false); setMappingZoneId(event.target.value); }} disabled={!mappingCityId || mappingZonesLoading} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">{mappingZonesLoading ? "Loading zones..." : "Select Pathao zone"}</option>
               {mappingZones.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
           </label>
-          <button type="submit" disabled={mappingSaving || !selectedMappingUpazila || !mappingCityId || !mappingZoneId} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2">{mappingSaving ? "Verifying & saving..." : "Verify and activate City/Zone mapping"}</button>
+          <label className="flex items-start gap-2 text-xs leading-5 text-gray-700 sm:col-span-2"><input type="checkbox" checked={mappingConfirmed} onChange={(event) => setMappingConfirmed(event.target.checked)} className="mt-1" />I have checked the selected Pathao City and Zone against the actual destination and confirm this pair is geographically correct for the selected NEWEIX upazila.</label>
+          <button type="submit" disabled={mappingSaving || !selectedMappingUpazila || !mappingCityId || !mappingZoneId || !mappingConfirmed} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2">{mappingSaving ? "Verifying & saving..." : "Verify and activate City/Zone mapping"}</button>
         </form>
         {mappingMessage && <p role="status" className="text-xs text-gray-700">{mappingMessage}</p>}
         <div className="overflow-x-auto rounded-lg border bg-white">
