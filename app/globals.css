@@ -3,22 +3,27 @@
 /* NEWEIX — White canvas design system */
 :root {
   color-scheme: light;
-  --bg: #ffffff;
-  --surface: #f8faf8;
+  /* NEWEIX premium foundation: warm porcelain, midnight navy and emerald. */
+  --bg: #f7f6f2;
+  --surface: #fffefa;
   --surface-raised: #ffffff;
-  --surface-soft: #f3f6f3;
-  --primary: #b6ff4a;
-  --primary-hover: color-mix(in srgb, var(--primary) 82%, white);
-  --primary-dark: #203814;
-  --ink: #17211a;
-  --muted: #59665d;
-  --border: #e2e8e3;
+  --surface-soft: #efeee8;
+  --primary: #087f63;
+  --primary-hover: #066b54;
+  --primary-dark: #064b3d;
+  --ink: #142b3b;
+  --muted: #64727a;
+  --border: #e5e4dc;
   --danger: #b42318;
-  --success: #18794e;
+  --success: #087f63;
+  --gold: #c5a56a;
+  --navy: #142b3b;
+  --emerald: #087f63;
+  --porcelain: #f7f6f2;
   --radius: 18px;
-  --shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  --shadow: 0 16px 42px rgba(20, 43, 59, 0.09);
 
-  /* Single source of truth: edit this palette to recolor the entire application. */
+  /* Backward-compatible aliases used by existing page modules. */
   --page-bg: var(--bg);
   --page-surface: var(--surface);
   --page-panel: var(--surface-raised);
@@ -27,19 +32,19 @@
   --page-muted: var(--muted);
   --page-border: var(--border);
   --page-accent: var(--primary);
-  --brand-forest: var(--surface-raised);
-  --brand-forest-deep: var(--bg);
-  --brand-lime: var(--primary);
-  --brand-lime-soft: color-mix(in srgb, var(--primary) 12%, transparent);
-  --surface-glass: color-mix(in srgb, var(--surface) 82%, transparent);
+  --brand-forest: var(--navy);
+  --brand-forest-deep: #0d1f2c;
+  --brand-lime: var(--emerald);
+  --brand-lime-soft: color-mix(in srgb, var(--emerald) 12%, transparent);
+  --surface-glass: color-mix(in srgb, var(--surface) 88%, transparent);
   --surface-elevated: var(--surface-raised);
-  --border-strong: var(--border);
+  --border-strong: #d5d8d2;
   --text-primary: var(--ink);
   --text-secondary: var(--muted);
   --color-danger: #b42318;
   --color-danger-soft: rgba(180, 35, 24, 0.08);
-  --color-success: #18794e;
-  --color-success-soft: rgba(24, 121, 78, 0.08);
+  --color-success: #087f63;
+  --color-success-soft: rgba(8, 127, 99, 0.08);
 }
 
 * {
@@ -56,7 +61,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(ellipse at 50% -20%, rgba(119, 190, 57, 0.09), transparent 55%),
+    radial-gradient(ellipse at 50% -20%, rgba(8, 127, 99, 0.055), transparent 58%),
     var(--bg);
   color: var(--ink);
   font-family: Arial, "Noto Sans Bengali", "Hind Siliguri", sans-serif;
