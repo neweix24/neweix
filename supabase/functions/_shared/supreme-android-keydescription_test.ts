@@ -117,6 +117,14 @@ Deno.test("AuthorizationList tag 709 decodes the nested DER AttestationApplicati
   ) throw new Error("Nested AttestationApplicationId was not decoded.");
 });
 
+Deno.test("AuthorizationList recognizes upstream ALLOW_WHILE_ON_BODY tag 506", () => {
+  const allowWhileOnBody = tlv([0xbf, 0x83, 0x7a], tlv([0x05], []));
+  const decoded = parseAndroidKeyDescription(keyDescription(seq(), seq(allowWhileOnBody)));
+  if (decoded.hardwareEnforced.entries[0]?.tagNumber !== 506) {
+    throw new Error("Known Android authorization tag 506 was rejected.");
+  }
+});
+
 Deno.test("AuthorizationList decodes Android second-IMEI tag 723 as OCTET STRING", () => {
   const secondImei = tlv([0xbf, 0x85, 0x53], octets(1, 2, 3));
   const decoded = parseAndroidKeyDescription(keyDescription(seq(), seq(secondImei)));
