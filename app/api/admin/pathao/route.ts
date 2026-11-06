@@ -357,7 +357,7 @@ export async function POST(request: Request) {
         "no_exact_zone_match", "partially_matched_candidates", "fully_matched_candidates",
       ]);
       const status = typeof item.status === "string" && statuses.has(item.status) ? item.status : "sync_error";
-      const matched = Number.isSafeInteger(item.matchedUpazilas) ? Math.max(0, Math.min(district.upazilas.length, Number(item.matchedUpazilas))) : 0;
+      const matched = typeof item.matchedUpazilas === "number" && Number.isSafeInteger(item.matchedUpazilas) ? Math.max(0, Math.min(district.upazilas.length, item.matchedUpazilas)) : 0;
       const skipped = Array.isArray(item.skippedUpazilas)
         ? item.skippedUpazilas.filter((name): name is string => typeof name === "string").slice(0, 100)
         : [];
