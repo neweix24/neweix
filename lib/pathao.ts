@@ -360,7 +360,7 @@ export type PathaoPriceInput = {
 export async function calculatePathaoPrice(input: PathaoPriceInput) {
   if (!Number.isSafeInteger(input.storeId) || input.storeId < 1 ||
       !Number.isSafeInteger(input.itemType) || !Number.isSafeInteger(input.deliveryType) ||
-      !Number.isFinite(input.itemWeightKg) || input.itemWeightKg <= 0 || input.itemWeightKg > 10 ||
+      !Number.isFinite(input.itemWeightKg) || input.itemWeightKg < 0.5 || input.itemWeightKg > 10 ||
       !Number.isSafeInteger(input.recipientCity) || input.recipientCity < 1 ||
       !Number.isSafeInteger(input.recipientZone) || input.recipientZone < 1) {
     throw new Error("Invalid Pathao price calculation input.");
