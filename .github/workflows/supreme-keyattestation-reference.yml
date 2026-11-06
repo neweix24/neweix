@@ -63,6 +63,7 @@ jobs:
           deno-version: v2.x
 
       - name: Extract real Android attestation extensions from upstream PEM fixtures
+        working-directory: .
         run: |
           set -euo pipefail
           mkdir -p /tmp/supreme-attestation-classes
@@ -71,6 +72,7 @@ jobs:
             android-keyattestation /tmp/supreme-attestation-fixtures.json
 
       - name: Compare Deno parser with real Android certificate fixture outputs
+        working-directory: .
         env:
           SUPREME_ATTESTATION_FIXTURE_INDEX: /tmp/supreme-attestation-fixtures.json
           SUPREME_ATTESTATION_UPSTREAM_DIR: android-keyattestation
