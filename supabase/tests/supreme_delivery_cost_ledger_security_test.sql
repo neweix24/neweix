@@ -2,7 +2,7 @@
 do $test$
 declare
   v_record_fn regprocedure := pg_catalog.to_regprocedure(
-    'public.supreme_record_delivery_cost(uuid,uuid,text,text,text,integer,date,text,text,text)'
+    'public.supreme_record_delivery_cost(uuid,uuid,text,text,text,numeric,date,text,text,text)'
   );
   v_summary_fn regprocedure := pg_catalog.to_regprocedure(
     'public.supreme_delivery_cost_summary(timestamp with time zone,timestamp with time zone)'
