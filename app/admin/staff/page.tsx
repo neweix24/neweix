@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminStaffPage() {
   await requireStaff(["admin"]);
   return (
-    <main className="hero auth-page">
+    <main className="premium-admin-operations-page hero auth-page">
       <p className="eyebrow">NEWEIX · ADMIN WORKSPACE</p>
       <h1>Employee & Manager Requests</h1>
       <p className="hero-copy">

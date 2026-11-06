@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminDeliveryPage() {
   await requireStaff(["supreme", "admin"]);
   return (
-    <main className="min-h-screen px-4 py-10 sm:px-6" style={{ background: "var(--bg)", color: "var(--ink)" }}>
+    <main className="premium-admin-operations-page min-h-screen px-4 py-10 sm:px-6" style={{ background: "var(--bg)", color: "var(--ink)" }}>
       <div className="mx-auto max-w-6xl">
         <header className="mb-8">
           <p className="eyebrow">NEWEIX · DELIVERY OPERATIONS</p>
