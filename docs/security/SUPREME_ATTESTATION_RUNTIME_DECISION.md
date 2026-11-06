@@ -87,3 +87,16 @@ The reference source is Google's public `android/keyattestation` repository at i
 The upstream commit reports an **unsigned** Git commit signature status. The SHA pin makes CI source selection reproducible; it does not independently authenticate the publisher or replace source review. Review the pinned source and license before treating it as a trusted dependency. Do not silently update the pin to a moving branch.
 
 The `.github/workflows/supreme-keyattestation-reference.yml` workflow checks out exactly this commit, asserts the checked-out SHA, and runs its Gradle test suite on a Java 21 GitHub-hosted runner. This is a CI reference test only: the runner is not a live verifier and no production authentication traffic is sent to it. The workflow requires no deployment secret and provisions no hosting service.
+
+## Deno-native X.509 capability assessment (2026-11-07)
+
+A runtime/API review was performed before selecting any Deno implementation:
+
+- Deno exposes Node-compatible `node:crypto` `X509Certificate` helpers, including parsing/inspection and certificate signature verification. The `verify(publicKey)` operation only checks whether a certificate was signed by a given public key; it does not perform full certificate-path validation, Android attestation-extension policy, RKP chain-role checks, or Google revocation policy.
+- WebCrypto supplies cryptographic primitives but does not provide a complete Android Key Attestation path verifier.
+- PKIjs provides generic RFC 5280 certificate-chain validation and CRL/OCSP support. That is useful PKI functionality, but it is not evidence of compatibility with Android's legacy non-RFC-5280 chains or the custom chain semantics implemented by the pinned Kotlin reference.
+- `@peculiar/x509` provides X.509 parsing and chain/bundle helpers, but its published feature description likewise does not establish parity with the Android-specific validator.
+
+**Decision:** do not treat any of these APIs/libraries as a drop-in replacement for `android/keyattestation`. A Deno feasibility spike may use one of them for bounded ASN.1/X.509 parsing, but must not return an attestation acceptance decision until Android-specific path validation and extension semantics have been independently implemented and differentially tested against the pinned Kotlin oracle. Generic `X509Certificate.verify()` or a stock RFC 5280 chain engine alone is insufficient.
+
+No new runtime dependency was added in this assessment. Avoiding an unreviewed dependency is preferable to adding a parser that creates a false impression of security completeness.
