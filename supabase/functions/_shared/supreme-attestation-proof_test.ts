@@ -8,6 +8,12 @@ import {
 
 const CHALLENGE_ID = "b8f3e5b2-1b5a-4a7e-8a1a-2d0c6f4e9b11";
 
+function toArrayBuffer(value: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(value.byteLength);
+  copy.set(value);
+  return copy.buffer;
+}
+
 function derInteger(value: Uint8Array): number[] {
   let start = 0;
   while (start < value.length - 1 && value[start] === 0) start++;
@@ -116,7 +122,7 @@ Deno.test("proof verifies only against the matching challenge and key", async ()
   const challenge = crypto.getRandomValues(new Uint8Array(32));
   const payload = buildSupremeProofPayload(CHALLENGE_ID, challenge);
   const raw = new Uint8Array(
-    await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, keys.privateKey, payload),
+    await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, keys.privateKey, toArrayBuffer(payload)),
   );
   const der = rawEcdsaToDer(raw);
   const valid = await verifySupremeChallengeProof(
