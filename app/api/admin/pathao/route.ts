@@ -652,18 +652,23 @@ export async function POST(request: Request) {
       return errorResponse("Could not safely check the existing Pathao mapping. No changes were made.", 503);
     }
 
-    if (existingMapping?.is_verified) {
-      if (
-        Number(existingMapping.pathao_city_id) === Number(cityId) &&
-        Number(existingMapping.pathao_zone_id) === Number(zoneId) &&
-        existingMapping.is_active
-      ) {
-        return NextResponse.json({ success: true, mapping: existingMapping, unchanged: true }, {
-          headers: { "Cache-Control": "private, no-store" },
-        });
-      }
+    const correctionReason = typeof input.correctionReason === "string"
+      ? input.correctionReason.trim()
+      : "";
+    const isChangingVerifiedMapping = Boolean(existingMapping?.is_verified) && (
+      Number(existingMapping?.pathao_city_id) !== Number(cityId) ||
+      Number(existingMapping?.pathao_zone_id) !== Number(zoneId) ||
+      existingMapping?.is_active !== true
+    );
+    if (existingMapping?.is_verified && !isChangingVerifiedMapping) {
+      return NextResponse.json({ success: true, mapping: existingMapping, unchanged: true }, {
+        headers: { "Cache-Control": "private, no-store" },
+      });
+    }
+    if (isChangingVerifiedMapping &&
+        (input.confirmCorrection !== true || correctionReason.length < 20 || correctionReason.length > 500)) {
       return errorResponse(
-        "This upazila already has a verified Pathao mapping. It was not overwritten. A separate audited correction workflow is required to change an existing verified mapping.",
+        "This upazila already has a verified Pathao mapping. To correct it, explicitly confirm the correction and provide a reason of 20–500 characters. The existing mapping was not changed.",
         409,
       );
     }
@@ -695,14 +700,19 @@ export async function POST(request: Request) {
 
     const { error: auditError } = await admin.from("audit_logs").insert({
       actor_id: staff.userId,
-      action: "pathao.location_mapping.verified",
+      action: isChangingVerifiedMapping
+        ? "pathao.location_mapping.corrected"
+        : "pathao.location_mapping.verified",
       target_type: "pathao_location_mapping",
       target_id: mapping.id,
       details: {
         district_code: districtCode,
         upazila_code: upazilaCode,
+        previous_pathao_city_id: isChangingVerifiedMapping ? existingMapping?.pathao_city_id : null,
+        previous_pathao_zone_id: isChangingVerifiedMapping ? existingMapping?.pathao_zone_id : null,
         pathao_city_id: Number(cityId),
         pathao_zone_id: Number(zoneId),
+        correction_reason: isChangingVerifiedMapping ? correctionReason : null,
       },
     });
     if (auditError) console.error("Pathao location mapping audit log failed:", auditError.message);
