@@ -24,6 +24,7 @@ class MainActivity : Activity() {
     private var webView: WebView? = null
     private var progressBar: ProgressBar? = null
     private var errorPanel: LinearLayout? = null
+    private var mainFrameLoadFailed = false
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,6 +78,7 @@ class MainActivity : Activity() {
                 }
 
                 override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                    mainFrameLoadFailed = false
                     errorPanel?.visibility = View.GONE
                     progressBar?.visibility = View.VISIBLE
                     progressBar?.progress = 0
@@ -84,6 +86,7 @@ class MainActivity : Activity() {
 
                 override fun onPageFinished(view: WebView?, url: String?) {
                     progressBar?.visibility = View.GONE
+                    if (mainFrameLoadFailed) showLoadError()
                 }
 
                 override fun onReceivedError(
@@ -91,7 +94,21 @@ class MainActivity : Activity() {
                     request: WebResourceRequest,
                     error: WebResourceError
                 ) {
-                    if (request.isForMainFrame) showLoadError()
+                    if (request.isForMainFrame) {
+                        mainFrameLoadFailed = true
+                        showLoadError()
+                    }
+                }
+
+                override fun onReceivedHttpError(
+                    view: WebView,
+                    request: WebResourceRequest,
+                    errorResponse: android.webkit.WebResourceResponse
+                ) {
+                    if (request.isForMainFrame && errorResponse.statusCode >= 500) {
+                        mainFrameLoadFailed = true
+                        showLoadError()
+                    }
                 }
 
                 override fun onReceivedSslError(
@@ -101,6 +118,7 @@ class MainActivity : Activity() {
                 ) {
                     // Never bypass certificate validation.
                     handler.cancel()
+                    mainFrameLoadFailed = true
                     showLoadError()
                 }
             }
