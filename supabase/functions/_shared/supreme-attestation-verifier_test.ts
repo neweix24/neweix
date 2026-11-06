@@ -90,6 +90,62 @@ Deno.test("Supreme proof public-key importer accepts only P-256 id-ecPublicKey S
   );
 });
 
+Deno.test({
+  name: "Supreme pipeline rejects stale Google root and revocation metadata before path validation",
+  ignore: !fixtureIndex,
+  fn: async () => {
+    const fixtures = JSON.parse(
+      await Deno.readTextFile(fixtureIndex!),
+    ) as PathPolicyFixture[];
+    const fixture = fixtures.find((item) => item.name === "factory_valid");
+    if (!fixture) throw new Error("Pinned factory path fixture is missing.");
+    const chain = fixture.certificatesBase64.map((value) =>
+      parseX509Certificate(fromBase64(value))
+    );
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    const signer = Uint8Array.from({ length: 32 }, (_, index) => index + 1);
+    const freshRoots = rootMetadata(
+      fromBase64(fixture.trustAnchorBase64),
+      fixture.validationTimeMs,
+    );
+    const freshStatus = emptyStatus(fixture.validationTimeMs);
+    const common = {
+      chain,
+      challengeId: "b8f3e5b2-1b5a-4a7e-8a1a-2d0c6f4e9b11",
+      proofSignature: new Uint8Array([0x30, 0x00]),
+      keyPolicy: {
+        expectedChallenge: challenge,
+        minimumPackageVersion: 1n,
+        signingCertificateSha256: signer,
+      },
+      validationTimeMs: fixture.validationTimeMs,
+    };
+
+    await assertRejects(
+      () => verifySupremeAndroidAttestation({
+        ...common,
+        googleRoots: {
+          ...freshRoots,
+          expiresAtMs: fixture.validationTimeMs,
+        },
+        revocationStatus: freshStatus,
+      }),
+      "Google attestation metadata is stale",
+    );
+    await assertRejects(
+      () => verifySupremeAndroidAttestation({
+        ...common,
+        googleRoots: freshRoots,
+        revocationStatus: {
+          ...freshStatus,
+          expiresAtMs: fixture.validationTimeMs,
+        },
+      }),
+      "Google attestation metadata is stale",
+    );
+  },
+});
+
 Deno.test("Supreme proof verifier checks a domain-separated signature against imported leaf SPKI", async () => {
   const pair = await crypto.subtle.generateKey(
     { name: "ECDSA", namedCurve: "P-256" },
