@@ -26,7 +26,9 @@ alter table public.orders
   add constraint orders_pathao_area_id_check
   check (pathao_area_id is null or pathao_area_id > 0) not valid;
 
-drop function if exists public.create_order_with_prepaid_delivery(text,text,text,text,text,text,text,jsonb,text,uuid,text,text,text,text,text,text,text,text,text,text,text,text,integer,integer,integer,uuid);
+-- Keep the existing 27-argument RPC overload during the rolling deployment.
+-- Old application instances continue using it; the new 29-argument overload below
+-- is selected only when the Area parameters are supplied.
 
 create or replace function public.create_order_with_prepaid_delivery(
   p_customer_name text,
