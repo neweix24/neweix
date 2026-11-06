@@ -5,6 +5,21 @@ import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import Icon from "@/components/ui/icon";
 
+function getSafeSupremeNextPath(): string | null {
+  const next = new URLSearchParams(window.location.search).get("next");
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return null;
+  try {
+    const target = new URL(next, window.location.origin);
+    if (
+      target.origin !== window.location.origin ||
+      !/^\/control-[A-Fa-f0-9]{48}(?:\/.*)?$/.test(target.pathname)
+    ) return null;
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 export default function SupremeMfaSetupPage() {
   const router = useRouter();
 
@@ -29,7 +44,8 @@ export default function SupremeMfaSetupPage() {
         const user = session?.user;
 
         if (!user) {
-          router.replace("/auth/login");
+          const destination = getSafeSupremeNextPath();
+          router.replace(destination ? `/auth/login?next=${encodeURIComponent(destination)}` : "/auth/login");
           return;
         }
 
@@ -63,7 +79,9 @@ export default function SupremeMfaSetupPage() {
           await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
         if (!assuranceError && assurance?.currentLevel === "aal2") {
-          window.location.replace("/supreme");
+          const destination = getSafeSupremeNextPath();
+          if (destination) window.location.replace(destination);
+          else setMessage("ব্যক্তিগত Supreme প্রবেশ লিংক পাওয়া যায়নি। অ্যাপ থেকে আবার প্রবেশ করুন।");
           return;
         }
 
@@ -86,7 +104,8 @@ export default function SupremeMfaSetupPage() {
         );
 
         if (verifiedFactor) {
-          router.replace("/auth/mfa");
+          const destination = getSafeSupremeNextPath();
+          router.replace(destination ? `/auth/mfa?next=${encodeURIComponent(destination)}` : "/auth/login");
           return;
         }
 
@@ -194,7 +213,8 @@ export default function SupremeMfaSetupPage() {
       const user = session?.user;
 
       if (!user) {
-        router.replace("/auth/login");
+        const destination = getSafeSupremeNextPath();
+        router.replace(destination ? `/auth/login?next=${encodeURIComponent(destination)}` : "/auth/login");
         return;
       }
 
@@ -261,7 +281,9 @@ export default function SupremeMfaSetupPage() {
         return;
       }
 
-      window.location.replace("/supreme");
+      const destination = getSafeSupremeNextPath();
+      if (destination) window.location.replace(destination);
+      else setMessage("ব্যক্তিগত Supreme প্রবেশ লিংক পাওয়া যায়নি। অ্যাপ থেকে আবার প্রবেশ করুন।");
     } catch {
       setMessage(
         "MFA যাচাই করা যায়নি। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।"
