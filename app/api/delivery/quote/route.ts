@@ -24,6 +24,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const districtCode = (searchParams.get("district_code") || "").trim();
   const upazilaCode = (searchParams.get("upazila_code") || "").trim();
+  const rawPathaoAreaId = (searchParams.get("pathao_area_id") || "").trim();
+  const pathaoAreaId = rawPathaoAreaId ? Number(rawPathaoAreaId) : null;
   const couponCode = (searchParams.get("coupon_code") || "").trim().toUpperCase();
   let items: Array<{ product_id: string; quantity: number }>;
 
@@ -45,6 +47,7 @@ export async function GET(request: Request) {
 
   if (!/^BD-D[0-9]{2}-Z[0-9]{2}$/.test(districtCode) ||
       !/^BD-D[0-9]{2}-Z[0-9]{2}-U[0-9]{3}$/.test(upazilaCode) ||
+      (rawPathaoAreaId && (pathaoAreaId === null || !Number.isSafeInteger(pathaoAreaId) || pathaoAreaId < 1)) ||
       (couponCode && !/^[A-Z0-9_-]{3,40}$/.test(couponCode))) {
     return NextResponse.json({ error: "Select a supported district and upazila." }, { status: 400 });
   }
@@ -75,6 +78,24 @@ export async function GET(request: Request) {
       return NextResponse.json({
         error: "Pathao delivery is not yet available for this upazila. Please contact support or choose another listed area.",
       }, { status: 422 });
+    }
+
+    let area: { pathao_area_id: number; pathao_area_name: string } | null = null;
+    if (pathaoAreaId !== null) {
+      const { data, error: areaError } = await supabase
+        .from("pathao_area_catalog")
+        .select("pathao_area_id, pathao_area_name, home_delivery_available")
+        .eq("pathao_city_id", mapping.pathao_city_id)
+        .eq("pathao_zone_id", mapping.pathao_zone_id)
+        .eq("pathao_area_id", pathaoAreaId)
+        .eq("is_active", true)
+        .eq("home_delivery_available", true)
+        .maybeSingle();
+      if (areaError) throw areaError;
+      if (!data) {
+        return NextResponse.json({ error: "The selected Pathao Area is not available for home delivery in this upazila." }, { status: 422 });
+      }
+      area = data;
     }
 
     const productIds = items.map((item) => item.product_id);
@@ -162,6 +183,8 @@ export async function GET(request: Request) {
       free_delivery: freeDelivery,
       currency: "BDT",
       quote_source: "pathao",
+      pathao_area_id: area?.pathao_area_id ?? null,
+      pathao_area_name: area?.pathao_area_name ?? null,
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Live Pathao delivery quote failed:", error instanceof Error ? error.message : "Unknown error");
