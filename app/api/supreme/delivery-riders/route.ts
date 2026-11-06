@@ -6,6 +6,15 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function validDate(value: string | null): value is string {
+  if (!value) return false;
+  const match = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value);
+  if (!match) return false;
+  const year=Number(match[1]),month=Number(match[2]),day=Number(match[3]);
+  const date=new Date(0); date.setUTCHours(0,0,0,0); date.setUTCFullYear(year,month-1,day);
+  return date.getUTCFullYear()===year && date.getUTCMonth()===month-1 && date.getUTCDate()===day;
+}
+const dhakaToday = () => new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const fail = (message: string, status: number) => NextResponse.json({ error: message }, { status, headers: { "Cache-Control": "private, no-store" } });
 
 async function authorize() {
@@ -36,25 +45,31 @@ function mapError(message?: string) {
   if (message?.includes("23505")) return fail("This rider phone number or reference already exists.",409);
   return fail("Could not complete the rider operation.",400);
 }
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const actor=await authorize(); if(!actor.ok) return fail(actor.error,actor.status);
+    const params=new URL(request.url).searchParams;
+    const defaultDate=dhakaToday();
+    const from=params.get("from")??defaultDate;
+    const to=params.get("to")??from;
+    if(!validDate(from)||!validDate(to)||from>to) return fail("Select a valid report date range.",400);
     const supabase=await db();
-    const [ridersResult,ordersResult,paymentsResult,totalsResult]=await Promise.all([
+    const [ridersResult,ordersResult,paymentsResult,totalsResult,reportResult]=await Promise.all([
       supabase.from("neweix_delivery_riders").select("id,rider_code,full_name,phone,is_active,created_at").order("created_at",{ascending:false}),
       supabase.from("orders").select("id,order_number,status,payment_status,delivery_status,delivery_fee,created_at,neweix_delivery_rider_id").eq("delivery_provider","neweix_own").not("status","in","(cancelled,returned)").neq("payment_status","refunded").order("created_at",{ascending:false}).limit(200),
       supabase.from("delivery_cost_entries").select("id,order_id,rider_id,amount,cost_date,source_reference,notes,created_at").eq("provider","neweix_own").eq("cost_type","rider_payment").order("cost_date",{ascending:false}).limit(200),
       supabase.rpc("supreme_delivery_rider_payout_summary"),
+      supabase.rpc("supreme_delivery_rider_daily_report",{p_start_date:from,p_end_date:to}),
     ]);
-    if(ridersResult.error||ordersResult.error||paymentsResult.error||totalsResult.error) {
-      console.error("Rider dashboard query failed:",ridersResult.error?.message,ordersResult.error?.message,paymentsResult.error?.message,totalsResult.error?.message);
+    if(ridersResult.error||ordersResult.error||paymentsResult.error||totalsResult.error||reportResult.error) {
+      console.error("Rider dashboard query failed:",ridersResult.error?.message,ordersResult.error?.message,paymentsResult.error?.message,totalsResult.error?.message,reportResult.error?.message);
       return fail("Could not load rider information.",503);
     }
     const orderMap=new Map((ordersResult.data??[]).map(o=>[o.id,o.order_number]));
     const riderMap=new Map((ridersResult.data??[]).map(r=>[r.id,r.full_name]));
     const payments=(paymentsResult.data??[]).map(p=>({...p,order_number:orderMap.get(p.order_id)??null,rider_name:riderMap.get(p.rider_id)??"রাইডার অনুপস্থিত"}));
     const totals=new Map<string,number>((totalsResult.data??[]).map((row:{rider_id:string;total_paid:number})=>[row.rider_id,Number(row.total_paid)]));
-    return NextResponse.json({success:true,riders:(ridersResult.data??[]).map(r=>({...r,total_paid:totals.get(r.id)??0})),orders:ordersResult.data??[],payments},{headers:{"Cache-Control":"private, no-store"}});
+    return NextResponse.json({success:true,riders:(ridersResult.data??[]).map(r=>({...r,total_paid:totals.get(r.id)??0})),orders:ordersResult.data??[],payments,report:{from,to,rows:reportResult.data??[]}},{headers:{"Cache-Control":"private, no-store"}});
   } catch(error) { console.error("Rider GET failed:",error); return fail("A server error occurred.",500); }
 }
 export async function POST(request:Request) {
