@@ -145,6 +145,8 @@ type PathPolicyFixture = {
   validationTimeMs: number;
   certificatesBase64: string[];
   trustAnchorBase64: string;
+  provisioningInfoValid: boolean;
+  provisioningCertificatesIssued: number | null;
 };
 
 const pathPolicyIndex = Deno.env.get("SUPREME_PATH_POLICY_FIXTURE_INDEX");
@@ -156,7 +158,7 @@ Deno.test({
     const fixtures = JSON.parse(
       await Deno.readTextFile(pathPolicyIndex!),
     ) as PathPolicyFixture[];
-    if (fixtures.length < 6) {
+    if (fixtures.length < 7) {
       throw new Error("Pinned Google path-policy oracle fixture set is incomplete.");
     }
 
@@ -192,9 +194,14 @@ Deno.test({
           `${fixture.name}: Deno accepted=${accepted}, pinned Kotlin accepted=${fixture.valid}; ${rejection}`,
         );
       }
+      if (!accepted && fixture.provisioningMethod === "REMOTELY_PROVISIONED" && !fixture.provisioningInfoValid && !rejection.includes("provisioning-info")) {
+        throw new Error(`${fixture.name}: malformed RKP provisioning information was not the rejection reason: ${rejection}`);
+      }
       if (accepted) {
         if (
           result!.provisioningMethod !== fixture.provisioningMethod ||
+          (result!.provisioningInfo?.certificatesIssued ?? null) !== fixture.provisioningCertificatesIssued ||
+          !fixture.provisioningInfoValid ||
           result!.chainRolesValidated !== chain.length - 1 ||
           result!.validityCertificatesChecked !== chain.length - 2 ||
           result!.signatureLinksVerified !== chain.length - 1
