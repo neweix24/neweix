@@ -1,3 +1,4 @@
+import { ANDROID_PROVISIONING_INFO_OID } from "./supreme-android-provisioning-info.ts";
 import { parseX509Certificate } from "./supreme-x509-certificate.ts";
 import {
   classifyAndroidProvisioningMethod,
@@ -194,7 +195,7 @@ Deno.test({
           `${fixture.name}: Deno accepted=${accepted}, pinned Kotlin accepted=${fixture.valid}; ${rejection}`,
         );
       }
-      if (!accepted && fixture.provisioningMethod === "REMOTELY_PROVISIONED" && !fixture.provisioningInfoValid && !rejection.includes("provisioning-info")) {
+      if (!accepted && fixture.provisioningMethod === "REMOTELY_PROVISIONED" && !fixture.provisioningInfoValid && !rejection.toLowerCase().includes("provision")) {
         throw new Error(`${fixture.name}: malformed RKP provisioning information was not the rejection reason: ${rejection}`);
       }
       if (accepted) {
@@ -212,6 +213,73 @@ Deno.test({
     }
     console.log(
       `Matched Deno Android provisioning roles and validity rules against ${fixtures.length} pinned Kotlin-generated reference chains.`,
+    );
+  },
+});
+
+Deno.test({
+  name: "RKP provisioning info is bound only to the attestation certificate",
+  ignore: !pathPolicyIndex,
+  fn: async () => {
+    const fixtures = JSON.parse(
+      await Deno.readTextFile(pathPolicyIndex!),
+    ) as PathPolicyFixture[];
+    const rkpFixture = fixtures.find((fixture) => fixture.name === "rkp_valid");
+    const factoryFixture = fixtures.find((fixture) => fixture.name === "factory_valid");
+    if (!rkpFixture || !factoryFixture) {
+      throw new Error("Pinned Kotlin RKP/factory fixtures are missing.");
+    }
+
+    const rkpChain = rkpFixture.certificatesBase64.map((value) =>
+      parseX509Certificate(fromBase64(value))
+    );
+    const trustAnchor = parseX509Certificate(fromBase64(rkpFixture.trustAnchorBase64));
+    const provisioningExtension = rkpChain[1].extensions.find((extension) =>
+      extension.oid === ANDROID_PROVISIONING_INFO_OID
+    );
+    if (!provisioningExtension) {
+      throw new Error("Kotlin RKP attestation fixture has no provisioning-info extension.");
+    }
+
+    const missing = rkpChain.map((certificate) => ({ ...certificate }));
+    missing[1] = {
+      ...missing[1],
+      extensions: missing[1].extensions.filter((extension) =>
+        extension.oid !== ANDROID_PROVISIONING_INFO_OID
+      ),
+    };
+    await assertRejects(
+      () => validateX509CertificatePath(missing, [trustAnchor], emptyStatus(), rkpFixture.validationTimeMs),
+      "must appear exactly once on the attestation certificate at index 1",
+    );
+
+    const misplaced = rkpChain.map((certificate) => ({ ...certificate }));
+    misplaced[1] = {
+      ...misplaced[1],
+      extensions: misplaced[1].extensions.filter((extension) =>
+        extension.oid !== ANDROID_PROVISIONING_INFO_OID
+      ),
+    };
+    misplaced[2] = {
+      ...misplaced[2],
+      extensions: [...misplaced[2].extensions, provisioningExtension],
+    };
+    await assertRejects(
+      () => validateX509CertificatePath(misplaced, [trustAnchor], emptyStatus(), rkpFixture.validationTimeMs),
+      "must appear exactly once on the attestation certificate at index 1",
+    );
+
+    const factoryChain = factoryFixture.certificatesBase64.map((value) =>
+      parseX509Certificate(fromBase64(value))
+    );
+    const factoryAnchor = parseX509Certificate(fromBase64(factoryFixture.trustAnchorBase64));
+    factoryChain[1] = {
+      ...factoryChain[1],
+      extensions: [...factoryChain[1].extensions, provisioningExtension],
+    };
+    await assertRejects(
+      () => validateX509CertificatePath(factoryChain, [factoryAnchor], emptyStatus(), factoryFixture.validationTimeMs),
+      "unexpected on a non-RKP chain",
     );
   },
 });
