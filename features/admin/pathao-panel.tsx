@@ -270,9 +270,7 @@ export default function PathaoPanel() {
   async function loadZones(nextCityId: string) {
     setCityId(nextCityId);
     setZoneId("");
-    setAreaId("");
     setZones([]);
-    setAreas([]);
     if (!nextCityId) return;
     try {
       const result = await getJson(`/api/admin/pathao?action=zones&cityId=${encodeURIComponent(nextCityId)}`);
@@ -834,7 +832,7 @@ export default function PathaoPanel() {
                       environment: "API environment",
                       store_id: "Configured Store ID",
                       store_account_match: "Merchant account Store ID",
-                      location_mappings: "Verified delivery areas",
+                      location_mappings: "Verified City/Zone price mappings",
                     } as Record<string, string>)[key] || key.replace(/_/g, " ")}</span>
                     <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-semibold ${check.ok ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-800"}`}>
                       {check.ok ? "OK" : "Action needed"}
@@ -1270,7 +1268,7 @@ export default function PathaoPanel() {
         <p className="mt-2 text-xs leading-5 text-emerald-900">Keep PATHAO_WEBHOOK_SECRET in Cloudflare Worker secrets. Never expose merchant credentials or webhook secrets in browser code. NEWEIX treats webhook events as signals and verifies shipment state with Pathao before applying updates.</p>
       </div>
       {stores !== null && <details className="mt-3"><summary className="cursor-pointer text-sm font-semibold">View Pathao Store Response</summary><pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-gray-50 p-3 text-xs">{JSON.stringify(stores, null, 2)}</pre></details>}
-      {cities.length > 0 && <p className="mt-3 text-xs text-gray-500">{cities.length} Pathao cities loaded. Select a city to load zones and areas.</p>}
+      {cities.length > 0 && <p className="mt-3 text-xs text-gray-500">{cities.length} Pathao cities loaded. Select a city to load its current zones.</p>}
     </section>
   );
 }
