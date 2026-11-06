@@ -38,6 +38,9 @@ begin
   if not exists(select 1 from pg_trigger where tgname='track_neweix_delivery_rider_assignment' and tgrelid='public.orders'::regclass and not tgisinternal) then
     raise exception 'Rider assignment history trigger is missing';
   end if;
+  if not exists(select 1 from pg_indexes where schemaname='public' and indexname='neweix_rider_one_open_assignment_per_order_uidx') then
+    raise exception 'One-open-rider-assignment-per-order constraint is missing';
+  end if;
   if pg_catalog.has_table_privilege('anon','public.neweix_delivery_riders','SELECT')
      or pg_catalog.has_table_privilege('authenticated','public.neweix_delivery_riders','SELECT')
      or not pg_catalog.has_table_privilege('service_role','public.neweix_delivery_riders','SELECT') then
