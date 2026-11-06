@@ -654,7 +654,7 @@ export default function CheckoutView() {
                   "pathao",
                 );
               }} disabled={submitting} />
-            <span><strong>Pathao Courier</strong> — courier delivery where verified coverage is available nationwide</span>
+            <span><strong>Pathao Courier</strong> — courier delivery where Pathao coverage is verified for your selected area</span>
           </label>
           <label style={{ display: "flex", gap: 10, alignItems: "center", margin: "12px 0" }}>
             <input type="radio" name="delivery_method" value="neweix_own" checked={deliveryProvider === "neweix_own"}
