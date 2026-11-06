@@ -113,6 +113,22 @@ export async function GET(request: Request) {
     }
 
 
+    if (action === "coverage_scan_history") {
+      const admin = await createRuntimeServiceClient();
+      const { data: rows, error } = await admin
+        .from("pathao_coverage_scan_districts")
+        .select("scan_id, division_code, district_code, district_name, status, pathao_city_name, total_upazilas, matched_upazilas, skipped_upazilas, error, scanned_at")
+        .order("scanned_at", { ascending: false })
+        .limit(64);
+      if (error) {
+        console.error("Pathao coverage scan history query failed:", error.message);
+        return errorResponse("Could not load coverage scan history. Apply the latest database migration first.", 503);
+      }
+      return NextResponse.json({ success: true, rows: rows ?? [] }, {
+        headers: { "Cache-Control": "private, no-store" },
+      });
+    }
+
     if (action === "location_mappings") {
       const admin = await createRuntimeServiceClient();
       const { data: mappings, error } = await admin
@@ -318,6 +334,62 @@ export async function POST(request: Request) {
 
   const input = body as Record<string, unknown>;
 
+
+  if (input.action === "record_coverage_scan") {
+    const scanId = typeof input.scanId === "string" ? input.scanId.trim() : "";
+    const divisionCode = typeof input.divisionCode === "string" ? input.divisionCode.trim() : "";
+    const districts = input.districts;
+    if (!UUID_REGEX.test(scanId) || !/^BD-D[0-9]{2}$/.test(divisionCode) ||
+        !Array.isArray(districts) || districts.length < 1 || districts.length > 20) {
+      return errorResponse("Provide a valid scan ID, division, and district result list.", 400);
+    }
+    const division = BANGLADESH_ADMIN_AREAS.find((item) => item.code === divisionCode);
+    if (!division) return errorResponse("The selected Bangladesh division was not found.", 404);
+    const allowedDistricts = new Map(division.districts.map((item) => [item.code, item]));
+    const rows = districts.flatMap((value) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+      const item = value as Record<string, unknown>;
+      const districtCode = typeof item.districtCode === "string" ? item.districtCode : "";
+      const district = allowedDistricts.get(districtCode);
+      if (!district) return [];
+      const statuses = new Set([
+        "sync_error", "city_not_found", "city_ambiguous", "zones_unavailable",
+        "no_exact_zone_match", "partially_matched_candidates", "fully_matched_candidates",
+      ]);
+      const status = typeof item.status === "string" && statuses.has(item.status) ? item.status : "sync_error";
+      const matched = typeof item.matchedUpazilas === "number" && Number.isSafeInteger(item.matchedUpazilas) ? Math.max(0, Math.min(district.upazilas.length, item.matchedUpazilas)) : 0;
+      const skipped = Array.isArray(item.skippedUpazilas)
+        ? item.skippedUpazilas.filter((name): name is string => typeof name === "string").slice(0, 100)
+        : [];
+      return [{
+        scan_id: scanId,
+        division_code: divisionCode,
+        district_code: district.code,
+        district_name: district.name,
+        status,
+        pathao_city_name: typeof item.pathaoCityName === "string" ? item.pathaoCityName.slice(0, 120) : null,
+        total_upazilas: district.upazilas.length,
+        matched_upazilas: matched,
+        skipped_upazilas: skipped,
+        error: typeof item.error === "string" ? item.error.slice(0, 1000) : null,
+        actor_id: staff.userId,
+        scanned_at: new Date().toISOString(),
+      }];
+    });
+    if (rows.length !== districts.length) {
+      return errorResponse("One or more district results did not match the selected division.", 400);
+    }
+    const admin = await createRuntimeServiceClient();
+    const { error } = await admin.from("pathao_coverage_scan_districts")
+      .upsert(rows, { onConflict: "scan_id,district_code" });
+    if (error) {
+      console.error("Pathao coverage scan history save failed:", error.message);
+      return errorResponse("Could not save coverage scan history.", 503);
+    }
+    return NextResponse.json({ success: true, savedDistricts: rows.length }, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
 
   if (input.action === "auto_map_district") {
     const divisionCode = typeof input.divisionCode === "string" ? input.divisionCode.trim() : "";
