@@ -58,6 +58,39 @@ function CustomerLoginForm() {
   const captchaContainerRef = useRef<HTMLDivElement>(null);
   const captchaWidgetIdRef = useRef<string | null>(null);
 
+  // Android Chrome can restore the sign-in document from the back/forward
+  // cache without making a new request to middleware. Re-check the real
+  // Supabase user whenever this page is shown and leave immediately if the
+  // customer still has a valid session.
+  useEffect(() => {
+    let checking = false;
+    let disposed = false;
+
+    const redirectAuthenticatedCustomer = async () => {
+      if (checking || disposed) return;
+      checking = true;
+      try {
+        const supabase = createBrowserSupabaseClient();
+        const { data, error } = await supabase.auth.getUser();
+        if (!disposed && !error && data.user) {
+          window.location.replace("/");
+        }
+      } catch {
+        // A temporary network failure must not sign the customer out or
+        // prevent a genuine sign-in attempt.
+      } finally {
+        checking = false;
+      }
+    };
+
+    void redirectAuthenticatedCustomer();
+    window.addEventListener("pageshow", redirectAuthenticatedCustomer);
+    return () => {
+      disposed = true;
+      window.removeEventListener("pageshow", redirectAuthenticatedCustomer);
+    };
+  }, []);
+
   useEffect(() => {
     if (!turnstileReady || !captchaContainerRef.current || !window.turnstile || captchaWidgetIdRef.current) return;
     captchaWidgetIdRef.current = window.turnstile.render(captchaContainerRef.current, {
