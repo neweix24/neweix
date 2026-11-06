@@ -22,14 +22,14 @@ export default async function OrdersPage() {
   const { data: orders, error } = await supabase.from("orders").select("id, order_number, status, payment_status, subtotal, delivery_fee, discount, total, created_at, order_items(id, product_name, quantity, unit_price, line_total)").eq("customer_id", userId).order("created_at", { ascending: false }).limit(50);
 
   return (
-    <main className="min-h-screen px-4 py-10 sm:px-6" style={{ background: "var(--bg)", color: "var(--ink)" }}>
+    <main className="premium-orders min-h-screen px-4 py-10 sm:px-6" style={{ background: "var(--bg)", color: "var(--ink)" }}>
       <div className="mx-auto max-w-4xl">
         <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div><p className="eyebrow">NEWEIX · CUSTOMER ACCOUNT</p><h1 className="text-3xl font-bold">My orders</h1><p>View the orders associated with your account here.</p></div>
           <Link href="/account" className="rounded-xl border px-4 py-2" style={{ borderColor: "var(--border)" }}>Back to account</Link>
         </header>
         {error ? (
-          <section className="rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}><p role="alert">Could not load orders. Please try again later.</p></section>
+          <section className="premium-order-card rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}><p role="alert">Could not load orders. Please try again later.</p></section>
         ) : !orders?.length ? (
           <section className="rounded-2xl border p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}><h2 className="text-xl font-semibold">No orders are linked to this account yet</h2><p className="mt-2">Use order tracking to view guest orders placed before signing in.</p><div className="mt-4 flex flex-wrap gap-3"><Link href="/track-order" className="primary-button">Track order</Link><Link href="/" className="rounded-xl border px-5 py-3" style={{ borderColor: "var(--border)" }}>Start shopping</Link></div></section>
         ) : (

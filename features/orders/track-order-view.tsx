@@ -111,7 +111,7 @@ export default function TrackOrderView() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-12" style={{ background: "radial-gradient(ellipse at 85% 0%, rgba(182,255,74,.14), transparent 38%), linear-gradient(145deg,#fbfff7,#f3fff5 58%,#f5fbff)", color: "var(--ink)" }}>
+    <main className="premium-track-order min-h-screen px-4 py-12" style={{ background: "radial-gradient(ellipse at 85% 0%, rgba(182,255,74,.14), transparent 38%), linear-gradient(145deg,#fbfff7,#f3fff5 58%,#f5fbff)", color: "var(--ink)" }}>
       <section className="mx-auto w-full max-w-3xl">
         <nav className="mb-8 flex flex-wrap justify-between gap-4 text-sm font-semibold">
           <Link href="/" style={{ color: "var(--primary)" }}>← NEWEIX Home</Link>
@@ -127,7 +127,7 @@ export default function TrackOrderView() {
           </p>
         </div>
 
-        <div className="rounded-3xl border p-6 shadow-sm sm:p-8" style={{ borderColor: "#dfeade", background: "rgba(255,255,255,.96)", boxShadow: "0 14px 38px rgba(45,110,65,.07)" }}>
+        <div className="premium-track-card rounded-3xl border p-6 shadow-sm sm:p-8" style={{ borderColor: "#dfeade", background: "rgba(255,255,255,.96)", boxShadow: "0 14px 38px rgba(45,110,65,.07)" }}>
           <form onSubmit={handleSubmit} className="space-y-5">\n            <p className="text-sm leading-6" style={{ color: "var(--muted)" }}>For privacy, enter the same phone number you provided when placing the order. Your order details are shown only after the details are verified.</p>
             <div>
               <label

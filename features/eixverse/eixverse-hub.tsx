@@ -25,7 +25,7 @@ export default function EixVerseHub() {
     return () => { active = false; };
   }, []);
   return (
-    <main className="min-h-screen bg-[#080e0b] px-4 py-10 text-white sm:px-6 lg:py-16">
+    <main className="premium-eixverse min-h-screen bg-[#080e0b] px-4 py-10 text-white sm:px-6 lg:py-16">
       <div className="mx-auto max-w-6xl">
         <header className="max-w-3xl">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-emerald-300">NEWEIX · Digital ecosystem</p>

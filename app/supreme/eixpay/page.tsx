@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export default async function SupremeEixPayPage() {
   await requireStaff(["supreme"]);
   return (
-    <main className="min-h-screen bg-[#080e0b] px-4 py-10 text-white sm:px-6">
+    <main className="premium-supreme-page min-h-screen px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-5xl">
         <header className="mb-8">
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-300">NEWEIX · SUPREME CONTROL</p>

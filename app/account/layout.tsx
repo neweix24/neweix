@@ -30,5 +30,5 @@ export default function AccountLayout({
     return () => window.removeEventListener("popstate", handleAccountBack);
   }, [pathname]);
 
-  return children;
+  return <div className="premium-account-workspace">{children}</div>;
 }

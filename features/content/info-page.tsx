@@ -3,7 +3,7 @@ import type { InfoPageData } from "./info-page-data";
 
 export default function InfoPage({ data }: { data: InfoPageData }) {
   return (
-    <main className="info-page mx-auto min-h-screen w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+    <main className="premium-info-page info-page mx-auto min-h-screen w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <Link href="/" className="inline-flex min-h-10 items-center text-sm font-bold" style={{ color: "var(--primary)" }}>← NEWEIX হোম</Link>
       <header className="info-page-header my-7">
         <p className="eyebrow">{data.eyebrow}</p>

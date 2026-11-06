@@ -5,5 +5,5 @@ export const dynamic = "force-dynamic";
 
 export default async function StaffPage() {
   await requireStaff(["staff"]);
-  return <StaffDashboard />;
+  return <div className="premium-role-workspace"><StaffDashboard /></div>;
 }

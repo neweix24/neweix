@@ -191,3 +191,44 @@
 .wishlistIconButton[aria-pressed="true"] svg{fill:currentColor;stroke:currentColor}
 .card .bottom strong{color:#176b43!important}
 .card .bottom del{color:#737b74!important;text-decoration:line-through;text-decoration-thickness:1.5px}
+
+
+/* NEWEIX premium catalog refinement */
+.page{background:var(--porcelain);color:var(--navy)}
+.header{border-color:var(--border);background:rgba(255,254,250,.92)}
+.brand{color:var(--navy)}
+.header nav{color:var(--muted)}
+.intro{background:radial-gradient(ellipse at 88% 0%,rgba(197,165,106,.13),transparent 32rem),linear-gradient(180deg,var(--surface-raised),var(--porcelain))}
+.intro h1{color:var(--navy)}
+.eyebrow{color:var(--emerald)}
+.search input,.search select,.searchForm .search{border-color:var(--border);background:var(--surface-raised);color:var(--navy)}
+.searchForm .search>svg{color:var(--emerald)}
+.searchForm .search input{color:var(--navy)!important}
+.searchForm .search input::placeholder{color:var(--muted)}
+.searchForm .search:focus-within{border-color:var(--emerald);outline:3px solid rgba(8,127,99,.12)}
+.searchSubmit,.bottom button,.state button{border-color:var(--emerald);background:var(--emerald);color:#fff}
+.searchSubmit:hover,.bottom button:hover,.state button:hover{background:var(--primary-hover)}
+.categoryChips button,.clearFilters{border-color:var(--border);background:var(--surface-raised);color:var(--navy)}
+.categoryChips button:hover,.clearFilters:hover{border-color:var(--emerald);color:var(--emerald)}
+.categoryChips .activeChip{border-color:var(--emerald);background:var(--emerald);color:#fff}
+.categoryChips .activeChip:hover{color:#fff}
+.priceField,.stockFilter{color:var(--muted)}
+.priceField input{border-color:var(--border);background:var(--surface-raised);color:var(--navy)}
+.filterPanel{border-color:var(--border);background:var(--surface-raised);box-shadow:0 12px 34px rgba(20,43,59,.05)}
+.filterHeading{color:var(--navy)}
+.card{border-color:var(--border);background:var(--surface-raised);box-shadow:0 7px 24px rgba(20,43,59,.045)}
+.card:hover{border-color:rgba(8,127,99,.38);box-shadow:0 16px 34px rgba(20,43,59,.09)}
+.image{background:linear-gradient(145deg,#fffefa,#efeee8);color:var(--navy)}
+.image small,.addButton{background:var(--emerald);color:#fff}
+.details,.name,.bottom strong,.header nav,.intro h1{color:var(--navy)}
+.details p,.state{color:var(--muted)}
+.inStock{color:var(--emerald)}
+.notice{border-color:var(--border);background:var(--surface-raised);color:var(--navy)}
+.iconButton{border-color:var(--border);background:var(--surface-raised);color:var(--muted)}
+.iconButton:hover:not(:disabled),.iconButton[aria-pressed=true]{border-color:var(--emerald);background:rgba(8,127,99,.08);color:var(--emerald)}
+.productTools .iconButton{background:var(--surface-raised);color:var(--navy)}
+.productTools .iconButton:focus-visible,.product-card-action:focus-visible{outline:3px solid rgba(8,127,99,.18)}
+.product-card-action-primary{border-color:var(--navy)!important;background:var(--navy)!important;color:#fff!important}
+.discountBadge{background:#b42318}
+.card .bottom strong{color:var(--emerald)!important}
+@media(max-width:640px){.header{background:var(--surface-raised)}.searchSubmit{background:var(--emerald);color:#fff}}

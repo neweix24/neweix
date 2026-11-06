@@ -42,7 +42,7 @@ export default function SupremeDashboard() {
   const outOfStock = products.filter((product) => product.stock <= 0).length;
 
   return (
-    <main className="min-h-screen px-4 py-9 sm:px-6" style={{ background: "radial-gradient(ellipse at 85% 0%,rgba(182,255,74,.13),transparent 38%),linear-gradient(145deg,#fbfff7,#f3fff5 58%,#f5fbff)", color: "var(--ink)" }}>
+    <main className="premium-supreme-dashboard min-h-screen px-4 py-9 sm:px-6" style={{ background: "radial-gradient(ellipse at 85% 0%,rgba(182,255,74,.13),transparent 38%),linear-gradient(145deg,#fbfff7,#f3fff5 58%,#f5fbff)", color: "var(--ink)" }}>
       <div className="mx-auto max-w-6xl space-y-7">
         <header className="flex flex-wrap items-end justify-between gap-4 rounded-3xl border p-7 sm:p-10" style={{ borderColor: "#dfeade", background: "radial-gradient(ellipse at 100% 0%,rgba(182,255,74,.18),transparent 45%),linear-gradient(135deg,#fff,#f5ffef)", boxShadow: "0 14px 38px rgba(45,110,65,.07)" }}>
           <div>

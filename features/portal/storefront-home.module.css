@@ -442,3 +442,36 @@
 .productInfo .product-card-action{width:42px;min-width:42px;min-height:40px;padding:0;border-radius:11px}
 .productInfo .product-card-action-primary{background:#176b43!important;border-color:#176b43!important;color:#fff!important}
 @media(max-width:600px){.homeWishlist{top:8px;right:8px;width:34px;height:34px;min-height:34px}.productImage:has(.discountBadge)~.homeWishlist{top:45px}.productInfo .product-card-action{width:40px;min-width:40px;min-height:38px}}
+
+
+/* NEWEIX premium storefront refinement — approved navy / emerald / champagne palette. */
+.page{background:radial-gradient(ellipse at 82% 0%,rgba(8,127,99,.075),transparent 34rem),var(--bg);color:var(--ink)}
+.header{border-color:var(--border)}
+.headerSearch{border-color:var(--border);border-radius:14px;background:var(--surface-raised);box-shadow:0 8px 26px rgba(20,43,59,.055)}
+.headerSearch:focus-within{border-color:var(--emerald);box-shadow:0 0 0 4px rgba(8,127,99,.10),0 10px 28px rgba(20,43,59,.07)}
+.headerSearch button{background:var(--emerald);color:#fff}
+.desktopNav a:hover,.footer a:hover{color:var(--emerald)}
+.accountButton{border-color:rgba(8,127,99,.24);background:rgba(8,127,99,.07);color:var(--emerald)}
+.hero{border-color:var(--border);background:linear-gradient(120deg,rgba(255,254,250,.92),rgba(247,246,242,.68))}
+.eyebrow{color:var(--emerald)}
+.hero h1{color:var(--navy);letter-spacing:-2.2px}
+.hero h1 em{color:var(--emerald)}
+.heroText>p,.sectionHeading p,.helpStrip p{color:var(--muted)}
+.primaryButton{background:var(--emerald);color:#fff;box-shadow:0 8px 20px rgba(8,127,99,.16)}
+.primaryButton:hover{background:var(--primary-hover);transform:translateY(-1px)}
+.secondaryButton{border-color:var(--border);background:var(--surface-raised);color:var(--navy)}
+.orbit{border-color:rgba(197,165,106,.38);box-shadow:0 0 0 28px rgba(197,165,106,.055),0 0 0 58px rgba(8,127,99,.025)}
+.heroMonogram{border-color:rgba(197,165,106,.42);background:linear-gradient(145deg,var(--surface-raised),var(--surface-soft));color:var(--navy)}
+.floatTag{border-color:rgba(197,165,106,.42);background:var(--surface-raised);color:var(--navy);box-shadow:0 12px 32px rgba(20,43,59,.08)}
+.quickLinks a{border-color:var(--border);background:var(--surface-raised);box-shadow:0 8px 24px rgba(20,43,59,.035);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.quickLinks a:hover{transform:translateY(-3px);border-color:rgba(8,127,99,.35);box-shadow:0 14px 30px rgba(20,43,59,.07)}
+.quickLinks a>span{background:rgba(8,127,99,.09);color:var(--emerald)}
+.quickLinks strong,.sectionHeading h2,.helpStrip h2{color:var(--navy)}
+.sectionHeading>a{color:var(--emerald)}
+.productCard{border-color:var(--border);border-radius:18px;background:var(--surface-raised);box-shadow:0 7px 24px rgba(20,43,59,.045)}
+.productCard:hover{border-color:rgba(8,127,99,.38);box-shadow:0 16px 34px rgba(20,43,59,.09)}
+.productCard button,.productCard a{transition:background .18s ease,border-color .18s ease,transform .18s ease}
+.footer{border-color:var(--border);background:var(--surface-soft);color:var(--muted)}
+.notificationPanel,.quickMenuPanel{border-color:var(--border);background:var(--surface-raised);box-shadow:0 18px 48px rgba(20,43,59,.14)}
+@media(max-width:760px){.hero{min-height:0;padding:42px 5%;grid-template-columns:1fr}.heroVisual{min-height:230px}.heroMonogram{width:150px;height:150px;font-size:100px}.orbit{width:220px;height:220px}.quickLinks{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:42px}.header{width:calc(100% - 28px)}}
+@media(prefers-reduced-motion:reduce){.quickLinks a,.productCard button,.productCard a{transition:none}.quickLinks a:hover,.productCard:hover{transform:none}}
