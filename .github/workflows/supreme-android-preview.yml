@@ -1,0 +1,57 @@
+name: Build Supreme Android preview APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supreme-android-preview
+  cancel-in-progress: false
+
+jobs:
+  build-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate private path secret
+        env:
+          SUPREME_PRIVATE_PATH: ${{ secrets.SUPREME_PRIVATE_PATH }}
+        run: |
+          if [[ ! "$SUPREME_PRIVATE_PATH" =~ ^/control-[A-Fa-f0-9]{48}$ ]]; then
+            echo "::error::Repository secret SUPREME_PRIVATE_PATH is missing or invalid."
+            exit 1
+          fi
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-35"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Assemble debug APK
+        working-directory: android/supreme-app
+        env:
+          SUPREME_PRIVATE_PATH: ${{ secrets.SUPREME_PRIVATE_PATH }}
+        run: gradle --no-daemon :app:assembleDebug
+
+      - name: Upload internal test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: neweix-supreme-android-debug-${{ github.run_number }}
+          path: android/supreme-app/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
