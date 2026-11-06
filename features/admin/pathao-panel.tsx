@@ -606,7 +606,7 @@ export default function PathaoPanel() {
       await loadLocationMappings();
       setMappingMessage(
         result.matchedCount > 0
-          ? `Automatically verified and saved ${result.matchedCount} exact match(es) for ${selectedMappingDistrict?.name ?? "this district"}. ${result.skippedCount} area(s) were left untouched because no unique exact match was found.`
+          ? `Created inactive candidate suggestions ${result.matchedCount} exact match(es) for ${selectedMappingDistrict?.name ?? "this district"}. ${result.skippedCount} area(s) were left untouched because no unique exact match was found.`
           : result.message || "No exact matches found. No mapping was saved."
       );
     } catch (error) {
@@ -622,7 +622,7 @@ export default function PathaoPanel() {
     setCoverageSyncResults([]);
     setMappingMessage("Reading the live Pathao city and zone catalog. Each division will be processed independently; a temporary failure will not stop the remaining districts.");
     const accumulated: CoverageDistrictResult[] = [];
-    let mappedUpazilas = 0;
+    let candidateUpazilas = 0;
     let failedDivisions = 0;
 
     try {
@@ -676,30 +676,26 @@ export default function PathaoPanel() {
           for (const row of rows) {
             accumulated.push({ ...row, divisionName: division.name } as CoverageDistrictResult);
           }
-          mappedUpazilas += Number(result?.matchedUpazilaCount ?? 0);
+          candidateUpazilas += Number(result?.matchedUpazilaCount ?? 0);
         }
 
         setCoverageSyncResults([...accumulated]);
         setMappingMessage(
-          `Checked ${accumulated.length}/64 districts. ${mappedUpazilas} exact upazila mappings saved. ${failedDivisions} division(s) had temporary/API errors.`,
+          `Checked ${accumulated.length}/64 districts. ${candidateUpazilas} exact upazila mappings saved. ${failedDivisions} division(s) had temporary/API errors.`,
         );
         // Give Pathao's merchant API a short recovery window before the next division.
         await new Promise((resolve) => window.setTimeout(resolve, 1_500));
       }
 
       await loadLocationMappings();
-      if (mappedUpazilas > 0) {
-        // Refresh the live Area catalog immediately after verified City/Zone mappings.
-        await syncAreaCatalog();
-      }
-      const fullyMapped = accumulated.filter((item) => item.status === "fully_mapped").length;
-      const partiallyMapped = accumulated.filter((item) => item.status === "partially_mapped").length;
+      const fullyMapped = accumulated.filter((item) => item.status === "fully_matched_candidates").length;
+      const partiallyMapped = accumulated.filter((item) => item.status === "partially_matched_candidates").length;
       const unmapped = accumulated.filter((item) =>
-        !["fully_mapped", "partially_mapped", "sync_error"].includes(item.status)
+        !["fully_matched_candidates", "partially_matched_candidates", "sync_error"].includes(item.status)
       ).length;
       const syncErrors = accumulated.filter((item) => item.status === "sync_error").length;
       setMappingMessage(
-        `Coverage scan finished: ${accumulated.length}/64 districts checked; ${fullyMapped} fully mapped, ${partiallyMapped} partially mapped, ${unmapped} need manual review, ${syncErrors} had API/network errors. ${mappedUpazilas} verified upazila mappings saved. Run Sync again to retry failed divisions; existing verified mappings are safely updated.`,
+        `Coverage scan finished: ${accumulated.length}/64 districts checked; ${fullyMapped} fully mapped, ${partiallyMapped} partially mapped, ${unmapped} need manual review, ${syncErrors} had API/network errors. ${candidateUpazilas} new inactive candidates saved. Run Sync again to retry failed divisions; existing mappings are never overwritten; manually verify all new candidates before enabling checkout.`,
       );
     } catch (error) {
       setMappingMessage(error instanceof Error ? error.message : "Pathao 64-district coverage scan failed.");
@@ -861,8 +857,8 @@ export default function PathaoPanel() {
   }, []);
 
   const coverageSummary = {
-    fullyMapped: coverageSyncResults.filter((item) => item.status === "fully_mapped").length,
-    partiallyMapped: coverageSyncResults.filter((item) => item.status === "partially_mapped").length,
+    fullyMapped: coverageSyncResults.filter((item) => item.status === "fully_matched_candidates").length,
+    partiallyMapped: coverageSyncResults.filter((item) => item.status === "partially_matched_candidates").length,
     matchedUpazilas: coverageSyncResults.reduce((total, item) => total + item.matchedUpazilas, 0),
     skippedUpazilas: coverageSyncResults.reduce((total, item) => total + item.skippedUpazilas.length, 0),
     syncErrors: coverageSyncResults.filter((item) => item.status === "sync_error").length,
@@ -933,7 +929,7 @@ export default function PathaoPanel() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="font-semibold">Checkout Delivery Area Mapping</h3>
-            <p className="mt-1 max-w-3xl text-xs leading-5 text-gray-600">Checkout only calculates a live Pathao fee for verified Bangladesh upazila → Pathao city/zone mappings. This table starts empty after migration; save each supported upazila here. The API verifies city and zone IDs against Pathao before saving.</p>
+            <p className="mt-1 max-w-3xl text-xs leading-5 text-gray-600">Checkout calculates live Pathao fees only for manually verified Bangladesh upazila → Pathao City/Zone mappings. Automatic scans create inactive candidates only; the API rechecks selected City/Zone IDs against Pathao before manual verification.</p>
           </div>
           <button type="button" onClick={() => void loadLocationMappings()} disabled={mappingsLoading} className="rounded-lg border bg-white px-3 py-2 text-xs font-semibold disabled:opacity-50">{mappingsLoading ? "Loading..." : "Refresh Mappings"}</button>
         </div>
@@ -943,16 +939,16 @@ export default function PathaoPanel() {
           disabled={mappingAutoRunning || mappingSaving || !mappingDivisionCode || !mappingDistrictCode || !mappingCityId}
           className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-50"
         >
-          {mappingAutoRunning ? "Matching verified Pathao zones..." : "Auto-match exact upazila names"}
+          {mappingAutoRunning ? "Finding exact-name candidates..." : "Generate exact-name candidates for this district"}
         </button>
         <p className="text-xs leading-5 text-gray-600">
-          Pathao officially reports home delivery across all 64 districts. This scan matches NEWEIX districts and upazilas to the live merchant API catalog; it saves only unique exact city/zone matches and leaves uncertain areas for manual review.
+          Pathao officially reports home delivery across all 64 districts. This scan matches NEWEIX districts and upazilas to the live merchant API catalog; it creates inactive candidates from unique exact City/Zone matches; an Admin/Supreme user must manually verify them before checkout can use them.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => void autoMapAllDistricts()} disabled={coverageSyncRunning || mappingAutoRunning || mappingSaving} className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-            {coverageSyncRunning ? "Scanning 64 districts..." : "Sync Pathao coverage for all 64 districts"}
+            {coverageSyncRunning ? "Scanning 64 districts..." : "Generate mapping candidates for all 64 districts"}
           </button>
-          <span className="text-xs text-gray-600">Eight divisions · live City/Zone catalog · no guessed mappings</span>
+          <span className="text-xs text-gray-600">Eight divisions · live City/Zone catalog · suggestions remain inactive until verified</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -980,8 +976,8 @@ export default function PathaoPanel() {
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
               <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Districts checked</p><p className="text-lg font-bold">{coverageSyncResults.length}/64</p></div>
-              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Fully mapped</p><p className="text-lg font-bold">{coverageSummary.fullyMapped}</p></div>
-              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Partially mapped</p><p className="text-lg font-bold">{coverageSummary.partiallyMapped}</p></div>
+              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Exact candidates for all upazilas · review required</p><p className="text-lg font-bold">{coverageSummary.fullyMapped}</p></div>
+              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Partial candidate matches</p><p className="text-lg font-bold">{coverageSummary.partiallyMapped}</p></div>
               <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Exact matches</p><p className="text-lg font-bold">{coverageSummary.matchedUpazilas}</p></div>
               <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Need review / errors</p><p className="text-lg font-bold">{coverageSummary.skippedUpazilas} / {coverageSummary.syncErrors}</p></div>
             </div>
@@ -995,7 +991,7 @@ export default function PathaoPanel() {
                     <td className="p-2">{item.pathaoCityName ?? "Not matched"}</td>
                     <td className="p-2">{item.matchedUpazilas}/{item.totalUpazilas}</td>
                     <td className="p-2">
-                      <div>{item.status === "fully_mapped" ? "Fully mapped" : item.status === "partially_mapped" ? `Partial · ${item.skippedUpazilas.length} need review` : item.status === "sync_error" ? "Sync error" : item.status === "city_not_found" ? "City not found" : item.status === "city_ambiguous" ? "Ambiguous city" : item.status === "zones_unavailable" ? "Zones unavailable" : "No exact zone match"}</div>
+                      <div>{item.status === "fully_matched_candidates" ? "Exact candidates for all upazilas · review required" : item.status === "partially_matched_candidates" ? `Partial · ${item.skippedUpazilas.length} need review` : item.status === "sync_error" ? "Sync error" : item.status === "city_not_found" ? "City not found" : item.status === "city_ambiguous" ? "Ambiguous city" : item.status === "zones_unavailable" ? "Zones unavailable" : "No exact zone match"}</div>
                       {item.error && <div className="mt-1 max-w-sm whitespace-normal break-words text-[11px] leading-4 text-red-700" title={item.error}>{item.error}</div>}
                     </td>
                     <td className="max-w-xs whitespace-normal p-2">{item.skippedUpazilas.length > 0 ? <details><summary className="cursor-pointer font-medium text-amber-800">View {item.skippedUpazilas.length} area(s)</summary><ul className="mt-2 list-disc space-y-1 pl-4 text-gray-600">{item.skippedUpazilas.map((name) => <li key={name}>{name}</li>)}</ul></details> : <span className="text-gray-400">None</span>}</td>
