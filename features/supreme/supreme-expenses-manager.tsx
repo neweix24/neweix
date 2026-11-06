@@ -2,6 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
+type ProductCost = { id: string; name: string; sku: string | null; purchase_cost: number | null; price: number };
+
 type Expense = {
   id: string;
   expense_date: string;
@@ -30,6 +32,10 @@ function todayLocal() {
 
 export default function SupremeExpensesManager() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [products, setProducts] = useState<ProductCost[]>([]);
+  const [costDrafts, setCostDrafts] = useState<Record<string, string>>({});
+  const [costSaving, setCostSaving] = useState<string | null>(null);
+  const [costMessage, setCostMessage] = useState("");
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -62,6 +68,50 @@ export default function SupremeExpensesManager() {
   }, [from, to]);
 
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => { void loadCosts(); }, [loadCosts]);
+
+  const loadCosts = useCallback(async () => {
+    try {
+      const response = await fetch("/api/supreme/finance/product-costs", { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "পণ্যের ক্রয়মূল্য লোড হয়নি।");
+      const rows = Array.isArray(payload.products) ? payload.products as ProductCost[] : [];
+      setProducts(rows);
+      setCostDrafts(Object.fromEntries(rows.map(row => [row.id, row.purchase_cost == null ? "" : String(row.purchase_cost)])));
+    } catch (err) {
+      setCostMessage(err instanceof Error ? err.message : "পণ্যের ক্রয়মূল্য লোড হয়নি।");
+    }
+  }, []);
+
+  async function saveCost(productId: string) {
+    const value = costDrafts[productId] ?? "";
+    if (value !== "" && (!Number.isSafeInteger(Number(value)) || Number(value) < 0 || Number(value) > 1000000000)) {
+      setCostMessage("সঠিক ক্রয়মূল্য লিখুন।");
+      return;
+    }
+    setCostSaving(productId);
+    setCostMessage("");
+    try {
+      const response = await fetch("/api/supreme/finance/product-costs", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: productId, purchase_cost: value === "" ? null : Number(value) }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "ক্রয়মূল্য সংরক্ষণ করা যায়নি।");
+      setProducts(current => current.map(product => product.id === productId
+        ? { ...product, purchase_cost: payload.product.purchase_cost }
+        : product));
+      setCostMessage("পণ্যের ক্রয়মূল্য সংরক্ষিত ও Audit Log-এ নথিভুক্ত হয়েছে।");
+    } catch (err) {
+      setCostMessage(err instanceof Error ? err.message : "ক্রয়মূল্য সংরক্ষণ করা যায়নি।");
+    } finally {
+      setCostSaving(null);
+    }
+  }
+
+
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -115,6 +165,21 @@ export default function SupremeExpensesManager() {
           </div>
         </div>
       </div>
+
+      <section className="mb-6 rounded-3xl border border-white/10 bg-[#111827] p-4 sm:p-6">
+        <div><h2 className="text-lg font-bold">পণ্যের প্রকৃত ক্রয়মূল্য</h2><p className="mt-1 text-sm leading-6 text-slate-400">প্রতি ইউনিটে NEWEIX-এর ক্রয়মূল্য দিন। নতুন অর্ডার তৈরির সময় এই মূল্য অর্ডার লাইনে স্থায়ীভাবে সংরক্ষিত হবে। খালি রাখলে ক্রয়মূল্য অজানা থাকবে।</p></div>
+        {costMessage && <p role="status" className="mt-3 rounded-xl border border-amber-300/20 bg-amber-950/20 p-3 text-sm text-amber-200">{costMessage}</p>}
+        <div className="mt-4 divide-y divide-white/10">
+          {products.map(product => <div key={product.id} className="grid gap-3 py-3 sm:grid-cols-[1fr_180px_auto] sm:items-center">
+            <div><strong className="text-sm">{product.name}</strong><p className="mt-1 text-xs text-slate-500">{product.sku || "SKU নেই"} · বিক্রয়মূল্য {money.format(product.price)} · {product.purchase_cost == null ? "ক্রয়মূল্য অজানা" : "ক্রয়মূল্য " + money.format(product.purchase_cost)}</p></div>
+            <label className="grid gap-1 text-xs text-slate-400">ক্রয়মূল্য / ইউনিট (BDT)
+              <input type="number" min="0" max="1000000000" step="1" inputMode="numeric" value={costDrafts[product.id] ?? ""} onChange={event => setCostDrafts(current => ({ ...current, [product.id]: event.target.value }))} placeholder="অজানা হলে খালি রাখুন" className="w-full rounded-xl border border-white/15 bg-[#090e18] px-3 py-2.5 text-white" />
+            </label>
+            <button type="button" disabled={costSaving === product.id} onClick={() => void saveCost(product.id)} className="rounded-xl border border-amber-300/40 px-4 py-2.5 text-sm font-bold text-amber-200 disabled:opacity-50">{costSaving === product.id ? "সংরক্ষণ…" : "সংরক্ষণ"}</button>
+          </div>)}
+          {products.length === 0 && <p className="py-6 text-center text-sm text-slate-400">পণ্যের তথ্য লোড হচ্ছে অথবা কোনো পণ্য পাওয়া যায়নি।</p>}
+        </div>
+      </section>
 
       <section className="mb-6 rounded-3xl border border-white/10 bg-[#111827] p-4 sm:p-6">
         <h2 className="text-lg font-bold">নতুন ব্যয় যোগ করুন</h2>
