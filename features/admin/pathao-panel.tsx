@@ -207,6 +207,8 @@ export default function PathaoPanel() {
   const [mappingsLoading, setMappingsLoading] = useState(false);
   const [mappingSaving, setMappingSaving] = useState(false);
   const [mappingConfirmed, setMappingConfirmed] = useState(false);
+  const [mappingCorrectionConfirmed, setMappingCorrectionConfirmed] = useState(false);
+  const [mappingCorrectionReason, setMappingCorrectionReason] = useState("");
   const [mappingMessage, setMappingMessage] = useState("");
   const [mappingDivisionCode, setMappingDivisionCode] = useState("");
   const [mappingDistrictCode, setMappingDistrictCode] = useState("");
@@ -529,6 +531,8 @@ export default function PathaoPanel() {
   const selectedMappingDivision = BANGLADESH_ADMIN_AREAS.find((item) => item.code === mappingDivisionCode);
   const selectedMappingDistrict = selectedMappingDivision?.districts.find((item) => item.code === mappingDistrictCode);
   const selectedMappingUpazila = selectedMappingDistrict?.upazilas.find((item) => item.code === mappingUpazilaCode);
+  const selectedExistingMapping = mappings.find((item) => item.district_code === mappingDistrictCode && item.upazila_code === mappingUpazilaCode);
+  const isMappingCorrection = Boolean(selectedExistingMapping?.is_verified);
 
   async function loadLocationMappings() {
     setMappingsLoading(true);
@@ -698,6 +702,8 @@ export default function PathaoPanel() {
         body: JSON.stringify({
           action: "save_location_mapping",
           confirmMapping: mappingConfirmed,
+          confirmCorrection: mappingCorrectionConfirmed,
+          correctionReason: mappingCorrectionReason.trim(),
           divisionCode: mappingDivisionCode,
           districtCode: mappingDistrictCode,
           upazilaCode: mappingUpazilaCode,
@@ -708,7 +714,7 @@ export default function PathaoPanel() {
       const result = await response.json().catch(() => null);
       if (!response.ok) throw new Error(result?.error || "Could not verify this Pathao area mapping.");
       await loadLocationMappings();
-      setMappingMessage("Pathao city/zone mapping verified and saved. Checkout can now quote this upazila.");
+      setMappingMessage(isMappingCorrection ? "Verified Pathao mapping corrected. Previous and new City/Zone IDs and the reason were recorded in the audit log." : "Pathao City/Zone mapping verified and saved. Checkout can now request live pricing for this upazila.");
     } catch (error) {
       setMappingMessage(error instanceof Error ? error.message : "Could not save the Pathao mapping.");
     } finally {
@@ -909,38 +915,49 @@ export default function PathaoPanel() {
         </p>
         <form onSubmit={saveLocationMapping} className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-medium">Bangladesh division
-            <select required value={mappingDivisionCode} onChange={(event) => { setMappingConfirmed(false); setMappingDivisionCode(event.target.value); setMappingDistrictCode(""); setMappingUpazilaCode(""); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingDivisionCode} onChange={(event) => { setMappingConfirmed(false); setMappingCorrectionConfirmed(false); setMappingCorrectionReason(""); setMappingDivisionCode(event.target.value); setMappingDistrictCode(""); setMappingUpazilaCode(""); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">Select division</option>
               {BANGLADESH_ADMIN_AREAS.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium">District
-            <select required value={mappingDistrictCode} onChange={(event) => { setMappingConfirmed(false); setMappingDistrictCode(event.target.value); setMappingUpazilaCode(""); }} disabled={!mappingDivisionCode} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingDistrictCode} onChange={(event) => { setMappingConfirmed(false); setMappingCorrectionConfirmed(false); setMappingCorrectionReason(""); setMappingDistrictCode(event.target.value); setMappingUpazilaCode(""); }} disabled={!mappingDivisionCode} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">Select district</option>
               {(selectedMappingDivision?.districts ?? []).map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium">Upazila / area
-            <select required value={mappingUpazilaCode} onChange={(event) => { setMappingConfirmed(false); setMappingUpazilaCode(event.target.value); }} disabled={!mappingDistrictCode} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingUpazilaCode} onChange={(event) => { setMappingConfirmed(false); setMappingCorrectionConfirmed(false); setMappingCorrectionReason(""); setMappingUpazilaCode(event.target.value); }} disabled={!mappingDistrictCode} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">Select upazila</option>
               {(selectedMappingDistrict?.upazilas ?? []).map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium">Pathao city
-            <select required value={mappingCityId} onChange={(event) => { setMappingConfirmed(false); setMappingCityId(event.target.value); setMappingZoneId(""); setMappingZones([]); if (event.target.value) void loadMappingZones(event.target.value); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingCityId} onChange={(event) => { setMappingConfirmed(false); setMappingCorrectionConfirmed(false); setMappingCorrectionReason(""); setMappingCityId(event.target.value); setMappingZoneId(""); setMappingZones([]); if (event.target.value) void loadMappingZones(event.target.value); }} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">Fetch/select Pathao city</option>
               {cities.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
             {cities.length === 0 && <span className="mt-1 block text-xs text-gray-500">First select “Fetch Cities” above.</span>}
           </label>
           <label className="text-sm font-medium">Pathao zone
-            <select required value={mappingZoneId} onChange={(event) => { setMappingConfirmed(false); setMappingZoneId(event.target.value); }} disabled={!mappingCityId || mappingZonesLoading} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
+            <select required value={mappingZoneId} onChange={(event) => { setMappingConfirmed(false); setMappingCorrectionConfirmed(false); setMappingCorrectionReason(""); setMappingZoneId(event.target.value); }} disabled={!mappingCityId || mappingZonesLoading} className="mt-1 w-full rounded-lg border bg-white px-3 py-2">
               <option value="">{mappingZonesLoading ? "Loading zones..." : "Select Pathao zone"}</option>
               {mappingZones.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
           </label>
           <label className="flex items-start gap-2 text-xs leading-5 text-gray-700 sm:col-span-2"><input type="checkbox" checked={mappingConfirmed} onChange={(event) => setMappingConfirmed(event.target.checked)} className="mt-1" />I have checked the selected Pathao City and Zone against the actual destination and confirm this pair is geographically correct for the selected NEWEIX upazila.</label>
-          <button type="submit" disabled={mappingSaving || !selectedMappingUpazila || !mappingCityId || !mappingZoneId || !mappingConfirmed} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2">{mappingSaving ? "Verifying & saving..." : "Verify and activate City/Zone mapping"}</button>
+          {isMappingCorrection && (
+            <>
+              <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-900 sm:col-span-2">
+                This upazila already has a verified mapping: {selectedExistingMapping?.pathao_city_name} / {selectedExistingMapping?.pathao_zone_name}. A correction will replace it and write the previous IDs, new IDs and your reason to the audit log.
+              </div>
+              <label className="text-sm font-medium sm:col-span-2">Correction reason (required, 20–500 characters)
+                <textarea value={mappingCorrectionReason} onChange={(event) => setMappingCorrectionReason(event.target.value)} maxLength={500} rows={3} className="mt-1 w-full rounded-lg border px-3 py-2" placeholder="Explain how the existing City/Zone mapping was found to be incorrect and what evidence confirms the replacement." />
+              </label>
+              <label className="flex items-start gap-2 text-xs leading-5 text-amber-900 sm:col-span-2"><input type="checkbox" checked={mappingCorrectionConfirmed} onChange={(event) => setMappingCorrectionConfirmed(event.target.checked)} className="mt-1" />I understand this will replace an existing verified mapping and I have checked the destination against Pathao's actual service area.</label>
+            </>
+          )}
+          <button type="submit" disabled={mappingSaving || !selectedMappingUpazila || !mappingCityId || !mappingZoneId || !mappingConfirmed || (isMappingCorrection && (!mappingCorrectionConfirmed || mappingCorrectionReason.trim().length < 20))} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2">{mappingSaving ? "Verifying & saving..." : "Verify and save City/Zone mapping"}</button>
         </form>
         {mappingMessage && <p role="status" className="text-xs text-gray-700">{mappingMessage}</p>}
         <div className="overflow-x-auto rounded-lg border bg-white">
