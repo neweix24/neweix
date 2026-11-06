@@ -156,6 +156,12 @@ export async function middleware(request: NextRequest) {
   // Validate signed claims and allow Supabase SSR to refresh expired sessions.
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;
+  // Refreshing auth cookies can replace the response object; reapply the
+  // private-route indexing policy after claim validation.
+  if (isPrivateSupremePath) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+    response.headers.set("Cache-Control", "private, no-store, max-age=0");
+  }
 
   const hasAuthenticatedSession = typeof userId === "string" && userId.length > 0;
   if (!isApiPath || isCustomerProtected || hasAuthenticatedSession || response.cookies.getAll().length > 0) {
