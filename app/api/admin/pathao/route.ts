@@ -371,9 +371,14 @@ export async function POST(request: Request) {
       return errorResponse("No verified Pathao City/Zone mappings exist yet. Sync district coverage first.", 409);
     }
 
+    const requestedOffset = Number(input.areaOffset ?? 0);
+    if (!Number.isSafeInteger(requestedOffset) || requestedOffset < 0 || requestedOffset >= zoneIds.length) {
+      return errorResponse("Invalid Pathao Area sync batch offset.", 400);
+    }
+    const batchZoneIds = zoneIds.slice(requestedOffset, requestedOffset + 6);
     let results;
     try {
-      results = await getPathaoAreasForZones(zoneIds);
+      results = await getPathaoAreasForZones(batchZoneIds);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Pathao Area catalog request failed.";
       console.error("Pathao area catalog sync failed:", message);
@@ -468,6 +473,8 @@ export async function POST(request: Request) {
       target_type: "pathao_area_catalog",
       details: {
         mapped_zone_count: zoneIds.length,
+        processed_zone_count: batchZoneIds.length,
+        batch_offset: requestedOffset,
         successful_zone_count: successfulZones,
         failed_zone_count: failedZones.length,
         saved_area_count: savedCount,
@@ -479,6 +486,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: failedZones.length === 0,
       mappedZoneCount: zoneIds.length,
+      processedZoneCount: batchZoneIds.length,
+      nextOffset: requestedOffset + batchZoneIds.length,
+      hasMore: requestedOffset + batchZoneIds.length < zoneIds.length,
       syncedZoneCount: successfulZones,
       failedZoneCount: failedZones.length,
       failedZones,
