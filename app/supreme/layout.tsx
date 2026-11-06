@@ -32,7 +32,7 @@ export default async function SupremeLayout({ children }: { children: React.Reac
   const staff = await requireStaff(["supreme"]);
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)", color: "var(--ink)" }}>
+    <div className="premium-supreme-workspace min-h-screen" style={{ background: "var(--bg)", color: "var(--ink)" }}>
       <ServiceWorkerRegister />
       <header className="sticky top-0 z-40 border-b backdrop-blur" style={{ borderColor: "var(--border)", background: "color-mix(in srgb, var(--surface) 94%, transparent)" }}>
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
