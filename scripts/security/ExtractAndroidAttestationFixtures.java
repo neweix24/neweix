@@ -61,22 +61,26 @@ public final class ExtractAndroidAttestationFixtures {
         try (var input = Files.newInputStream(pem)) {
           certificates = factory.generateCertificates(input);
         }
-        int index = 0;
-        for (Certificate certificate : certificates) {
-          if (!(certificate instanceof X509Certificate x509)) {
-            index++;
-            continue;
-          }
-          byte[] extension = x509.getExtensionValue(OID);
-          if (extension != null) {
-            byte[] innerDer = unwrapOctetString(extension);
-            String source = root.relativize(pem).toString().replace('\\', '/');
-            records.add("{\"source\":\"" + jsonEscape(source) + "\",\"certificateIndex\":"
-                + index + ",\"derBase64\":\"" + Base64.getEncoder().encodeToString(innerDer) + "\"}");
-            break;
-          }
-          index++;
+        List<X509Certificate> x509Certificates = certificates.stream()
+            .filter(X509Certificate.class::isInstance)
+            .map(X509Certificate.class::cast)
+            .toList();
+        if (x509Certificates.isEmpty()) {
+          throw new IllegalStateException("No X.509 certificates in " + pem);
         }
+        X509Certificate leaf = x509Certificates.get(0);
+        byte[] extension = leaf.getExtensionValue(OID);
+        if (extension == null) {
+          throw new IllegalStateException("Leaf certificate is missing Android attestation extension: " + pem);
+        }
+        for (int index = 1; index < x509Certificates.size(); index++) {
+          if (x509Certificates.get(index).getExtensionValue(OID) != null) {
+            throw new IllegalStateException("Non-leaf certificate contains an unexpected Android attestation extension: " + pem);
+          }
+        }
+        byte[] innerDer = unwrapOctetString(extension);
+        String source = root.relativize(pem).toString().replace('\\\\', '/');
+        records.add("{\\"source\\":\\"" + jsonEscape(source) + "\\",\\"certificateIndex\\":0,\\"derBase64\\":\\"" + Base64.getEncoder().encodeToString(innerDer) + "\\"}");
       }
     }
 
