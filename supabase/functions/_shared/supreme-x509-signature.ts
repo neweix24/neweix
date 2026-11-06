@@ -42,6 +42,12 @@ function decodeOid(element: DerElement): string {
   return [first, combined - first * 40n, ...arcs].map(String).join(".");
 }
 
+function toArrayBuffer(value: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(value.byteLength);
+  copy.set(value);
+  return copy.buffer;
+}
+
 function isDerNull(value: Uint8Array | null): boolean {
   return value !== null && value.length === 2 && value[0] === 0x05 && value[1] === 0x00;
 }
@@ -129,10 +135,15 @@ export async function verifyX509CertificateSignature(
 
   const key = await crypto.subtle.importKey(
     "spki",
-    issuer.subjectPublicKeyInfo,
+    toArrayBuffer(issuer.subjectPublicKeyInfo),
     keyAlgorithm,
     false,
     ["verify"],
   );
-  return await crypto.subtle.verify(verifyAlgorithm, key, signature, certificate.tbsCertificate);
+  return await crypto.subtle.verify(
+    verifyAlgorithm,
+    key,
+    toArrayBuffer(signature),
+    toArrayBuffer(certificate.tbsCertificate),
+  );
 }
