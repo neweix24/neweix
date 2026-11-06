@@ -2,7 +2,7 @@ import { parseX509Certificate } from "./supreme-x509-certificate.ts";
 
 type OracleExtension = { oid: string; critical: boolean; value: string };
 type OracleCertificate = {
-  tbs: string; serial: string; signatureAlgorithmOid: string; signatureAlgorithmParameters: string | null; signatureVerifiedByNext: boolean; issuer: string;
+  tbs: string; serial: string; signatureAlgorithmOid: string; outerSignatureAlgorithmParameters: string | null; innerSignatureAlgorithmParameters: string | null; signatureVerifiedByNext: boolean; issuer: string;
   subject: string; spki: string; signature: string; extensions: OracleExtension[];
 };
 type OracleFixture = { source: string; certificates: OracleCertificate[] };
@@ -87,8 +87,13 @@ Deno.test({
         assertEquals(parsed.signatureAlgorithmOid, oracle.signatureAlgorithmOid, `${fixture.source} cert ${index}: signature algorithm`);
         assertEquals(
           parsed.signatureAlgorithmParameters === null ? null : toBase64(parsed.signatureAlgorithmParameters),
-          oracle.signatureAlgorithmParameters,
+          oracle.outerSignatureAlgorithmParameters,
           `${fixture.source} cert ${index}: signature algorithm parameters`,
+        );
+        assertEquals(
+          oracle.innerSignatureAlgorithmParameters,
+          oracle.outerSignatureAlgorithmParameters,
+          `${fixture.source} cert ${index}: JDK oracle inner/outer algorithm parameters`,
         );
         assertEquals(toBase64(parsed.issuer), oracle.issuer, `${fixture.source} cert ${index}: issuer`);
         assertEquals(toBase64(parsed.subject), oracle.subject, `${fixture.source} cert ${index}: subject`);
