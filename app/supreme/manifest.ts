@@ -1,13 +1,14 @@
 import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
+  const privatePath = process.env.SUPREME_PRIVATE_PATH || "/supreme";
   return {
-    id: "/supreme",
+    id: privatePath,
     name: "NEWEIX Supreme Control",
     short_name: "NEWEIX Control",
     description: "Secure Supreme-only NEWEIX business control workspace.",
-    start_url: "/supreme",
-    scope: "/supreme",
+    start_url: privatePath,
+    scope: privatePath,
     display: "standalone",
     orientation: "portrait",
     background_color: "#080b09",
