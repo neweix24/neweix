@@ -30,3 +30,20 @@
 .price del{color:#747b75!important;text-decoration:line-through;text-decoration-thickness:1.5px}
 .actions :global(.product-card-actions){display:flex;align-items:center;gap:10px}
 @media(max-width:640px){.discount{top:14px;left:14px}.price strong{font-size:24px}.price del{font-size:13px}}
+
+
+/* NEWEIX premium quick-view visual alignment */
+.backdrop{background:rgba(13,29,39,.62);backdrop-filter:blur(9px)}
+.dialog{border-color:var(--border);border-radius:27px;background:var(--surface-raised);color:var(--navy);box-shadow:0 30px 100px rgba(10,25,35,.34)}
+.close{width:40px;height:40px;border-color:var(--border);background:rgba(255,254,250,.96);color:var(--navy)}
+.close:hover{border-color:var(--emerald);background:var(--surface-soft);color:var(--emerald)}
+.visual{background:radial-gradient(ellipse at 50% 42%,#fffefa,#efeee8);color:var(--navy)}
+.visual img{padding:34px}
+.content{padding:clamp(28px,4vw,46px)}
+.available{color:var(--emerald)}
+.content h2{color:var(--navy);font-weight:850;letter-spacing:-1px}
+.price strong{color:var(--emerald)!important}
+.description{color:var(--muted);font-size:13px;line-height:1.9}
+.detailsLink{color:var(--emerald)}
+.detailsLink:hover{color:var(--navy)}
+@media(max-width:640px){.dialog{border-radius:22px}.visual{background:linear-gradient(145deg,var(--surface-raised),var(--surface-soft))}.content{padding:23px 20px 26px}}
