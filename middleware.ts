@@ -12,8 +12,44 @@ export async function middleware(request: NextRequest) {
   }
 
   const pathname = request.nextUrl.pathname;
+  const configuredSupremePath = process.env.SUPREME_PRIVATE_PATH;
+  // The private entry must be one high-entropy path segment. Never accept a
+  // public-looking or nested value that could overlap storefront routes.
+  const hasValidPrivateSupremePath =
+    typeof configuredSupremePath === "string" &&
+    /^\/[A-Za-z0-9][A-Za-z0-9_-]{31,95}$/.test(configuredSupremePath);
+  const hasInvalidPrivateSupremePath =
+    typeof configuredSupremePath === "string" &&
+    configuredSupremePath.length > 0 &&
+    !hasValidPrivateSupremePath;
+  const isCanonicalSupremePath =
+    pathname === "/supreme" || pathname.startsWith("/supreme/");
+  const isPrivateSupremePath =
+    hasValidPrivateSupremePath &&
+    (pathname === configuredSupremePath ||
+      pathname.startsWith(configuredSupremePath + "/"));
+
+  // If a configured private path is malformed, fail closed instead of
+  // silently exposing the legacy /supreme route.
+  if (hasInvalidPrivateSupremePath && isCanonicalSupremePath) {
+    return new NextResponse("Supreme access is temporarily unavailable.", {
+      status: 503,
+      headers: { "Cache-Control": "private, no-store, max-age=0", "X-Robots-Tag": "noindex, nofollow" },
+    });
+  }
+
+  // Once the private path is configured, direct requests to the old public
+  // route are not served. The authenticated private alias is rewritten below.
+  if (hasValidPrivateSupremePath && isCanonicalSupremePath) {
+    return new NextResponse(null, {
+      status: 404,
+      headers: { "Cache-Control": "private, no-store, max-age=0", "X-Robots-Tag": "noindex, nofollow" },
+    });
+  }
+
   const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
-  const isSupremePath = pathname === "/supreme" || pathname.startsWith("/supreme/");
+  const isSupremePath =
+    isCanonicalSupremePath || isPrivateSupremePath;
   const isWorkforcePath =
     pathname === "/staff" || pathname.startsWith("/staff/") ||
     pathname === "/manager" || pathname.startsWith("/manager/") ||
@@ -231,6 +267,17 @@ export async function middleware(request: NextRequest) {
       }));
     }
     if (assurance.currentLevel !== "aal2") return redirectWithCookies("/auth/mfa");
+  }
+
+  if (isPrivateSupremePath && hasValidPrivateSupremePath) {
+    const destination = request.nextUrl.clone();
+    destination.pathname =
+      "/supreme" + pathname.slice(configuredSupremePath.length);
+    const rewriteResponse = NextResponse.rewrite(destination);
+    rewriteResponse.headers.set("Cache-Control", "private, no-store, max-age=0");
+    rewriteResponse.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+    response.cookies.getAll().forEach((cookie) => rewriteResponse.cookies.set(cookie));
+    return rewriteResponse;
   }
 
   return response;
