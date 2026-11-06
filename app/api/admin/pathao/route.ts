@@ -642,7 +642,7 @@ export async function POST(request: Request) {
     const admin = await createRuntimeServiceClient();
     const { data: existingMapping, error: existingMappingError } = await admin
       .from("pathao_location_mappings")
-      .select("id, pathao_city_id, pathao_zone_id, is_verified, is_active")
+      .select("id, pathao_city_id, pathao_zone_id, pathao_city_name, pathao_zone_name, is_verified, is_active")
       .eq("district_code", districtCode)
       .eq("upazila_code", upazilaCode)
       .maybeSingle();
@@ -710,6 +710,8 @@ export async function POST(request: Request) {
         upazila_code: upazilaCode,
         previous_pathao_city_id: isChangingVerifiedMapping ? existingMapping?.pathao_city_id : null,
         previous_pathao_zone_id: isChangingVerifiedMapping ? existingMapping?.pathao_zone_id : null,
+        previous_pathao_city_name: isChangingVerifiedMapping ? existingMapping?.pathao_city_name : null,
+        previous_pathao_zone_name: isChangingVerifiedMapping ? existingMapping?.pathao_zone_name : null,
         pathao_city_id: Number(cityId),
         pathao_zone_id: Number(zoneId),
         correction_reason: isChangingVerifiedMapping ? correctionReason : null,
