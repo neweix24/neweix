@@ -29,7 +29,7 @@ class ProvisioningInfoReferenceFixtureTest {
       val attestationCertificate = certificates[1]
       if (attestationCertificate.getExtensionValue(ProvisioningInfoMap.OID.id) == null) return@forEach
 
-      val parsed = ProvisioningInfoMap.parseFrom(attestationCertificate)
+      val parsed = requireNotNull(ProvisioningInfoMap.parseFrom(attestationCertificate))
       val relative = root.toPath().relativize(pem.toPath()).toString().replace(File.separatorChar, '/')
       records += """{"source":"$relative","certificatesIssued":${parsed.certificatesIssued}}"""
     }
