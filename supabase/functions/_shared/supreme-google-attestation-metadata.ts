@@ -41,7 +41,7 @@ function parseCacheFreshness(
   if (maxAgeDirectives.length !== 1) {
     throw new Error("Google attestation metadata must have exactly one max-age directive.");
   }
-  const match = maxAgeDirectives[0].match(/^max-age=(\\d+)$/iu);
+  const match = maxAgeDirectives[0].match(/^max-age=(\d+)$/iu);
   if (!match) throw new Error("Google attestation metadata has no valid max-age.");
   const advertisedSeconds = Number(match[1]);
   if (!Number.isSafeInteger(advertisedSeconds) || advertisedSeconds <= 0) {
@@ -51,7 +51,7 @@ function parseCacheFreshness(
   const ageHeader = headers.get("age");
   let ageSeconds = 0;
   if (ageHeader !== null) {
-    if (!/^\\d+$/u.test(ageHeader)) {
+    if (!/^\d+$/u.test(ageHeader)) {
       throw new Error("Google attestation metadata Age header is invalid.");
     }
     ageSeconds = Number(ageHeader);
