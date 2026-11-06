@@ -127,7 +127,7 @@ function makeDescription(options: FixtureOptions = {}) {
   if (options.applicationIdInHardware) {
     hardwareEntries.push(appIdEntry);
   }
-  if (!options.includeApplicationId) softwareEntries.length = 0;
+  if (options.includeApplicationId === false) softwareEntries.length = 0;
 
   const keyDescription = seq(
     integer(4n),
