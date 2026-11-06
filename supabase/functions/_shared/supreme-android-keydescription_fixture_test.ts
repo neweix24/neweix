@@ -1,7 +1,8 @@
 import { parseAndroidKeyDescription } from "./supreme-android-keydescription.ts";
 import { DerElement } from "./supreme-attestation-der.ts";
+import { parseAndroidProvisioningInfo } from "./supreme-android-provisioning-info.ts";
 
-type Fixture = { source: string; certificateIndex: number; derBase64: string };
+type Fixture = { source: string; certificateIndex: number; derBase64: string; provisioningInfoBase64?: string };
 type ExpectedAppId = {
   packages: Array<{ name: string; version: string }>;
   signatures: string[];
@@ -219,11 +220,21 @@ Deno.test({
   fn: async () => {
     const fixtures = JSON.parse(await Deno.readTextFile(fixtureIndex!)) as Fixture[];
     if (fixtures.length === 0) throw new Error("No real certificate fixtures were extracted.");
-    let authorizationComparisons = 0;
+    let authorizationComparisons = 0;\n    let provisioningInfoComparisons = 0;
 
     for (const fixture of fixtures) {
       const der = bytesFromBase64(fixture.derBase64);
       const decoded = parseAndroidKeyDescription(der);
+      if (fixture.provisioningInfoBase64) {
+        const provisioning = parseAndroidProvisioningInfo(bytesFromBase64(fixture.provisioningInfoBase64));
+        if (provisioning.certificatesIssued < 0n) {
+          throw new Error(`${fixture.source}: provisioning certificates-issued is negative.`);
+        }
+        if (provisioning.isLostDevice !== undefined && typeof provisioning.isLostDevice !== "boolean") {
+          throw new Error(`${fixture.source}: provisioning lost-device flag is malformed.`);
+        }
+        provisioningInfoComparisons++;
+      }
       const jsonPath = `${upstreamRoot}/${fixture.source.replace(/\\.pem$/, ".json")}`;
       const expected = parseUpstreamJson(await Deno.readTextFile(jsonPath));
 
@@ -307,7 +318,7 @@ Deno.test({
       }
     }
     console.log(
-      `Validated ${fixtures.length} real Android certificate extension(s) and ${authorizationComparisons} AuthorizationList fields against upstream decoded JSON.`,
+      `Validated ${fixtures.length} real Android certificate extension(s), ${authorizationComparisons} AuthorizationList fields and ${provisioningInfoComparisons} RKP provisioning extension(s).`,
     );
   },
 });
