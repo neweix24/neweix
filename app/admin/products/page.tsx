@@ -8,7 +8,7 @@ export default async function AdminProductsPage() {
   const staff = await requireStaff(["supreme", "admin", "staff"]);
 
   return (
-    <main className="min-h-screen px-4 py-10 sm:px-6" style={{ background: "var(--bg)", color: "var(--ink)" }}>
+    <main className="premium-admin-operations-page min-h-screen px-4 py-10 sm:px-6" style={{ background: "var(--bg)", color: "var(--ink)" }}>
       <div className="mx-auto max-w-6xl">
         <header className="mb-8">
           <p className="eyebrow">NEWEIX · ADMIN</p>
