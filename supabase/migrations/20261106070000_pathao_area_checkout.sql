@@ -26,7 +26,7 @@ alter table public.orders
   add constraint orders_pathao_area_id_check
   check (pathao_area_id is null or pathao_area_id > 0) not valid;
 
-drop function if exists public.create_order_with_prepaid_delivery(text,text,text,text,text,text,text,jsonb,text,uuid,text,text,text,text,text,text,text,text,text,text,text,text,integer,integer,integer,uuid,integer,text);
+drop function if exists public.create_order_with_prepaid_delivery(text,text,text,text,text,text,text,jsonb,text,uuid,text,text,text,text,text,text,text,text,text,text,text,text,integer,integer,integer,uuid);
 
 create or replace function public.create_order_with_prepaid_delivery(
   p_customer_name text,
