@@ -99,3 +99,9 @@ Run the same valid and invalid certificate fixtures through the maintained Andro
 - Admin/Manager/Employee/Staff login regression tests pass at every gate.
 
 Until Gate D is deployed and verified, app-only Supreme login is **not enabled**.
+
+## Deno parser groundwork
+
+A bounded DER TLV parser now exists at `supabase/functions/_shared/supreme-attestation-der.ts`, with negative tests for malformed/non-minimal lengths, high-numbered context-specific tags, trailing bytes, nesting depth, node count, input size and canonical non-negative INTEGERs.
+
+This module is syntax-only. It does not parse the full Android KeyDescription/AuthorizationList schema, validate X.509 certificates or paths, authenticate Google roots, enforce RKP rules, or authorize a Supreme login. It must not be called as a verifier or used to accept an attestation. The next implementation step is to build strict schema-specific decoders on top of it and compare all decisions with the pinned Kotlin reference; the release gate remains unchanged.
