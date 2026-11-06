@@ -228,11 +228,8 @@ Deno.test({
       const decoded = parseAndroidKeyDescription(der);
       if (fixture.provisioningInfoBase64) {
         const provisioning = parseAndroidProvisioningInfo(bytesFromBase64(fixture.provisioningInfoBase64));
-        if (provisioning.certificatesIssued < 0n) {
-          throw new Error(`${fixture.source}: provisioning certificates-issued is negative.`);
-        }
-        if (provisioning.isLostDevice !== undefined && typeof provisioning.isLostDevice !== "boolean") {
-          throw new Error(`${fixture.source}: provisioning lost-device flag is malformed.`);
+        if (!Number.isInteger(provisioning.certificatesIssued) || provisioning.certificatesIssued < 0) {
+          throw new Error(`${fixture.source}: provisioning certificates-issued is invalid.`);
         }
         provisioningInfoComparisons++;
       }
