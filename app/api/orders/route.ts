@@ -588,7 +588,7 @@ export async function POST(request: Request) {
 
     if (mappingError || !pathaoMapping) {
       console.error("Verified Pathao mapping unavailable:", mappingError?.message ?? "No active mapping.");
-      return errorResponse("Pathao delivery is not yet available for this upazila.", 422);
+      return errorResponse("We cannot verify live Pathao delivery pricing for this upazila yet. Pathao service coverage is unconfirmed; please choose a verified destination or contact support.", 422);
     }
 
     let pathaoArea: { pathao_area_id: number; pathao_area_name: string } | null = null;
