@@ -17,6 +17,8 @@ type Notification = {
   read_at: string | null;
 };
 
+type Cursor = { before: string; before_id: string };
+
 const categoryLabels: Record<Notification["category"], string> = {
   orders: "অর্ডার",
   payments: "পেমেন্ট",
@@ -47,6 +49,9 @@ export default function SupremeNotificationInbox() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [cursor, setCursor] = useState<Cursor | null>(null);
+  const [hasMore, setHasMore] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
   const [error, setError] = useState("");
@@ -60,6 +65,8 @@ export default function SupremeNotificationInbox() {
       if (!response.ok) throw new Error(data.error || "নোটিফিকেশন লোড করা যায়নি।");
       setNotifications(Array.isArray(data.notifications) ? data.notifications as Notification[] : []);
       setUnreadCount(Number(data.unread_count ?? 0));
+      setCursor(data.next_cursor ?? null);
+      setHasMore(data.has_more === true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "নোটিফিকেশন লোড করা যায়নি।");
     } finally {
@@ -68,6 +75,30 @@ export default function SupremeNotificationInbox() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  async function loadMore() {
+    if (!cursor || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    setError("");
+    try {
+      const params = new URLSearchParams({ before: cursor.before, before_id: cursor.before_id });
+      const response = await fetch(`/api/supreme/notifications?${params.toString()}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "আরও নোটিফিকেশন লোড করা যায়নি।");
+      const nextItems = Array.isArray(data.notifications) ? data.notifications as Notification[] : [];
+      setNotifications((current) => {
+        const seen = new Set(current.map((item) => item.id));
+        return [...current, ...nextItems.filter((item) => !seen.has(item.id))];
+      });
+      setUnreadCount(Number(data.unread_count ?? 0));
+      setCursor(data.next_cursor ?? null);
+      setHasMore(data.has_more === true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "আরও নোটিফিকেশন লোড করা যায়নি।");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   async function markRead(id: string) {
     setBusyId(id);
@@ -120,7 +151,7 @@ export default function SupremeNotificationInbox() {
         </div>
         <div className="flex items-center gap-2">
           <span className="rounded-full px-3 py-2 text-xs font-extrabold" style={{ background: "color-mix(in srgb,var(--primary) 10%,var(--surface))", color: "var(--primary)" }}>অপঠিত {unreadCount.toLocaleString("bn-BD")}</span>
-          <button type="button" onClick={() => void load()} disabled={loading} className="grid h-10 w-10 place-items-center rounded-xl border" style={{ borderColor: "var(--border)" }} aria-label="Refresh notifications"><Icon name="refresh" size={17} /></button>
+          <button type="button" onClick={() => void load()} disabled={loading || loadingMore} className="grid h-10 w-10 place-items-center rounded-xl border" style={{ borderColor: "var(--border)" }} aria-label="Refresh notifications"><Icon name="refresh" size={17} /></button>
         </div>
         <div className="flex w-full justify-end">
           <button type="button" onClick={() => void markAllRead()} disabled={markingAll || unreadCount === 0} className="rounded-xl px-4 py-2.5 text-xs font-bold disabled:opacity-45" style={{ background: "var(--primary)", color: "#fff" }}>{markingAll ? "আপডেট হচ্ছে…" : "সবগুলো পড়া হয়েছে চিহ্নিত করুন"}</button>
@@ -164,7 +195,20 @@ export default function SupremeNotificationInbox() {
           ))}
         </div>
       )}
-      <p className="text-center text-xs" style={{ color: "var(--muted)" }}>সর্বশেষ ৫০টি সতর্কতা দেখানো হচ্ছে।</p>
+
+      {!loading && notifications.length > 0 && (
+        <div className="flex flex-col items-center gap-2">
+          {hasMore ? (
+            <button type="button" onClick={() => void loadMore()} disabled={loadingMore} className="inline-flex min-h-11 items-center gap-2 rounded-xl border px-5 py-3 text-sm font-bold disabled:opacity-50" style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--foreground)" }}>
+              {loadingMore ? "আরও লোড হচ্ছে…" : "আরও পুরোনো সতর্কতা দেখুন"}
+              {!loadingMore && <span aria-hidden="true">↓</span>}
+            </button>
+          ) : (
+            <p className="text-xs" style={{ color: "var(--muted)" }}>সব সতর্কতা দেখানো হয়েছে।</p>
+          )}
+          <p className="text-xs" style={{ color: "var(--muted)" }}>এ পর্যন্ত {notifications.length.toLocaleString("bn-BD")}টি সতর্কতা দেখানো হয়েছে।</p>
+        </div>
+      )}
       <div className="text-center"><Link href="/supreme" className="text-sm font-bold" style={{ color: "var(--primary)" }}>← Supreme Dashboard</Link></div>
     </section>
   );

@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const PAGE_SIZE = 50;
 
 function noStore(body: unknown, status = 200) {
   return NextResponse.json(body, {
@@ -54,19 +55,34 @@ async function getServiceClient() {
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const access = await getSupremeAccess();
     if (!access.ok) return noStore({ error: access.error }, access.status);
 
+    const url = new URL(request.url);
+    const before = url.searchParams.get("before");
+    const beforeId = url.searchParams.get("before_id");
+    if ((before && !Number.isFinite(Date.parse(before))) ||
+        (beforeId && !UUID_PATTERN.test(beforeId)) ||
+        Boolean(before) !== Boolean(beforeId)) {
+      return noStore({ error: "Invalid notification cursor." }, 400);
+    }
+
     const supabase = await getServiceClient();
+    let listQuery = supabase
+      .from("supreme_notifications")
+      .select("id,category,severity,title,body,href,entity_type,entity_id,created_at,read_at")
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(PAGE_SIZE + 1);
+
+    if (before && beforeId) {
+      listQuery = listQuery.or(`created_at.lt.${before},and(created_at.eq.${before},id.lt.${beforeId})`);
+    }
+
     const [listResult, unreadResult] = await Promise.all([
-      supabase
-        .from("supreme_notifications")
-        .select("id,category,severity,title,body,href,entity_type,entity_id,created_at,read_at")
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false })
-        .limit(50),
+      listQuery,
       supabase
         .from("supreme_notifications")
         .select("id", { count: "exact", head: true })
@@ -78,9 +94,16 @@ export async function GET() {
       return noStore({ error: "Could not load Supreme notifications." }, 500);
     }
 
+    const rows = listResult.data ?? [];
+    const hasMore = rows.length > PAGE_SIZE;
+    const notifications = rows.slice(0, PAGE_SIZE);
+    const last = notifications.at(-1);
+
     return noStore({
-      notifications: listResult.data ?? [],
+      notifications,
       unread_count: unreadResult.count ?? 0,
+      has_more: hasMore,
+      next_cursor: hasMore && last ? { before: last.created_at, before_id: last.id } : null,
     });
   } catch (error) {
     console.error("Supreme notifications GET failed:", error);
