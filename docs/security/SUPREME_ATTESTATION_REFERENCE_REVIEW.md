@@ -78,3 +78,18 @@ The NEWEIX workflow `.github/workflows/supreme-keyattestation-reference.yml` now
 The successful run on the PR head associated with workflow run `42289300538` completed both the upstream verifier suite and the real-certificate differential step. The harness covered 23 certificate fixtures. Comparisons include the KeyDescription version/security-level/challenge fields, AttestationApplicationId package/version/signer digest data, and RootOfTrust verified-boot key, device-locked flag, verified-boot state and optional verified-boot hash where present.
 
 This is a structural-extension differential check only. It does **not** mean that NEWEIX validates X.509 trust paths, Google's trust anchors, revocation, RKP provisioning roles, certificate validity, or the complete upstream verifier decision. The Kotlin reference suite passing in CI does not execute Kotlin as the production NEWEIX verifier. No attestation endpoint or Supreme authentication route accepts these parser results.
+
+
+### Exact certificate order and RKP provisioning extension
+
+The pinned source review of `provider/KeyAttestationCertPath.kt`, `provider/KeyAttestationCertPathValidator.kt` and `Verifier.kt` confirms the submitted chain order:
+
+1. target/leaf certificate containing the Android key-attestation extension;
+2. attestation certificate, containing the provisioning-information extension for remotely provisioned chains;
+3. factory intermediate for factory chains, or RKP server certificate for remotely provisioned chains;
+4. an additional RKP intermediate for remotely provisioned chains;
+5. root certificate/trust anchor.
+
+The software-backed chain uses the shorter root → attestation → target shape. The validator walks the non-root path from the trust-anchor side toward the target and applies distinct role transitions for factory and RKP provisioning. It requires the key-attestation extension on the target only and rejects it on attestation/intermediate certificates or any extra certificate after the target. This matches AOSP's documented certificate-chain order: entry 0 is the attestation certificate for the attested key and contains the key-attestation extension. AOSP documents the separate provisioning-information extension OID `1.3.6.1.4.1.11129.2.1.30` as CBOR; the pinned verifier reads it from the attestation certificate for RKP chains.
+
+This source review corrects earlier generic wording that suggested searching for the nearest key-attestation extension from the root side or accepting it on a non-leaf certificate. NEWEIX must follow the pinned verifier's exact role model and fail closed on any extension-placement mismatch.
