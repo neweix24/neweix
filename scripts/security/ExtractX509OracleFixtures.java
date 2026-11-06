@@ -58,9 +58,24 @@ public final class ExtractX509OracleFixtures {
           .sorted(Comparator.naturalOrder()).toList()) {
         Collection<? extends java.security.cert.Certificate> parsed;
         try (var input = Files.newInputStream(pem)) { parsed = factory.generateCertificates(input); }
+        List<X509Certificate> chain = parsed.stream()
+            .filter(X509Certificate.class::isInstance)
+            .map(X509Certificate.class::cast)
+            .toList();
         List<String> certs = new ArrayList<>();
-        for (var item : parsed) {
-          if (!(item instanceof X509Certificate cert)) continue;
+        for (int certificateIndex = 0; certificateIndex < chain.size(); certificateIndex++) {
+          X509Certificate cert = chain.get(certificateIndex);
+          boolean signatureVerifiedByNext = false;
+          if (certificateIndex + 1 < chain.size()) {
+            try {
+              cert.verify(chain.get(certificateIndex + 1).getPublicKey());
+              signatureVerifiedByNext = true;
+            } catch (Exception ignored) {
+              signatureVerifiedByNext = false;
+            }
+          }
+          byte[] signatureParameters = cert.getSigAlgParams();
+          String signatureParametersJson = signatureParameters == null ? "null" : "\"" + b64(signatureParameters) + "\"";
           List<String> extensions = new ArrayList<>();
           var critical = cert.getCriticalExtensionOIDs();
           var nonCritical = cert.getNonCriticalExtensionOIDs();
@@ -75,10 +90,11 @@ public final class ExtractX509OracleFixtures {
           String extensionJson = "[" + String.join(",", extensions) + "]";
           byte[] serial = unsignedSerial(cert.getSerialNumber().toByteArray());
           certs.add(String.format(
-              "{\"tbs\":\"%s\",\"serial\":\"%s\",\"signatureAlgorithmOid\":\"%s\",\"issuer\":\"%s\",\"subject\":\"%s\",\"spki\":\"%s\",\"signature\":\"%s\",\"extensions\":%s}",
-              b64(cert.getTBSCertificate()), b64(serial), cert.getSigAlgOID(),
-              b64(cert.getIssuerX500Principal().getEncoded()), b64(cert.getSubjectX500Principal().getEncoded()),
-              b64(cert.getPublicKey().getEncoded()), b64(cert.getSignature()), extensionJson));
+              "{\"tbs\":\"%s\",\"serial\":\"%s\",\"signatureAlgorithmOid\":\"%s\",\"signatureAlgorithmParameters\":%s,\"signatureVerifiedByNext\":%s,\"issuer\":\"%s\",\"subject\":\"%s\",\"spki\":\"%s\",\"signature\":\"%s\",\"extensions\":%s}",
+              b64(cert.getTBSCertificate()), b64(serial), cert.getSigAlgOID(), signatureParametersJson,
+              signatureVerifiedByNext, b64(cert.getIssuerX500Principal().getEncoded()),
+              b64(cert.getSubjectX500Principal().getEncoded()), b64(cert.getPublicKey().getEncoded()),
+              b64(cert.getSignature()), extensionJson));
         }
         if (certs.isEmpty()) throw new IllegalStateException("No X.509 certs in " + pem);
         String source = json(root.relativize(pem).toString().replace('\\', '/'));
