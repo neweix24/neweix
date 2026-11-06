@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Icon from "@/components/ui/icon";
+import Icon, { type IconName } from "@/components/ui/icon";
 import { useEffect, useMemo, useState } from "react";
 
 type Product = { id: string; name: string; stock: number; low_stock_threshold?: number };
@@ -134,7 +134,7 @@ export default function SupremeDashboard() {
         {(productError || orderError) && <section role="alert" className="rounded-2xl border p-4 text-sm text-rose-200" style={{ borderColor: "rgba(248,113,113,.35)", background: "rgba(127,29,29,.18)" }}>{[productError, orderError].filter(Boolean).join(" ")}</section>}
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="ব্যবসার সারসংক্ষেপ">
-          <Metric title="মোট বিক্রি" value={orderError ? "—" : money.format(revenue)} note="নির্বাচিত সময়ের সাম্প্রতিক সর্বোচ্চ ১০০ অর্ডার" icon="wallet" />
+          <Metric title="অর্ডারের মোট মূল্য" value={orderError ? "—" : money.format(revenue)} note="নির্বাচিত সময়ের সাম্প্রতিক সর্বোচ্চ ১০০ অর্ডারের মোট মূল্য" icon="wallet" />
           <Metric title="অর্ডার" value={orderError ? "—" : number.format(filteredOrders.length)} note="লোড করা অর্ডারের মধ্যে" icon="orders" />
           <Metric title="পেমেন্ট পাওয়া গেছে" value={orderError ? "—" : money.format(paidAmount)} note={`বকেয়া/অযাচাইকৃত: ${number.format(pendingPayments.length)}টি অর্ডার`} icon="wallet" />
           <Metric title="মোট পণ্য" value={productError ? "—" : number.format(products.length)} note={`কম স্টক ${number.format(lowStock.length)} · স্টক শেষ ${number.format(outOfStock.length)}`} icon="package" />
@@ -198,7 +198,7 @@ export default function SupremeDashboard() {
   );
 }
 
-function Metric({ title, value, note, icon }: { title: string; value: string; note: string; icon: string }) {
+function Metric({ title, value, note, icon }: { title: string; value: string; note: string; icon: IconName }) {
   return <article className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: "rgba(212,175,55,.2)", background: "linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025))", boxShadow: "0 14px 35px rgba(0,0,0,.16)" }}><div className="flex items-center justify-between gap-2"><span className="text-xs font-bold text-slate-300">{title}</span><span className="grid h-9 w-9 place-items-center rounded-xl text-amber-200" style={{ background: "rgba(212,175,55,.12)" }}><Icon name={icon} size={18} /></span></div><p className="mt-4 break-words text-2xl font-black tracking-tight sm:text-3xl">{value}</p><p className="mt-1 text-[10px] leading-4 text-slate-400">{note}</p></article>;
 }
 
