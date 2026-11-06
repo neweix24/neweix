@@ -588,19 +588,45 @@ export default function PathaoPanel() {
   async function autoMapAllDistricts() {
     setCoverageSyncRunning(true);
     setCoverageSyncResults([]);
-    setMappingMessage("Reading the live Pathao city and zone catalog. Exact unique matches only will be saved.");
+    setMappingMessage("Reading the live Pathao city and zone catalog. Each division will be processed independently; a temporary failure will not stop the remaining districts.");
     const accumulated: CoverageDistrictResult[] = [];
     let mappedUpazilas = 0;
+    let failedDivisions = 0;
+
     try {
       for (const division of BANGLADESH_ADMIN_AREAS) {
-        const response = await fetch("/api/admin/pathao", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store",
-          body: JSON.stringify({ action: "auto_map_division", divisionCode: division.code }),
-        });
-        const result = await response.json().catch(() => null);
-        if (!response.ok) {
+        let result: { error?: string; districts?: Array<Omit<CoverageDistrictResult, "divisionName">>; matchedUpazilaCount?: number } | null = null;
+        let requestError = "";
+
+        // A browser/network interruption previously stopped the entire 64-district
+        // scan after the last successful division. Retry transient failures and
+        // continue with the next division even if one division remains unavailable.
+        for (let attempt = 1; attempt <= 3; attempt += 1) {
+          try {
+            const response = await fetch("/api/admin/pathao", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              cache: "no-store",
+              body: JSON.stringify({ action: "auto_map_division", divisionCode: division.code }),
+            });
+            result = await response.json().catch(() => null);
+            if (response.ok) {
+              requestError = "";
+              break;
+            }
+            requestError = typeof result?.error === "string"
+              ? result.error
+              : `Pathao sync returned HTTP ${response.status}.`;
+            if (response.status < 500 || attempt === 3) break;
+          } catch (error) {
+            requestError = error instanceof Error ? error.message : "Network request failed.";
+            if (attempt === 3) break;
+          }
+          await new Promise((resolve) => window.setTimeout(resolve, attempt * 1200));
+        }
+
+        if (requestError) {
+          failedDivisions += 1;
           for (const district of division.districts) {
             accumulated.push({
               divisionName: division.name,
@@ -620,17 +646,23 @@ export default function PathaoPanel() {
           }
           mappedUpazilas += Number(result?.matchedUpazilaCount ?? 0);
         }
+
         setCoverageSyncResults([...accumulated]);
-        setMappingMessage(`Checked ${accumulated.length}/64 districts. ${mappedUpazilas} exact upazila mappings saved so far.`);
+        setMappingMessage(
+          `Checked ${accumulated.length}/64 districts. ${mappedUpazilas} exact upazila mappings saved. ${failedDivisions} division(s) had temporary/API errors.`,
+        );
       }
+
       await loadLocationMappings();
       const fullyMapped = accumulated.filter((item) => item.status === "fully_mapped").length;
       const partiallyMapped = accumulated.filter((item) => item.status === "partially_mapped").length;
       const unmapped = accumulated.filter((item) =>
-        !["fully_mapped", "partially_mapped"].includes(item.status)
+        !["fully_mapped", "partially_mapped", "sync_error"].includes(item.status)
       ).length;
       const syncErrors = accumulated.filter((item) => item.status === "sync_error").length;
-      setMappingMessage(`Coverage scan finished: ${fullyMapped} districts fully mapped, ${partiallyMapped} partially mapped, ${unmapped} need manual review, ${syncErrors} had API/sync errors. ${mappedUpazilas} verified upazila mappings saved. No ambiguous or non-exact names were guessed.`);
+      setMappingMessage(
+        `Coverage scan finished: ${accumulated.length}/64 districts checked; ${fullyMapped} fully mapped, ${partiallyMapped} partially mapped, ${unmapped} need manual review, ${syncErrors} had API/network errors. ${mappedUpazilas} verified upazila mappings saved. Run Sync again to retry failed divisions; existing verified mappings are safely updated.`,
+      );
     } catch (error) {
       setMappingMessage(error instanceof Error ? error.message : "Pathao 64-district coverage scan failed.");
     } finally {
