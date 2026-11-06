@@ -318,6 +318,9 @@ Deno.test({
         }
       }
     }
+    if (provisioningInfoComparisons === 0) {
+      throw new Error("No real RKP provisioning-information extensions were extracted from upstream fixtures.");
+    }
     console.log(
       `Validated ${fixtures.length} real Android certificate extension(s), ${authorizationComparisons} AuthorizationList fields and ${provisioningInfoComparisons} RKP provisioning extension(s).`,
     );
