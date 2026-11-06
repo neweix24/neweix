@@ -154,7 +154,7 @@ export default function SupremeDashboard() {
           </div>
           {profitLoss && <div className="mt-4 rounded-xl border p-3 text-[11px] leading-5 text-slate-300" style={{ borderColor: "rgba(255,255,255,.1)", background: "rgba(0,0,0,.16)" }}>
             <p className="font-bold text-amber-200">ডেটার সতর্কতা</p>
-            <p>অজানা ক্রয়মূল্যের অর্ডার লাইন: {number.format(profitLoss.quality.unknown_delivery_cost_lines)} · অজানা ক্রয়মূল্যের ফেরত লাইন: {number.format(profitLoss.quality.unknown_restock_cost_lines)} · পুরোনো ডেলিভারির তারিখ অনুপস্থিত: {number.format(profitLoss.quality.deliveries_missing_event_time)} · রিফান্ডের তারিখ অনুপস্থিত: {number.format(profitLoss.quality.refunds_missing_event_time)} · রিফান্ড রেকর্ড ছাড়া ফেরত অর্ডার: {number.format(profitLoss.quality.returned_orders_without_recorded_refund)} · নিষ্পত্তি হয়নি এমন রিটার্ন: {number.format(profitLoss.quality.unresolved_return_requests)}।</p>
+            <p>অজানা ক্রয়মূল্যের অর্ডার লাইন: {number.format(profitLoss.quality.unknown_delivery_cost_lines)} · অজানা ক্রয়মূল্যের ফেরত লাইন: {number.format(profitLoss.quality.unknown_restock_cost_lines)} · যাচাইযোগ্য ডেলিভারি সময় নেই: {number.format(profitLoss.quality.deliveries_missing_event_time)} · রিফান্ডের তারিখ অনুপস্থিত: {number.format(profitLoss.quality.refunds_missing_event_time)} · রিফান্ড রেকর্ড ছাড়া ফেরত অর্ডার: {number.format(profitLoss.quality.returned_orders_without_recorded_refund)} · নিষ্পত্তি হয়নি এমন রিটার্ন: {number.format(profitLoss.quality.unresolved_return_requests)}।</p>
           </div>}
         </section>
 
