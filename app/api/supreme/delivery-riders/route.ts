@@ -14,7 +14,11 @@ function validDate(value: string | null): value is string {
   const date=new Date(0); date.setUTCHours(0,0,0,0); date.setUTCFullYear(year,month-1,day);
   return date.getUTCFullYear()===year && date.getUTCMonth()===month-1 && date.getUTCDate()===day;
 }
-const dhakaToday = () => new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const dhakaToday = () => {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Dhaka", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+};
 const fail = (message: string, status: number) => NextResponse.json({ error: message }, { status, headers: { "Cache-Control": "private, no-store" } });
 
 async function authorize() {
