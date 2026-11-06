@@ -1299,3 +1299,65 @@ body[data-customer-theme="storefront"] {
   .premium-search-page nav{padding:12px;border-radius:15px}
   .premium-search-page .neweix-panel{margin:18px auto!important;padding:16px!important;border-radius:19px!important}
 }
+
+/* Admin operations: consistent premium styling across management tools */
+.premium-admin-workspace main,
+.premium-admin-workspace .premium-admin-operations-page{
+  background:radial-gradient(ellipse at 92% 0%,rgba(8,127,99,.075),transparent 34rem),var(--porcelain)!important;
+  color:var(--navy)!important;
+}
+.premium-admin-workspace main h1,
+.premium-admin-workspace main h2,
+.premium-admin-workspace main h3,
+.premium-admin-workspace main h4{color:var(--navy)}
+/* Keep semantic paragraph colors (success, warning and error states) intact. */
+.premium-admin-workspace main .eyebrow{color:var(--emerald)}
+.premium-admin-workspace main>div>header,
+.premium-admin-workspace main>div>div>header{
+  border-color:var(--border)!important;
+  border-radius:24px!important;
+  background:linear-gradient(135deg,var(--surface),var(--surface-soft))!important;
+  box-shadow:var(--shadow)!important;
+}
+.premium-admin-workspace main section,
+.premium-admin-workspace main article,
+.premium-admin-workspace main form,
+.premium-admin-workspace main [class*="rounded-2xl"][class*="border"],
+.premium-admin-workspace main [class*="rounded-xl"][class*="border"]{
+  border-color:var(--border)!important;
+  border-radius:17px;
+}
+.premium-admin-workspace main section,
+.premium-admin-workspace main article{
+  box-shadow:0 10px 28px rgba(20,43,59,.045);
+}
+.premium-admin-workspace main input:not([type=checkbox]):not([type=radio]):not([type=file]),
+.premium-admin-workspace main select,
+.premium-admin-workspace main textarea{
+  min-height:44px;
+  border-color:var(--border)!important;
+  border-radius:11px!important;
+  background:var(--surface)!important;
+  color:var(--navy)!important;
+}
+.premium-admin-workspace main input:focus,
+.premium-admin-workspace main select:focus,
+.premium-admin-workspace main textarea:focus{
+  border-color:var(--emerald)!important;
+  outline:3px solid rgba(8,127,99,.12);
+  outline-offset:1px;
+}
+.premium-admin-workspace main button{border-radius:11px;transition:transform .18s ease,filter .18s ease}
+.premium-admin-workspace main button:hover:not(:disabled){filter:brightness(.97)}
+.premium-admin-workspace main a{color:var(--emerald)}
+.premium-admin-workspace main table{border-color:var(--border)}
+.premium-admin-workspace main th{color:var(--muted)}
+.premium-admin-workspace main pre{border:1px solid var(--border);border-radius:12px;background:var(--surface-soft)!important;color:var(--navy)}
+.premium-admin-workspace .premium-admin-operations-page>div>header{margin-bottom:24px}
+.premium-admin-workspace .premium-admin-operations-page article{background:var(--surface)!important}
+@media(max-width:640px){
+  .premium-admin-workspace main{padding-top:22px!important;padding-bottom:28px!important}
+  .premium-admin-workspace main>div>header,
+  .premium-admin-workspace main>div>div>header{padding:20px!important}
+  .premium-admin-workspace main section{padding:15px!important}
+}
