@@ -1,0 +1,48 @@
+name: Supreme Android app build
+
+on:
+  pull_request:
+    branches:
+      - feat/neweix-supreme-apk-security
+    paths:
+      - "android/supreme-app/**"
+      - ".github/workflows/supreme-android-build.yml"
+  push:
+    branches:
+      - feat/neweix-supreme-android-app
+    paths:
+      - "android/supreme-app/**"
+      - ".github/workflows/supreme-android-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  assemble-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-35"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      # A throwaway path is used only to validate compilation. No APK artifact is published.
+      - name: Assemble debug APK for compile validation
+        working-directory: android/supreme-app
+        env:
+          SUPREME_PRIVATE_PATH: "/control-0123456789abcdef0123456789abcdef0123456789abcdef"
+        run: gradle --no-daemon :app:assembleDebug
