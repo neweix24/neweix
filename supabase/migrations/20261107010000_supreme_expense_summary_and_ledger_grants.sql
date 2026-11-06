@@ -2,7 +2,7 @@
 begin;
 
 revoke all on public.operating_expenses from public, anon, authenticated, service_role;
-grant select, insert on public.operating_expenses to service_role;
+grant select on public.operating_expenses to service_role;
 
 create or replace function public.supreme_dashboard_summary(
   p_start_at timestamptz default null,
