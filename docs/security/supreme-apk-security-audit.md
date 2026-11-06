@@ -35,7 +35,7 @@
 - Requests to the configured private path are authenticated as Supreme + AAL2, then internally rewritten to the existing `/supreme` route. The browser remains on the private path.
 - Existing in-workspace links to internal `/supreme/**` paths are redirected back to the private alias only when the same-origin Referer is already within the private workspace; direct/external requests receive 404.
 - Login, MFA challenge, and MFA setup preserve the private destination through the full authentication round trip. Private responses carry `no-store` and `X-Robots-Tag: noindex` headers.
-- Direct requests to `/supreme/**` return 404 once the private path is configured. A malformed configured value fails closed with 503 on the legacy route.
+- Direct requests to `/supreme/**` return 404 once the private path is configured. A malformed or missing configured value fails closed with 503 on the legacy route in production.
 - The Supreme PWA manifest and service-worker scope now use the configured private path; the service worker script itself contains no private path.
 - `wrangler.jsonc` now declares `SUPREME_PRIVATE_PATH` as a required Cloudflare secret. It is deliberately not stored in Git.
 - Do not treat an unguessable path as authentication. Server-side role + AAL2 checks remain mandatory.
