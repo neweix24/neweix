@@ -81,18 +81,18 @@ export async function GET(request: Request) {
     }
 
     const supabase = await getServiceClient();
-    const { data, error } = await supabase.rpc("supreme_dashboard_summary", {
-      p_start_at: startAt,
-      p_end_at: endAt,
-    });
+    const [{ data: summary, error: summaryError }, { data: profitLoss, error: profitLossError }] = await Promise.all([
+      supabase.rpc("supreme_dashboard_summary", { p_start_at: startAt, p_end_at: endAt }),
+      supabase.rpc("supreme_profit_loss_summary", { p_start_at: startAt, p_end_at: endAt }),
+    ]);
 
-    if (error) {
-      console.error("Supreme dashboard summary RPC failed:", error.message);
+    if (summaryError || profitLossError) {
+      console.error("Supreme dashboard financial summary failed:", { summary: summaryError?.message, profitLoss: profitLossError?.message });
       return errorResponse("Dashboard summary is temporarily unavailable.", 500);
     }
 
     return NextResponse.json(
-      { success: true, summary: data },
+      { success: true, summary, profit_loss: profitLoss },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {

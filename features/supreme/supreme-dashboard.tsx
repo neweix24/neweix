@@ -8,6 +8,7 @@ type Product = { id: string; name: string; stock: number; low_stock_threshold?: 
 type Order = { id: string; order_number?: string; created_at: string; status?: string; total?: number; payment_status?: string; shipping_district?: string | null; shipping_upazila?: string | null };
 type DistrictTotal = { district: string; order_value: number; order_count: number };
 type DashboardSummary = { order_count: number; order_value: number; paid_amount: number; pending_payment_count: number; pending_order_count: number; operating_expense_total: number; operating_expense_count: number; district_totals: DistrictTotal[]; recent_orders: Order[] };
+type ProfitLossSummary = { recognized_merchandise_sales: number; recorded_refunds: number; net_merchandise_sales: number; known_net_cogs: number; known_gross_profit_component: number; operating_expenses: number; cost_coverage_percent: number; gross_profit_is_complete: boolean; quality: { unknown_delivery_cost_lines: number; unknown_restock_cost_lines: number; deliveries_missing_event_time: number; refunds_missing_event_time: number; returned_orders_without_recorded_refund: number; unresolved_return_requests: number }; };
 type Period = "today" | "7d" | "month" | "year" | "all";
 
 const periods: { value: Period; label: string }[] = [
@@ -46,6 +47,7 @@ function startOf(period: Period) {
 export default function SupremeDashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [profitLoss, setProfitLoss] = useState<ProfitLossSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [productError, setProductError] = useState("");
   const [summaryError, setSummaryError] = useState("");
@@ -70,15 +72,15 @@ export default function SupremeDashboard() {
         }
         return fetch(`/api/supreme/dashboard/summary?${params.toString()}`, { cache: "no-store" }).then(async (response) => {
           const data = await response.json();
-          if (!response.ok || !data.summary) throw new Error(data.error || "অর্ডারের সারসংক্ষেপ পাওয়া যায়নি।");
-          return data.summary as DashboardSummary;
+          if (!response.ok || !data.summary || !data.profit_loss) throw new Error(data.error || "আর্থিক সারসংক্ষেপ পাওয়া যায়নি।");
+          return { summary: data.summary as DashboardSummary, profitLoss: data.profit_loss as ProfitLossSummary };
         });
       })(),
     ]);
     if (productResult.status === "fulfilled") setProducts(productResult.value);
     else setProductError(productResult.reason instanceof Error ? productResult.reason.message : "পণ্যের তথ্য পাওয়া যায়নি।");
-    if (orderResult.status === "fulfilled") setSummary(orderResult.value);
-    else setSummaryError(orderResult.reason instanceof Error ? orderResult.reason.message : "অর্ডারের সারসংক্ষেপ পাওয়া যায়নি।");
+    if (orderResult.status === "fulfilled") { setSummary(orderResult.value.summary); setProfitLoss(orderResult.value.profitLoss); }
+    else setSummaryError(orderResult.reason instanceof Error ? orderResult.reason.message : "আর্থিক সারসংক্ষেপ পাওয়া যায়নি।");
     setLastUpdated(new Date());
     setLoading(false);
   }
@@ -125,6 +127,35 @@ export default function SupremeDashboard() {
           <Metric title="পেমেন্ট পাওয়া গেছে" value={summaryError ? "—" : money.format(paidAmount)} note={`বকেয়া/অযাচাইকৃত: ${number.format(pendingPayments)}টি অর্ডার`} icon="wallet" />
           <Metric title="মোট পণ্য" value={productError ? "—" : number.format(products.length)} note={`কম স্টক ${number.format(lowStock.length)} · স্টক শেষ ${number.format(outOfStock.length)}`} icon="package" />
           <Metric title="পরিচালন ব্যয়" value={summaryError ? "—" : money.format(operatingExpenses)} note={`${number.format(expenseCount)}টি নথিভুক্ত ব্যয়`} icon="wallet" />
+        </section>
+
+        <section className="rounded-3xl border p-5 sm:p-6" style={{ borderColor: "rgba(212,175,55,.28)", background: "linear-gradient(135deg,rgba(212,175,55,.08),rgba(255,255,255,.035))" }} aria-label="লাভ-ক্ষতির প্রাথমিক হিসাব">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div><p className="text-[10px] font-black tracking-[.2em] text-amber-300">FINANCE · PROFIT & LOSS</p><h2 className="mt-1 text-xl font-black">বিক্রয়, ক্রয়মূল্য ও পরিচালন ব্যয়</h2><p className="mt-1 text-xs text-slate-400">ডেলিভারি সম্পন্ন হওয়ার তারিখ ধরে; ফেরত স্টকের ক্রয়মূল্য আলাদা সমন্বয় হয়।</p></div>
+            <Link href="/supreme/finance/expenses" className="text-xs font-bold text-amber-200">Finance খুলুন →</Link>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <MiniMetric label="রেকর্ডকৃত নেট পণ্য বিক্রয়" value={profitLoss ? money.format(profitLoss.net_merchandise_sales) : "—"} />
+            <MiniMetric label="জানা ক্রয়মূল্য (নেট COGS)" value={profitLoss ? money.format(profitLoss.known_net_cogs) : "—"} />
+            <MiniMetric label="পরিচালন ব্যয়" value={profitLoss ? money.format(profitLoss.operating_expenses) : "—"} />
+            <MiniMetric label="ক্রয়মূল্য কভারেজ (লাইন)" value={profitLoss ? number.format(profitLoss.cost_coverage_percent) + "%" : "—"} />
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border p-4" style={{ borderColor: "rgba(255,255,255,.1)", background: "rgba(0,0,0,.2)" }}>
+              <p className="text-xs font-bold text-slate-300">মোট মুনাফা (Gross Profit)</p>
+              <p className="mt-2 text-2xl font-black text-amber-200">{profitLoss?.gross_profit_is_complete ? money.format(profitLoss.known_gross_profit_component) : "অসম্পূর্ণ"}</p>
+              <p className="mt-1 text-[10px] leading-5 text-slate-400">জানা ক্রয়মূল্য দিয়ে হিসাব: {profitLoss ? money.format(profitLoss.known_gross_profit_component) : "—"}। অসম্পূর্ণ খরচকে শূন্য ধরা হয়নি।</p>
+            </div>
+            <div className="rounded-2xl border p-4" style={{ borderColor: "rgba(255,255,255,.1)", background: "rgba(0,0,0,.2)" }}>
+              <p className="text-xs font-bold text-slate-300">নিট লাভ</p>
+              <p className="mt-2 text-2xl font-black text-sky-200">এখনো নির্ধারিত নয়</p>
+              <p className="mt-1 text-[10px] leading-5 text-slate-400">Pathao ও নিজস্ব ডেলিভারির প্রকৃত খরচ এই হিসাবে যুক্ত না হওয়া পর্যন্ত নিট লাভ দেখানো হবে না।</p>
+            </div>
+          </div>
+          {profitLoss && <div className="mt-4 rounded-xl border p-3 text-[11px] leading-5 text-slate-300" style={{ borderColor: "rgba(255,255,255,.1)", background: "rgba(0,0,0,.16)" }}>
+            <p className="font-bold text-amber-200">ডেটার সতর্কতা</p>
+            <p>অজানা ক্রয়মূল্যের অর্ডার লাইন: {number.format(profitLoss.quality.unknown_delivery_cost_lines)} · অজানা ক্রয়মূল্যের ফেরত লাইন: {number.format(profitLoss.quality.unknown_restock_cost_lines)} · পুরোনো ডেলিভারির তারিখ অনুপস্থিত: {number.format(profitLoss.quality.deliveries_missing_event_time)} · রিফান্ডের তারিখ অনুপস্থিত: {number.format(profitLoss.quality.refunds_missing_event_time)} · রিফান্ড রেকর্ড ছাড়া ফেরত অর্ডার: {number.format(profitLoss.quality.returned_orders_without_recorded_refund)} · নিষ্পত্তি হয়নি এমন রিটার্ন: {number.format(profitLoss.quality.unresolved_return_requests)}।</p>
+          </div>}
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
@@ -181,7 +212,7 @@ export default function SupremeDashboard() {
             {shortcuts.map((item) => <Link key={item.href} href={item.href} className="group flex min-h-32 items-start gap-3 rounded-2xl border p-4 transition hover:-translate-y-1 hover:border-amber-300/50" style={{ borderColor: "rgba(255,255,255,.11)", background: "rgba(255,255,255,.045)" }}><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-amber-200" style={{ background: "rgba(212,175,55,.12)" }}><Icon name={item.icon} size={20} /></span><span><strong className="block text-sm font-black">{item.title}</strong><span className="mt-1 block text-xs leading-5 text-slate-400">{item.description}</span></span></Link>)}
           </div>
         </section>
-        <p className="rounded-xl border p-3 text-[11px] leading-5 text-slate-400" style={{ borderColor: "rgba(255,255,255,.1)", background: "rgba(255,255,255,.025)" }}>তথ্যের সততা: অর্ডার, পেমেন্ট ও জেলাভিত্তিক সারসংক্ষেপ সম্পূর্ণ নির্বাচিত সময়সীমার ডেটাবেস হিসাব থেকে আসে। লাভ, খরচ, লাইভ ভিজিটর ও Push Notification এখনো যুক্ত হয়নি।</p>
+        <p className="rounded-xl border p-3 text-[11px] leading-5 text-slate-400" style={{ borderColor: "rgba(255,255,255,.1)", background: "rgba(255,255,255,.025)" }}>তথ্যের সততা: বিক্রয়, রিফান্ড, জানা COGS ও পরিচালন ব্যয় আলাদা করে দেখানো হয়। ডেলিভারি খরচ এখনো যুক্ত হয়নি বলে নিট লাভ প্রকাশ করা হয় না; পুরোনো অজানা ক্রয়মূল্য অনুমান করা হয় না।</p>
       </div>
     </main>
   );
