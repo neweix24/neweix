@@ -62,9 +62,13 @@ async function getServiceClient() {
 
 function parseDate(value: string | null): string | null | false {
   if (value === null) return null;
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) return false;
+
   const timestamp = Date.parse(value);
   if (!Number.isFinite(timestamp)) return false;
-  return new Date(timestamp).toISOString();
+
+  const normalized = new Date(timestamp).toISOString();
+  return normalized === value ? normalized : false;
 }
 
 export async function GET(request: Request) {
