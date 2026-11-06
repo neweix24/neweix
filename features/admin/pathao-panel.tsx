@@ -595,7 +595,7 @@ export default function PathaoPanel() {
 
     try {
       for (const division of BANGLADESH_ADMIN_AREAS) {
-        let result: any = null;
+        let result: { error?: string; districts?: Array<Omit<CoverageDistrictResult, "divisionName">>; matchedUpazilaCount?: number } | null = null;
         let requestError = "";
 
         // A browser/network interruption previously stopped the entire 64-district
