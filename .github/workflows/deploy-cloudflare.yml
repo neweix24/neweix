@@ -123,6 +123,21 @@ jobs:
           grep -q '"main": "../worker.ts"' .wrangler-deploy/wrangler.jsonc
           grep -q '"directory": "../.open-next/assets"' .wrangler-deploy/wrangler.jsonc
 
+      - name: Provision Supreme private entry secret
+        working-directory: .wrangler-deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SUPREME_PRIVATE_PATH: ${{ secrets.SUPREME_PRIVATE_PATH }}
+        shell: bash
+        run: |
+          if [[ "$SUPREME_PRIVATE_PATH" =~ ^[A-Fa-f0-9]{48}$ ]]; then
+            SUPREME_PRIVATE_PATH="/control-$SUPREME_PRIVATE_PATH"
+          elif [[ ! "$SUPREME_PRIVATE_PATH" =~ ^/control-[A-Fa-f0-9]{48}$ ]]; then
+            echo "::error::SUPREME_PRIVATE_PATH GitHub Actions secret is missing or malformed."
+            exit 1
+          fi
+          printf '%s' "$SUPREME_PRIVATE_PATH" | npx wrangler secret put SUPREME_PRIVATE_PATH --config wrangler.jsonc
+
       - name: Deploy generated Worker with Wrangler
         working-directory: .wrangler-deploy
         env:
