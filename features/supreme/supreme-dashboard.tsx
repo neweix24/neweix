@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 type Product = { id: string; name: string; stock: number; low_stock_threshold?: number };
 type Order = { id: string; order_number?: string; created_at: string; status?: string; total?: number; payment_status?: string; shipping_district?: string | null; shipping_upazila?: string | null };
 type DistrictTotal = { district: string; order_value: number; order_count: number };
-type DashboardSummary = { order_count: number; order_value: number; paid_amount: number; pending_payment_count: number; pending_order_count: number; district_totals: DistrictTotal[]; recent_orders: Order[] };
+type DashboardSummary = { order_count: number; order_value: number; paid_amount: number; pending_payment_count: number; pending_order_count: number; operating_expense_total: number; operating_expense_count: number; district_totals: DistrictTotal[]; recent_orders: Order[] };
 type Period = "today" | "7d" | "month" | "year" | "all";
 
 const periods: { value: Period; label: string }[] = [
@@ -23,6 +23,7 @@ const shortcuts = [
   { href: "/admin/products", title: "পণ্য ব্যবস্থাপনা", description: "পণ্য, মূল্য ও ক্যাটালগ নিয়ন্ত্রণ", icon: "package" },
   { href: "/admin/inventory", title: "স্টক ও গুদাম", description: "স্টক, গুদাম ও পণ্য বরাদ্দ", icon: "package" },
   { href: "/admin/customers", title: "কাস্টমার", description: "কাস্টমার তথ্য ও CRM", icon: "user" },
+  { href: "/supreme/finance/expenses", title: "Finance & Expenses", description: "পণ্যের ক্রয়মূল্য ও পরিচালন ব্যয়", icon: "wallet" },
   { href: "/supreme/eixpay", title: "EixPay", description: "পেমেন্ট ও আর্থিক কার্যক্রম", icon: "wallet" },
   { href: "/supreme/staff", title: "টিম ও অনুমতি", description: "Staff, Manager ও অ্যাক্সেস নিয়ন্ত্রণ", icon: "shield" },
   { href: "/supreme/audit-logs", title: "নিরাপত্তা ও Audit", description: "কে কখন কী পরিবর্তন করেছে", icon: "shield" },
@@ -90,6 +91,8 @@ export default function SupremeDashboard() {
   const paidAmount = Number(summary?.paid_amount ?? 0);
   const pendingPayments = Number(summary?.pending_payment_count ?? 0);
   const pendingOrders = Number(summary?.pending_order_count ?? 0);
+  const operatingExpenses = Number(summary?.operating_expense_total ?? 0);
+  const expenseCount = Number(summary?.operating_expense_count ?? 0);
   const topDistricts = (summary?.district_totals ?? []).slice(0, 5);
   const recentOrders = (summary?.recent_orders ?? []).slice(0, 6);
 
@@ -116,11 +119,12 @@ export default function SupremeDashboard() {
 
         {(productError || summaryError) && <section role="alert" className="rounded-2xl border p-4 text-sm text-rose-200" style={{ borderColor: "rgba(248,113,113,.35)", background: "rgba(127,29,29,.18)" }}>{[productError, summaryError].filter(Boolean).join(" ")}</section>}
 
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="ব্যবসার সারসংক্ষেপ">
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="ব্যবসার সারসংক্ষেপ">
           <Metric title="অর্ডারের মোট মূল্য" value={summaryError ? "—" : money.format(revenue)} note="নির্বাচিত সময়ের সব অর্ডারের মোট মূল্য" icon="wallet" />
           <Metric title="অর্ডার" value={summaryError ? "—" : number.format(summary?.order_count ?? 0)} note="নির্বাচিত সময়সীমার সব অর্ডার" icon="orders" />
           <Metric title="পেমেন্ট পাওয়া গেছে" value={summaryError ? "—" : money.format(paidAmount)} note={`বকেয়া/অযাচাইকৃত: ${number.format(pendingPayments)}টি অর্ডার`} icon="wallet" />
           <Metric title="মোট পণ্য" value={productError ? "—" : number.format(products.length)} note={`কম স্টক ${number.format(lowStock.length)} · স্টক শেষ ${number.format(outOfStock.length)}`} icon="package" />
+          <Metric title="পরিচালন ব্যয়" value={summaryError ? "—" : money.format(operatingExpenses)} note={`${number.format(expenseCount)}টি নথিভুক্ত ব্যয়`} icon="wallet" />
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
@@ -132,14 +136,15 @@ export default function SupremeDashboard() {
               <MiniMetric label="স্টক সতর্কতা" value={number.format(lowStock.length)} />
             </div>
             <div className="mt-5 rounded-2xl border p-4" style={{ borderColor: "rgba(255,255,255,.09)", background: "rgba(5,9,16,.38)" }}>
-              <div className="flex items-center justify-between gap-2"><span className="text-xs font-bold text-slate-300">পণ্যভিত্তিক লাভ ও পরিচালন খরচ</span><span className="rounded-full px-2.5 py-1 text-[10px] font-bold text-amber-200" style={{ background: "rgba(212,175,55,.12)" }}>ডেটা প্রয়োজন</span></div>
-              <p className="mt-2 text-sm leading-6 text-slate-400">ক্রয়মূল্য ও খরচের নির্ভরযোগ্য রেকর্ড এখনো এই Dashboard-এ যুক্ত হয়নি। তাই ভুল লাভ/ক্ষতির সংখ্যা দেখানো হচ্ছে না।</p>
+              <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-xs font-bold text-slate-300">পরিচালন ব্যয়</span><Link href="/supreme/finance/expenses" className="text-xs font-bold text-amber-200">ব্যয়ের খাতা খুলুন →</Link></div>
+              <p className="mt-2 text-xl font-black text-amber-200">{summaryError ? "—" : money.format(operatingExpenses)}</p>
+              <p className="mt-1 text-xs leading-5 text-slate-400">{number.format(expenseCount)}টি ব্যয়ের এন্ট্রি নির্বাচিত সময়সীমায় নথিভুক্ত। প্রকৃত লাভ/ক্ষতি দেখানোর আগে পুরোনো অর্ডারের অজানা ক্রয়মূল্য, রিটার্ন ও অন্যান্য আর্থিক সমন্বয় যাচাই করতে হবে।</p>
             </div>
           </div>
 
           <div className="rounded-3xl border p-5 sm:p-6" style={{ borderColor: "rgba(255,255,255,.11)", background: "rgba(255,255,255,.045)" }}>
             <p className="text-[10px] font-black tracking-[.2em] text-sky-300">GEOGRAPHIC INSIGHT</p><h2 className="mt-1 text-lg font-black">জেলাভিত্তিক অর্ডার মূল্য</h2>
-            <p className="mt-1 text-xs text-slate-400">লোড করা অর্ডারের ভিত্তিতে · সম্পূর্ণ জেলা রিপোর্ট পরবর্তী ধাপ</p>
+            <p className="mt-1 text-xs text-slate-400">নির্বাচিত সময়ের সব অর্ডার থেকে</p>
             <div className="mt-5 space-y-4">
               {topDistricts.length ? topDistricts.map((entry) => {
                 const max = Math.max(...topDistricts.map((item) => Number(item.order_value)), 1);
