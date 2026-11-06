@@ -278,33 +278,23 @@ export default function AccountView() {
           View and update your personal information.
         </p>
 
-        <section className="account-shortcuts" aria-label="Account settings">
-          <Link href="/account/addresses" className="account-shortcut">
-            <span className="account-shortcut-icon"><Icon name="truck" size={21} /></span>
-            <span><strong>Delivery information</strong><small>Manage your delivery addresses and details.</small></span>
-            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
-          </Link>
-          <Link href="/account/privacy" className="account-shortcut">
-            <span className="account-shortcut-icon"><Icon name="shield" size={21} /></span>
-            <span><strong>Privacy &amp; consent</strong><small>Control your privacy choices and consent.</small></span>
-            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
-          </Link>
-          <Link href="/account/data-requests" className="account-shortcut">
-            <span className="account-shortcut-icon"><Icon name="user" size={21} /></span>
-            <span><strong>My information</strong><small>Review your personal data and requests.</small></span>
-            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
-          </Link>
-          <Link href="/account/eixpay" className="account-shortcut">
-            <span className="account-shortcut-icon"><Icon name="wallet" size={21} /></span>
-            <span><strong>Wallet · Eixon</strong><small>Manage your wallet, balance and payment methods.</small></span>
-            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
-          </Link>
-          <Link href="/account/returns" className="account-shortcut">
-            <span className="account-shortcut-icon"><Icon name="refresh" size={21} /></span>
-            <span><strong>Returns &amp; refunds</strong><small>Request a return and track refund progress.</small></span>
-            <span className="account-shortcut-arrow" aria-hidden="true">→</span>
-          </Link>
-        </section>
+        <nav className="account-shortcuts" aria-label="Account menu">
+          <Link href="/orders" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="orders" size={21} /></span><strong>My orders</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/track-order" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="truck" size={21} /></span><strong>Track order</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/wishlist" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="heart" size={21} /></span><strong>Wishlist</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/compare" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="compare" size={21} /></span><strong>Compare products</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/cart" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="cart" size={21} /></span><strong>Shopping cart</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/account/addresses" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="map-pin" size={21} /></span><strong>Delivery addresses</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/account/eixpay" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="wallet" size={21} /></span><strong>Wallet · Eixon</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/account/neweix-plus" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="membership" size={21} /></span><strong>Neweix+ membership</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/eixverse" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="globe" size={21} /></span><strong>EixVerse</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/account/theme" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="settings" size={21} /></span><strong>Appearance</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/account/privacy" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="shield" size={21} /></span><strong>Privacy &amp; consent</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/account/data-requests" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="user" size={21} /></span><strong>Personal data</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/account/returns" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="refresh" size={21} /></span><strong>Returns &amp; refunds</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/faq" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="help" size={21} /></span><strong>Help &amp; FAQ</strong><Icon name="chevron-right" size={18} /></Link>
+          <Link href="/contact" className="account-shortcut"><span className="account-shortcut-icon"><Icon name="mail" size={21} /></span><strong>Contact support</strong><Icon name="chevron-right" size={18} /></Link>
+        </nav>
 
         {loading ? (
           <p role="status">Loading account…</p>
@@ -468,7 +458,7 @@ export default function AccountView() {
         .account-page {
           min-height: 100vh;
           padding: 0 20px 72px;
-          background: radial-gradient(ellipse at 85% 0%, rgba(182,255,74,.14), transparent 38%), linear-gradient(145deg, #fbfff7, #f3fff5 58%, #f5fbff);
+          background: radial-gradient(ellipse at 88% 0%, rgba(197,165,106,.13), transparent 34rem), radial-gradient(ellipse at 5% 90%, rgba(8,127,99,.07), transparent 30rem), var(--porcelain);
           color: var(--ink);
         }
 
@@ -504,7 +494,7 @@ export default function AccountView() {
 
         .account-shortcuts {
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
           gap: 14px;
           margin: 26px 0 22px;
         }
@@ -515,10 +505,10 @@ export default function AccountView() {
           gap: 12px;
           min-width: 0;
           padding: 17px;
-          border: 1px solid #e0eae0;
+          border: 1px solid var(--border);
           border-radius: 16px;
-          background: rgba(255,255,255,.97);
-          box-shadow: 0 10px 28px rgba(45,110,65,.05);
+          background: var(--surface-raised);
+          box-shadow: 0 10px 28px rgba(20,43,59,.045);
           color: var(--ink);
           text-decoration: none;
           transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
@@ -527,8 +517,8 @@ export default function AccountView() {
         .account-shortcut:hover,
         .account-shortcut:focus-visible {
           transform: translateY(-2px);
-          border-color: #b9dcae;
-          box-shadow: 0 14px 32px rgba(45,110,65,.1);
+          border-color: rgba(8,127,99,.42);
+          box-shadow: 0 14px 32px rgba(20,43,59,.09);
           outline: none;
         }
 
@@ -539,19 +529,12 @@ export default function AccountView() {
           height: 42px;
           place-items: center;
           border-radius: 12px;
-          background: #f0faeb;
-          color: #285c3b;
+          background: color-mix(in srgb, var(--emerald) 10%, var(--surface));
+          color: var(--emerald);
         }
 
-        .account-shortcut > span:nth-child(2) {
-          display: grid;
-          min-width: 0;
-          gap: 5px;
-        }
-
-        .account-shortcut strong { font-size: 14px; font-weight: 800; }
-        .account-shortcut small { color: var(--muted); font-size: 12px; line-height: 1.5; }
-        .account-shortcut-arrow { margin-left: auto; color: var(--primary); font-size: 20px; }
+        .account-shortcut strong { flex: 1; min-width: 0; font-size: 14px; font-weight: 800; }
+        .account-shortcut > svg { flex: 0 0 auto; margin-left: auto; color: var(--emerald); }
 
         .account-main-panel {
           min-width: 0;
@@ -559,7 +542,7 @@ export default function AccountView() {
           border: 1px solid #e0eae0;
           border-radius: 22px;
           background: rgba(255,255,255,.97);
-          box-shadow: 0 14px 38px rgba(45,110,65,.07);
+          box-shadow: 0 14px 38px rgba(20,43,59,.06);
         }
 
         .account-eyebrow {
@@ -610,10 +593,10 @@ export default function AccountView() {
           gap: 4px;
           width: fit-content;
           padding: 3px 8px;
-          border: 1px solid #86c99b;
+          border: 1px solid rgba(8,127,99,.28);
           border-radius: 999px;
-          background: #eaf8ee;
-          color: #176b35;
+          background: color-mix(in srgb, var(--emerald) 9%, var(--surface));
+          color: var(--emerald);
           font-size: 11px;
           font-weight: 700;
           line-height: 1.4;
@@ -662,7 +645,7 @@ export default function AccountView() {
           border: 0;
           border-radius: 9px;
           background: var(--primary);
-          color: #080b09;
+          color: #ffffff;
           font: inherit;
           font-weight: 700;
           cursor: pointer;
@@ -764,9 +747,13 @@ export default function AccountView() {
         }
 
         @media (max-width: 760px) {
-          .account-shortcuts {
-            grid-template-columns: 1fr;
-          }
+          .account-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+          .account-shortcut { padding: 13px 11px; gap: 9px; }
+          .account-shortcut-icon { flex-basis: 36px; width: 36px; height: 36px; }
+          .account-shortcut strong { font-size: 12px; }
+        }
+        @media (max-width: 360px) {
+          .account-shortcuts { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 480px) {
