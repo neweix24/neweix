@@ -2,9 +2,9 @@ name: Supabase database migration tests
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["main", "feat/neweix-supreme-mobile-workspace"]
   push:
-    branches: ["main"]
+    branches: ["main", "feat/neweix-supreme-dashboard-phase-1"]
   workflow_dispatch:
 
 permissions:
@@ -129,5 +129,17 @@ jobs:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/neweix_own_delivery_test.sql
+
+      - name: Verify Supreme dashboard summary RPC privileges
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/supreme_dashboard_summary_privileges_test.sql
+
+      - name: Verify Supreme finance ledger and cost snapshot security
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/supreme_finance_security_test.sql
 
       # GitHub-hosted runners are ephemeral; Docker containers are discarded after the job.
