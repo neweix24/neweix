@@ -5,6 +5,12 @@ type ExpectedAppId = {
   packages: Array<{ name: string; version: string }>;
   signatures: string[];
 };
+type ExpectedRootOfTrust = {
+  verifiedBootKey: string;
+  deviceLocked: boolean;
+  verifiedBootState: "VERIFIED" | "SELF_SIGNED" | "UNVERIFIED" | "FAILED";
+  verifiedBootHash?: string;
+};
 type ExpectedJson = {
   attestationVersion: string;
   attestationSecurityLevel: string;
@@ -12,7 +18,10 @@ type ExpectedJson = {
   keyMintSecurityLevel: string;
   attestationChallenge: string;
   softwareEnforced: { attestationApplicationId?: ExpectedAppId };
-  hardwareEnforced: { attestationApplicationId?: ExpectedAppId };
+  hardwareEnforced: {
+    attestationApplicationId?: ExpectedAppId;
+    rootOfTrust?: ExpectedRootOfTrust;
+  };
 };
 
 function bytesFromBase64(value: string): Uint8Array {
@@ -67,6 +76,32 @@ Deno.test({
       }
       if (bytesToHex(decoded.attestationChallenge) !== bytesToHex(bytesFromBase64(expected.attestationChallenge))) {
         throw new Error(`${label}: attestation challenge differs from upstream JSON.`);
+      }
+
+      const expectedRoot = expected.hardwareEnforced.rootOfTrust;
+      if (expectedRoot) {
+        const rootEntry = decoded.hardwareEnforced.entries.find((entry) => entry.tagNumber === 704);
+        const rootFields = rootEntry?.value.children[0]?.children;
+        if (!rootFields || (rootFields.length !== 3 && rootFields.length !== 4)) {
+          throw new Error(`${label}: parser did not expose RootOfTrust fields.`);
+        }
+        const actualBootState = rootFields[2].value.reduce((value, byte) => value * 256 + byte, 0);
+        const expectedBootState = {
+          VERIFIED: 0,
+          SELF_SIGNED: 1,
+          UNVERIFIED: 2,
+          FAILED: 3,
+        }[expectedRoot.verifiedBootState];
+        if (
+          bytesToHex(rootFields[0].value) !== bytesToHex(bytesFromBase64(expectedRoot.verifiedBootKey)) ||
+          (rootFields[1].value[0] === 0xff) !== expectedRoot.deviceLocked ||
+          actualBootState !== expectedBootState ||
+          (expectedRoot.verifiedBootHash !== undefined &&
+            bytesToHex(rootFields[3]?.value ?? new Uint8Array()) !==
+              bytesToHex(bytesFromBase64(expectedRoot.verifiedBootHash)))
+        ) {
+          throw new Error(`${label}: RootOfTrust fields differ from upstream JSON.`);
+        }
       }
 
       const expectedAppId = expected.softwareEnforced.attestationApplicationId ??
