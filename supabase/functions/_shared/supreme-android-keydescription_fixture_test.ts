@@ -23,7 +23,7 @@ function bytesToHex(value: Uint8Array): string {
 }
 function parseUpstreamJson(text: string): ExpectedJson {
   // Upstream fixture companions are JSONC and may start with // explanatory comments.
-  const withoutLineComments = text.replace(/^\\s*\\/\\/[^\\r\\n]*(?:\\r?\\n|$)/gm, "");
+  const withoutLineComments = text.replace(/^\s*\/\/[^\r\n]*(?:\r?\n|$)/gm, "");
   return JSON.parse(withoutLineComments) as ExpectedJson;
 }
 function securityLevel(value: string): number {
