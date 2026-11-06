@@ -133,6 +133,14 @@ type Shipment = {
   created_at: string;
 };
 
+type PathaoDiagnosticCheck = { ok: boolean; detail: string };
+type PathaoDiagnostics = {
+  healthy: boolean;
+  checkedAt: string;
+  checks: Record<string, PathaoDiagnosticCheck>;
+  note?: string;
+};
+
 function extractOptions(payload: unknown, idKeys: string[], nameKeys: string[]): LocationOption[] {
   if (!payload || typeof payload !== "object") return [];
   const root = payload as Record<string, unknown>;
@@ -211,6 +219,9 @@ export default function PathaoPanel() {
   const [mappingAutoRunning, setMappingAutoRunning] = useState(false);
   const [coverageSyncRunning, setCoverageSyncRunning] = useState(false);
   const [coverageSyncResults, setCoverageSyncResults] = useState<CoverageDistrictResult[]>([]);
+  const [diagnostics, setDiagnostics] = useState<PathaoDiagnostics | null>(null);
+  const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
+  const [diagnosticsError, setDiagnosticsError] = useState("");
   const [areaSyncRunning, setAreaSyncRunning] = useState(false);
   const [areaSyncMessage, setAreaSyncMessage] = useState("");
   const [areaSyncFailures, setAreaSyncFailures] = useState<Array<{ zoneId: number; error: string }>>([]);
@@ -221,6 +232,22 @@ export default function PathaoPanel() {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Pathao API request failed.");
     return result;
+  }
+
+  async function loadDiagnostics() {
+    setDiagnosticsLoading(true);
+    setDiagnosticsError("");
+    try {
+      const result = await getJson("/api/admin/pathao/diagnostics");
+      if (!result || typeof result !== "object" || !result.checks || typeof result.checks !== "object") {
+        throw new Error("Pathao diagnostics returned an invalid response.");
+      }
+      setDiagnostics(result as PathaoDiagnostics);
+    } catch (error) {
+      setDiagnosticsError(error instanceof Error ? error.message : "Could not load Pathao diagnostics.");
+    } finally {
+      setDiagnosticsLoading(false);
+    }
   }
 
   async function run(action: "status" | "stores" | "cities") {
@@ -828,6 +855,14 @@ export default function PathaoPanel() {
     };
   }, []);
 
+  const coverageSummary = {
+    fullyMapped: coverageSyncResults.filter((item) => item.status === "fully_mapped").length,
+    partiallyMapped: coverageSyncResults.filter((item) => item.status === "partially_mapped").length,
+    matchedUpazilas: coverageSyncResults.reduce((total, item) => total + item.matchedUpazilas, 0),
+    skippedUpazilas: coverageSyncResults.reduce((total, item) => total + item.skippedUpazilas.length, 0),
+    syncErrors: coverageSyncResults.filter((item) => item.status === "sync_error").length,
+  };
+
   return (
     <section className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -848,7 +883,46 @@ export default function PathaoPanel() {
       <p role="status" className={`mt-3 text-sm ${state === "error" ? "text-red-700" : state === "success" ? "text-green-700" : "text-gray-600"}`}>{message}</p>
       {environment && <p className="mt-1 text-xs text-gray-500">Environment: {environment}</p>}
 
-
+      <section className="mt-5 rounded-xl border border-gray-200 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-semibold">Pathao Configuration Diagnostics</h3>
+            <p className="mt-1 text-xs text-gray-600">Check API credentials, environment, merchant Store ID, and verified delivery-area mappings. No secret values are displayed.</p>
+          </div>
+          <button type="button" onClick={() => void loadDiagnostics()} disabled={diagnosticsLoading} className="rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">
+            {diagnosticsLoading ? "Checking..." : diagnostics ? "Run Again" : "Run Diagnostics"}
+          </button>
+        </div>
+        {diagnosticsError && <p role="alert" className="mt-3 text-sm text-red-700">{diagnosticsError}</p>}
+        {diagnostics && (
+          <div className="mt-4 space-y-3">
+            <p className={`text-sm font-semibold ${diagnostics.healthy ? "text-green-700" : "text-amber-700"}`}>
+              {diagnostics.healthy ? "All configuration checks passed." : "Some configuration checks need attention."}
+            </p>
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {Object.entries(diagnostics.checks).map(([key, check]) => (
+                <li key={key} className="rounded-lg border border-gray-200 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">{({
+                      credentials: "API credentials",
+                      environment: "API environment",
+                      store_id: "Configured Store ID",
+                      store_account_match: "Merchant account Store ID",
+                      location_mappings: "Verified delivery areas",
+                    } as Record<string, string>)[key] || key.replace(/_/g, " ")}</span>
+                    <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-semibold ${check.ok ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-800"}`}>
+                      {check.ok ? "OK" : "Action needed"}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-gray-600">{check.detail}</p>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-gray-500">Last checked: {new Date(diagnostics.checkedAt).toLocaleString("en-BD")}</p>
+            {diagnostics.note && <p className="text-xs leading-5 text-gray-500">{diagnostics.note}</p>}
+          </div>
+        )}
+      </section>
 
       <section className="mt-5 space-y-4 rounded-xl border border-amber-200 bg-amber-50/40 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -898,22 +972,32 @@ export default function PathaoPanel() {
           </div>
         )}
         {coverageSyncResults.length > 0 && (
-          <div className="overflow-x-auto rounded-lg border bg-white">
-            <table className="w-full min-w-[760px] text-left text-xs">
-              <thead className="border-b bg-gray-50"><tr><th className="p-2">Division</th><th className="p-2">District</th><th className="p-2">Pathao city</th><th className="p-2">Upazila mapping</th><th className="p-2">Result</th></tr></thead>
-              <tbody>{coverageSyncResults.map((item) => (
-                <tr key={item.districtCode} className="border-b last:border-0">
-                  <td className="p-2">{item.divisionName}</td>
-                  <td className="p-2 font-medium">{item.districtName}</td>
-                  <td className="p-2">{item.pathaoCityName ?? "Not matched"}</td>
-                  <td className="p-2">{item.matchedUpazilas}/{item.totalUpazilas}</td>
-                  <td className="p-2">
-                    <div>{item.status === "fully_mapped" ? "Fully mapped" : item.status === "partially_mapped" ? `Partial · ${item.skippedUpazilas.length} need review` : item.status === "sync_error" ? "Sync error" : item.status === "city_not_found" ? "City not found" : item.status === "city_ambiguous" ? "Ambiguous city" : item.status === "zones_unavailable" ? "Zones unavailable" : "No exact zone match"}</div>
-                    {item.error && <div className="mt-1 max-w-sm whitespace-normal break-words text-[11px] leading-4 text-red-700" title={item.error}>{item.error}</div>}
-                  </td>
-                </tr>
-              ))}</tbody>
-            </table>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Districts checked</p><p className="text-lg font-bold">{coverageSyncResults.length}/64</p></div>
+              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Fully mapped</p><p className="text-lg font-bold">{coverageSummary.fullyMapped}</p></div>
+              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Partially mapped</p><p className="text-lg font-bold">{coverageSummary.partiallyMapped}</p></div>
+              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Exact matches</p><p className="text-lg font-bold">{coverageSummary.matchedUpazilas}</p></div>
+              <div className="rounded-lg border bg-white p-3"><p className="text-xs text-gray-500">Need review / errors</p><p className="text-lg font-bold">{coverageSummary.skippedUpazilas} / {coverageSummary.syncErrors}</p></div>
+            </div>
+            <div className="overflow-x-auto rounded-lg border bg-white">
+              <table className="w-full min-w-[900px] text-left text-xs">
+                <thead className="border-b bg-gray-50"><tr><th className="p-2">Division</th><th className="p-2">District</th><th className="p-2">Pathao city</th><th className="p-2">Upazila mapping</th><th className="p-2">Result</th><th className="p-2">Unmatched upazilas</th></tr></thead>
+                <tbody>{coverageSyncResults.map((item) => (
+                  <tr key={item.districtCode} className="border-b last:border-0 align-top">
+                    <td className="p-2">{item.divisionName}</td>
+                    <td className="p-2 font-medium">{item.districtName}</td>
+                    <td className="p-2">{item.pathaoCityName ?? "Not matched"}</td>
+                    <td className="p-2">{item.matchedUpazilas}/{item.totalUpazilas}</td>
+                    <td className="p-2">
+                      <div>{item.status === "fully_mapped" ? "Fully mapped" : item.status === "partially_mapped" ? `Partial · ${item.skippedUpazilas.length} need review` : item.status === "sync_error" ? "Sync error" : item.status === "city_not_found" ? "City not found" : item.status === "city_ambiguous" ? "Ambiguous city" : item.status === "zones_unavailable" ? "Zones unavailable" : "No exact zone match"}</div>
+                      {item.error && <div className="mt-1 max-w-sm whitespace-normal break-words text-[11px] leading-4 text-red-700" title={item.error}>{item.error}</div>}
+                    </td>
+                    <td className="max-w-xs whitespace-normal p-2">{item.skippedUpazilas.length > 0 ? <details><summary className="cursor-pointer font-medium text-amber-800">View {item.skippedUpazilas.length} area(s)</summary><ul className="mt-2 list-disc space-y-1 pl-4 text-gray-600">{item.skippedUpazilas.map((name) => <li key={name}>{name}</li>)}</ul></details> : <span className="text-gray-400">None</span>}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
           </div>
         )}
         <p className="text-xs leading-5 text-gray-600">
