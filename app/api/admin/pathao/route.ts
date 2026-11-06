@@ -1285,7 +1285,7 @@ export async function POST(request: Request) {
   if (streetBudget < 0) {
     return errorResponse("The selected administrative address is too long for Pathao. Review the village, union, upazila, district and division values.", 400);
   }
-  const boundedStreetAddress = streetAddress.slice(0, Math.max(0, streetBudget)).trim().replace(/[\\s,;]+$/, "");
+  const boundedStreetAddress = streetAddress.slice(0, Math.max(0, streetBudget)).trim().replace(/[\s,;]+$/, "");
   const address = [boundedStreetAddress, administrativeAddress].filter(Boolean).join(", ");
   if (address.length < 10 || address.length > 220) {
     await admin.from("orders").update({
