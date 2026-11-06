@@ -201,7 +201,7 @@ export default function SupremeNotificationInbox() {
           {hasMore ? (
             <button type="button" onClick={() => void loadMore()} disabled={loadingMore} className="inline-flex min-h-11 items-center gap-2 rounded-xl border px-5 py-3 text-sm font-bold disabled:opacity-50" style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--foreground)" }}>
               {loadingMore ? "আরও লোড হচ্ছে…" : "আরও পুরোনো সতর্কতা দেখুন"}
-              {!loadingMore && <Icon name="chevron-down" size={17} />}
+              {!loadingMore && <span aria-hidden="true">↓</span>}
             </button>
           ) : (
             <p className="text-xs" style={{ color: "var(--muted)" }}>সব সতর্কতা দেখানো হয়েছে।</p>
