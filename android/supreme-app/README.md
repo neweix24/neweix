@@ -4,7 +4,7 @@ This Android app is a native shell around the existing Supreme workspace. It loa
 
 ## Build requirements
 
-- Android Studio with JDK 17 and Android SDK Platform 35, or a compatible Android Gradle environment.
+- Android Studio with JDK 17 and Android SDK Platform 35, or Gradle 8.9+ with the Android SDK installed. Open this directory in Android Studio if Gradle is not installed on your device.
 - The private Supreme path configured on the Cloudflare Worker as `SUPREME_PRIVATE_PATH`.
 - The same path supplied only to the local build environment; never commit it.
 
@@ -16,7 +16,7 @@ From this directory, provide the secret without putting it in source control:
 
 ```sh
 export SUPREME_PRIVATE_PATH='/control-<your-48-hex-character-secret>'
-./gradlew :app:assembleDebug
+gradle :app:assembleDebug
 ```
 
 The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
@@ -24,7 +24,7 @@ The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 If you prefer not to export an environment variable, pass it as a Gradle property:
 
 ```sh
-./gradlew :app:assembleDebug -PsupremePrivatePath='/control-<your-48-hex-character-secret>'
+gradle :app:assembleDebug -PsupremePrivatePath='/control-<your-48-hex-character-secret>'
 ```
 
 ## Security notes
