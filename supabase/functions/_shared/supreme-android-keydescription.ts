@@ -1,10 +1,15 @@
 import { DerElement, parseDer } from "./supreme-attestation-der.ts";
+import {
+  AttestationApplicationId,
+  parseAttestationApplicationId,
+} from "./supreme-attestation-application-id.ts";
 
 export const ANDROID_KEY_ATTESTATION_OID = "1.3.6.1.4.1.11129.2.1.17";
 
 export type AndroidAuthorizationEntry = {
   tagNumber: number;
   value: DerElement;
+  attestationApplicationId?: AttestationApplicationId;
 };
 
 export type AndroidAuthorizationList = {
@@ -136,6 +141,14 @@ function parseAuthorizationList(element: DerElement, label: string): AndroidAuth
       }
     } else if (field.tagNumber === 704) {
       parseRootOfTrust(value);
+    } else if (field.tagNumber === 709) {
+      const encodedApplicationId = expectOctetString(value, "attestation application ID");
+      entries.push({
+        tagNumber: field.tagNumber,
+        value,
+        attestationApplicationId: parseAttestationApplicationId(encodedApplicationId),
+      });
+      continue;
     } else if (OCTET_STRING_TAGS.has(field.tagNumber)) {
       expectOctetString(value, `authorization tag ${field.tagNumber}`);
     } else {
