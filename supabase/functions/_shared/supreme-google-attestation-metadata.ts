@@ -47,7 +47,7 @@ function parsePemCertificate(value: unknown): string {
     throw new TypeError("Invalid Google attestation root certificate.");
   }
   const match = value.match(
-    /^-----BEGIN CERTIFICATE-----\r?\n([A-Za-z0-9+/=\r\n]+)\r?\n-----END CERTIFICATE-----$/u,
+    /^-----BEGIN CERTIFICATE-----\r?\n([A-Za-z0-9+/=\r\n]+)\r?\n-----END CERTIFICATE-----\\r?\\n?$/u,
   );
   if (!match) throw new TypeError("Google root is not a canonical PEM certificate.");
   const compact = match[1].replace(/[\r\n]/gu, "");
@@ -106,11 +106,19 @@ export function parseGoogleAttestationStatus(
       (typeof item.reason !== "string" || !reasons.has(item.reason))) {
       throw new TypeError("Google status feed contains an unknown revocation reason.");
     }
-    if (item.expires !== undefined &&
-      (typeof item.expires !== "string" ||
-        !/^\d{4}-\d{2}-\d{2}$/u.test(item.expires) ||
-        Number.isNaN(Date.parse(`${item.expires}T00:00:00Z`)))) {
-      throw new TypeError("Google status feed contains an invalid expiry date.");
+    if (item.expires !== undefined) {
+      if (typeof item.expires !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/u.test(item.expires)) {
+        throw new TypeError("Google status feed contains an invalid expiry date.");
+      }
+      const [year, month, day] = item.expires.split("-").map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      if (
+        date.getUTCFullYear() !== year ||
+        date.getUTCMonth() !== month - 1 ||
+        date.getUTCDate() !== day
+      ) {
+        throw new TypeError("Google status feed contains an invalid expiry date.");
+      }
     }
     entries.set(serial, {
       status: item.status,
@@ -139,10 +147,31 @@ async function fetchJson(
   }
   const declaredLength = Number(response.headers.get("content-length") ?? "0");
   if (declaredLength > maxBytes) throw new Error("Google attestation metadata is too large.");
-  const text = await response.text();
-  if (new TextEncoder().encode(text).byteLength > maxBytes) {
-    throw new Error("Google attestation metadata is too large.");
+  if (!response.body) throw new Error("Google attestation metadata response is empty.");
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel();
+        throw new Error("Google attestation metadata is too large.");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
   }
+  const body = new Uint8Array(totalBytes);
+  let bodyOffset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, bodyOffset);
+    bodyOffset += chunk.byteLength;
+  }
+  const text = new TextDecoder("utf-8", { fatal: true }).decode(body);
   let value: unknown;
   try {
     value = JSON.parse(text);
