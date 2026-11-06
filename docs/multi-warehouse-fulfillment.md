@@ -47,4 +47,4 @@ The two initial warehouse records have no invented street address or Pathao Stor
 4. Split mixed-origin orders into separate Pathao quotes and bookings using each warehouse's own Pathao Store ID and address.
 5. Track each fulfillment independently, preserving idempotency, payment checks, webhook reconciliation, returns/restocking and operational reporting.
 
-Until checkout and Pathao phases are complete and production configuration is verified, the existing single-order checkout and Pathao booking behavior remains in place. Warehouse setup and the manual allocation endpoint do not mean multi-origin shipping is live.
+The Pathao Store ID diagnostic is read-only: it verifies configured store IDs against the connected merchant account but does not calculate a delivery quote, create a consignment or cancel a courier shipment. Until checkout and Pathao phases are complete and production configuration is verified, the existing single-order checkout and Pathao booking behavior remains in place. Warehouse setup and the manual allocation endpoint do not mean multi-origin shipping is live.
