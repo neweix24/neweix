@@ -47,7 +47,7 @@ function parsePemCertificate(value: unknown): string {
     throw new TypeError("Invalid Google attestation root certificate.");
   }
   const match = value.match(
-    /^-----BEGIN CERTIFICATE-----\r?\n([A-Za-z0-9+/=\r\n]+)\r?\n-----END CERTIFICATE-----\\r?\\n?$/u,
+    /^-----BEGIN CERTIFICATE-----\r?\n([A-Za-z0-9+/=\r\n]+)\r?\n-----END CERTIFICATE-----\r?\n?$/u,
   );
   if (!match) throw new TypeError("Google root is not a canonical PEM certificate.");
   const compact = match[1].replace(/[\r\n]/gu, "");
@@ -107,7 +107,7 @@ export function parseGoogleAttestationStatus(
       throw new TypeError("Google status feed contains an unknown revocation reason.");
     }
     if (item.expires !== undefined) {
-      if (typeof item.expires !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/u.test(item.expires)) {
+      if (typeof item.expires !== "string" || !/^\d{4}-\d{2}-\d{2}$/u.test(item.expires)) {
         throw new TypeError("Google status feed contains an invalid expiry date.");
       }
       const [year, month, day] = item.expires.split("-").map(Number);
