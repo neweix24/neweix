@@ -243,7 +243,7 @@ export default function HomepageSearch({ categories }: Props) {
           <>
             {recentSearches.length > 0 && <div className={styles.recentSuggestions}>
               <div className={styles.suggestionHeading}><span>{locale === "bn" ? "সাম্প্রতিক সার্চ" : "RECENT SEARCHES"}</span><button type="button" onClick={() => { localStorage.removeItem(RECENT_SEARCH_KEY); setRecentSearches([]); }}>{locale === "bn" ? "মুছুন" : "Clear"}</button></div>
-              {recentSearches.map((term) => <button type="button" key={term} onClick={() => chooseRecent(term)}><Icon name="clock" size={15} />{term}<Icon name="arrow-right" size={14} /></button>)}
+              {recentSearches.map((term) => <button type="button" key={term} onClick={() => chooseRecent(term)}><Icon name="search" size={15} />{term}<Icon name="arrow-right" size={14} /></button>)}
             </div>}
             {matchingCategories.length > 0 && <div className={styles.categorySuggestions}>
               <span className={styles.suggestionLabel}>{locale === "bn" ? "জনপ্রিয় ক্যাটাগরি" : "POPULAR CATEGORIES"}</span>
