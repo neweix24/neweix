@@ -11,6 +11,9 @@ export type ParsedX509Certificate = {
   validity: Uint8Array;
   subject: Uint8Array;
   subjectPublicKeyInfo: Uint8Array;
+  subjectPublicKeyAlgorithmOid: string;
+  subjectPublicKeyParameters: Uint8Array | null;
+  subjectPublicKey: Uint8Array;
   signature: Uint8Array;
   extensions: X509Extension[];
 };
@@ -115,13 +118,25 @@ export function parseX509Certificate(input: Uint8Array): ParsedX509Certificate {
   }
   const innerAlgFields = children(input, innerAlgorithm, budget);
   if (innerAlgFields.length < 1 || oidToString(input, innerAlgFields[0]) !== signatureAlgorithmOid) throw new TypeError("X.509 inner and outer signature algorithms do not match.");
+  const spkiFields = children(input, spki, budget);
+  if (spkiFields.length !== 2 || spkiFields[0].tag !== 0x30 || spkiFields[1].tag !== 0x03) {
+    throw new TypeError("Malformed X.509 SubjectPublicKeyInfo.");
+  }
+  const spkiAlgorithmFields = children(input, spkiFields[0], budget);
+  if (spkiAlgorithmFields.length < 1) throw new TypeError("Missing X.509 public-key algorithm OID.");
+  const subjectPublicKeyAlgorithmOid = oidToString(input, spkiAlgorithmFields[0]);
+  const subjectPublicKeyParameters = spkiAlgorithmFields.length > 1 ? raw(input, spkiAlgorithmFields[1]) : null;
+  const publicKeyBits = input.slice(spkiFields[1].contentStart, spkiFields[1].end);
+  if (publicKeyBits.length < 2 || publicKeyBits[0] !== 0) {
+    throw new TypeError("X.509 SubjectPublicKeyInfo BIT STRING has invalid unused-bit count.");
+  }
   const extField = tbsFields.slice(index).find((field) => field.tag === 0xa3);
   const signature = input.slice(signatureValue.contentStart, signatureValue.end);
   if (signature.length < 2 || signature[0] !== 0) throw new TypeError("X.509 signature BIT STRING has invalid unused-bit count.");
   return {
     tbsCertificate: raw(input, tbs), serialNumber: input.slice(serial.contentStart, serial.end),
     signatureAlgorithmOid, issuer: raw(input, issuer), validity: raw(input, validity),
-    subject: raw(input, subject), subjectPublicKeyInfo: raw(input, spki), signature: signature.slice(1),
+    subject: raw(input, subject), subjectPublicKeyInfo: raw(input, spki),\n    subjectPublicKeyAlgorithmOid, subjectPublicKeyParameters, subjectPublicKey: publicKeyBits.slice(1),\n    signature: signature.slice(1),
     extensions: extField ? parseExtensions(input, extField, budget) : [],
   };
 }
