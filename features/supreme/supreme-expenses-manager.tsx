@@ -37,6 +37,8 @@ export default function SupremeExpensesManager() {
   const [costSaving, setCostSaving] = useState<string | null>(null);
   const [costMessage, setCostMessage] = useState("");
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const pageSize = 50;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -54,7 +56,7 @@ export default function SupremeExpensesManager() {
     setLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({ from, to, page: "1" });
+      const params = new URLSearchParams({ from, to, page: String(page) });
       const response = await fetch("/api/supreme/finance/expenses?" + params.toString(), { cache: "no-store" });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "ব্যয়ের তথ্য লোড করা যায়নি।");
@@ -65,7 +67,7 @@ export default function SupremeExpensesManager() {
     } finally {
       setLoading(false);
     }
-  }, [from, to]);
+  }, [from, to, page]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -212,8 +214,8 @@ export default function SupremeExpensesManager() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div><h2 className="text-lg font-bold">ব্যয়ের ইতিহাস</h2><p className="mt-1 text-xs text-slate-400">প্রতি পাতায় সর্বোচ্চ ৫০টি এন্ট্রি</p></div>
           <div className="flex flex-wrap gap-2">
-            <label className="grid gap-1 text-xs text-slate-400">শুরু <input type="date" value={from} onChange={e => setFrom(e.target.value)} className="rounded-lg border border-white/15 bg-[#090e18] px-2 py-2 text-white" /></label>
-            <label className="grid gap-1 text-xs text-slate-400">শেষ <input type="date" value={to} onChange={e => setTo(e.target.value)} className="rounded-lg border border-white/15 bg-[#090e18] px-2 py-2 text-white" /></label>
+            <label className="grid gap-1 text-xs text-slate-400">শুরু <input type="date" value={from} onChange={e => { setPage(1); setFrom(e.target.value); }} className="rounded-lg border border-white/15 bg-[#090e18] px-2 py-2 text-white" /></label>
+            <label className="grid gap-1 text-xs text-slate-400">শেষ <input type="date" value={to} onChange={e => { setPage(1); setTo(e.target.value); }} className="rounded-lg border border-white/15 bg-[#090e18] px-2 py-2 text-white" /></label>
           </div>
         </div>
         {error && <p role="alert" className="mt-4 rounded-xl border border-rose-400/30 bg-rose-950/30 p-3 text-sm text-rose-200">{error}</p>}
@@ -229,6 +231,13 @@ export default function SupremeExpensesManager() {
               <strong className="text-lg text-amber-300">{money.format(expense.amount)}</strong>
             </article>)}
           </div>}
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
+          <p className="text-xs text-slate-500">পৃষ্ঠা {page.toLocaleString("bn-BD")} · মোট {total.toLocaleString("bn-BD")}টি এন্ট্রি</p>
+          <div className="flex gap-2">
+            <button type="button" disabled={page <= 1 || loading} onClick={() => setPage(current => Math.max(1, current - 1))} className="rounded-lg border border-white/15 px-3 py-2 text-xs font-bold disabled:opacity-40">আগের পৃষ্ঠা</button>
+            <button type="button" disabled={page * pageSize >= total || loading} onClick={() => setPage(current => current + 1)} className="rounded-lg border border-white/15 px-3 py-2 text-xs font-bold disabled:opacity-40">পরের পৃষ্ঠা</button>
+          </div>
+        </div>
       </section>
       <p className="mt-5 text-xs leading-5 text-slate-500">নোট: ব্যয়ের এন্ট্রি মুছে ফেলার সুবিধা নেই—হিসাবের নির্ভরযোগ্যতা বজায় রাখতে প্রতিটি রেকর্ড সংরক্ষিত থাকে। এই পেজ এখনো Profit/Loss ঘোষণা করে না।</p>
     </main>
