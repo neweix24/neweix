@@ -1283,6 +1283,10 @@ export async function POST(request: Request) {
   const administrativeAddress = uniqueAddressParts.slice(1).join(", ");
   const streetBudget = 220 - administrativeAddress.length - (administrativeAddress ? 2 : 0);
   if (streetBudget < 0) {
+    await admin.from("orders").update({
+      delivery_status: "failed",
+      delivery_error: "Administrative address exceeds Pathao's 220-character limit.",
+    }).eq("id", orderId).eq("delivery_status", "booking");
     return errorResponse("The selected administrative address is too long for Pathao. Review the village, union, upazila, district and division values.", 400);
   }
   const boundedStreetAddress = streetAddress.slice(0, Math.max(0, streetBudget)).trim().replace(/[\s,;]+$/, "");
