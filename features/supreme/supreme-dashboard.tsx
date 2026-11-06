@@ -118,7 +118,7 @@ export default function SupremeDashboard() {
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="ব্যবসার সারসংক্ষেপ">
           <Metric title="অর্ডারের মোট মূল্য" value={summaryError ? "—" : money.format(revenue)} note="নির্বাচিত সময়ের সব অর্ডারের মোট মূল্য" icon="wallet" />
-          <Metric title="অর্ডার" value={summaryError ? "—" : number.format(summary?.order_count ?? 0)} note="লোড করা অর্ডারের মধ্যে" icon="orders" />
+          <Metric title="অর্ডার" value={summaryError ? "—" : number.format(summary?.order_count ?? 0)} note="নির্বাচিত সময়সীমার সব অর্ডার" icon="orders" />
           <Metric title="পেমেন্ট পাওয়া গেছে" value={summaryError ? "—" : money.format(paidAmount)} note={`বকেয়া/অযাচাইকৃত: ${number.format(pendingPayments)}টি অর্ডার`} icon="wallet" />
           <Metric title="মোট পণ্য" value={productError ? "—" : number.format(products.length)} note={`কম স্টক ${number.format(lowStock.length)} · স্টক শেষ ${number.format(outOfStock.length)}`} icon="package" />
         </section>
