@@ -113,7 +113,7 @@ export default function CustomerOrderDetail({ orderId }: { orderId: string }) {
   }, [orderId]);
 
   return (
-    <main className="min-h-screen px-4 py-10 sm:px-6" style={{ background: "var(--bg)", color: "var(--ink)" }}>
+    <main className="premium-order-detail min-h-screen px-4 py-10 sm:px-6" style={{ background: "var(--bg)", color: "var(--ink)" }}>
       <div className="mx-auto max-w-3xl">
         <Link href="/orders" className="text-sm font-semibold" style={{ color: "var(--primary)" }}>← Back to my orders</Link>
         <header className="mb-7 mt-5">
