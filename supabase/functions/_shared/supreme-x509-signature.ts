@@ -132,7 +132,12 @@ export async function verifyX509CertificateSignature(
     if (!curve) throw new TypeError(`Unsupported EC named curve OID: ${curveOid}`);
     keyAlgorithm = { name: "ECDSA", namedCurve: curve.name };
     verifyAlgorithm = { name: "ECDSA", hash: digest };
-    signature = ecdsaDerToP1363(signature, curve.width);
+    try {
+      signature = ecdsaDerToP1363(signature, curve.width);
+    } catch (error) {
+      if (error instanceof TypeError || error instanceof RangeError) return false;
+      throw error;
+    }
   }
 
   const key = await crypto.subtle.importKey(
