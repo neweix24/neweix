@@ -72,8 +72,8 @@ create index if not exists operating_expenses_created_by_idx
   on public.operating_expenses (created_by, created_at desc);
 
 alter table public.operating_expenses enable row level security;
-revoke all on public.operating_expenses from public, anon, authenticated;
-grant select, insert on public.operating_expenses to service_role;
+revoke all on public.operating_expenses from public, anon, authenticated, service_role;
+grant select on public.operating_expenses to service_role;
 
 comment on column public.products.purchase_cost is
   'Current acquisition cost per unit in BDT. NULL means unknown; never infer from sale price.';
