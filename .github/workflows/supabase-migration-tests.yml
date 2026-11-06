@@ -23,6 +23,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Deno for the server-side attestation proof module
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Format and lint the attestation proof module
+        run: |
+          deno fmt --check supabase/functions/_shared/supreme-attestation-proof.ts supabase/functions/_shared/supreme-attestation-proof_test.ts
+          deno lint supabase/functions/_shared/supreme-attestation-proof.ts supabase/functions/_shared/supreme-attestation-proof_test.ts
+
+      - name: Type-check and test the attestation proof module
+        run: |
+          deno check supabase/functions/_shared/supreme-attestation-proof.ts supabase/functions/_shared/supreme-attestation-proof_test.ts
+          deno test supabase/functions/_shared/supreme-attestation-proof_test.ts
+
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v1
         with:
