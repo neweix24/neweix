@@ -9,7 +9,7 @@ on:
       - "docs/security/SUPREME_ANDROID_ATTESTATION_VERIFIER.md"
       - "scripts/security/**"
       - "supabase/functions/_shared/supreme-android-keydescription*"
-      - "supabase/functions/_shared/supreme-attestation-application-id*"
+      - "supabase/functions/_shared/supreme-attestation-application-id*"\n      - "supabase/functions/_shared/supreme-attestation-der*"
   pull_request:
     branches:
       - main
