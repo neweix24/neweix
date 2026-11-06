@@ -110,7 +110,7 @@ This module is syntax-only. It does not parse the full Android KeyDescription/Au
 
 The Deno candidate now includes `supreme-android-keydescription.ts`. It decodes the inner DER value of the Android key-attestation extension OID `1.3.6.1.4.1.11129.2.1.17` and enforces the eight-field `KeyDescription` envelope, known `AuthorizationList` context tags, explicit tagging, duplicate-tag rejection, supported universal payload types, and the basic `RootOfTrust` field shape. It records AuthorizationList tag ordering rather than silently sorting it.
 
-The nested `AttestationApplicationId` in AuthorizationList tag 709 is an OCTET STRING containing a DER SEQUENCE (not CBOR). The Deno candidate now decodes its package-info and signer-digest SET OF values, bounds package/signature counts, rejects malformed UTF-8, duplicate package names/digests, unsupported package versions and non-32-byte signer digests, and exposes an exact package/minimum-version/SHA-256 signer matcher. This schema follows the pinned Google Kotlin reference source. The expected production signing digest is still not configured, so this matcher is not currently used to accept a device.
+The nested `AttestationApplicationId` in AuthorizationList tag 709 is an OCTET STRING containing a DER SEQUENCE (not CBOR). The Deno candidate now decodes its package-info and signer-digest SET OF values, bounds package/signature counts, rejects malformed UTF-8, duplicate package names/digests, negative or non-canonical package versions, and invalid field shapes; it preserves arbitrary signer-digest octets for upstream parser compatibility, while the NEWEIX policy matcher requires a configured 32-byte SHA-256 digest, and exposes an exact package/minimum-version/SHA-256 signer matcher. This schema follows the pinned Google Kotlin reference source. The expected production signing digest is still not configured, so this matcher is not currently used to accept a device.
 
 This remains a structural decoder and policy helper, not a verifier. It does not validate certificate paths or Google trust anchors, check chain placement/RKP provisioning semantics, or decide whether a device is acceptable. The parser is not connected to any authentication route. Its accepted structure must be tested against real upstream valid and invalid certificate fixtures before it can contribute to an attestation decision.
 
@@ -127,3 +127,10 @@ The app-ID unit suite now includes expected semantic vectors transcribed from th
 - `testdata/caiman/sdk36/TEE_EC_RKP.json` — package `com.google.android.attestation`, version `0`, same 32-byte signer digest.
 
 These are semantic compatibility vectors copied from upstream's decoded JSON expectations; they are **not** direct parsing of the PEM certificate fixtures and do not demonstrate end-to-end X.509 extension extraction. The pinned upstream Kotlin workflow separately runs its own real-certificate test suite. A true cross-runtime differential harness that extracts the extension from each PEM fixture and compares Deno output with Kotlin output remains a release gate.
+
+
+## Verified real-certificate parser differential result
+
+The pinned Kotlin reference workflow and NEWEIX Deno structural decoder have been run against 23 real upstream PEM certificate fixtures. The harness extracts the key-attestation extension from each target certificate and compares KeyDescription fields, AttestationApplicationId values, and RootOfTrust values against upstream decoded JSON expectations. The latest recorded successful run is workflow `42289300538` on the PR branch.
+
+This result validates the tested extension-decoding semantics only. It does not validate NEWEIX X.509 path building, Google trust-anchor/revocation handling, RKP provisioning-chain roles, or the full verifier decision. The Deno parser remains disconnected from authentication and cannot authorize a Supreme login.
