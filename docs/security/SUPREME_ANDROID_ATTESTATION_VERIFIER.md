@@ -118,3 +118,12 @@ This remains a structural decoder and policy helper, not a verifier. It does not
 ### Upstream compatibility review — AttestationApplicationId
 
 The pinned Google Kotlin source at `android/keyattestation@0e3ac2fdd54799d779e1979a96fbcba0361b2089` was reviewed directly (`Extension.kt`, `AttestationApplicationId.from`, `AttestationPackageInfo.from`, and `toAttestationApplicationId`). It confirms that tag 709 is an OCTET STRING containing a DER SEQUENCE of two SET values; package names are strict UTF-8 OCTET STRINGs and package versions are ASN.1 INTEGER/BigInteger values. The upstream parser preserves signer digest octets as ByteString and does not itself enforce a 32-byte length. Therefore the NEWEIX structural decoder now preserves arbitrary signer octet lengths for parser compatibility, while the *NEWEIX policy matcher* requires the configured expected signing-certificate SHA-256 and candidate digest to be exactly 32 bytes before a match can succeed. Package versions remain arbitrary non-negative BigInt values rather than being truncated to a 32-bit integer. This is a source-compatibility correction, not evidence of certificate verification parity.
+
+
+### Google upstream fixture-vector tests
+
+The app-ID unit suite now includes expected semantic vectors transcribed from the pinned upstream verifier's JSON outputs for:
+- `testdata/akita/sdk34/TEE_EC_NONE.json` — package `com.google.wireless.android.security.attestationverifier.collector`, version `0`, signer digest `EDk47kU35Z6O55L2VFBPuDRvxrNG0LvEQV/DOfz8jsE=`.
+- `testdata/caiman/sdk36/TEE_EC_RKP.json` — package `com.google.android.attestation`, version `0`, same 32-byte signer digest.
+
+These are semantic compatibility vectors copied from upstream's decoded JSON expectations; they are **not** direct parsing of the PEM certificate fixtures and do not demonstrate end-to-end X.509 extension extraction. The pinned upstream Kotlin workflow separately runs its own real-certificate test suite. A true cross-runtime differential harness that extracts the extension from each PEM fixture and compares Deno output with Kotlin output remains a release gate.
