@@ -16,6 +16,10 @@ on:
     paths:
       - ".github/workflows/supreme-keyattestation-reference.yml"
       - "docs/security/SUPREME_ANDROID_ATTESTATION_VERIFIER.md"
+      - "scripts/security/**"
+      - "supabase/functions/_shared/supreme-android-keydescription*"
+      - "supabase/functions/_shared/supreme-attestation-application-id*"
+      - "supabase/functions/_shared/supreme-attestation-der*"
   workflow_dispatch:
 
 permissions:
