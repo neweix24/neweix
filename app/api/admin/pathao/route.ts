@@ -1069,13 +1069,13 @@ export async function POST(request: Request) {
     const itemWeightKg = Number(input.itemWeightKg);
     const itemType = Number(input.itemType ?? 2);
     const deliveryType = Number(input.deliveryType ?? 48);
-    const recipientCity = input.recipientCity == null ? undefined : Number(input.recipientCity);
-    const recipientZone = input.recipientZone == null ? undefined : Number(input.recipientZone);
+    const recipientCity = Number(input.recipientCity);
+    const recipientZone = Number(input.recipientZone);
     if (!Number.isSafeInteger(storeId) || storeId < 1 ||
         ![1, 2].includes(itemType) || ![12, 48].includes(deliveryType) ||
         !Number.isFinite(itemWeightKg) || itemWeightKg <= 0 || itemWeightKg > 10 ||
-        (recipientCity !== undefined && (!Number.isSafeInteger(recipientCity) || recipientCity < 1)) ||
-        (recipientZone !== undefined && (!Number.isSafeInteger(recipientZone) || recipientZone < 1))) {
+        !Number.isSafeInteger(recipientCity) || recipientCity < 1 ||
+        !Number.isSafeInteger(recipientZone) || recipientZone < 1) {
       return errorResponse("Invalid Pathao price calculation details.", 400);
     }
     try {
