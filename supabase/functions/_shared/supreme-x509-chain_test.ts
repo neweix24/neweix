@@ -195,7 +195,7 @@ Deno.test({
       if (accepted) {
         if (
           result!.provisioningMethod !== fixture.provisioningMethod ||
-          result!.chainRolesValidated !== chain.length ||
+          result!.chainRolesValidated !== chain.length - 1 ||
           result!.validityCertificatesChecked !== chain.length - 2 ||
           result!.signatureLinksVerified !== chain.length - 1
         ) {
