@@ -44,7 +44,7 @@ public final class ExtractAndroidAttestationFixtures {
   }
 
   private static String jsonEscape(String value) {
-    return value.replace("\", "\").replace("\"", "\"");
+    return value.replace("\\", "\\\\").replace("\"", "\\\"");
   }
 
   public static void main(String[] args) throws Exception {
