@@ -4,6 +4,7 @@
  */
 export type X509Extension = { oid: string; critical: boolean; value: Uint8Array };
 export type ParsedX509Certificate = {
+  rawCertificate: Uint8Array;
   tbsCertificate: Uint8Array;
   serialNumber: Uint8Array;
   signatureAlgorithmOid: string;
@@ -147,6 +148,7 @@ export function parseX509Certificate(input: Uint8Array): ParsedX509Certificate {
   const signature = input.slice(signatureValue.contentStart, signatureValue.end);
   if (signature.length < 2 || signature[0] !== 0) throw new TypeError("X.509 signature BIT STRING has invalid unused-bit count.");
   return {
+    rawCertificate: input.slice(),
     tbsCertificate: raw(input, tbs), serialNumber: input.slice(serial.contentStart, serial.end),
     signatureAlgorithmOid, signatureAlgorithmParameters, issuer: raw(input, issuer), validity: raw(input, validity),
     subject: raw(input, subject), subjectPublicKeyInfo: raw(input, spki),
