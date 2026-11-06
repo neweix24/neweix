@@ -44,7 +44,7 @@ public final class ExtractAndroidAttestationFixtures {
   }
 
   private static String jsonEscape(String value) {
-    return value.replace("\\", "\\").replace("\"", "\"");
+    return value.replace("\", "\").replace("\"", "\"");
   }
 
   public static void main(String[] args) throws Exception {
@@ -85,12 +85,12 @@ public final class ExtractAndroidAttestationFixtures {
           byte[] provisioningExtension = x509Certificates.get(1).getExtensionValue(PROVISIONING_OID);
           if (provisioningExtension != null) {
             byte[] provisioningCbor = unwrapOctetString(provisioningExtension);
-            provisioningField = String.format(",\\"provisioningInfoBase64\\":\\"%s\\"",
+            provisioningField = String.format(",\"provisioningInfoBase64\":\"%s\"",
                 Base64.getEncoder().encodeToString(provisioningCbor));
           }
         }
         String source = root.relativize(pem).toString().replace('\\', '/');
-        records.add(String.format("{\\"source\\":\\"%s\\",\\"certificateIndex\\":0,\\"derBase64\\":\\"%s\\"%s}",
+        records.add(String.format("{\"source\":\"%s\",\"certificateIndex\":0,\"derBase64\":\"%s\"%s}",
             jsonEscape(source), Base64.getEncoder().encodeToString(innerDer), provisioningField));
       }
     }
