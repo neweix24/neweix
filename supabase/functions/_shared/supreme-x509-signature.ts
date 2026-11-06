@@ -94,8 +94,8 @@ export async function verifyX509CertificateSignature(
     ECDSA_SIGNATURES[certificate.signatureAlgorithmOid];
   if (!digest) throw new TypeError(`Unsupported X.509 signature algorithm OID: ${certificate.signatureAlgorithmOid}`);
 
-  let keyAlgorithm: AlgorithmIdentifier;
-  let verifyAlgorithm: AlgorithmIdentifier;
+  let keyAlgorithm: RsaHashedImportParams | EcKeyImportParams;
+  let verifyAlgorithm: AlgorithmIdentifier | EcdsaParams;
   let signature = certificate.signature;
 
   if (Object.hasOwn(RSA_SIGNATURES, certificate.signatureAlgorithmOid)) {
