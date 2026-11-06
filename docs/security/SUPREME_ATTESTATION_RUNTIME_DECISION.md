@@ -68,3 +68,14 @@ A browser, ordinary WebView, or shared login page must not be accepted as Suprem
 - [ ] Only then integrate with the Supreme authentication flow and verify web Supreme login is rejected while all employee roles continue to work.
 
 Until every gate passes, the app-only Supreme login feature stays disabled and this PR must not be merged as a completed verifier.
+
+
+## Zero-cost hosting constraint (2026-11-07)
+
+The project owner has explicitly set a zero-budget constraint. Do not enable Workers Paid, Cloudflare Containers, paid VPS/JVM hosting, paid certificate-verification APIs, or any service that requires a paid upgrade. Do not assume a nominal free tier is safe if it requires a billing method or can incur overage charges.
+
+The maintained Kotlin/JVM verifier remains the reference implementation for expected security decisions, but no production JVM runtime is approved or assumed to exist. GitHub Actions runners are CI-only and must never process live authentication requests.
+
+The only candidate that may avoid a new hosting bill is a Deno-native verifier in the existing Supabase Edge Function environment. This is a security-sensitive port, not a shortcut: pin audited dependencies; validate X.509 paths, Android Keymaster/KeyMint extensions, Remote Key Provisioning and Google revocation correctly; and compare decisions against the maintained Kotlin verifier using upstream fixtures. If parity cannot be demonstrated, do not enable app-only login. Keep the current Supreme authentication protections and do not weaken them to fit the budget.
+
+No production signing certificate digest is configured yet. The debug APK remains untrusted for production attestation.
