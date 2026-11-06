@@ -275,7 +275,7 @@ export default function StorefrontHome() {
             </nav>}
           </div>
         </div>
-        <HomepageSearch categories={categories} />
+        <HomepageSearch />
       </header>
 
       <main className={styles.main}>
