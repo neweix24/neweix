@@ -66,10 +66,10 @@ function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
 
 function parseGoogleRootCertificate(pem: string): ParsedX509Certificate {
   const match = pem.match(
-    /^-----BEGIN CERTIFICATE-----\\r?\\n([A-Za-z0-9+/=\\r\\n]+)\\r?\\n-----END CERTIFICATE-----\\r?\\n?$/u,
+    /^-----BEGIN CERTIFICATE-----\r?\n([A-Za-z0-9+/=\r\n]+)\r?\n-----END CERTIFICATE-----\r?\n?$/u,
   );
   if (!match) throw new TypeError("Google root metadata contains a malformed PEM certificate.");
-  const base64 = match[1].replace(/[\\r\\n]/gu, "");
+  const base64 = match[1].replace(/[\r\n]/gu, "");
   if (
     !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(base64)
   ) {
