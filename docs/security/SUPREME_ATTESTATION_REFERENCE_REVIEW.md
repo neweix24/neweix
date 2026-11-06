@@ -138,3 +138,32 @@ The pinned upstream `KeyAttestationCertPathValidatorTest` contains the following
 | `additionalCertPathChecker_isCalled` | Ensure configured additional path checkers execute. |
 
 The upstream suite also checks null path, null parameters/date, and wrong parameter type as API-contract failures. These tests are a required future conformance target. The current NEWEIX Deno code has not implemented certificate path validation; this table is a specification only, not a claim of parity.
+
+
+### Source-reviewed chain validation state machine (pinned upstream)
+
+The pinned `KeyAttestationCertPath` expects the supplied certificate list in leaf-to-root order. The leaf is index 0, the attestation certificate is index 1, and the final certificate is the self-issued root/trust-anchor candidate. The validator excludes the final root from the `CertPath` it validates. It requires at least three certificates in the supplied chain.
+
+The upstream path validator then processes the path root-to-leaf. Its state transitions are:
+
+| Current state | Next certificate role |
+|---|---|
+| Initial + remotely provisioned | RKP intermediate |
+| Initial + factory provisioned, or compatibility chain-size condition | Factory intermediate |
+| Initial + software-backed chain | Attestation certificate |
+| RKP intermediate | RKP server |
+| RKP server | Attestation certificate |
+| Factory intermediate | Attestation certificate |
+| Attestation certificate | Target leaf |
+| Target leaf | No further certificate permitted |
+
+For every certificate, upstream verifies issuer/subject name chaining, verifies the signature with the previous issuer public key, and applies its validity policy. It rejects any attestation extension outside the target leaf. The target leaf must contain the Android Key Attestation extension. A certificate after the target leaf is rejected, with a distinct rejection when it carries a forged extra attestation extension.
+
+The provisioning method is inferred from the last intermediate certificate's subject DN:
+- Factory provisioned: subject contains serial-number OID `2.5.4.5`.
+- Remotely provisioned: subject has `CN=Droid CA2` and `O=Google LLC`.
+- Otherwise unknown/software behavior is handled as specified by the upstream path implementation.
+
+Trust-anchor selection matches the first certificate's issuer against configured anchor subjects, then tries candidate anchors. A trust anchor need not be self-issued. The custom path validator intentionally differs from generic RFC 5280 PKIX behavior to support legacy Android attestation chains. It checks validity for non-leaf path certificates; it does not check the final target leaf's validity. Expired factory-provisioned certificates are tolerated, while expired RKP certificates are rejected. Not-yet-valid non-leaf certificates are rejected.
+
+**Implementation status:** these rules have now been source-reviewed and mapped to a conformance matrix, but NEWEIX has not implemented a trusted X.509 path validator. A generic certificate signature check, a successful parser test, or a matching certificate subject is not a substitute for this state machine and Google trust-anchor validation. No certificate-chain result may authorize a Supreme session until a complete implementation passes the pinned upstream positive and negative fixtures.
