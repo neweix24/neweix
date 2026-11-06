@@ -220,6 +220,13 @@ Deno.test({
   fn: async () => {
     const fixtures = JSON.parse(await Deno.readTextFile(fixtureIndex!)) as Fixture[];
     if (fixtures.length === 0) throw new Error("No real certificate fixtures were extracted.");
+    const rkpExpectedPath = Deno.env.get("SUPREME_RKP_EXPECTED_INDEX");
+    if (!rkpExpectedPath) throw new Error("Missing upstream RKP expected-value index.");
+    const rkpExpected = JSON.parse(await Deno.readTextFile(rkpExpectedPath)) as Array<{
+      source: string;
+      certificatesIssued: number;
+    }>;
+    const rkpExpectedBySource = new Map(rkpExpected.map((entry) => [entry.source, entry.certificatesIssued]));
     let authorizationComparisons = 0;
     let provisioningInfoComparisons = 0;
 
@@ -230,6 +237,15 @@ Deno.test({
         const provisioning = parseAndroidProvisioningInfo(bytesFromBase64(fixture.provisioningInfoBase64));
         if (!Number.isInteger(provisioning.certificatesIssued) || provisioning.certificatesIssued < 0) {
           throw new Error(`${fixture.source}: provisioning certificates-issued is invalid.`);
+        }
+        const upstreamCertificatesIssued = rkpExpectedBySource.get(fixture.source);
+        if (upstreamCertificatesIssued === undefined) {
+          throw new Error(`${fixture.source}: no upstream Kotlin RKP oracle value exists.`);
+        }
+        if (provisioning.certificatesIssued !== upstreamCertificatesIssued) {
+          throw new Error(
+            `${fixture.source}: RKP certificatesIssued differs from upstream Kotlin parser (Deno=${provisioning.certificatesIssued}, upstream=${upstreamCertificatesIssued}).`,
+          );
         }
         provisioningInfoComparisons++;
       }
