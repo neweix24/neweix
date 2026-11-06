@@ -112,4 +112,16 @@ jobs:
         run: |
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/workforce_identity_security_test.sql
 
+      - name: Verify multi-warehouse stock and privilege boundaries
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/multi_warehouse_foundation_test.sql
+
+      - name: Verify atomic multi-warehouse order allocation and rollback
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/atomic_warehouse_order_allocation_test.sql
+
       # GitHub-hosted runners are ephemeral; Docker containers are discarded after the job.
