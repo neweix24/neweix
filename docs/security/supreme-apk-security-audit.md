@@ -27,10 +27,10 @@
 - A separate APK cannot make the website origin, API paths, or network requests cryptographically invisible. A determined user can inspect application traffic. Do not place service-role keys, database credentials, or privileged secrets in the APK.
 - The public storefront must remain available; any access restrictions must target Supreme-only pages and Supreme-only APIs, not the whole domain.
 
-## Required design before implementation
+## Implemented private-entry design
 
 ### Route concealment
-- A configurable private entry path is now implemented in `middleware.ts` using the server-only `SUPREME_PRIVATE_PATH` binding.
+- A configurable private entry path is now implemented in `middleware.ts` using the server-only `SUPREME_PRIVATE_PATH` Cloudflare secret.
 - The configured path must be one segment beginning with `/` and followed by 32–96 alphanumeric, underscore, or hyphen characters. Example format only: `/control-<random-hex>`.
 - Requests to the configured private path are authenticated as Supreme + AAL2, then internally rewritten to the existing `/supreme` route. The browser remains on the private path.
 - Existing in-workspace links to internal `/supreme/**` paths are redirected back to the private alias only when the same-origin Referer is already within the private workspace; direct/external requests receive 404.
@@ -42,7 +42,7 @@
 - Keep MFA redirects and app deep links pointed at the private path; test the full login/MFA return path before production deployment.
 
 ### Cloudflare configuration required before deployment
-1. Generate a private value locally, for example: `printf '/control-%s\\n' "$(openssl rand -hex 24)"`.
+1. Generate a private value locally, for example: `printf '/control-%s\n' "$(openssl rand -hex 24)"`.
 2. From the repository root, run `npx wrangler secret put SUPREME_PRIVATE_PATH` and paste the generated value including the leading slash.
 3. Do not send the value in chat, commit it, put it in `wrangler.jsonc`, or place it in a `NEXT_PUBLIC_*` variable.
 4. Configure the same secret for the production Worker and any preview Worker used for verification.
@@ -63,13 +63,11 @@
 
 ## Implementation sequence
 
-1. Complete the Supreme page/API authorization inventory.
-2. Remove public discovery references without changing the storefront.
-3. Implement a private entry mechanism with a non-secret server-side authorization boundary.
-4. Add automated tests for anonymous, customer, staff, admin, Supreme without MFA, and Supreme with AAL2 access.
-5. Build the Android app shell and integrate authentication.
-6. Run typecheck, lint, tests, Cloudflare OpenNext preview, and authenticated/unauthenticated smoke tests.
-7. Produce a signed APK and installation/recovery instructions.
+1. **Completed in this branch:** review Supreme page and API authorization, add configurable private entry middleware, preserve login/MFA redirects, and add smoke-test coverage.
+2. **Pending:** configure the Cloudflare secret and verify the route behavior in a Cloudflare preview.
+3. **Pending:** run typecheck, lint, OpenNext build, and endpoint-level authorization tests.
+4. **Next phase:** build the Android app shell and integrate secure Supabase authentication.
+5. **Release:** test on Android, configure signing, and produce a signed APK with installation/recovery instructions.
 
 ## Supreme API review
 
@@ -77,8 +75,9 @@ All seven current `app/api/supreme/**/route.ts` handlers independently verify th
 
 ## Not done yet
 
-- No production route was renamed or blocked.
-- No Cloudflare DNS, Access, WAF, Worker, or environment setting was changed.
+- The private entry code is committed to this branch but is not active in production until the Cloudflare secret is configured and the PR stack is merged/deployed.
+- No production route, DNS, Cloudflare Access/WAF rule, Worker setting, or secret was changed.
 - No Supabase schema, policy, credential, or user account was changed.
-- No APK has been built.
-- The full Supreme API inventory and endpoint-by-endpoint authorization audit remain the next implementation task.
+- Typecheck, lint, OpenNext build, and live authenticated/unauthenticated route tests have not run yet.
+- No APK has been built or released.
+- Device attestation and device enrollment remain future hardening work.
