@@ -160,25 +160,25 @@ as $function$
   with assignment_stats as (
     select
       a.rider_id,
-      count(*) filter (
+      count(distinct a.order_id) filter (
         where a.assignment_source='tracked'
           and (a.assigned_at at time zone 'Asia/Dhaka')::date between p_start_date and p_end_date
       )::bigint as assigned_orders,
-      count(*) filter (
+      count(distinct a.order_id) filter (
         where a.assignment_source='tracked'
           and o.delivered_at is not null
           and o.delivered_at >= a.assigned_at
           and (a.ended_at is null or o.delivered_at < a.ended_at)
           and (o.delivered_at at time zone 'Asia/Dhaka')::date between p_start_date and p_end_date
       )::bigint as delivered_orders,
-      count(*) filter (
+      count(distinct a.order_id) filter (
         where a.ended_at is null
           and o.delivered_at is null
           and o.status not in ('cancelled','returned')
           and o.payment_status <> 'refunded'
           and (a.assigned_at at time zone 'Asia/Dhaka')::date between p_start_date and p_end_date
       )::bigint as pending_orders,
-      count(*) filter (
+      count(distinct a.order_id) filter (
         where a.assignment_source='tracked'
           and o.delivery_status='failed'
           and (a.assigned_at at time zone 'Asia/Dhaka')::date between p_start_date and p_end_date
