@@ -148,35 +148,22 @@ export async function POST(request: Request) {
     }
 
     const supabase = await getServiceClient();
-    const { data, error } = await supabase
-      .from("operating_expenses")
-      .insert({
-        expense_date: input.expense_date,
-        category,
-        amount: Number(amount),
-        description,
-        vendor,
-        reference_number: reference,
-        created_by: actor.userId,
-      })
-      .select("id, expense_date, category, amount, description, vendor, reference_number, created_at")
-      .single();
+    const { data, error } = await supabase.rpc("supreme_record_operating_expense", {
+      p_actor_id: actor.userId,
+      p_expense_date: input.expense_date,
+      p_category: category,
+      p_amount: Number(amount),
+      p_description: description,
+      p_vendor: vendor,
+      p_reference_number: reference,
+    });
 
     if (error || !data) {
       console.error("Supreme expense create failed:", error?.message);
+      if (error?.message.includes("SUPREME_ACTOR_NOT_AUTHORIZED")) {
+        return responseError("Only an active Supreme account can record expenses.", 403);
+      }
       return responseError("Could not record the operating expense.", 500);
-    }
-
-    const { error: auditError } = await supabase.from("audit_logs").insert({
-      actor_id: actor.userId,
-      action: "finance.expense.created",
-      target_type: "operating_expense",
-      target_id: data.id,
-      details: { category: data.category, amount: data.amount, expense_date: data.expense_date },
-    });
-    if (auditError) {
-      console.error("Expense audit log write failed:", auditError.message);
-      return responseError("Expense was recorded, but its audit entry failed. Contact support before retrying.", 500);
     }
 
     return NextResponse.json({ success: true, expense: data }, {
