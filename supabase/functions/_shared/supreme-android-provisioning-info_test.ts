@@ -32,6 +32,12 @@ Deno.test("ignores additional CBOR fields as the upstream schema does", () => {
   ])), { certificatesIssued: 1 });
 });
 
+Deno.test("ignores non-integer future map keys", () => {
+  assertEquals(parseAndroidProvisioningInfo(new Uint8Array([
+    0xa2, 0x01, 0x03, 0x61, 0x78, 0x18, 0x2a,
+  ])), { certificatesIssued: 3 });
+});
+
 Deno.test("rejects missing, duplicate and wrong-typed required fields", () => {
   assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([0xa0])));
   assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([0xa1, 0x02, 0x00])));
