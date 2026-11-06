@@ -15,6 +15,7 @@ on:
       - "supabase/functions/_shared/supreme-android-provisioning-info*"
       - "supabase/functions/_shared/supreme-x509-certificate*"
       - "supabase/functions/_shared/supreme-x509-signature*"
+      - "supabase/functions/_shared/supreme-x509-chain*"
   pull_request:
     branches:
       - main
@@ -99,6 +100,7 @@ jobs:
           SUPREME_ATTESTATION_FIXTURE_INDEX: /tmp/supreme-attestation-fixtures.json
           SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX: /tmp/supreme-attestation-fixtures.json
           SUPREME_X509_ORACLE_INDEX: /tmp/supreme-x509-oracle.json
+          SUPREME_GOOGLE_ROOTS_FIXTURE_PATH: android-keyattestation/roots.json
           SUPREME_ATTESTATION_UPSTREAM_DIR: android-keyattestation
           SUPREME_RKP_EXPECTED_INDEX: /tmp/supreme-rkp-expected.json
         run: |
@@ -109,3 +111,5 @@ jobs:
             supabase/functions/_shared/supreme-x509-certificate_test.ts
           deno test --allow-env=SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX,SUPREME_X509_ORACLE_INDEX --allow-read=/tmp/supreme-attestation-fixtures.json,/tmp/supreme-x509-oracle.json \
             supabase/functions/_shared/supreme-x509-signature_test.ts
+          deno test --allow-env=SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX,SUPREME_GOOGLE_ROOTS_FIXTURE_PATH --allow-read=android-keyattestation/roots.json,/tmp/supreme-attestation-fixtures.json \
+            supabase/functions/_shared/supreme-x509-chain_test.ts
