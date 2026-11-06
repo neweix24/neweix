@@ -81,7 +81,7 @@ Deno.test({
       const expectedRoot = expected.hardwareEnforced.rootOfTrust;
       if (expectedRoot) {
         const rootEntry = decoded.hardwareEnforced.entries.find((entry) => entry.tagNumber === 704);
-        const rootFields = rootEntry?.value.children[0]?.children;
+        const rootFields = rootEntry?.value.children;
         if (!rootFields || (rootFields.length !== 3 && rootFields.length !== 4)) {
           throw new Error(`${label}: parser did not expose RootOfTrust fields.`);
         }
