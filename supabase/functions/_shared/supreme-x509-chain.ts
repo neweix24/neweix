@@ -152,10 +152,14 @@ export function classifyAndroidProvisioningMethod(
   lastIntermediateSubject: Uint8Array,
 ): AndroidProvisioningMethod {
   const attributes = readNameAttributes(lastIntermediateSubject);
-  if (attributes.has(DN_SERIAL_NUMBER_OID)) return "FACTORY_PROVISIONED";
+  const serialNumbers = attributes.get(DN_SERIAL_NUMBER_OID) ?? [];
   const commonNames = attributes.get(DN_COMMON_NAME_OID) ?? [];
   const organizations = attributes.get(DN_ORGANIZATION_OID) ?? [];
-  if (commonNames.includes("Droid CA2") && organizations.includes("Google LLC")) {
+  if (serialNumbers.length > 1 || commonNames.length > 1 || organizations.length > 1) {
+    throw new TypeError("Ambiguous duplicate provisioning attributes in intermediate subject.");
+  }
+  if (serialNumbers.length === 1) return "FACTORY_PROVISIONED";
+  if (commonNames[0] === "Droid CA2" && organizations[0] === "Google LLC") {
     return "REMOTELY_PROVISIONED";
   }
   return "UNKNOWN";
@@ -175,7 +179,7 @@ function enforceAndroidChainRoles(
     throw new TypeError("Unknown Android chain must contain exactly 3 or 4 certificates.");
   }
 
-  for (let index = 0; index < chain.length; index++) {
+  for (let index = 0; index < chain.length - 1; index++) {
     const extensions = chain[index].extensions.filter((extension) =>
       extension.oid === ANDROID_ATTESTATION_OID
     );
@@ -386,7 +390,7 @@ export async function validateX509CertificatePath(
   return {
     trustAnchorMatched: true,
     provisioningMethod,
-    chainRolesValidated: chain.length,
+    chainRolesValidated: chain.length - 1,
     validityCertificatesChecked,
     signatureLinksVerified,
     revocationEntriesChecked,
