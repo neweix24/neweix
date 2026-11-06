@@ -162,7 +162,7 @@ as $function$
   ),
   totals as (
     select
-      coalesce((select pg_catalog.sum(pg_catalog.greatest(d.subtotal - d.discount, 0))
+      coalesce((select pg_catalog.sum(greatest(d.subtotal - d.discount, 0))
         from delivered_orders d), 0)::bigint as recognized_merchandise_sales,
       coalesce((select pg_catalog.sum(refund_amount) from period_refunds), 0)::bigint as recorded_refunds,
       coalesce((select pg_catalog.sum(purchase_cost_snapshot::bigint * quantity)
