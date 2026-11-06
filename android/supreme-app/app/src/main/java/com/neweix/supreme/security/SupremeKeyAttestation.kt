@@ -39,7 +39,7 @@ internal object SupremeKeyAttestation {
      */
     @Synchronized
     fun create(challengeId: String, challenge: ByteArray): Material {
-        require(Regex("^[0-9a-fA-F-]{36}$").matches(challengeId)) {
+        require(Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$").matches(challengeId)) {
             "The server attestation challenge ID is invalid."
         }
         require(challenge.size == 32) {
