@@ -26,6 +26,7 @@ type Props = {
     pathaoAreaId: string;
   }) => void;
   disabled?: boolean;
+  enablePathaoAreas?: boolean;
 };
 
 const selectStyle = {
@@ -50,6 +51,7 @@ export default function BangladeshAddressFields({
   initialVillage,
   onAddressChange,
   disabled = false,
+  enablePathaoAreas = true,
 }: Props) {
   const { locale, t } = useLanguage();
   const initial = useMemo(() => findAddressCodesByNames({
@@ -89,7 +91,7 @@ export default function BangladeshAddressFields({
     setPathaoAreaId("");
     setAreaError("");
 
-    if (!districtCode || !UPAZILA_CODE.test(upazilaCode)) {
+    if (!enablePathaoAreas || !districtCode || !UPAZILA_CODE.test(upazilaCode)) {
       setAreaLoading(false);
       return () => { cancelled = true; };
     }
@@ -119,7 +121,7 @@ export default function BangladeshAddressFields({
       });
 
     return () => { cancelled = true; };
-  }, [districtCode, upazilaCode, locale]);
+  }, [enablePathaoAreas, districtCode, upazilaCode, locale]);
 
   function changeDivision(value: string) {
     setDivisionCode(value);
@@ -179,7 +181,7 @@ export default function BangladeshAddressFields({
           disabled={disabled} style={selectStyle} placeholder={t("enterUpazila")} />
       </>}
 
-      {UPAZILA_CODE.test(upazilaCode) && <>
+      {enablePathaoAreas && UPAZILA_CODE.test(upazilaCode) && <>
         <label htmlFor="shipping_pathao_area_id">{areaLabel} ({locale === "bn" ? "ঐচ্ছিক" : "optional"})</label>
         <select id="shipping_pathao_area_id" name="shipping_pathao_area_id"
           value={pathaoAreaId} onChange={(event) => setPathaoAreaId(event.target.value)}

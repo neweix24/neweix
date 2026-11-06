@@ -148,6 +148,11 @@ export async function POST(request: Request) {
   const shippingVillage = cleanString(rawBody.shipping_village);
   const shippingPathaoAreaId = typeof rawBody.shipping_pathao_area_id === "number" && Number.isSafeInteger(rawBody.shipping_pathao_area_id) && rawBody.shipping_pathao_area_id > 0
     ? rawBody.shipping_pathao_area_id : null;
+  const deliveryProviderValue = rawBody.delivery_provider ?? "pathao";
+  if (deliveryProviderValue !== "pathao" && deliveryProviderValue !== "neweix_own") {
+    return errorResponse("Select a valid delivery provider.", 400);
+  }
+  const deliveryProvider = deliveryProviderValue;
 
   if (!shippingDivisionCode || !shippingDistrictCode || !shippingUpazilaCode
       || !shippingUnionCode || !shippingVillage) {
@@ -570,126 +575,155 @@ export async function POST(request: Request) {
       }
     }
 
-    // Rebuild the live Pathao quote from trusted database product weights and
-    // a verified destination mapping. No client-supplied fee or weight is used.
-    if (shippingUpazilaCode === "other" || !resolvedAddress.upazila) {
-      return errorResponse("Pathao delivery pricing is not configured for this upazila yet. Please choose a listed upazila.", 422);
-    }
+    const deliveryParams = {
+      p_customer_name: customerName,
+      p_customer_phone: customerPhone,
+      p_customer_email: customerEmail,
+      p_shipping_address: shippingAddress,
+      p_shipping_city: shippingCity,
+      p_payment_method: paymentMethod,
+      p_payment_transaction_id: paymentMethod === "cod" ? null : transactionId,
+      p_items: items,
+      p_coupon_code: couponCode,
+      p_customer_id: linkedCustomerId,
+      p_delivery_fee_payment_method: paymentMethod === "cod" ? deliveryFeePaymentMethod : null,
+      p_delivery_fee_payment_transaction_id: paymentMethod === "cod" ? deliveryFeeTransactionId : null,
+      p_shipping_division_code: resolvedAddress.division.code,
+      p_shipping_division: resolvedAddress.division.bn_name,
+      p_shipping_district_code: resolvedAddress.district.code,
+      p_shipping_district: resolvedAddress.district.bn_name,
+      p_shipping_upazila_code: shippingUpazilaCode,
+      p_shipping_upazila: resolvedAddress.upazila?.bn_name ?? shippingUpazilaOther,
+      p_shipping_union_code: shippingUnionCode,
+      p_shipping_union: resolvedAddress.union?.bn_name ?? (shippingUnionCode === "other" ? shippingUnionOther : null),
+      p_shipping_union_other: shippingUnionCode === "other" ? shippingUnionOther : null,
+      p_shipping_village: shippingVillage,
+    };
 
-    const { data: pathaoMapping, error: mappingError } = await supabase
-      .from("pathao_location_mappings")
-      .select("id, pathao_city_id, pathao_zone_id")
-      .eq("division_code", resolvedAddress.division.code)
-      .eq("district_code", resolvedAddress.district.code)
-      .eq("upazila_code", resolvedAddress.upazila.code)
-      .eq("is_verified", true)
-      .eq("is_active", true)
-      .maybeSingle();
+    let data: unknown = null;
+    let error: { message: string; code?: string } | null = null;
 
-    if (mappingError || !pathaoMapping) {
-      console.error("Verified Pathao mapping unavailable:", mappingError?.message ?? "No active mapping.");
-      return errorResponse("We cannot verify live Pathao delivery pricing for this upazila yet. Pathao service coverage is unconfirmed; please choose a verified destination or contact support.", 422);
-    }
+    if (deliveryProvider === "neweix_own") {
+      if (shippingUpazilaCode === "other" || !resolvedAddress.upazila) {
+        return errorResponse("NEWEIX delivery requires a listed service area.", 422);
+      }
 
-    let pathaoArea: { pathao_area_id: number; pathao_area_name: string } | null = null;
-    if (shippingPathaoAreaId !== null) {
-      const { data, error: pathaoAreaError } = await supabase
-        .from("pathao_area_catalog")
-        .select("pathao_area_id, pathao_area_name")
-        .eq("pathao_city_id", pathaoMapping.pathao_city_id)
-        .eq("pathao_zone_id", pathaoMapping.pathao_zone_id)
-        .eq("pathao_area_id", shippingPathaoAreaId)
+      const { data: ownZone, error: ownZoneError } = await supabase
+        .from("neweix_delivery_zones")
+        .select("id")
+        .eq("division_code", resolvedAddress.division.code)
+        .eq("district_code", resolvedAddress.district.code)
+        .eq("upazila_code", resolvedAddress.upazila.code)
         .eq("is_active", true)
-        .eq("home_delivery_available", true)
+        .not("delivery_fee", "is", null)
         .maybeSingle();
-      if (pathaoAreaError || !data) {
-        console.error("Verified Pathao Area unavailable:", pathaoAreaError?.message ?? "No matching active Area.");
-        return errorResponse("The selected Pathao Area is not available for home delivery in this upazila. Select another Area.", 422);
+
+      if (ownZoneError) {
+        console.error("NEWEIX delivery zone lookup failed:", ownZoneError.message);
+        return errorResponse("NEWEIX delivery coverage could not be checked. Please try again later.", 503);
       }
-      pathaoArea = data;
-    }
-
-    const { data: quoteProducts, error: quoteProductsError } = await supabase
-      .from("products")
-      .select("id, weight_grams, is_active")
-      .in("id", items.map((item) => item.product_id));
-
-    if (quoteProductsError || !quoteProducts || quoteProducts.length !== items.length ||
-        quoteProducts.some((product) => product.is_active !== true)) {
-      console.error("Pathao quote product lookup failed:", quoteProductsError?.message ?? "Products unavailable.");
-      return errorResponse("Could not verify product shipping weights. Please review your cart.", 409);
-    }
-
-    const quoteWeightById = new Map(quoteProducts.map((product) => [product.id, Number(product.weight_grams)]));
-    let totalWeightGrams = 0;
-    for (const item of items) {
-      const grams = quoteWeightById.get(item.product_id);
-      if (!Number.isSafeInteger(grams) || Number(grams) < 1) {
-        return errorResponse("A product is missing a valid shipping weight. Contact support before placing this order.", 422);
+      if (!ownZone) {
+        return errorResponse("NEWEIX own delivery is not configured for this area. Select Pathao for other supported destinations.", 422);
       }
-      totalWeightGrams += Number(grams) * item.quantity;
-    }
-    if (totalWeightGrams > 10_000) {
-      return errorResponse("Pathao supports parcels up to 10 kg.", 422);
-    }
-    const itemWeightKg = Math.max(0.5, Math.ceil(totalWeightGrams / 500) * 0.5);
 
-    let pathaoDeliveryFee: number;
-    try {
-      const storeId = await getPathaoStoreId();
-      const pathaoQuote = await calculatePathaoPrice({
-        storeId,
-        itemType: 2,
-        deliveryType: 48,
-        itemWeightKg,
-        recipientCity: Number(pathaoMapping.pathao_city_id),
-        recipientZone: Number(pathaoMapping.pathao_zone_id),
+      const result = await supabase.rpc("create_order_with_neweix_delivery", {
+        ...deliveryParams,
+        p_own_delivery_zone_id: ownZone.id,
       });
-      const finalPrice = extractPathaoFinalPrice(pathaoQuote);
-      if (finalPrice === null) throw new Error("Pathao returned an invalid price-plan response.");
-      pathaoDeliveryFee = finalPrice;
-    } catch (quoteError) {
-      console.error("Order-time Pathao quote failed:", quoteError instanceof Error ? quoteError.message : "Unknown error");
-      return errorResponse("Live Pathao pricing could not be verified. No order was created; please try again later.", 503);
-    }
+      data = result.data;
+      error = result.error;
+    } else {
+      // A Pathao coverage/quote failure never falls back to NEWEIX own delivery.
+      if (shippingUpazilaCode === "other" || !resolvedAddress.upazila) {
+        return errorResponse("Pathao delivery pricing is not configured for this upazila yet. Please choose a listed upazila.", 422);
+      }
 
-    const { data, error } =
-      await supabase.rpc(
-        "create_order_with_prepaid_delivery",
-        {
-          p_customer_name: customerName,
-          p_customer_phone: customerPhone,
-          p_customer_email: customerEmail,
-          p_shipping_address: shippingAddress,
-          p_shipping_city: shippingCity,
-          p_payment_method: paymentMethod,
-          p_payment_transaction_id:
-            paymentMethod === "cod"
-              ? null
-              : transactionId,
-          p_items: items,
-          p_coupon_code: couponCode,
-          p_customer_id: linkedCustomerId,
-          p_delivery_fee_payment_method: paymentMethod === "cod" ? deliveryFeePaymentMethod : null,
-          p_delivery_fee_payment_transaction_id: paymentMethod === "cod" ? deliveryFeeTransactionId : null,
-          p_shipping_division_code: resolvedAddress.division.code,
-          p_shipping_division: resolvedAddress.division.bn_name,
-          p_shipping_district_code: resolvedAddress.district.code,
-          p_shipping_district: resolvedAddress.district.bn_name,
-          p_shipping_upazila_code: shippingUpazilaCode,
-          p_shipping_upazila: resolvedAddress.upazila?.bn_name ?? shippingUpazilaOther,
-          p_shipping_union_code: shippingUnionCode,
-          p_shipping_union: resolvedAddress.union?.bn_name ?? (shippingUnionCode === "other" ? shippingUnionOther : null),
-          p_shipping_union_other: shippingUnionCode === "other" ? shippingUnionOther : null,
-          p_shipping_village: shippingVillage,
-          p_pathao_delivery_fee: pathaoDeliveryFee,
-          p_pathao_city_id: Number(pathaoMapping.pathao_city_id),
-          p_pathao_zone_id: Number(pathaoMapping.pathao_zone_id),
-          p_pathao_location_mapping_id: pathaoMapping.id,
-          p_pathao_area_id: pathaoArea?.pathao_area_id ?? null,
-          p_pathao_area_name: pathaoArea?.pathao_area_name ?? null,
+      const { data: pathaoMapping, error: mappingError } = await supabase
+        .from("pathao_location_mappings")
+        .select("id, pathao_city_id, pathao_zone_id")
+        .eq("division_code", resolvedAddress.division.code)
+        .eq("district_code", resolvedAddress.district.code)
+        .eq("upazila_code", resolvedAddress.upazila.code)
+        .eq("is_verified", true)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (mappingError || !pathaoMapping) {
+        console.error("Verified Pathao mapping unavailable:", mappingError?.message ?? "No active mapping.");
+        return errorResponse("We cannot verify live Pathao delivery pricing for this upazila yet. Pathao service coverage is unconfirmed; please choose a verified destination or contact support.", 422);
+      }
+
+      let pathaoArea: { pathao_area_id: number; pathao_area_name: string } | null = null;
+      if (shippingPathaoAreaId !== null) {
+        const { data: areaData, error: pathaoAreaError } = await supabase
+          .from("pathao_area_catalog")
+          .select("pathao_area_id, pathao_area_name")
+          .eq("pathao_city_id", pathaoMapping.pathao_city_id)
+          .eq("pathao_zone_id", pathaoMapping.pathao_zone_id)
+          .eq("pathao_area_id", shippingPathaoAreaId)
+          .eq("is_active", true)
+          .eq("home_delivery_available", true)
+          .maybeSingle();
+        if (pathaoAreaError || !areaData) {
+          console.error("Verified Pathao Area unavailable:", pathaoAreaError?.message ?? "No matching active Area.");
+          return errorResponse("The selected Pathao Area is not available for home delivery in this upazila. Select another Area.", 422);
         }
-      );
+        pathaoArea = areaData;
+      }
+
+      const { data: quoteProducts, error: quoteProductsError } = await supabase
+        .from("products")
+        .select("id, weight_grams, is_active")
+        .in("id", items.map((item) => item.product_id));
+
+      if (quoteProductsError || !quoteProducts || quoteProducts.length !== items.length ||
+          quoteProducts.some((product) => product.is_active !== true)) {
+        console.error("Pathao quote product lookup failed:", quoteProductsError?.message ?? "Products unavailable.");
+        return errorResponse("Could not verify product shipping weights. Please review your cart.", 409);
+      }
+
+      const quoteWeightById = new Map(quoteProducts.map((product) => [product.id, Number(product.weight_grams)]));
+      let totalWeightGrams = 0;
+      for (const item of items) {
+        const grams = quoteWeightById.get(item.product_id);
+        if (!Number.isSafeInteger(grams) || Number(grams) < 1) {
+          return errorResponse("A product is missing a valid shipping weight. Contact support before placing this order.", 422);
+        }
+        totalWeightGrams += Number(grams) * item.quantity;
+      }
+      if (totalWeightGrams > 10_000) {
+        return errorResponse("Pathao supports parcels up to 10 kg.", 422);
+      }
+      const itemWeightKg = Math.max(0.5, Math.ceil(totalWeightGrams / 500) * 0.5);
+
+      let pathaoDeliveryFee: number;
+      try {
+        const storeId = await getPathaoStoreId();
+        const pathaoQuote = await calculatePathaoPrice({
+          storeId, itemType: 2, deliveryType: 48, itemWeightKg,
+          recipientCity: Number(pathaoMapping.pathao_city_id),
+          recipientZone: Number(pathaoMapping.pathao_zone_id),
+        });
+        const finalPrice = extractPathaoFinalPrice(pathaoQuote);
+        if (finalPrice === null) throw new Error("Pathao returned an invalid price-plan response.");
+        pathaoDeliveryFee = finalPrice;
+      } catch (quoteError) {
+        console.error("Order-time Pathao quote failed:", quoteError instanceof Error ? quoteError.message : "Unknown error");
+        return errorResponse("Live Pathao pricing could not be verified. No order was created; please try again later.", 503);
+      }
+
+      const result = await supabase.rpc("create_order_with_prepaid_delivery", {
+        ...deliveryParams,
+        p_pathao_delivery_fee: pathaoDeliveryFee,
+        p_pathao_city_id: Number(pathaoMapping.pathao_city_id),
+        p_pathao_zone_id: Number(pathaoMapping.pathao_zone_id),
+        p_pathao_location_mapping_id: pathaoMapping.id,
+        p_pathao_area_id: pathaoArea?.pathao_area_id ?? null,
+        p_pathao_area_name: pathaoArea?.pathao_area_name ?? null,
+      });
+      data = result.data;
+      error = result.error;
+    }
 
     if (error) {
       const errorMessage = String(
