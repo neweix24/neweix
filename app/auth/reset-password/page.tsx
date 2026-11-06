@@ -62,7 +62,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="hero auth-page">
+    <main className="hero auth-page premium-auth-page">
       <p className="eyebrow">NEWEIX · ACCOUNT RECOVERY</p>
       <h1>Set a new password</h1>
       <p className="hero-copy">
