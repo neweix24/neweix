@@ -246,7 +246,7 @@ export default function HomepageSearch({ categories }: Props) {
               {recentSearches.map((term) => <button type="button" key={term} onClick={() => chooseRecent(term)}><Icon name="search" size={15} />{term}<Icon name="arrow-right" size={14} /></button>)}
             </div>}
             {matchingCategories.length > 0 && <div className={styles.categorySuggestions}>
-              <span className={styles.suggestionLabel}>{locale === "bn" ? "জনপ্রিয় ক্যাটাগরি" : "POPULAR CATEGORIES"}</span>
+              <span className={styles.suggestionLabel}>{locale === "bn" ? "ক্যাটাগরি দেখুন" : "BROWSE CATEGORIES"}</span>
               {matchingCategories.map((category) => <Link key={category.slug} href={`/products?category=${encodeURIComponent(category.slug)}`} onClick={() => setOpen(false)}><span className={styles.categoryDot} />{category.name}<Icon name="arrow-right" size={14} /></Link>)}
             </div>}
             {recentSearches.length === 0 && matchingCategories.length === 0 && <p className={styles.noResults}>{locale === "bn" ? "পণ্য খুঁজতে টাইপ করা শুরু করুন।" : "Start typing to discover products."}</p>}
