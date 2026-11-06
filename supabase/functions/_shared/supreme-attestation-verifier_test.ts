@@ -9,6 +9,8 @@ import type {
   GoogleAttestationStatus,
 } from "./supreme-google-attestation-metadata.ts";
 
+const fixtureIndex = Deno.env.get("SUPREME_PATH_POLICY_FIXTURE_INDEX");
+
 function fromBase64(value: string): Uint8Array {
   return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
 }
@@ -186,7 +188,6 @@ type PathPolicyFixture = {
   certificatesBase64: string[];
   trustAnchorBase64: string;
 };
-const fixtureIndex = Deno.env.get("SUPREME_PATH_POLICY_FIXTURE_INDEX");
 
 Deno.test({
   name: "Supreme verification pipeline reaches the app policy only after a trusted path",
