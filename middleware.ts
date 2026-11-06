@@ -75,6 +75,10 @@ export async function middleware(request: NextRequest) {
   const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
   const isSupremePath =
     isCanonicalSupremePath || isPrivateSupremePath;
+  if (isPrivateSupremePath) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+    response.headers.set("Cache-Control", "private, no-store, max-age=0");
+  }
   const isWorkforcePath =
     pathname === "/staff" || pathname.startsWith("/staff/") ||
     pathname === "/manager" || pathname.startsWith("/manager/") ||
@@ -162,7 +166,7 @@ export async function middleware(request: NextRequest) {
   // redirects returned after session validation.
   function copySessionState(target: NextResponse) {
     response.cookies.getAll().forEach((cookie) => target.cookies.set(cookie));
-    for (const name of ["Cache-Control", "Expires", "Pragma"]) {
+    for (const name of ["Cache-Control", "Expires", "Pragma", "X-Robots-Tag"]) {
       const value = response.headers.get(name);
       if (value) target.headers.set(name, value);
     }
