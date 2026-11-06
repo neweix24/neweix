@@ -41,8 +41,13 @@ async function assertRejects(
   }
   throw new Error("Expected validation to reject.");
 }
-function emptyStatus(): GoogleAttestationStatus {
-  return { entries: new Map(), maxAgeSeconds: 3600 };
+function emptyStatus(validationTimeMs = Date.now()): GoogleAttestationStatus {
+  return {
+    entries: new Map(),
+    fetchedAtMs: validationTimeMs - 1_000,
+    expiresAtMs: validationTimeMs + 3_599_000,
+    maxAgeSeconds: 3600,
+  };
 }
 function toHex(value: Uint8Array): string {
   return Array.from(value, (byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -182,7 +187,7 @@ Deno.test({
         result = await validateX509CertificatePath(
           chain,
           [trustAnchor],
-          emptyStatus(),
+          emptyStatus(fixture.validationTimeMs),
           fixture.validationTimeMs,
         );
         accepted = true;
@@ -249,7 +254,7 @@ Deno.test({
       ),
     };
     await assertRejects(
-      () => validateX509CertificatePath(missing, [trustAnchor], emptyStatus(), rkpFixture.validationTimeMs),
+      () => validateX509CertificatePath(missing, [trustAnchor], emptyStatus(rkpFixture.validationTimeMs), rkpFixture.validationTimeMs),
       "must appear exactly once on the attestation certificate at index 1",
     );
 
@@ -278,7 +283,7 @@ Deno.test({
       extensions: [...factoryChain[1].extensions, provisioningExtension],
     };
     await assertRejects(
-      () => validateX509CertificatePath(factoryChain, [factoryAnchor], emptyStatus(), factoryFixture.validationTimeMs),
+      () => validateX509CertificatePath(factoryChain, [factoryAnchor], emptyStatus(factoryFixture.validationTimeMs), factoryFixture.validationTimeMs),
       "unexpected on a non-RKP chain",
     );
   },
