@@ -234,7 +234,7 @@ function CustomerLoginForm() {
       onLoad={() => setTurnstileReady(true)}
       onError={() => setMessage("Could not load security verification. Refresh the page.")}
     />
-    <main className="customer-auth">
+    <main className="customer-auth premium-auth-page">
       <section className="auth-brand-panel">
         <Link href="/" className="auth-brand">
           neweix<span>.</span>

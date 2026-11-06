@@ -1,7 +1,7 @@
 import Link from "next/link";
 export default function UnauthorizedPage() {
   return (
-    <main className="hero">
+    <main className="hero premium-auth-page">
       <p className="eyebrow">NEWEIX · ACCESS CONTROL</p>
 
       <h1>Access denied</h1>

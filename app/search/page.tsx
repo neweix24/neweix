@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function SearchPage() {
   return (
-    <main className="min-h-screen px-4 py-8 sm:px-6" style={{ background: "radial-gradient(ellipse at 85% 0%,rgba(182,255,74,.14),transparent 38%),linear-gradient(145deg,#fbfff7,#f3fff5 58%,#f5fbff)" }}>
+    <main className="premium-search-page min-h-screen px-4 py-8 sm:px-6">
       <div className="mx-auto max-w-6xl">
         <nav className="flex flex-wrap items-center justify-between gap-3">
           <Link href="/" className="text-sm font-black tracking-widest" style={{ color: "var(--ink)" }}>NEWEIX</Link>
