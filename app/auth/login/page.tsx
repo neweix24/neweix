@@ -115,6 +115,25 @@ export default function LoginPage() {
     }
   }
 
+  function getSafeSupremeNextPath(): string | null {
+    const next = new URLSearchParams(window.location.search).get("next");
+    if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
+      return null;
+    }
+    try {
+      const target = new URL(next, window.location.origin);
+      if (
+        target.origin !== window.location.origin ||
+        !/^\/control-[A-Fa-f0-9]{48}(?:\/.*)?$/.test(target.pathname)
+      ) {
+        return null;
+      }
+      return `${target.pathname}${target.search}${target.hash}`;
+    } catch {
+      return null;
+    }
+  }
+
   function navigateAfterAuth(path: string) {
     window.location.replace(path);
   }
@@ -189,6 +208,12 @@ export default function LoginPage() {
       }
 
       if (profile.role === "supreme") {
+        const supremeNextPath = getSafeSupremeNextPath();
+        if (!supremeNextPath) {
+          setMessage("Supreme-এর ব্যক্তিগত প্রবেশ লিংক পাওয়া যায়নি। Neweix Supreme অ্যাপ থেকে প্রবেশ করুন।");
+          return;
+        }
+
         const { data: factors, error: factorsError } =
           await supabase.auth.mfa.listFactors();
 
@@ -202,7 +227,7 @@ export default function LoginPage() {
         );
 
         if (!verifiedFactor) {
-          navigateAfterAuth("/auth/mfa/setup");
+          navigateAfterAuth(`/auth/mfa/setup?next=${encodeURIComponent(supremeNextPath)}`);
           return;
         }
 
@@ -215,11 +240,11 @@ export default function LoginPage() {
         }
 
         if (assurance.currentLevel !== "aal2") {
-          navigateAfterAuth("/auth/mfa");
+          navigateAfterAuth(`/auth/mfa?next=${encodeURIComponent(supremeNextPath)}`);
           return;
         }
 
-        navigateAfterAuth("/supreme");
+        navigateAfterAuth(supremeNextPath);
         return;
       }
 
