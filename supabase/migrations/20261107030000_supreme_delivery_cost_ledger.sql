@@ -85,7 +85,7 @@ create or replace function public.supreme_record_delivery_cost(
   p_provider text,
   p_cost_type text,
   p_entry_kind text,
-  p_amount integer,
+  p_amount numeric,
   p_cost_date date,
   p_source_type text,
   p_source_reference text default null,
@@ -161,7 +161,7 @@ end;
 $function$;
 
 revoke all on function public.supreme_record_delivery_cost(
-  uuid,uuid,text,text,text,integer,date,text,text,text
+  uuid,uuid,text,text,text,numeric,date,text,text,text
 ) from public, anon, authenticated, service_role;
 grant execute on function public.supreme_record_delivery_cost(
   uuid,uuid,text,text,text,integer,date,text,text,text
@@ -187,10 +187,10 @@ as $function$
   totals as (
     select
       coalesce(sum(case when provider = 'pathao' and entry_kind = 'charge' then amount
-                        when provider = 'pathao' and entry_kind = 'refund' then -amount else 0 end),0)::bigint as pathao_cost,
+                        when provider = 'pathao' and entry_kind = 'refund' then -amount else 0 end),0)::numeric(14,2) as pathao_cost,
       coalesce(sum(case when provider = 'neweix_own' and entry_kind = 'charge' then amount
-                        when provider = 'neweix_own' and entry_kind = 'refund' then -amount else 0 end),0)::bigint as own_delivery_cost,
-      coalesce(sum(case when entry_kind = 'charge' then amount else -amount end),0)::bigint as total_cost,
+                        when provider = 'neweix_own' and entry_kind = 'refund' then -amount else 0 end),0)::numeric(14,2) as own_delivery_cost,
+      coalesce(sum(case when entry_kind = 'charge' then amount else -amount end),0)::numeric(14,2) as total_cost,
       count(*)::bigint as entry_count
     from entries
   )
