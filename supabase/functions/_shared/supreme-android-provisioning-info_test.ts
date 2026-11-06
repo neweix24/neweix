@@ -1,104 +1,64 @@
+import { parseAndroidProvisioningInfo } from "./supreme-android-provisioning-info.ts";
+
 function assertEquals(actual: unknown, expected: unknown): void {
-  if (JSON.stringify(actual, (_key, value) => typeof value === "bigint" ? value.toString() : value) !==
-      JSON.stringify(expected, (_key, value) => typeof value === "bigint" ? value.toString() : value)) {
-    throw new Error(`Expected ${String(expected)}, received ${String(actual)}.`);
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(`Expected ${JSON.stringify(expected)}, received ${JSON.stringify(actual)}.`);
   }
 }
 function assertThrows(fn: () => unknown): void {
   let threw = false;
-  try {
-    fn();
-  } catch {
-    threw = true;
-  }
+  try { fn(); } catch { threw = true; }
   if (!threw) throw new Error("Expected function to throw.");
 }
 
-import { parseAndroidProvisioningInfo } from "./supreme-android-provisioning-info.ts";
-
-Deno.test("parses required RKP provisioning fields", () => {
-  assertEquals(
-    parseAndroidProvisioningInfo(new Uint8Array([
-      0xa2, 0x01, 0x18, 0x2a, 0x04, 0x63, 0x54, 0x45, 0x45,
-    ])),
-    { certificatesIssued: 42n, validatedAttestedEntity: "TEE" },
-  );
+Deno.test("parses the upstream minimal provisioning map", () => {
+  assertEquals(parseAndroidProvisioningInfo(new Uint8Array([0xa1, 0x01, 0x18, 0x2a])), {
+    certificatesIssued: 42,
+  });
 });
 
-Deno.test("parses StrongBox and an explicit lost-device false flag", () => {
-  assertEquals(
-    parseAndroidProvisioningInfo(new Uint8Array([
-      0xa3, 0x01, 0x01, 0x04, 0x6a, 0x53, 0x54, 0x52, 0x4f,
-      0x4e, 0x47, 0x5f, 0x42, 0x4f, 0x58, 0x06, 0xf4,
-    ])),
-    { certificatesIssued: 1n, validatedAttestedEntity: "STRONG_BOX", isLostDevice: false },
-  );
+Deno.test("matches upstream clamping for negative and oversized Int values", () => {
+  assertEquals(parseAndroidProvisioningInfo(new Uint8Array([0xa1, 0x01, 0x20])), {
+    certificatesIssued: 0,
+  });
+  assertEquals(parseAndroidProvisioningInfo(new Uint8Array([
+    0xa1, 0x01, 0x1a, 0x80, 0x00, 0x00, 0x00,
+  ])), { certificatesIssued: 2147483647 });
 });
 
-Deno.test("parses an explicit lost-device true flag", () => {
-  assertEquals(
-    parseAndroidProvisioningInfo(new Uint8Array([
-      0xa3, 0x01, 0x00, 0x04, 0x63, 0x54, 0x45, 0x45, 0x06, 0xf5,
-    ])).isLostDevice,
-    true,
-  );
+Deno.test("ignores additional CBOR fields as the upstream schema does", () => {
+  assertEquals(parseAndroidProvisioningInfo(new Uint8Array([
+    0xa3, 0x01, 0x01, 0x04, 0x63, 0x54, 0x45, 0x45, 0x06, 0xf5,
+  ])), { certificatesIssued: 1 });
 });
 
-Deno.test("rejects missing required fields, duplicate keys and wrong types", () => {
-  assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([0xa1, 0x01, 0x00])));
+Deno.test("rejects missing, duplicate and wrong-typed required fields", () => {
+  assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([0xa0])));
+  assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([0xa1, 0x02, 0x00])));
   assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([
-    0xa3, 0x01, 0x01, 0x01, 0x02, 0x04, 0x63, 0x54, 0x45, 0x45,
+    0xa2, 0x01, 0x01, 0x01, 0x02,
   ])));
   assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([
-    0xa2, 0x01, 0x61, 0x78, 0x04, 0x63, 0x54, 0x45, 0x45,
-  ])));
-  assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([
-    0xa2, 0x01, 0x01, 0x04, 0x63, 0x58, 0x58, 0x58,
-  ])));
-  assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([
-    0xa3, 0x01, 0x01, 0x04, 0x63, 0x54, 0x45, 0x45, 0x06, 0x00,
+    0xa1, 0x01, 0x61, 0x78,
   ])));
 });
 
 Deno.test("rejects indefinite, non-canonical, truncated and trailing CBOR", () => {
   assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([0xbf, 0xff])));
-  assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([
-    0xa2, 0x01, 0x18, 0x01, 0x04, 0x63, 0x54, 0x45, 0x45,
-  ])));
-  assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([
-    0xa2, 0x01, 0x01, 0x04, 0x63, 0x54,
-  ])));
-  assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([
-    0xa2, 0x01, 0x01, 0x04, 0x63, 0x54, 0x45, 0x45, 0x00,
-  ])));
+  assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([0xa1, 0x01, 0x18, 0x01])));
+  assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([0xa1, 0x01, 0x1a, 0x00])));
+  assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([0xa1, 0x01, 0x00, 0x00])));
 });
 
-Deno.test("accepts bounded unknown future fields without losing required policy fields", () => {
-  assertEquals(
-    parseAndroidProvisioningInfo(new Uint8Array([
-      0xa3, 0x01, 0x02, 0x04, 0x63, 0x54, 0x45, 0x45, 0x07, 0x82, 0x01, 0x02,
-    ])),
-    { certificatesIssued: 2n, validatedAttestedEntity: "TEE" },
-  );
+Deno.test("accepts bounded unknown nested fields and floating-point values", () => {
+  assertEquals(parseAndroidProvisioningInfo(new Uint8Array([
+    0xa2, 0x01, 0x02, 0x07, 0x82, 0x01, 0xfa, 0x3f, 0x80, 0x00, 0x00,
+  ])), { certificatesIssued: 2 });
 });
 
-Deno.test("skips bounded future CBOR float values", () => {
-  assertEquals(
-    parseAndroidProvisioningInfo(new Uint8Array([
-      0xa3, 0x01, 0x01, 0x04, 0x63, 0x54, 0x45, 0x45, 0x07,
-      0xfa, 0x3f, 0x80, 0x00, 0x00,
-    ])),
-    { certificatesIssued: 1n, validatedAttestedEntity: "TEE" },
-  );
-});
-
-Deno.test("enforces nesting and node budgets for unknown future values", () => {
+Deno.test("enforces nesting, node and input budgets", () => {
   assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array([
-    0xa3, 0x01, 0x01, 0x04, 0x63, 0x54, 0x45, 0x45,
-    0x07, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x00,
+    0xa2, 0x01, 0x01, 0x07, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x00,
   ])));
-});
-
-Deno.test("rejects oversized input", () => {
   assertThrows(() => parseAndroidProvisioningInfo(new Uint8Array(4097)));
 });
