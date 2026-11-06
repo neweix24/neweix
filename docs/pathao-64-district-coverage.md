@@ -114,6 +114,18 @@ Total in the NEWEIX selector: **64 districts**, **491 upazila records**.
 - The booking API sends the full structured destination address. Pathao's July 2025 API update says merchants should omit `recipient_city`, `recipient_zone` and `recipient_area` from order creation so Pathao can resolve those from the full address.
 - A quote mapping does not itself guarantee the final village/road is serviceable. Pathao's booking response is the final acceptance check.
 
+## Persistent Pathao Area catalog
+
+The admin Pathao panel includes **Sync Pathao Area catalog**. It fetches the live Area list for every unique, verified City/Zone pair already stored in `pathao_location_mappings` and upserts the results into `pathao_area_catalog`.
+
+- Area records retain Pathao City ID, Zone ID, Area ID, Area name and the provider's `home_delivery_available` flag when supplied.
+- The sync uses one merchant token per batch and processes zones with bounded concurrency.
+- A failed zone is reported separately; successful zones are still saved and can be retried later.
+- Area catalog rows are server-only under RLS. Customers cannot read or modify provider identifiers directly.
+- The Area catalog is a refreshed provider snapshot, not a guarantee of final delivery acceptance. Pathao's live booking response remains authoritative.
+
+Apply migration `20261106063000_pathao_area_catalog.sql` before using the new admin sync action.
+
 ## Pricing
 
 Use Pathao's live `price-plan` response when available. The merchant pricing schedule supplied to NEWEIX is documented separately as a fallback policy; never silently claim a fallback amount is a live Pathao quote. COD fee, return fee, promotions and excess-weight surcharges remain provider-dependent and should be refreshed from the merchant panel.
