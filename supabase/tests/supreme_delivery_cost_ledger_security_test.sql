@@ -26,8 +26,9 @@ begin
 
   if pg_catalog.has_table_privilege('anon', 'public.delivery_cost_entries', 'SELECT')
      or pg_catalog.has_table_privilege('authenticated', 'public.delivery_cost_entries', 'SELECT')
-     or pg_catalog.has_table_privilege('service_role', 'public.delivery_cost_entries', 'SELECT') then
-    raise exception 'Delivery cost ledger must not be directly readable by client roles or service_role';
+     or not pg_catalog.has_table_privilege('service_role', 'public.delivery_cost_entries', 'SELECT')
+     or not pg_catalog.has_table_privilege('service_role', 'public.delivery_cost_entries', 'INSERT') then
+    raise exception 'Delivery cost ledger grants are not restricted to service_role';
   end if;
 
   if not exists (
