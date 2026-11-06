@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: ["main", "feat/neweix-supreme-mobile-workspace"]
   push:
-    branches: ["main", "feat/neweix-supreme-dashboard-phase-1"]
+    branches: ["main", "feat/neweix-supreme-dashboard-phase-1", "feat/neweix-supreme-dashboard-phase-1-mainline"]
   workflow_dispatch:
 
 permissions:
