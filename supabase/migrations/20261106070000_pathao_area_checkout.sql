@@ -127,24 +127,31 @@ begin
    for share;
   if not found then raise exception 'PATHAO_LOCATION_MAPPING_NOT_VERIFIED'; end if;
 
-  if p_pathao_area_id is null or p_pathao_area_id < 1
-     or p_pathao_area_name is null
-     or pg_catalog.char_length(pg_catalog.btrim(p_pathao_area_name)) < 1
-     or pg_catalog.char_length(pg_catalog.btrim(p_pathao_area_name)) > 160 then
+  if (p_pathao_area_id is null) <> (p_pathao_area_name is null) then
     raise exception 'INVALID_PATHAO_AREA';
   end if;
 
-  select pathao_area_id, pathao_area_name
-    into v_area
-    from public.pathao_area_catalog
-   where pathao_city_id = p_pathao_city_id
-     and pathao_zone_id = p_pathao_zone_id
-     and pathao_area_id = p_pathao_area_id
-     and pg_catalog.lower(pathao_area_name) = pg_catalog.lower(pg_catalog.btrim(p_pathao_area_name))
-     and is_active = true
-     and home_delivery_available = true
-   for share;
-  if not found then raise exception 'PATHAO_AREA_NOT_AVAILABLE'; end if;
+  -- Area is optional until the live Area catalog is synchronized. Pathao's
+  -- current order API can resolve the delivery area from the full recipient address.
+  if p_pathao_area_id is not null then
+    if p_pathao_area_id < 1
+       or pg_catalog.char_length(pg_catalog.btrim(p_pathao_area_name)) < 1
+       or pg_catalog.char_length(pg_catalog.btrim(p_pathao_area_name)) > 160 then
+      raise exception 'INVALID_PATHAO_AREA';
+    end if;
+
+    select pathao_area_id, pathao_area_name
+      into v_area
+      from public.pathao_area_catalog
+     where pathao_city_id = p_pathao_city_id
+       and pathao_zone_id = p_pathao_zone_id
+       and pathao_area_id = p_pathao_area_id
+       and pg_catalog.lower(pathao_area_name) = pg_catalog.lower(pg_catalog.btrim(p_pathao_area_name))
+       and is_active = true
+       and home_delivery_available = true
+     for share;
+    if not found then raise exception 'PATHAO_AREA_NOT_AVAILABLE'; end if;
+  end if;
 
   if p_payment_method = 'cod' then
     if p_payment_transaction_id is not null then
