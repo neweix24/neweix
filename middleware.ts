@@ -41,6 +41,31 @@ export async function middleware(request: NextRequest) {
   // Once the private path is configured, direct requests to the old public
   // route are not served. The authenticated private alias is rewritten below.
   if (hasValidPrivateSupremePath && isCanonicalSupremePath) {
+    // Existing in-workspace links still target the internal /supreme route.
+    // Redirect those same-origin navigations back onto the private URL so the
+    // browser never leaves the private path. Direct/external requests get 404.
+    const referer = request.headers.get("referer");
+    let cameFromPrivateEntry = false;
+    if (referer) {
+      try {
+        const refererUrl = new URL(referer);
+        cameFromPrivateEntry =
+          refererUrl.origin === request.nextUrl.origin &&
+          (refererUrl.pathname === configuredSupremePath ||
+            refererUrl.pathname.startsWith(configuredSupremePath + "/"));
+      } catch {
+        cameFromPrivateEntry = false;
+      }
+    }
+    if (cameFromPrivateEntry) {
+      const privateDestination = request.nextUrl.clone();
+      privateDestination.pathname =
+        configuredSupremePath + pathname.slice("/supreme".length);
+      const redirectResponse = NextResponse.redirect(privateDestination, 307);
+      redirectResponse.headers.set("Cache-Control", "private, no-store, max-age=0");
+      redirectResponse.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+      return redirectResponse;
+    }
     return new NextResponse(null, {
       status: 404,
       headers: { "Cache-Control": "private, no-store, max-age=0", "X-Robots-Tag": "noindex, nofollow" },
