@@ -535,7 +535,7 @@ export default function PathaoPanel() {
     try {
       const result = await getJson("/api/admin/pathao?action=location_mappings");
       setMappings(Array.isArray(result.mappings) ? result.mappings as PathaoMapping[] : []);
-      setMappingMessage("Verified delivery-area mappings loaded.");
+      setMappingMessage("Pathao mapping records loaded. Checkout only uses active, manually verified City/Zone pairs.");
     } catch (error) {
       setMappingMessage(error instanceof Error ? error.message : "Could not load delivery-area mappings.");
     } finally {
@@ -658,7 +658,7 @@ export default function PathaoPanel() {
 
         setCoverageSyncResults([...accumulated]);
         setMappingMessage(
-          `Checked ${accumulated.length}/64 districts. ${candidateUpazilas} exact upazila mappings saved. ${failedDivisions} division(s) had temporary/API errors.`,
+          `Checked ${accumulated.length}/64 districts. ${candidateUpazilas} exact-name candidates saved inactive; an Admin/Supreme user must manually verify them before checkout can use them. ${failedDivisions} division(s) had temporary/API errors.`,
         );
         // Give Pathao's merchant API a short recovery window before the next division.
         await new Promise((resolve) => window.setTimeout(resolve, 1_500));
@@ -672,7 +672,7 @@ export default function PathaoPanel() {
       ).length;
       const syncErrors = accumulated.filter((item) => item.status === "sync_error").length;
       setMappingMessage(
-        `Coverage scan finished: ${accumulated.length}/64 districts checked; ${fullyMapped} fully mapped, ${partiallyMapped} partially mapped, ${unmapped} need manual review, ${syncErrors} had API/network errors. ${candidateUpazilas} new inactive candidates saved. Run Sync again to retry failed divisions; existing mappings are never overwritten; manually verify all new candidates before enabling checkout.`,
+        `Coverage scan finished: ${accumulated.length}/64 districts checked; ${fullyMapped} districts have full candidate matches, ${partiallyMapped} have partial candidate matches, ${unmapped} need manual review, ${syncErrors} had API/network errors. ${candidateUpazilas} new inactive candidates saved. Run Sync again to retry failed divisions; existing mappings are never overwritten; manually verify all new candidates before enabling checkout.`,
       );
     } catch (error) {
       setMappingMessage(error instanceof Error ? error.message : "Pathao 64-district coverage scan failed.");
@@ -851,7 +851,7 @@ export default function PathaoPanel() {
       <section className="mt-5 space-y-4 rounded-xl border border-amber-200 bg-amber-50/40 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="font-semibold">Checkout Delivery Area Mapping</h3>
+            <h3 className="font-semibold">Pathao City/Zone Pricing Mapping Review</h3>
             <p className="mt-1 max-w-3xl text-xs leading-5 text-gray-600">Checkout calculates live Pathao fees only for manually verified Bangladesh upazila → Pathao City/Zone mappings. Automatic scans create inactive candidates only; the API rechecks selected City/Zone IDs against Pathao before manual verification.</p>
           </div>
           <button type="button" onClick={() => void loadLocationMappings()} disabled={mappingsLoading} className="rounded-lg border bg-white px-3 py-2 text-xs font-semibold disabled:opacity-50">{mappingsLoading ? "Loading..." : "Refresh Mappings"}</button>
@@ -903,7 +903,7 @@ export default function PathaoPanel() {
           </div>
         )}
         <p className="text-xs leading-5 text-gray-600">
-          The selected-district matcher below is available for manual correction. Ambiguous or unmatched areas are skipped, never guessed.
+          The form below is the only way to activate a mapping: select the corresponding Bangladesh upazila and live Pathao City/Zone, then verify and save. Ambiguous matches remain inactive.
         </p>
         <form onSubmit={saveLocationMapping} className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-medium">Bangladesh division
@@ -937,7 +937,7 @@ export default function PathaoPanel() {
               {mappingZones.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
           </label>
-          <button type="submit" disabled={mappingSaving || !selectedMappingUpazila || !mappingCityId || !mappingZoneId} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2">{mappingSaving ? "Verifying & saving..." : "Verify and save area mapping"}</button>
+          <button type="submit" disabled={mappingSaving || !selectedMappingUpazila || !mappingCityId || !mappingZoneId} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2">{mappingSaving ? "Verifying & saving..." : "Verify and activate City/Zone mapping"}</button>
         </form>
         {mappingMessage && <p role="status" className="text-xs text-gray-700">{mappingMessage}</p>}
         <div className="overflow-x-auto rounded-lg border bg-white">
@@ -950,7 +950,7 @@ export default function PathaoPanel() {
               return <tr key={item.id} className="border-b last:border-0"><td className="p-2">{division?.name ?? item.division_code} / {district?.name ?? item.district_code} / {upazila?.name ?? item.upazila_code}</td><td className="p-2">{item.pathao_city_name} ({item.pathao_city_id})</td><td className="p-2">{item.pathao_zone_name} ({item.pathao_zone_id})</td><td className="p-2">{item.is_active && item.is_verified ? "Verified & active" : "Inactive / unverified"}</td></tr>;
             })}</tbody>
           </table>
-          {mappings.length === 0 && <p className="p-3 text-xs text-gray-500">{mappingsLoading ? "Loading mappings..." : "No delivery-area mappings loaded. Refresh to check; add verified upazila mappings above."}</p>}
+          {mappings.length === 0 && <p className="p-3 text-xs text-gray-500">{mappingsLoading ? "Loading mappings..." : "No City/Zone pricing mappings loaded. Refresh to check candidate suggestions and manually verify supported destinations."}</p>}
         </div>
       </section>
 
