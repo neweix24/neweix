@@ -210,12 +210,6 @@ function compareAuthorizationFields(
   }
   return comparisons;
 }
-function rollbackTag(): number {
-  // Android Keymaster ROLLBACK_RESISTANCE is tag 303; it is not currently accepted by this parser.
-  // Keep this helper explicit so the fixture comparator never silently maps it to another tag.
-  return 303;
-}
-
 const fixtureIndex = Deno.env.get("SUPREME_ATTESTATION_FIXTURE_INDEX");
 const upstreamRoot = Deno.env.get("SUPREME_ATTESTATION_UPSTREAM_DIR");
 
