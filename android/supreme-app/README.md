@@ -45,3 +45,13 @@ The Android app includes a native Android Keystore helper at `app/src/main/java/
 This is only the Android-side key-generation primitive. It is not currently wired into login and does not grant access by itself. The server must validate the complete chain against Google's current trust anchors, check Google's revocation status, verify the attestation challenge and `com.neweix.supreme` application identity (including the production signing-certificate digest), and enforce the required hardware security and verified-boot policy. Until that verifier and its replay-resistant challenge store are deployed and tested, existing server-side role and MFA checks remain authoritative.
 
 Devices that cannot produce a qualifying attestation chain must not be silently downgraded to an unverified Supreme login once enforcement is enabled.
+
+
+## Private Supreme-only navigation and temporary authentication lock
+
+- The launcher opens only the private Supreme workspace entry. Main-frame navigation is restricted to the private workspace and the dedicated Supreme sign-in/MFA routes; storefront and shared customer/staff login routes are redirected back to the private entry.
+- External web navigation is blocked inside the app. Telephone and email actions may still be handed to Android.
+- Unauthenticated private-workspace requests are sent to `/auth/supreme-login`, not the shared staff login page.
+- The shared `/auth/login` page rejects and signs out a Supreme role.
+- **Supreme dashboard access is intentionally fail-closed (HTTP 503) until the complete server-side Android Key Attestation verifier is integrated.** The current private URL and WebView are not proof of an authentic app. Do not remove this lock based on User-Agent, package name, a custom header, or the private URL alone.
+- The diamond emblem is the temporary app mark and can be replaced later without changing the application ID.
