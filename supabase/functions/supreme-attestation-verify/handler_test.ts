@@ -20,12 +20,6 @@ const SERVICE_ROLE_KEY = "server-only-test-service-role-key";
 const challenge = new Uint8Array(32).fill(7);
 const encodedChallenge = encodeSupremeChallenge(challenge);
 const fakeCertificate = {} as ParsedX509Certificate;
-const fakeChain = [fakeCertificate, fakeCertificate, fakeCertificate];
-
-function assert(condition: unknown, message: string): asserts condition {
-  if (!condition) throw new Error(message);
-}
-
 function assertEquals<T>(actual: T, expected: T, message: string): void {
   if (actual !== expected) throw new Error(`${message}: expected ${String(expected)}, received ${String(actual)}`);
 }
