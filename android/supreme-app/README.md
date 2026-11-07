@@ -27,6 +27,30 @@ If you prefer not to export an environment variable, pass it as a Gradle propert
 gradle :app:assembleDebug -PsupremePrivatePath='/control-<your-48-hex-character-secret>'
 ```
 
+## Build a production-signed release APK
+
+The production keystore and passwords must remain under the owner's control and outside this repository. The build reads credentials only from environment variables; they are never written to source files, command-line arguments, build artifacts, or GitHub Actions.
+
+Store the permanent production keystore somewhere outside the repository, for example `$HOME/.config/neweix/supreme/release.jks`, and restrict its filesystem permissions. Back up the keystore and passwords securely. Do not generate a new key for every release: Android updates must retain the same signing identity (or use a deliberately configured Play App Signing rotation).
+
+Set these variables in your local shell without pasting the values into ChatGPT or committing them:
+
+- `SUPREME_PRIVATE_PATH`: the private `/control-<48 hex>` path.
+- `SUPREME_KEYSTORE_PATH`: absolute path to the external production keystore.
+- `SUPREME_KEYSTORE_PASSWORD`: keystore password.
+- `SUPREME_KEY_ALIAS`: production key alias.
+- `SUPREME_KEY_PASSWORD`: key password.
+
+Then run from the repository root:
+
+```sh
+bash scripts/security/build-supreme-release.sh
+```
+
+The script builds `android/supreme-app/app/build/outputs/apk/release/app-release.apk`, verifies its APK signature with Android `apksigner`, and prints the sole signer certificate's SHA-256 digest. The script refuses to use a keystore stored inside the repository. It does not upload the keystore or APK anywhere.
+
+**Do not configure `SUPREME_ANDROID_SIGNING_CERT_SHA256` on Supabase from an unverified fingerprint.** Independently confirm that the release APK was signed by the permanent production key before adding the digest to the server allowlist. A debug signer is never acceptable.
+
 ## Security notes
 
 - The app accepts only HTTPS navigation to `neweix.com` and `www.neweix.com`; other web links are handed to Android.
@@ -34,18 +58,17 @@ gradle :app:assembleDebug -PsupremePrivatePath='/control-<your-48-hex-character-
 - The private path is embedded in the APK at build time and can be extracted by someone reverse-engineering the APK. It is a discovery barrier only, not an authentication factor.
 - The website must continue enforcing Supreme role authorization and AAL2 MFA on every protected page and API.
 - Google OAuth and Cloudflare Turnstile behavior inside Android WebView still require device testing. Google may require external-browser OAuth handoff; do not treat this initial shell as release-ready until login and MFA flows are verified.
-- Do not distribute this debug APK as a production release.
+- Do not distribute a debug APK as a production release.
 
 This project does not modify storefront routes or customer-facing navigation.
 
 ## Hardware-backed attestation client foundation
 
-The Android app includes a native Android Keystore helper at `app/src/main/java/com/neweix/supreme/security/SupremeKeyAttestation.kt`. It creates a fresh P-256 signing key for a server-provided, one-time challenge and returns the certificate chain in leaf-to-root DER/Base64 form.
+The Android app includes a native Android Keystore helper at `app/src/main/java/com/neweix/supreme/security/SupremeKeyAttestation.kt` and a native transport at `app/src/main/java/com/neweix/supreme/security/SupremeAttestationClient.kt`. The helper creates a fresh P-256 signing key for a server-provided, one-time challenge; the transport sends the leaf-first certificate chain and domain-separated proof of possession to the server verifier.
 
-This is only the Android-side key-generation primitive. It is not currently wired into login and does not grant access by itself. The server must validate the complete chain against Google's current trust anchors, check Google's revocation status, verify the attestation challenge and `com.neweix.supreme` application identity (including the production signing-certificate digest), and enforce the required hardware security and verified-boot policy. Until that verifier and its replay-resistant challenge store are deployed and tested, existing server-side role and MFA checks remain authoritative.
+This client is not currently wired into login and does not grant access by itself. The server validates the complete chain against Google's current trust anchors, checks Google's revocation status, verifies the attestation challenge and `com.neweix.supreme` application identity (including the production signing-certificate digest), and enforces the hardware security and verified-boot policy. The native transport is a separate verification milestone, not a Supabase session.
 
 Devices that cannot produce a qualifying attestation chain must not be silently downgraded to an unverified Supreme login once enforcement is enabled.
-
 
 ## Private Supreme-only navigation and temporary authentication lock
 
@@ -53,7 +76,7 @@ Devices that cannot produce a qualifying attestation chain must not be silently 
 - External web navigation is blocked inside the app. Telephone and email actions may still be handed to Android.
 - Unauthenticated private-workspace requests are sent to `/auth/supreme-login`, not the shared staff login page.
 - The shared `/auth/login` page rejects and signs out a Supreme role.
-- **Supreme dashboard access is intentionally fail-closed (HTTP 503) until the complete server-side Android Key Attestation verifier is integrated.** The current private URL and WebView are not proof of an authentic app. Do not remove this lock based on User-Agent, package name, a custom header, or the private URL alone.
+- **Supreme dashboard access is intentionally fail-closed (HTTP 503) until production signer identity, physical-device attestation, Supabase Edge Runtime validation, and attested-device session binding to the Supreme AAL2 session are complete.** The current private URL and WebView are not proof of an authentic app. Do not remove this lock based on User-Agent, package name, a custom header, or the private URL alone.
 - The diamond emblem is the temporary app mark and can be replaced later without changing the application ID.
 
 ## Remote-first Supreme dashboard (permanent architecture requirement)
@@ -83,25 +106,3 @@ Only changes that genuinely need native Android capabilities or a change to the 
 - Cloudflare deployment updates the web-delivered experience; it does not automatically update the native APK binary.
 
 **Acceptance criterion:** a dashboard-only feature or design change is implemented and deployed on Cloudflare and becomes available in the already-installed Supreme app after reload/reopen, with no APK rebuild or reinstall.
-
-## Production signing identity — not configured yet
-
-The production signer certificate digest is a security input to Android Key Attestation's
-application-identity check. It must come from the actual APK signed with the permanent
-production key; it must never be copied from a debug APK or guessed from the package name.
-
-After the production APK is signed, run this helper from the repository root:
-
-```sh
-bash scripts/security/print-android-signing-cert.sh path/to/supreme-production.apk
-```
-
-It verifies the APK signature with Android SDK `apksigner` and prints the signer
-certificate SHA-256 digest in lowercase hexadecimal without separators. Compare it
-against the independently recorded certificate fingerprint for the permanent signing
-key before configuring the server allowlist.
-
-The repository intentionally does not contain a production keystore, signing password,
-or release-signing workflow secrets. Do not create or upload a signing key to GitHub,
-commit a keystore, or use the CI debug signer as the production identity. The app
-package ID is `com.neweix.supreme`; the package ID alone is not a trusted signer identity.
