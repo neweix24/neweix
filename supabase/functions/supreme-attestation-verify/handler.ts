@@ -30,6 +30,10 @@ export type SupremeAttestationVerifyDependencies = {
   verifyAttestation: (
     input: SupremeAttestationVerificationInput,
   ) => Promise<SupremeAttestationVerificationResult>;
+  assertChallengeAvailable: (
+    challengeId: string,
+    challengeHash: string,
+  ) => Promise<boolean>;
   consumeChallenge: (
     challengeId: string,
     challengeHash: string,
@@ -247,6 +251,20 @@ export async function handleSupremeAttestationVerify(
     return json({ error: "Supreme production app identity is not configured." }, 503);
   }
 
+  let challengeHash: string;
+  try {
+    challengeHash = await sha256Hex(payload.challenge);
+    const challengeAvailable = await dependencies.assertChallengeAvailable(
+      payload.challengeId,
+      challengeHash,
+    );
+    if (!challengeAvailable) {
+      return json({ error: "Attestation challenge expired, mismatched or already used." }, 409);
+    }
+  } catch {
+    return json({ error: "Attestation challenge service is unavailable." }, 503);
+  }
+
   let metadata: { roots: GoogleAttestationRoots; status: GoogleAttestationStatus };
   try {
     metadata = await dependencies.fetchMetadata();
@@ -274,7 +292,6 @@ export async function handleSupremeAttestationVerify(
 
   let consumed: boolean;
   try {
-    const challengeHash = await sha256Hex(payload.challenge);
     consumed = await dependencies.consumeChallenge(payload.challengeId, challengeHash);
   } catch {
     return json({ error: "Attestation replay protection is unavailable." }, 503);
