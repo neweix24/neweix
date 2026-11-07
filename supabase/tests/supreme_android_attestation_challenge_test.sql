@@ -9,6 +9,46 @@ declare
   v_previous_role text;
   v_previous_claims text;
 begin
+  -- Challenge issuance must reject SQL NULLs explicitly with a stable input error.
+  begin
+    perform public.issue_supreme_app_attestation_challenge(
+      null, repeat('a', 64), clock_timestamp() + interval '2 minutes'
+    );
+    raise exception 'Challenge issuance accepted a NULL challenge hash.';
+  exception when sqlstate '22023' then
+    null;
+  end;
+  begin
+    perform public.issue_supreme_app_attestation_challenge(
+      repeat('a', 64), null, clock_timestamp() + interval '2 minutes'
+    );
+    raise exception 'Challenge issuance accepted a NULL requester hash.';
+  exception when sqlstate '22023' then
+    null;
+  end;
+  begin
+    perform public.issue_supreme_app_attestation_challenge(
+      repeat('a', 64), repeat('b', 64), null
+    );
+    raise exception 'Challenge issuance accepted a NULL expiry.';
+  exception when sqlstate '22023' then
+    null;
+  end;
+  begin
+    perform public.issue_supreme_app_attestation_challenge(
+      repeat('a', 64), repeat('b', 64), clock_timestamp() + interval '6 minutes'
+    );
+    raise exception 'Challenge issuance accepted an excessive expiry.';
+  exception when sqlstate '22023' then
+    null;
+  end;
+
+  if has_function_privilege('anon', 'public.issue_supreme_app_attestation_challenge(text,text,timestamptz)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.issue_supreme_app_attestation_challenge(text,text,timestamptz)', 'EXECUTE')
+     or not has_function_privilege('service_role', 'public.issue_supreme_app_attestation_challenge(text,text,timestamptz)', 'EXECUTE') then
+    raise exception 'Supreme attestation challenge issuance privilege boundary regression.';
+  end if;
+
   if has_function_privilege('anon', 'public.consume_supreme_app_attestation_challenge(uuid,text)', 'EXECUTE')
      or has_function_privilege('authenticated', 'public.consume_supreme_app_attestation_challenge(uuid,text)', 'EXECUTE')
      or not has_function_privilege('service_role', 'public.consume_supreme_app_attestation_challenge(uuid,text)', 'EXECUTE') then
