@@ -1,4 +1,5 @@
 import {
+  assertGoogleAttestationMetadataFresh,
   isGoogleAttestationSerialBlocked,
   parseGoogleAttestationRoots,
   parseGoogleAttestationStatus,
@@ -16,6 +17,69 @@ Deno.test("Google root parser accepts a bounded PEM list with cache freshness", 
   const roots = parseGoogleAttestationRoots([testPem], freshHeaders);
   if (roots.certificatesPem.length !== 1 || roots.maxAgeSeconds !== 3600) {
     throw new Error("Unexpected parsed Google root metadata.");
+  }
+});
+
+
+Deno.test("Google metadata freshness accounts for HTTP Age and expires at the exact boundary", () => {
+  const now = Date.UTC(2026, 10, 7, 12, 0, 0);
+  const headers = new Headers({
+    "cache-control": "public, max-age=3600",
+    age: "120",
+  });
+  const roots = parseGoogleAttestationRoots([testPem], headers, now);
+  if (
+    roots.fetchedAtMs !== now - 120_000 ||
+    roots.expiresAtMs !== now + 3_480_000 ||
+    roots.maxAgeSeconds !== 3600
+  ) {
+    throw new Error("Google root metadata did not account for HTTP Age.");
+  }
+  assertGoogleAttestationMetadataFresh(roots, now);
+  assertGoogleAttestationMetadataFresh(roots, roots.expiresAtMs - 1);
+
+  let expiredRejected = false;
+  try {
+    assertGoogleAttestationMetadataFresh(roots, roots.expiresAtMs);
+  } catch {
+    expiredRejected = true;
+  }
+  if (!expiredRejected) throw new Error("Accepted Google metadata at its exclusive expiry boundary.");
+});
+
+Deno.test("Google metadata freshness fails closed for duplicate directives, invalid Age and stale cache", () => {
+  const invalidHeaders = [
+    new Headers({ "cache-control": "public, max-age=3600, max-age=60" }),
+    new Headers({ "cache-control": "public, max-age=3600", age: "not-a-number" }),
+    new Headers({ "cache-control": "public, max-age=60", age: "60" }),
+  ];
+  for (const headers of invalidHeaders) {
+    let rejected = false;
+    try {
+      parseGoogleAttestationRoots([testPem], headers, Date.UTC(2026, 10, 7));
+    } catch {
+      rejected = true;
+    }
+    if (!rejected) throw new Error("Accepted ambiguous or already-stale Google metadata.");
+  }
+});
+
+Deno.test("Google metadata freshness rejects forged or inconsistent timestamps", () => {
+  const now = Date.UTC(2026, 10, 7);
+  const cases = [
+    { fetchedAtMs: now + 1, expiresAtMs: now + 1000, maxAgeSeconds: 60 },
+    { fetchedAtMs: now - 60_000, expiresAtMs: now + 1, maxAgeSeconds: 60 },
+    { fetchedAtMs: now - 1_000, expiresAtMs: now + 60_000, maxAgeSeconds: 10 },
+    { fetchedAtMs: now - 1000, expiresAtMs: now + 1000, maxAgeSeconds: 0 },
+  ];
+  for (const metadata of cases) {
+    let rejected = false;
+    try {
+      assertGoogleAttestationMetadataFresh(metadata, now);
+    } catch {
+      rejected = true;
+    }
+    if (!rejected) throw new Error("Accepted invalid Google metadata freshness state.");
   }
 });
 
