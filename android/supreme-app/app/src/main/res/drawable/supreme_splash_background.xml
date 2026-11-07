@@ -6,12 +6,8 @@
         </shape>
     </item>
     <item
+        android:drawable="@drawable/supreme_icon"
         android:width="192dp"
         android:height="192dp"
-        android:gravity="center">
-        <bitmap
-            android:src="@drawable/supreme_icon"
-            android:gravity="center"
-            android:filter="true" />
-    </item>
+        android:gravity="center" />
 </layer-list>
