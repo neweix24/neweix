@@ -104,13 +104,14 @@ export async function middleware(request: NextRequest) {
     pathname === "/eixverse" || pathname.startsWith("/eixverse/");
   const isCustomerProtected = isCustomerPage || isCustomerApi;
   const isCustomerLoginPath = pathname === "/auth/customer-login";
+  const isSupremeMfaPath = pathname === "/auth/mfa" || pathname === "/auth/mfa/setup";
 
   // Refresh a present session before every API handler as well as protected
   // pages. API handlers may create their own server client; passing the
   // refreshed request cookies prevents those handlers from trying to rotate
   // the same stale refresh token again. Public APIs remain publicly accessible.
   // Public storefront pages avoid an auth lookup unless they need route gating.
-  if (!isAdminPath && !isSupremePath && !isWorkforcePath && !isCustomerProtected && !isCustomerLoginPath && !isApiPath) {
+  if (!isAdminPath && !isSupremePath && !isWorkforcePath && !isCustomerProtected && !isCustomerLoginPath && !isSupremeMfaPath && !isApiPath) {
     return response;
   }
 
@@ -198,6 +199,37 @@ export async function middleware(request: NextRequest) {
     destination.search = "";
     const redirectResponse = NextResponse.redirect(destination);
     return copySessionState(redirectResponse);
+  }
+
+  // MFA pages must not become an alternate browser entry for Supreme. The
+  // dedicated Supreme app flow will be enabled only after server-verified
+  // Android attestation is integrated; until then deny Supreme MFA here too.
+  if (isSupremeMfaPath) {
+    if (claimsError || typeof userId !== "string" || !userId) {
+      const destination = request.nextUrl.clone();
+      destination.pathname = "/auth/supreme-login";
+      destination.search = "";
+      const redirectResponse = NextResponse.redirect(destination);
+      return copySessionState(redirectResponse);
+    }
+    const { data: mfaProfile, error: mfaProfileError } = await supabase
+      .from("staff_profiles")
+      .select("role, is_active")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (mfaProfileError) {
+      return copySessionState(new NextResponse("MFA authorization unavailable.", {
+        status: 503,
+        headers: { "Cache-Control": "private, no-store, max-age=0" },
+      }));
+    }
+    if (mfaProfile?.role === "supreme") {
+      return copySessionState(new NextResponse(
+        "Supreme MFA is locked until verified Android app attestation is available.",
+        { status: 503, headers: { "Cache-Control": "private, no-store, max-age=0", "X-Robots-Tag": "noindex, nofollow" } },
+      ));
+    }
+    return response;
   }
 
   // The remaining public routes do not need authorization checks.
