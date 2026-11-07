@@ -20,8 +20,10 @@ The Edge Function uses Supabase's JWT verification (`verify_jwt = true`) and ind
 - the matching active, unexpired app session and device;
 - Android package `com.neweix.supreme`, trusted-environment/StrongBox security, and attestation age.
 
-The Next.js proxy repeats the AAL2 and database-backed active-session check before forwarding the user's access token. No service-role key is sent to the client.
+The Next.js proxy repeats the AAL2 check; the Edge Function calls the authoritative Supreme session API to validate the signed token, ruler identity, and active attested device session. The Neweix repository does not recreate Supreme identity tables or use `public.staff_profiles`. No service-role key is sent to the client.
 
 ## Write policy
 
 This adapter is deliberately read-only. Orders, inventory, payment, staff, customer and delivery mutations must be added as individually named capabilities and require a Supreme control request approval bound to the exact operation and parameters. Do not add a generic arbitrary-RPC or SQL execution route.
+
+Required server-only setting: `SUPREME_SESSION_API_URL=https://grhybvlhdnzlopwbaqun.supabase.co/functions/v1/supreme-session-api/session`.
