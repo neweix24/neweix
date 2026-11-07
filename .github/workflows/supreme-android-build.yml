@@ -1,4 +1,5 @@
 name: Supreme Android app build
+# Stacked Supreme app PRs use the attestation branch as their review base.
 
 on:
   push:
