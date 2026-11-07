@@ -15,6 +15,7 @@ on:
   pull_request:
     branches:
       - main
+      - feat/supreme-server-attestation-verifier
     paths:
       - ".github/workflows/supreme-keyattestation-reference.yml"
       - "docs/security/SUPREME_ANDROID_ATTESTATION_VERIFIER.md"
