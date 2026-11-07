@@ -17,6 +17,7 @@ import {
 
 const CHALLENGE_ID = "b8f3e5b2-1b5a-4a7e-8a1a-2d0c6f4e9b11";
 const SERVICE_ROLE_KEY = "server-only-test-service-role-key";
+const REQUESTER_IP_HASH = "c".repeat(64);
 const challenge = new Uint8Array(32).fill(7);
 const encodedChallenge = encodeSupremeChallenge(challenge);
 const fakeCertificate = {} as ParsedX509Certificate;
@@ -81,7 +82,7 @@ function validPayload() {
 
 function makeRequest(
   body: unknown = validPayload(),
-  overrides: { method?: string; authorization?: string; apikey?: string; contentType?: string; contentLength?: string } = {},
+  overrides: { method?: string; authorization?: string; apikey?: string; contentType?: string; contentLength?: string; ipHash?: string | null } = {},
 ): Request {
   const headers = new Headers({
     authorization: overrides.authorization ?? `Bearer ${SERVICE_ROLE_KEY}`,
@@ -89,6 +90,8 @@ function makeRequest(
     "content-type": overrides.contentType ?? "application/json",
   });
   if (overrides.contentLength !== undefined) headers.set("content-length", overrides.contentLength);
+  const ipHash = overrides.ipHash === undefined ? REQUESTER_IP_HASH : overrides.ipHash;
+  if (ipHash) headers.set("x-neweix-attestation-ip-hash", ipHash);
   const method = overrides.method ?? "POST";
   const init: RequestInit = { method, headers };
   if (method !== "GET" && method !== "HEAD") {
@@ -292,4 +295,28 @@ Deno.test("challenge service and Google metadata failures fail closed", async ()
     }),
   );
   assertEquals(consumeFailure.status, 503, "challenge consumption status");
+});
+Deno.test("requester IP binding is mandatory before metadata or certificate verification", async () => {
+  const calls: string[] = [];
+  const response = await handleSupremeAttestationVerify(
+    makeRequest(validPayload(), { ipHash: null }),
+    makeDependencies({}, calls),
+  );
+  assertEquals(response.status, 400, "missing requester IP binding status");
+  assertEquals(calls.length, 0, "no challenge lookup or expensive work without IP binding");
+});
+
+Deno.test("challenge lookup receives the trusted requester IP hash", async () => {
+  let receivedIpHash = "";
+  const response = await handleSupremeAttestationVerify(
+    makeRequest(),
+    makeDependencies({
+      assertChallengeAvailable: (_challengeId, _challengeHash, requesterIpHash) => {
+        receivedIpHash = requesterIpHash;
+        return Promise.resolve(true);
+      },
+    }),
+  );
+  assertEquals(response.status, 200, "valid IP-bound attestation status");
+  assertEquals(receivedIpHash, REQUESTER_IP_HASH, "challenge requester IP hash");
 });

@@ -33,6 +33,7 @@ export type SupremeAttestationVerifyDependencies = {
   assertChallengeAvailable: (
     challengeId: string,
     challengeHash: string,
+    requesterIpHash: string,
   ) => Promise<boolean>;
   consumeChallenge: (
     challengeId: string,
@@ -259,9 +260,14 @@ export async function handleSupremeAttestationVerify(
   let challengeHash: string;
   try {
     challengeHash = await sha256Hex(payload.challenge);
+    const requesterIpHash = request.headers.get("x-neweix-attestation-ip-hash") ?? "";
+    if (!/^[a-f0-9]{64}$/.test(requesterIpHash)) {
+      return json({ error: "Attestation source binding is missing or invalid." }, 400);
+    }
     const challengeAvailable = await dependencies.assertChallengeAvailable(
       payload.challengeId,
       challengeHash,
+      requesterIpHash,
     );
     if (!challengeAvailable) {
       return json({ error: "Attestation challenge expired, mismatched or already used." }, 409);

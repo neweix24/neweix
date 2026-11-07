@@ -17,6 +17,7 @@ function restHeaders(): HeadersInit {
 async function assertChallengeAvailable(
   challengeId: string,
   challengeHash: string,
+  requesterIpHash: string,
 ): Promise<boolean> {
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error("Supabase server credentials are unavailable.");
@@ -27,6 +28,7 @@ async function assertChallengeAvailable(
   url.searchParams.set("limit", "1");
   url.searchParams.set("id", `eq.${challengeId}`);
   url.searchParams.set("challenge_hash", `eq.${challengeHash}`);
+  url.searchParams.set("requester_ip_hash", `eq.${requesterIpHash}`);
   url.searchParams.set("consumed_at", "is.null");
   url.searchParams.set("expires_at", `gt.${new Date().toISOString()}`);
 
