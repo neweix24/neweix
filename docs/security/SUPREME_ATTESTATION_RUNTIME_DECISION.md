@@ -154,3 +154,32 @@ A Deno benchmark harness now measures three CPU workloads using the pinned Googl
 The benchmark runs in the same Deno CI job as the pinned Kotlin oracle and differential suite. It is a repeatable worst-case workload check, not a hosted Supabase measurement. It deliberately does not deploy a public benchmark function or change the production Supabase project.
 
 A read-only production inventory check on 2026-11-07 confirmed that the production database does not yet contain `public.supreme_app_attestation_challenges` or either challenge RPC, and the only deployed Edge Function is the existing `before-user-created` function. This is expected while the attestation migrations and verifier work remain in unmerged draft PRs. Do not manually apply these migrations or enable the challenge/login path before the complete PR stack has passed review and the production signing identity is configured.
+
+## Bounded runtime benchmark — GitHub Actions reference runner (2026-11-07)
+
+The pinned upstream reference workflow now executes
+`supreme-attestation-runtime_bench.ts` after the Java/Kotlin oracle and
+real-certificate differential checks. Run:
+https://github.com/neweix24/neweix/actions/runs/42343639680
+
+Observed on the GitHub-hosted runner (AMD EPYC 9V74, Deno 2.9.8,
+x86_64 Linux):
+
+| Workload | Average time/iteration | Observed range |
+| --- | ---: | ---: |
+| JSON decode + bounded 55,000-entry Google status feed parse | 34.0 ms | 30.5–39.7 ms |
+| Real Google TEE X.509 path validation | 3.1 ms | 2.9–4.8 ms |
+| Combined bounded status parse + real X.509 path validation | 42.1 ms | 35.7–55.1 ms |
+
+The synthetic status JSON is 1,590,645 bytes, below the 2 MiB response cap.
+The workflow completed successfully, including the pinned upstream Kotlin
+suite, RKP fixture oracle extraction, Google chain-role/validity export,
+real-certificate Deno differential checks, and the bounded runtime benchmark.
+
+**Interpretation limit:** these figures are GitHub Actions runner measurements,
+not Supabase hosted Edge Function CPU, memory, cold-start, or request-duration
+measurements. They do not establish that the verifier fits Supabase Free
+runtime limits. Do not enable production Supreme authentication on the basis
+of this benchmark alone. A separately authorized, protected, temporary
+Supabase runtime measurement and review of production signing identity remain
+required before authentication can be enabled.
