@@ -83,3 +83,25 @@ Only changes that genuinely need native Android capabilities or a change to the 
 - Cloudflare deployment updates the web-delivered experience; it does not automatically update the native APK binary.
 
 **Acceptance criterion:** a dashboard-only feature or design change is implemented and deployed on Cloudflare and becomes available in the already-installed Supreme app after reload/reopen, with no APK rebuild or reinstall.
+
+## Production signing identity — not configured yet
+
+The production signer certificate digest is a security input to Android Key Attestation's
+application-identity check. It must come from the actual APK signed with the permanent
+production key; it must never be copied from a debug APK or guessed from the package name.
+
+After the production APK is signed, run this helper from the repository root:
+
+```sh
+bash scripts/security/print-android-signing-cert.sh path/to/supreme-production.apk
+```
+
+It verifies the APK signature with Android SDK `apksigner` and prints the signer
+certificate SHA-256 digest in lowercase hexadecimal without separators. Compare it
+against the independently recorded certificate fingerprint for the permanent signing
+key before configuring the server allowlist.
+
+The repository intentionally does not contain a production keystore, signing password,
+or release-signing workflow secrets. Do not create or upload a signing key to GitHub,
+commit a keystore, or use the CI debug signer as the production identity. The app
+package ID is `com.neweix.supreme`; the package ID alone is not a trusted signer identity.
