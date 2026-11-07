@@ -37,10 +37,10 @@ const rootPem = JSON.parse(await Deno.readTextFile(rootsPath)) as string[];
 const roots = parseGoogleAttestationRoots(rootPem, cacheHeaders, now);
 const parsedRoots = roots.certificatesPem.map((pem) => {
   const match = pem.match(
-    /^-----BEGIN CERTIFICATE-----\\n([A-Za-z0-9+/=\\n]+)\\n-----END CERTIFICATE-----$/u,
+    /^-----BEGIN CERTIFICATE-----\n([A-Za-z0-9+/=\n]+)\n-----END CERTIFICATE-----$/u,
   );
   if (!match) throw new TypeError("Malformed pinned Google root fixture.");
-  const compact = match[1].replaceAll("\\n", "");
+  const compact = match[1].replaceAll("\n", "");
   return parseX509Certificate(fromBase64(compact));
 });
 
