@@ -170,13 +170,17 @@ if (supremePrivatePath) {
     } catch {
       return { ok: false, reason: "Supreme entry returned an invalid login redirect URL" };
     }
+    const nextPath = loginUrl.searchParams.get("next") || "";
+    const preservesPrivatePath =
+      nextPath === supremePrivatePath ||
+      nextPath.startsWith(supremePrivatePath + "/");
     const redirectedToSupremeLogin = response.status >= 300 && response.status < 400 &&
       loginUrl.origin === baseUrl &&
       loginUrl.pathname === "/auth/supreme-login" &&
-      loginUrl.searchParams.get("next") === supremePrivatePath;
+      preservesPrivatePath;
     return redirectedToSupremeLogin
       ? { ok: true }
-      : { ok: false, reason: `Expected redirect to dedicated Supreme login preserving private path, received HTTP ${response.status} (${location || "no Location header"})` };
+      : { ok: false, reason: `Expected same-origin redirect to dedicated Supreme login with a next path inside the configured private route, received HTTP ${response.status} (${location || "no Location header"})` };
   });
 } else {
   process.stdout.write("SKIP  Supreme private-route smoke checks — set SUPREME_PRIVATE_PATH in the smoke-test environment.\n");
