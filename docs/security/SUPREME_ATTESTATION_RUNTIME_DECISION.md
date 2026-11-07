@@ -127,3 +127,18 @@ chain-role semantics; (4) compare every acceptance/rejection result with the
 Kotlin oracle across valid and invalid fixtures; and (5) benchmark within
 Supabase Edge Function CPU and memory limits. Any parity gap or runtime limit
 keeps app-only Supreme login disabled.
+
+
+## Hosted runtime feasibility checkpoint (2026-11-07)
+
+The current Deno X.509 path microbenchmark completed on a GitHub-hosted AMD EPYC 7763 runner under Deno 2.9.8 at an average of **3.0 ms per real Google TEE fixture path validation** (331.6 iterations/second; observed range 2.9–4.5 ms). The pinned Kotlin upstream suite and the current real-certificate parser/path-policy differential workflow also passed on the checked commit.
+
+This is encouraging algorithmic evidence only. It is **not** a Supabase-hosted benchmark: the runner has a different CPU, memory profile, runtime configuration and network environment. Supabase currently documents a Free-plan Edge Function limit of 256 MB memory and 2 seconds of CPU time per request. The 3.0 ms runner measurement must not be converted into a hosted performance claim or treated as proof that the complete verification request fits those limits. The full request also includes bounded DER parsing, Android KeyDescription and RKP policy, WebCrypto proof verification, both Google metadata feeds, and database challenge consumption.
+
+A live Supabase project inventory check on 2026-11-07 found only the existing `before-user-created` Edge Function deployed. No Supreme attestation verifier Edge Function is deployed. The Deno security modules in this repository are source/test components only; they are not receiving production requests.
+
+Required next gate before any verifier endpoint is deployed or authentication is enabled:
+1. Add a benchmark harness that exercises the complete verification pipeline with representative valid and invalid upstream fixtures, including the largest supported chain and metadata feed sizes.
+2. Run that harness inside the actual Supabase Edge Runtime in a non-authenticating, isolated benchmark function, measuring CPU and memory through Supabase metrics; do not use a GitHub runner as a substitute.
+3. If the hosted runtime exceeds limits or parity remains incomplete, stop and keep Supreme app login disabled. Do not weaken validation, split checks across requests in a way that permits partial acceptance, or introduce a paid service without explicit budget approval.
+4. Only after the runtime gate passes, add a fail-closed verifier endpoint and connect it to the existing one-time challenge flow. The endpoint must not create a Supabase session or grant a role.
