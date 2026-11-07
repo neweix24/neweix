@@ -5,6 +5,7 @@ on:
     branches:
       - feat/neweix-supreme-android-mainline
       - feat/supreme-server-attestation-verifier
+      - feat/supreme-deno-x509-parser
     paths:
       - "android/supreme-app/**"
       - ".github/workflows/supreme-android-build.yml"
@@ -13,6 +14,7 @@ on:
       - main
       - feat/neweix-supreme-private-entry-mainline
       - feat/neweix-supreme-private-entry-mainline-v2
+      - feat/supreme-deno-x509-parser
     paths:
       - "android/supreme-app/**"
       - ".github/workflows/supreme-android-build.yml"
