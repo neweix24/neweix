@@ -95,11 +95,12 @@ function makeRequest(
     "content-type": overrides.contentType ?? "application/json",
   });
   if (overrides.contentLength !== undefined) headers.set("content-length", overrides.contentLength);
-  return new Request("https://neweix.com/api/supreme/attestation/verify", {
-    method: overrides.method ?? "POST",
-    headers,
-    body: typeof body === "string" ? body : JSON.stringify(body),
-  });
+  const method = overrides.method ?? "POST";
+  const init: RequestInit = { method, headers };
+  if (method !== "GET" && method !== "HEAD") {
+    init.body = typeof body === "string" ? body : JSON.stringify(body);
+  }
+  return new Request("https://neweix.com/api/supreme/attestation/verify", init);
 }
 
 function makeDependencies(
@@ -183,7 +184,7 @@ Deno.test("malformed JSON, challenge and certificate encodings are rejected", as
   assertEquals(malformedJson.status, 400, "malformed JSON status");
 
   const malformedChallenge = await handleSupremeAttestationVerify(
-    makeRequest({ ...validPayload(), challenge: "A".repeat(43) }),
+    makeRequest({ ...validPayload(), challenge: "A".repeat(42) }),
     makeDependencies(),
   );
   assertEquals(malformedChallenge.status, 400, "malformed challenge status");
@@ -197,7 +198,7 @@ Deno.test("malformed JSON, challenge and certificate encodings are rejected", as
 
 Deno.test("body size, content type and HTTP method are bounded", async () => {
   const tooLarge = await handleSupremeAttestationVerify(
-    makeRequest("x".repeat(100_000), { contentLength: "100000" }),
+    makeRequest("x".repeat(100_000)),
     makeDependencies(),
   );
   assertEquals(tooLarge.status, 413, "oversized request status");
