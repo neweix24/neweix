@@ -76,10 +76,29 @@ class MainActivity : Activity() {
                         (uri.port == -1 || uri.port == 443) &&
                         uri.userInfo == null
                     ) {
-                        return false
+                        val path = uri.encodedPath.orEmpty()
+                        val privatePrefix = BuildConfig.SUPREME_PRIVATE_PATH
+                        val allowedSupremeRoutes = listOf(
+                            "/auth/supreme-login",
+                            "/auth/mfa",
+                            "/auth/mfa/setup",
+                            "/auth/logout",
+                        )
+                        val isPrivateWorkspaceRoute =
+                            path == privatePrefix || path.startsWith("$privatePrefix/") ||
+                            path == "/supreme" || path.startsWith("/supreme/")
+                        val isSupremeAuthRoute = allowedSupremeRoutes.any { route ->
+                            path == route || path.startsWith("$route/")
+                        }
+                        if (isPrivateWorkspaceRoute || isSupremeAuthRoute) return false
+
+                        // Never let this private app fall back to the customer
+                        // storefront or shared staff sign-in. Return to its entry.
+                        view.loadUrl(BuildConfig.SITE_ORIGIN + privatePrefix)
+                        return true
                     }
 
-                    // Hand external web pages and supported device actions to Android.
+                    // External web navigation is blocked; only device actions are handed off.
                     return openExternalUri(uri)
                 }
 
@@ -222,7 +241,6 @@ class MainActivity : Activity() {
     private fun openExternalUri(uri: Uri): Boolean {
         return try {
             val intent = when (uri.scheme?.lowercase()) {
-                "https", "http" -> Intent(Intent.ACTION_VIEW, uri)
                 "tel" -> Intent(Intent.ACTION_DIAL, uri)
                 "mailto" -> Intent(Intent.ACTION_SENDTO, uri)
                 else -> return true
