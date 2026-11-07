@@ -52,6 +52,10 @@ class MainActivity : Activity() {
             settings.setSupportMultipleWindows(false)
             settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
             settings.safeBrowsingEnabled = true
+            // Keep normal HTTP caching semantics: the protected dashboard sends
+            // private/no-store headers, while versioned static assets may cache.
+            // This forces every top-level navigation/reopen to revalidate remotely.
+            settings.cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
 
             CookieManager.getInstance().setAcceptCookie(true)
             CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
@@ -231,11 +235,10 @@ class MainActivity : Activity() {
             )
         }
 
-        if (savedInstanceState != null && browser.restoreState(savedInstanceState) == null) {
-            browser.loadUrl(BuildConfig.SITE_ORIGIN + privatePath)
-        } else if (savedInstanceState == null) {
-            browser.loadUrl(BuildConfig.SITE_ORIGIN + privatePath)
-        }
+        // Do not restore a saved WebView document: it may contain an older
+        // dashboard snapshot. Re-enter through the private server route so the
+        // latest deployed dashboard and current server-side authorization load.
+        browser.loadUrl(BuildConfig.SITE_ORIGIN + privatePath)
     }
 
     private fun openExternalUri(uri: Uri): Boolean {
@@ -268,11 +271,6 @@ class MainActivity : Activity() {
 
     private fun dp(value: Int): Int =
         (value * resources.displayMetrics.density).toInt()
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        webView?.saveState(outState)
-        super.onSaveInstanceState(outState)
-    }
 
     private fun handleBack() {
         val browser = webView
