@@ -21,7 +21,7 @@ function errorResponse(message: string, status: number) {
 async function readBoundedBody(request: Request): Promise<Uint8Array> {
   const contentLength = request.headers.get("content-length");
   if (contentLength !== null) {
-    if (!/^\\d+$/.test(contentLength)) throw new TypeError("Invalid Content-Length.");
+    if (!/^\d+$/.test(contentLength)) throw new TypeError("Invalid Content-Length.");
     if (Number(contentLength) > MAX_BODY_BYTES) throw new RangeError("Request too large.");
   }
   if (!request.body) throw new TypeError("Missing request body.");
@@ -63,7 +63,7 @@ async function readBoundedBody(request: Request): Promise<Uint8Array> {
  * it does not create an Auth session or authorize the Supreme dashboard.
  */
 export async function POST(request: Request) {
-  if (!/^application\\/json(?:\\s*;|$)/i.test(request.headers.get("content-type") ?? "")) {
+  if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") ?? "")) {
     return errorResponse("Content-Type must be application/json.", 415);
   }
 
@@ -107,11 +107,11 @@ export async function POST(request: Request) {
       return errorResponse("Attestation verification service is unavailable.", 503);
     }
 
-    const endpoint = `${supabaseUrl.replace(/\\/+$/, "")}/functions/v1/supreme-attestation-verify`;
+    const endpoint = supabaseUrl.replace(/\/+$/, "") + "/functions/v1/supreme-attestation-verify";
     const upstream = await fetch(endpoint, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${serviceRoleKey}`,
+        Authorization: "Bearer " + serviceRoleKey,
         apikey: serviceRoleKey,
         "Content-Type": "application/json",
         "X-NEWEIX-Attestation-IP-Hash": requesterIpHash,
