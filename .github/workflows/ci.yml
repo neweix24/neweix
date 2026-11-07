@@ -32,3 +32,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run build
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Test Supreme attestation verification handler
+        run: deno test supabase/functions/supreme-attestation-verify/handler_test.ts
