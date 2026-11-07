@@ -296,3 +296,27 @@ Deno.test("challenge service and Google metadata failures fail closed", async ()
   );
   assertEquals(consumeFailure.status, 503, "challenge consumption status");
 });
+Deno.test("requester IP binding is mandatory before metadata or certificate verification", async () => {
+  const calls: string[] = [];
+  const response = await handleSupremeAttestationVerify(
+    makeRequest(validPayload(), { ipHash: null }),
+    makeDependencies({}, calls),
+  );
+  assertEquals(response.status, 400, "missing requester IP binding status");
+  assertEquals(calls.length, 0, "no challenge lookup or expensive work without IP binding");
+});
+
+Deno.test("challenge lookup receives the trusted requester IP hash", async () => {
+  let receivedIpHash = "";
+  const response = await handleSupremeAttestationVerify(
+    makeRequest(),
+    makeDependencies({
+      assertChallengeAvailable: (_challengeId, _challengeHash, requesterIpHash) => {
+        receivedIpHash = requesterIpHash;
+        return Promise.resolve(true);
+      },
+    }),
+  );
+  assertEquals(response.status, 200, "valid IP-bound attestation status");
+  assertEquals(receivedIpHash, REQUESTER_IP_HASH, "challenge requester IP hash");
+});
