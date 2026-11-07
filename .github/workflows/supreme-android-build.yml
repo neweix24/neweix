@@ -6,6 +6,7 @@ on:
     branches:
       - feat/neweix-supreme-android-mainline
       - feat/supreme-server-attestation-verifier
+      - feat/supreme-private-login-shell
     paths:
       - "android/supreme-app/**"
       - ".github/workflows/supreme-android-build.yml"
