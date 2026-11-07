@@ -1,6 +1,6 @@
 import postgres from "npm:postgres@3.4.7";
 
-const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
+const SUPREME_PROJECT_URL = "https://grhybvlhdnzlopwbaqun.supabase.co";
 const DATABASE_URL = Deno.env.get("SUPABASE_DB_URL") ?? "";
 const db = DATABASE_URL ? postgres(DATABASE_URL, { max: 2, prepare: false, ssl: "require" }) : null;
 
@@ -39,7 +39,7 @@ function decodeClaims(request: Request): Claims | null {
 function validFreshAal2(claims: Claims): boolean {
   const now = Date.now() / 1000;
   const authTime = typeof claims.auth_time === "number" ? claims.auth_time : 0;
-  return claims.iss === SUPABASE_URL + "/auth/v1" &&
+  return claims.iss === SUPREME_PROJECT_URL + "/auth/v1" &&
     claims.role === "authenticated" && claims.aud === "authenticated" &&
     claims.aal === "aal2" && authTime > 0 && now - authTime <= 300 &&
     authTime <= now + 30 && typeof claims.sub === "string" && UUID.test(claims.sub) &&
@@ -58,7 +58,7 @@ function activeAppSession(claims: Claims): { sessionId: string; deviceId: string
 
 async function authorize(request: Request): Promise<{ userId: string } | null> {
   const sessionApiUrl = Deno.env.get("SUPREME_SESSION_API_URL");
-  if (!sessionApiUrl || !SUPABASE_URL) return null;
+  if (!sessionApiUrl || !SUPREME_PROJECT_URL) return null;
   const authorization = request.headers.get("authorization") ?? "";
   const match = /^Bearer ([A-Za-z0-9._~-]+)$/.exec(authorization);
   if (!match) return null;
@@ -101,7 +101,52 @@ async function authorize(request: Request): Promise<{ userId: string } | null> {
   return { userId: claims.sub as string };
 }
 
-async function overview(requestId: string): Promise<Response> {
+
+function hex(bytes: Uint8Array): string {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+async function sha256(value: string): Promise<string> {
+  return hex(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))));
+}
+async function signInternalRequest(secret: string, timestamp: string, method: string, target: string): Promise<string> {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const canonical = [timestamp, method, target, await sha256("")].join("\n");
+  return hex(new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(canonical))));
+}
+async function callEixon(resource: "overview" | "accounts" | "journal-entries", requestUrl: URL, requestId: string): Promise<Response> {
+  const baseUrl = (Deno.env.get("EIXON_SUPABASE_URL") ?? "").replace(/\/$/, "");
+  const secret = Deno.env.get("NEWEIX_CONTROL_PLANE_SECRET") ?? "";
+  if (!baseUrl || secret.length < 32) return json({ error: { code: "EIXON_ADAPTER_NOT_CONFIGURED", request_id: requestId } }, 503, requestId);
+  const targetUrl = new URL(baseUrl + "/functions/v1/supreme-eixon-api/" + resource);
+  if (resource === "journal-entries") {
+    const rawLimit = Number(requestUrl.searchParams.get("limit") ?? "25");
+    const limit = Number.isSafeInteger(rawLimit) ? Math.max(1, Math.min(50, rawLimit)) : 25;
+    targetUrl.searchParams.set("limit", String(limit));
+  }
+  const timestamp = String(Date.now());
+  const target = targetUrl.pathname + targetUrl.search;
+  const signature = await signInternalRequest(secret, timestamp, "GET", target);
+  let upstream: Response;
+  try {
+    upstream = await fetch(targetUrl, {
+      method: "GET",
+      headers: { "x-neweix-timestamp": timestamp, "x-neweix-signature": signature, accept: "application/json" },
+      cache: "no-store", redirect: "error", signal: AbortSignal.timeout(8_000),
+    });
+  } catch (error) {
+    console.error("Neweix to Eixon adapter request failed", { requestId, error: String(error) });
+    return json({ error: { code: "EIXON_UNAVAILABLE", request_id: requestId } }, 503, requestId);
+  }
+  const body = await upstream.text();
+  if (body.length > 64 * 1024) return json({ error: { code: "EIXON_RESPONSE_TOO_LARGE", request_id: requestId } }, 502, requestId);
+  let payload: unknown;
+  try { payload = JSON.parse(body); } catch {
+    console.error("Eixon adapter returned non-JSON response", { requestId, status: upstream.status });
+    return json({ error: { code: "EIXON_INVALID_RESPONSE", request_id: requestId } }, 502, requestId);
+  }
+  return json(payload, upstream.status, requestId);
+}
+\nasync function overview(requestId: string): Promise<Response> {
   if (!db) return json({ error: { code: "SERVICE_NOT_CONFIGURED", request_id: requestId } }, 503, requestId);
   const [products, orders, warehouses] = await Promise.all([
     db.unsafe(
@@ -162,15 +207,33 @@ Deno.serve(async (request: Request) => {
   try {
     const actor = await authorize(request);
     if (!actor) return json({ error: { code: "SUPREME_ATTESTED_AAL2_SESSION_REQUIRED", request_id: requestId } }, 403, requestId);
-    const pathname = new URL(request.url).pathname.replace(/\/+$/, "");
-    if (pathname.endsWith("/health")) {
-      return json({ success: true, service: "neweix", status: "available", request_id: requestId }, 200, requestId);
+    const url = new URL(request.url);
+    const pathname = url.pathname.replace(/\/+$/, "");
+    const marker = "/supreme-neweix-api";
+    const markerIndex = pathname.lastIndexOf(marker);
+    if (markerIndex < 0) return json({ error: { code: "NOT_FOUND", request_id: requestId } }, 404, requestId);
+    const root = pathname.slice(markerIndex + marker.length);
+    if (root === "/health") {
+      console.info("neweix_control_plane_access", { requestId, actorId: actor.userId, service: "neweix", capability: "service.health.read" });
+      return json({ success: true, service: "neweix", status: "available", control_plane: "neweix", request_id: requestId }, 200, requestId);
     }
-    if (pathname.endsWith("/overview")) return await overview(requestId);
-    if (pathname.endsWith("/orders")) return await recentOrders(new URL(request.url), requestId);
+    if (root === "/overview") {
+      console.info("neweix_control_plane_access", { requestId, actorId: actor.userId, service: "neweix", capability: "commerce.overview.read" });
+      return await overview(requestId);
+    }
+    if (root === "/orders") {
+      console.info("neweix_control_plane_access", { requestId, actorId: actor.userId, service: "neweix", capability: "commerce.orders.read" });
+      return await recentOrders(url, requestId);
+    }
+    if (root === "/eixon/overview" || root === "/eixon/accounts" || root === "/eixon/journal-entries") {
+      const resource = root.slice("/eixon/".length) as "overview" | "accounts" | "journal-entries";
+      const capability = resource === "overview" ? "ledger.overview.read" : resource === "accounts" ? "ledger.accounts.read" : "ledger.entries.read";
+      console.info("neweix_control_plane_access", { requestId, actorId: actor.userId, service: "eixon", capability });
+      return await callEixon(resource, url, requestId);
+    }
     return json({ error: { code: "NOT_FOUND", request_id: requestId } }, 404, requestId);
   } catch (error) {
-    console.error("Supreme Neweix service API failed", { requestId, error: String(error) });
+    console.error("Neweix Control Plane service request failed", { requestId, error: String(error) });
     return json({ error: { code: "INTERNAL_ERROR", request_id: requestId } }, 500, requestId);
   }
 });
