@@ -25,7 +25,7 @@ create index if not exists supreme_attestation_challenges_expiry_idx
 
 alter table public.supreme_app_attestation_challenges enable row level security;
 
-revoke all on table public.supreme_app_attestation_challenges from anon, authenticated;
+revoke all on table public.supreme_app_attestation_challenges from public, anon, authenticated;
 grant select, insert, update, delete on table public.supreme_app_attestation_challenges to service_role;
 
 -- Issue at most 10 challenges per source IP hash in any rolling 10-minute window.
@@ -38,7 +38,7 @@ create or replace function public.issue_supreme_app_attestation_challenge(
 returns uuid
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = pg_catalog, public, pg_temp
 as $$
 declare
   v_id uuid;
@@ -48,84 +48,8 @@ begin
   if p_challenge_hash is null
      or p_requester_ip_hash is null
      or p_expires_at is null
-     or p_challenge_hash !~ '^[a-f0-9]{64}
-    raise exception 'invalid attestation challenge parameters'
-      using errcode = '22023';
-  end if;
-
-  perform pg_advisory_xact_lock(hashtextextended(p_requester_ip_hash, 0));
-
-  select count(*)::integer
-    into v_recent_count
-    from public.supreme_app_attestation_challenges
-   where requester_ip_hash = p_requester_ip_hash
-     and created_at > v_now - interval '10 minutes';
-
-  if v_recent_count >= 10 then
-    return null;
-  end if;
-
-  insert into public.supreme_app_attestation_challenges (
-    challenge_hash,
-    requester_ip_hash,
-    created_at,
-    expires_at
-  ) values (
-    p_challenge_hash,
-    p_requester_ip_hash,
-    v_now,
-    p_expires_at
-  )
-  returning id into v_id;
-
-  return v_id;
-end;
-$$;
-
-revoke all on function public.issue_supreme_app_attestation_challenge(text, text, timestamptz)
-  from public, anon, authenticated;
-grant execute on function public.issue_supreme_app_attestation_challenge(text, text, timestamptz)
-  to service_role;
-
-     or p_requester_ip_hash !~ '^[a-f0-9]{64}
-    raise exception 'invalid attestation challenge parameters'
-      using errcode = '22023';
-  end if;
-
-  perform pg_advisory_xact_lock(hashtextextended(p_requester_ip_hash, 0));
-
-  select count(*)::integer
-    into v_recent_count
-    from public.supreme_app_attestation_challenges
-   where requester_ip_hash = p_requester_ip_hash
-     and created_at > v_now - interval '10 minutes';
-
-  if v_recent_count >= 10 then
-    return null;
-  end if;
-
-  insert into public.supreme_app_attestation_challenges (
-    challenge_hash,
-    requester_ip_hash,
-    created_at,
-    expires_at
-  ) values (
-    p_challenge_hash,
-    p_requester_ip_hash,
-    v_now,
-    p_expires_at
-  )
-  returning id into v_id;
-
-  return v_id;
-end;
-$$;
-
-revoke all on function public.issue_supreme_app_attestation_challenge(text, text, timestamptz)
-  from public, anon, authenticated;
-grant execute on function public.issue_supreme_app_attestation_challenge(text, text, timestamptz)
-  to service_role;
-
+     or p_challenge_hash !~ '^[a-f0-9]{64}$'
+     or p_requester_ip_hash !~ '^[a-f0-9]{64}$'
      or p_expires_at <= v_now
      or p_expires_at > v_now + interval '5 minutes 30 seconds' then
     raise exception 'invalid attestation challenge parameters'
