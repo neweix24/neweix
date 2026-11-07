@@ -46,6 +46,23 @@ begin
     null;
   end;
 
+  begin
+    perform public.issue_supreme_app_attestation_challenge(
+      'not-a-sha256-hash', repeat('b', 64), clock_timestamp() + interval '2 minutes'
+    );
+    raise exception 'Challenge issuance accepted a malformed challenge hash.';
+  exception when sqlstate '22023' then
+    null;
+  end;
+  begin
+    perform public.issue_supreme_app_attestation_challenge(
+      repeat('a', 64), 'not-a-sha256-hash', clock_timestamp() + interval '2 minutes'
+    );
+    raise exception 'Challenge issuance accepted a malformed requester hash.';
+  exception when sqlstate '22023' then
+    null;
+  end;
+
   if has_function_privilege('anon', 'public.issue_supreme_app_attestation_challenge(text,text,timestamptz)', 'EXECUTE')
      or has_function_privilege('authenticated', 'public.issue_supreme_app_attestation_challenge(text,text,timestamptz)', 'EXECUTE')
      or not has_function_privilege('service_role', 'public.issue_supreme_app_attestation_challenge(text,text,timestamptz)', 'EXECUTE') then
@@ -77,6 +94,16 @@ begin
     clock_timestamp() - interval '10 minutes',
     clock_timestamp() - interval '1 second'
   ) returning id into v_expired_id;
+
+  -- A prior request outside the rolling window must not consume quota.
+  insert into public.supreme_app_attestation_challenges (
+    challenge_hash, requester_ip_hash, created_at, expires_at
+  ) values (
+    md5('old-rate-limit-challenge') || md5('old-rate-limit-extra'),
+    v_rate_ip_hash,
+    clock_timestamp() - interval '11 minutes',
+    clock_timestamp() - interval '6 minutes'
+  );
 
   -- Ten issues are permitted per IP hash in a rolling ten-minute window;
   -- the eleventh must be rate-limited without inserting a row.
