@@ -90,8 +90,13 @@ public final class ExtractAndroidAttestationFixtures {
           }
         }
         String source = root.relativize(pem).toString().replace('\\', '/');
-        records.add(String.format("{\"source\":\"%s\",\"certificateIndex\":0,\"derBase64\":\"%s\"%s}",
-            jsonEscape(source), Base64.getEncoder().encodeToString(innerDer), provisioningField));
+        List<String> encodedCertificates = new ArrayList<>();
+        for (X509Certificate certificate : x509Certificates) {
+          encodedCertificates.add("\"" + Base64.getEncoder().encodeToString(certificate.getEncoded()) + "\"");
+        }
+        String certificateField = ",\"certificatesBase64\":[" + String.join(",", encodedCertificates) + "]";
+        records.add(String.format("{\"source\":\"%s\",\"certificateIndex\":0,\"derBase64\":\"%s\"%s%s}",
+            jsonEscape(source), Base64.getEncoder().encodeToString(innerDer), certificateField, provisioningField));
       }
     }
 
