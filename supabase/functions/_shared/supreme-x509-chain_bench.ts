@@ -8,9 +8,9 @@ function fromBase64(value: string): Uint8Array {
   return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
 }
 function fromPem(value: string): Uint8Array {
-  const match = value.match(/^-----BEGIN CERTIFICATE-----\\s*([A-Za-z0-9+/=\\r\\n]+)\\s*-----END CERTIFICATE-----$/u);
+  const match = value.match(/^-----BEGIN CERTIFICATE-----\s*([A-Za-z0-9+/=\r\n]+)\s*-----END CERTIFICATE-----$/u);
   if (!match) throw new TypeError("Invalid fixture root PEM.");
-  return fromBase64(match[1].replace(/\\s/gu, ""));
+  return fromBase64(match[1].replace(/\s/gu, ""));
 }
 
 const fixtureIndex = Deno.env.get("SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX");
