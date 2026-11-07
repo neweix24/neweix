@@ -178,11 +178,10 @@ function enforceAndroidChainRoles(
   chain: readonly ParsedX509Certificate[],
 ): AndroidProvisioningMethod {
   const provisioningMethod = classifyAndroidProvisioningMethod(chain[chain.length - 2].subject);
-  // Google’s pinned verifier accepts both the normal factory path
-  // (target, attestation, factory intermediate, root) and the legacy
-  // collapsed path (target/attestation, factory intermediate, root).
-  // The latter is the upstream no_leaf fixture: its first certificate is
-  // still the target and must carry the attestation extension below.
+  // Google’s pinned verifier accepts the normal factory path
+  // (target, attestation, factory intermediate, root) and a distinct
+  // no-leaf path (attestation, factory intermediate, root). In the latter
+  // there is no target certificate and no KeyDescription extension.
   if (
     provisioningMethod === "FACTORY_PROVISIONED" &&
     chain.length !== 3 && chain.length !== 4
