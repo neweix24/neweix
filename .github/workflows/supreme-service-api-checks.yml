@@ -1,0 +1,27 @@
+name: Supreme service API checks
+
+on:
+  pull_request:
+    paths:
+      - "supabase/functions/supreme-neweix-api/**"
+      - "supabase/config.toml"
+      - ".github/workflows/supreme-service-api-checks.yml"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/supreme-neweix-api/**"
+      - "supabase/config.toml"
+
+permissions:
+  contents: read
+
+jobs:
+  deno-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check Supreme Neweix Edge Function
+        run: deno check supabase/functions/supreme-neweix-api/index.ts
