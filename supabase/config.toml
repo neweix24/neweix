@@ -32,3 +32,6 @@ enable_confirmations = false
 
 [functions.supreme-attestation-verify]
 verify_jwt = true
+
+[functions.supreme-neweix-api]
+verify_jwt = true
