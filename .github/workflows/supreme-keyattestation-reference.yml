@@ -1,8 +1,10 @@
 name: Supreme Android Key Attestation reference verifier
+# Push validation on this branch exercises the full pinned Kotlin-to-Deno differential suite.
 
 on:
   push:
     branches:
+      - feat/supreme-server-attestation-verifier
       - feat/supreme-deno-x509-parser
     paths:
       - ".github/workflows/supreme-keyattestation-reference.yml"
@@ -16,11 +18,12 @@ on:
       - "supabase/functions/_shared/supreme-x509-signature*"
       - "supabase/functions/_shared/supreme-x509-chain*"
       - "supabase/functions/_shared/supreme-x509-chain_bench.ts"
+      - "supabase/functions/_shared/supreme-attestation-runtime_bench.ts"
       - "supabase/functions/_shared/supreme-android-attestation-policy*"
       - "supabase/functions/_shared/supreme-attestation-verifier*"
   pull_request:
     branches:
-      - feat/supreme-server-attestation-verifier
+      - main
     paths:
       - ".github/workflows/supreme-keyattestation-reference.yml"
       - "docs/security/SUPREME_ANDROID_ATTESTATION_VERIFIER.md"
@@ -127,6 +130,8 @@ jobs:
             supabase/functions/_shared/supreme-x509-chain_test.ts
           deno bench --allow-env=SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX,SUPREME_GOOGLE_ROOTS_FIXTURE_PATH --allow-read=android-keyattestation/roots.json,/tmp/supreme-attestation-fixtures.json \
             supabase/functions/_shared/supreme-x509-chain_bench.ts
+          deno bench --allow-env=SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX,SUPREME_GOOGLE_ROOTS_FIXTURE_PATH --allow-read=android-keyattestation/roots.json,/tmp/supreme-attestation-fixtures.json \
+            supabase/functions/_shared/supreme-attestation-runtime_bench.ts
           deno test supabase/functions/_shared/supreme-android-attestation-policy_test.ts
           deno test --allow-env=SUPREME_PATH_POLICY_FIXTURE_INDEX --allow-read=/tmp/supreme-path-policy-fixtures.json \
             supabase/functions/_shared/supreme-attestation-verifier_test.ts
