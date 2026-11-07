@@ -1,7 +1,6 @@
 package com.neweix.supreme
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -20,27 +19,33 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import kotlin.math.max
 
-class MainActivity : Activity() {
+class MainActivity : FragmentActivity() {
     private var webView: WebView? = null
     private var progressBar: ProgressBar? = null
     private var errorPanel: LinearLayout? = null
     private var mainFrameLoadFailed = false
     private var backInvokedCallback: android.window.OnBackInvokedCallback? = null
+    private var biometricPrompt: BiometricPrompt? = null
+    private var lockOverlay: View? = null
+    private var lockMessage: TextView? = null
+    private var isUnlocked = false
+    private var authInProgress = false
+    private var hasLoadedPrivatePage = false
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val privatePath = BuildConfig.SUPREME_PRIVATE_PATH
-        if (!Regex("^/control-[A-Fa-f0-9]{48}$").matches(privatePath)) {
-            showMessage("Supreme app is not configured. Please install the official build.")
-            return
-        }
+        // Prevent sensitive dashboard content from appearing in screenshots,
+        // screen recordings, and Android's recent-apps snapshot.
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
 
         val browser = WebView(this).apply {
             settings.javaScriptEnabled = true
@@ -52,6 +57,10 @@ class MainActivity : Activity() {
             settings.setSupportMultipleWindows(false)
             settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
             settings.safeBrowsingEnabled = true
+            // Keep normal HTTP caching semantics: the protected dashboard sends
+            // private/no-store headers, while versioned static assets may cache.
+            // This forces every top-level navigation/reopen to revalidate remotely.
+            settings.cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
 
             CookieManager.getInstance().setAcceptCookie(true)
             CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
@@ -76,10 +85,29 @@ class MainActivity : Activity() {
                         (uri.port == -1 || uri.port == 443) &&
                         uri.userInfo == null
                     ) {
-                        return false
+                        val path = uri.encodedPath.orEmpty()
+                        val privatePrefix = BuildConfig.SUPREME_PRIVATE_PATH
+                        val allowedSupremeRoutes = listOf(
+                            "/auth/supreme-login",
+                            "/auth/mfa",
+                            "/auth/mfa/setup",
+                            "/auth/logout",
+                        )
+                        val isPrivateWorkspaceRoute =
+                            path == privatePrefix || path.startsWith("$privatePrefix/") ||
+                            path == "/supreme" || path.startsWith("/supreme/")
+                        val isSupremeAuthRoute = allowedSupremeRoutes.any { route ->
+                            path == route || path.startsWith("$route/")
+                        }
+                        if (isPrivateWorkspaceRoute || isSupremeAuthRoute) return false
+
+                        // Never let this private app fall back to the customer
+                        // storefront or shared staff sign-in. Return to its entry.
+                        view.loadUrl(BuildConfig.SITE_ORIGIN + privatePrefix)
+                        return true
                     }
 
-                    // Hand external web pages and supported device actions to Android.
+                    // External web navigation is blocked; only device actions are handed off.
                     return openExternalUri(uri)
                 }
 
@@ -187,6 +215,43 @@ class MainActivity : Activity() {
             )
         )
 
+        val privacyShield = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(32), dp(32), dp(32), dp(32))
+            setBackgroundColor(Color.rgb(11, 18, 32))
+            addView(TextView(this@MainActivity).apply {
+                text = "SUPREME"
+                textSize = 28f
+                setTextColor(Color.rgb(212, 175, 55))
+                gravity = Gravity.CENTER
+            })
+            addView(TextView(this@MainActivity).apply {
+                text = "Authenticate to unlock"
+                textSize = 15f
+                setTextColor(Color.WHITE)
+                gravity = Gravity.CENTER
+            })
+            addView(TextView(this@MainActivity).apply {
+                textSize = 13f
+                setTextColor(Color.rgb(235, 190, 125))
+                gravity = Gravity.CENTER
+                setPadding(0, dp(12), 0, dp(4))
+            }.also { lockMessage = it })
+            addView(Button(this@MainActivity).apply {
+                text = "Try again"
+                setOnClickListener { authenticateToUnlock() }
+            })
+        }
+        root.addView(
+            privacyShield,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
+        lockOverlay = privacyShield
+
         ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
             val safe = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
@@ -212,17 +277,85 @@ class MainActivity : Activity() {
             )
         }
 
-        if (savedInstanceState != null && browser.restoreState(savedInstanceState) == null) {
-            browser.loadUrl(BuildConfig.SITE_ORIGIN + privatePath)
-        } else if (savedInstanceState == null) {
-            browser.loadUrl(BuildConfig.SITE_ORIGIN + privatePath)
+        val privatePath = BuildConfig.SUPREME_PRIVATE_PATH
+        if (!Regex("^/control-[A-Fa-f0-9]{48}$").matches(privatePath)) {
+            showMessage("Supreme app is not configured. Please install the official build.")
+            return
         }
+        configureAppLock()
+        authenticateToUnlock()
+    }
+
+
+    private fun configureAppLock() {
+        biometricPrompt = BiometricPrompt(
+            this,
+            ContextCompat.getMainExecutor(this),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    authInProgress = false
+                    val wasUnlocked = isUnlocked
+                    isUnlocked = true
+                    lockOverlay?.visibility = View.GONE
+                    if (!hasLoadedPrivatePage) {
+                        hasLoadedPrivatePage = true
+                        // Do not restore a saved WebView document. Load the current
+                        // private server route only after local device authentication.
+                        webView?.loadUrl(BuildConfig.SITE_ORIGIN + BuildConfig.SUPREME_PRIVATE_PATH)
+                    } else if (!wasUnlocked) {
+                        webView?.reload()
+                    }
+                }
+
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    authInProgress = false
+                    isUnlocked = false
+                    lockOverlay?.visibility = View.VISIBLE
+                    lockMessage?.text = when (errorCode) {
+                        BiometricPrompt.ERROR_USER_CANCELED,
+                        BiometricPrompt.ERROR_NEGATIVE_BUTTON -> "Authentication cancelled. Tap Try again to unlock."
+                        else -> "Device authentication failed. Check your screen lock and try again."
+                    }
+                }
+
+                override fun onAuthenticationFailed() {
+                    // Keep the system prompt open; no app content is revealed.
+                }
+            }
+        )
+    }
+
+    private fun authenticateToUnlock() {
+        if (isUnlocked || authInProgress) return
+        val prompt = biometricPrompt ?: return
+        authInProgress = true
+        lockOverlay?.visibility = View.VISIBLE
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Unlock Supreme")
+            .setSubtitle("Use your fingerprint or your phone's screen lock PIN")
+            .setDescription("Your device credential stays on your phone.")
+            .setDeviceCredentialAllowed(true)
+            .build()
+        prompt.authenticate(promptInfo)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) {
+            isUnlocked = false
+            authInProgress = false
+            lockOverlay?.visibility = View.VISIBLE
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (webView != null && !isUnlocked) authenticateToUnlock()
     }
 
     private fun openExternalUri(uri: Uri): Boolean {
         return try {
             val intent = when (uri.scheme?.lowercase()) {
-                "https", "http" -> Intent(Intent.ACTION_VIEW, uri)
                 "tel" -> Intent(Intent.ACTION_DIAL, uri)
                 "mailto" -> Intent(Intent.ACTION_SENDTO, uri)
                 else -> return true
@@ -250,11 +383,6 @@ class MainActivity : Activity() {
 
     private fun dp(value: Int): Int =
         (value * resources.displayMetrics.density).toInt()
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        webView?.saveState(outState)
-        super.onSaveInstanceState(outState)
-    }
 
     private fun handleBack() {
         val browser = webView
@@ -287,6 +415,9 @@ class MainActivity : Activity() {
             destroy()
         }
         webView = null
+        biometricPrompt = null
+        lockOverlay = null
+        lockMessage = null
         progressBar = null
         errorPanel = null
         super.onDestroy()
