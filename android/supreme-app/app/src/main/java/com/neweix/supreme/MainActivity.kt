@@ -25,6 +25,8 @@ import androidx.fragment.app.FragmentActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import com.neweix.supreme.security.SupremeAttestationClient
+import java.util.concurrent.Executors
 import kotlin.math.max
 
 class MainActivity : FragmentActivity() {
@@ -39,6 +41,9 @@ class MainActivity : FragmentActivity() {
     private var isUnlocked = false
     private var authInProgress = false
     private var hasLoadedPrivatePage = false
+    private var attestationInProgress = false
+    private var attestationVerified = false
+    private val attestationExecutor = Executors.newSingleThreadExecutor()
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -295,16 +300,11 @@ class MainActivity : FragmentActivity() {
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     authInProgress = false
-                    val wasUnlocked = isUnlocked
                     isUnlocked = true
-                    lockOverlay?.visibility = View.GONE
-                    if (!hasLoadedPrivatePage) {
-                        hasLoadedPrivatePage = true
-                        // Do not restore a saved WebView document. Load the current
-                        // private server route only after local device authentication.
-                        webView?.loadUrl(BuildConfig.SITE_ORIGIN + BuildConfig.SUPREME_PRIVATE_PATH)
-                    } else if (!wasUnlocked) {
-                        webView?.reload()
+                    if (attestationVerified) {
+                        revealPrivateWorkspace()
+                    } else {
+                        verifyDeviceBeforeWorkspace()
                     }
                 }
 
@@ -324,6 +324,54 @@ class MainActivity : FragmentActivity() {
                 }
             }
         )
+    }
+
+    /**
+     * Hardware-backed Android Key Attestation is an additional device-integrity
+     * gate. It is deliberately separate from Supabase authentication, account
+     * authorization, and AAL2 MFA; a verified device does not create a session.
+     */
+    private fun verifyDeviceBeforeWorkspace() {
+        if (attestationVerified || attestationInProgress) return
+        attestationInProgress = true
+        lockOverlay?.visibility = View.VISIBLE
+        lockMessage?.text = "Verifying this device's hardware-backed security…"
+
+        attestationExecutor.execute {
+            try {
+                SupremeAttestationClient.verifyDevice()
+                runOnUiThread {
+                    attestationInProgress = false
+                    attestationVerified = true
+                    if (isUnlocked) {
+                        revealPrivateWorkspace()
+                    } else {
+                        lockMessage?.text = "Device verified. Authenticate again to continue."
+                    }
+                }
+            } catch (_: Exception) {
+                runOnUiThread {
+                    attestationInProgress = false
+                    isUnlocked = false
+                    lockOverlay?.visibility = View.VISIBLE
+                    lockMessage?.text =
+                        "Device security verification failed. Supreme remains locked. Tap Try again to retry."
+                }
+            }
+        }
+    }
+
+    private fun revealPrivateWorkspace() {
+        if (!isUnlocked || !attestationVerified) return
+        lockOverlay?.visibility = View.GONE
+        if (!hasLoadedPrivatePage) {
+            hasLoadedPrivatePage = true
+            // Do not restore a saved WebView document. Load the current private
+            // server route only after local unlock and server-verified attestation.
+            webView?.loadUrl(BuildConfig.SITE_ORIGIN + BuildConfig.SUPREME_PRIVATE_PATH)
+        } else {
+            webView?.reload()
+        }
     }
 
     private fun authenticateToUnlock() {
@@ -417,6 +465,7 @@ class MainActivity : FragmentActivity() {
         }
         webView = null
         biometricPrompt = null
+        attestationExecutor.shutdownNow()
         lockOverlay = null
         lockMessage = null
         progressBar = null
