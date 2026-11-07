@@ -17,6 +17,7 @@ import {
 
 const CHALLENGE_ID = "b8f3e5b2-1b5a-4a7e-8a1a-2d0c6f4e9b11";
 const SERVICE_ROLE_KEY = "server-only-test-service-role-key";
+const REQUESTER_IP_HASH = "c".repeat(64);
 const challenge = new Uint8Array(32).fill(7);
 const encodedChallenge = encodeSupremeChallenge(challenge);
 const fakeCertificate = {} as ParsedX509Certificate;
@@ -81,7 +82,7 @@ function validPayload() {
 
 function makeRequest(
   body: unknown = validPayload(),
-  overrides: { method?: string; authorization?: string; apikey?: string; contentType?: string; contentLength?: string } = {},
+  overrides: { method?: string; authorization?: string; apikey?: string; contentType?: string; contentLength?: string; ipHash?: string | null } = {},
 ): Request {
   const headers = new Headers({
     authorization: overrides.authorization ?? `Bearer ${SERVICE_ROLE_KEY}`,
@@ -89,6 +90,8 @@ function makeRequest(
     "content-type": overrides.contentType ?? "application/json",
   });
   if (overrides.contentLength !== undefined) headers.set("content-length", overrides.contentLength);
+  const ipHash = overrides.ipHash === undefined ? REQUESTER_IP_HASH : overrides.ipHash;
+  if (ipHash) headers.set("x-neweix-attestation-ip-hash", ipHash);
   const method = overrides.method ?? "POST";
   const init: RequestInit = { method, headers };
   if (method !== "GET" && method !== "HEAD") {
