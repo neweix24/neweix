@@ -164,7 +164,7 @@ Deno.test({
     const fixtures = JSON.parse(
       await Deno.readTextFile(pathPolicyIndex!),
     ) as PathPolicyFixture[];
-    if (fixtures.length < 12) {
+    if (fixtures.length < 18) {
       throw new Error("Pinned Google path-policy oracle fixture set is incomplete.");
     }
 
