@@ -73,7 +73,7 @@ async function authorize(request: Request): Promise<{ userId: string; authSessio
     "and d.status = 'active' and d.app_package = 'com.neweix.supreme' " +
     "and d.security_level in ('trusted_environment', 'strongbox') " +
     "and d.attested_at > now() - interval '30 days' limit 2",
-    [claims.sub, claims.session_id, binding.sessionId, binding.deviceId],
+    [claims.sub as string, claims.session_id as string, binding.sessionId, binding.deviceId],
   );
   if (rows.length !== 1 || rows[0].user_id !== claims.sub) return null;
   const identityCount = await db.unsafe(
