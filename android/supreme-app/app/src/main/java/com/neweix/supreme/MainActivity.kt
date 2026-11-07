@@ -50,7 +50,7 @@ class MainActivity : FragmentActivity() {
         val browser = WebView(this).apply {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
-            settings.databaseEnabled = true
+            settings.databaseEnabled = false // WebSQL is not used by the Supreme workspace
             settings.allowFileAccess = false
             settings.allowContentAccess = false
             settings.javaScriptCanOpenWindowsAutomatically = false
@@ -63,7 +63,8 @@ class MainActivity : FragmentActivity() {
             settings.cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
 
             CookieManager.getInstance().setAcceptCookie(true)
-            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+            // Supreme authentication is same-origin; embedded cross-site content needs no cookies.
+            CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
 
             webChromeClient = object : WebChromeClient() {
                 override fun onProgressChanged(view: WebView?, newProgress: Int) {
