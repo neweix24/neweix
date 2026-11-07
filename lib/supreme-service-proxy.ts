@@ -31,14 +31,6 @@ export async function proxySupremeService(service: Service, resource: string) {
       return fail("Supreme-এর সাম্প্রতিক MFA যাচাই প্রয়োজন।", 403);
     }
 
-    const { data: active, error: sessionCheckError } =
-      await supabase.rpc("supreme_has_active_attested_session");
-    if (sessionCheckError) {
-      console.error("Supreme attested-session check failed:", sessionCheckError.code);
-      return fail("Supreme device security configuration is not ready.", 503);
-    }
-    if (active !== true) return fail("সক্রিয় attested Supreme ডিভাইস সেশন প্রয়োজন।", 403);
-
     const supabaseUrl = service === "neweix"
       ? getServerSetting("NEXT_PUBLIC_SUPABASE_URL")
       : getServerSetting("EIXON_SUPABASE_URL");
