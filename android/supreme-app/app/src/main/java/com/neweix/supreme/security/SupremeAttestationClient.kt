@@ -65,7 +65,7 @@ internal object SupremeAttestationClient {
         }
 
         val material = SupremeKeyAttestation.create(challengeId, challenge)
-        require(material.certificateChainBase64.size in 2..MAX_CERTIFICATES) {
+        require(material.certificateChainBase64.size in 3..MAX_CERTIFICATES) {
             "This device did not provide a usable Android attestation chain."
         }
 
