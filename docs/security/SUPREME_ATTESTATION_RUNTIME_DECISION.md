@@ -142,3 +142,15 @@ Required next gate before any verifier endpoint is deployed or authentication is
 2. Run that harness inside the actual Supabase Edge Runtime in a non-authenticating, isolated benchmark function, measuring CPU and memory through Supabase metrics; do not use a GitHub runner as a substitute.
 3. If the hosted runtime exceeds limits or parity remains incomplete, stop and keep Supreme app login disabled. Do not weaken validation, split checks across requests in a way that permits partial acceptance, or introduce a paid service without explicit budget approval.
 4. Only after the runtime gate passes, add a fail-closed verifier endpoint and connect it to the existing one-time challenge flow. The endpoint must not create a Supabase session or grant a role.
+
+
+## Bounded request-workload benchmark added (2026-11-07)
+
+A Deno benchmark harness now measures three CPU workloads using the pinned Google fixture corpus:
+- JSON decoding plus parsing a synthetic 55,000-entry Google status feed, kept below the production 2 MiB response-size cap;
+- real Google TEE X.509 path validation;
+- the combined bounded status-feed parse plus real certificate-path validation.
+
+The benchmark runs in the same Deno CI job as the pinned Kotlin oracle and differential suite. It is a repeatable worst-case workload check, not a hosted Supabase measurement. It deliberately does not deploy a public benchmark function or change the production Supabase project.
+
+A read-only production inventory check on 2026-11-07 confirmed that the production database does not yet contain `public.supreme_app_attestation_challenges` or either challenge RPC, and the only deployed Edge Function is the existing `before-user-created` function. This is expected while the attestation migrations and verifier work remain in unmerged draft PRs. Do not manually apply these migrations or enable the challenge/login path before the complete PR stack has passed review and the production signing identity is configured.
