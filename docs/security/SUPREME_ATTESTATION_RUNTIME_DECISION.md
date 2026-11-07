@@ -183,3 +183,21 @@ runtime limits. Do not enable production Supreme authentication on the basis
 of this benchmark alone. A separately authorized, protected, temporary
 Supabase runtime measurement and review of production signing identity remain
 required before authentication can be enabled.
+
+## Supabase hosted Edge Function constraints checked against current documentation
+
+Current Supabase hosted Edge Function limits documentation (checked 2026-11-07):
+https://supabase.com/docs/guides/functions/limits
+
+- Maximum memory: 256 MB.
+- Maximum CPU time: 2 seconds per request.
+- Free-plan worker wall-clock lifetime: 150 seconds.
+- Request idle timeout: 150 seconds.
+
+The 42.1 ms GitHub-runner combined benchmark is encouraging but does not measure
+Supabase's CPU accounting, memory pressure, cold-start behavior, or network
+latency while fetching Google's live roots/status feeds. Before production
+enablement, run a protected, temporary, non-authenticating benchmark in the
+actual hosted Edge Runtime, collect CPU/memory/request logs, and remove the
+temporary function immediately after verification. No such function has been
+deployed and no production migration has been applied.
