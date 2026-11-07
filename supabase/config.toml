@@ -29,3 +29,6 @@ enable_signup = true
 [auth.email]
 enable_signup = true
 enable_confirmations = false
+
+[functions.supreme-attestation-verify]
+verify_jwt = true
