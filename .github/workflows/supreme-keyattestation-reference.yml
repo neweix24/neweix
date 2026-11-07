@@ -1,0 +1,132 @@
+name: Supreme Android Key Attestation reference verifier
+
+on:
+  push:
+    branches:
+      - feat/supreme-deno-x509-parser
+    paths:
+      - ".github/workflows/supreme-keyattestation-reference.yml"
+      - "docs/security/SUPREME_ANDROID_ATTESTATION_VERIFIER.md"
+      - "scripts/security/**"
+      - "supabase/functions/_shared/supreme-android-keydescription*"
+      - "supabase/functions/_shared/supreme-attestation-application-id*"
+      - "supabase/functions/_shared/supreme-attestation-der*"
+      - "supabase/functions/_shared/supreme-android-provisioning-info*"
+      - "supabase/functions/_shared/supreme-x509-certificate*"
+      - "supabase/functions/_shared/supreme-x509-signature*"
+      - "supabase/functions/_shared/supreme-x509-chain*"
+      - "supabase/functions/_shared/supreme-x509-chain_bench.ts"
+      - "supabase/functions/_shared/supreme-android-attestation-policy*"
+      - "supabase/functions/_shared/supreme-attestation-verifier*"
+  pull_request:
+    branches:
+      - feat/supreme-server-attestation-verifier
+    paths:
+      - ".github/workflows/supreme-keyattestation-reference.yml"
+      - "docs/security/SUPREME_ANDROID_ATTESTATION_VERIFIER.md"
+      - "scripts/security/**"
+      - "supabase/functions/_shared/supreme-android-keydescription*"
+      - "supabase/functions/_shared/supreme-attestation-application-id*"
+      - "supabase/functions/_shared/supreme-attestation-der*"
+      - "supabase/functions/_shared/supreme-android-provisioning-info*"
+      - "supabase/functions/_shared/supreme-x509-certificate*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supreme-keyattestation-reference-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  upstream-reference-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out NEWEIX repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Check out pinned upstream verifier source
+        env:
+          UPSTREAM_COMMIT: "0e3ac2fdd54799d779e1979a96fbcba0361b2089"
+        run: |
+          set -euo pipefail
+          git init android-keyattestation
+          cd android-keyattestation
+          git remote add origin https://github.com/android/keyattestation.git
+          git fetch --depth=1 origin "$UPSTREAM_COMMIT"
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$UPSTREAM_COMMIT"
+
+      - name: Run upstream verifier test suite
+        working-directory: android-keyattestation
+        run: ./gradlew --no-daemon --stacktrace test
+
+      - name: Extract RKP fixture oracle values using the pinned upstream Kotlin verifier
+        working-directory: android-keyattestation
+        env:
+          SUPREME_UPSTREAM_TESTDATA: ${{ github.workspace }}/android-keyattestation/testdata
+          SUPREME_RKP_EXPECTED_INDEX: /tmp/supreme-rkp-expected.json
+        run: |
+          set -euo pipefail
+          cp ../scripts/security/ProvisioningInfoReferenceFixtureTest.kt src/test/kotlin/ProvisioningInfoReferenceFixtureTest.kt
+          ./gradlew --no-daemon --stacktrace test --tests com.android.keyattestation.verifier.ProvisioningInfoReferenceFixtureTest
+
+      - name: Export pinned Google Android chain-role and validity decisions
+        working-directory: android-keyattestation
+        env:
+          SUPREME_PATH_POLICY_FIXTURE_INDEX: /tmp/supreme-path-policy-fixtures.json
+        run: |
+          set -euo pipefail
+          cp ../scripts/security/PathPolicyReferenceFixtureTest.kt src/test/kotlin/PathPolicyReferenceFixtureTest.kt
+          ./gradlew --no-daemon --stacktrace test --tests com.android.keyattestation.verifier.PathPolicyReferenceFixtureTest
+
+      - name: Set up Deno for real-certificate parser differential tests
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Extract real Android attestation extensions from upstream PEM fixtures
+        working-directory: .
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/supreme-attestation-classes
+          javac -d /tmp/supreme-attestation-classes scripts/security/ExtractAndroidAttestationFixtures.java
+          java -cp /tmp/supreme-attestation-classes ExtractAndroidAttestationFixtures \
+            android-keyattestation /tmp/supreme-attestation-fixtures.json
+          javac -d /tmp/supreme-attestation-classes scripts/security/ExtractX509OracleFixtures.java
+          java -cp /tmp/supreme-attestation-classes ExtractX509OracleFixtures \
+            android-keyattestation /tmp/supreme-x509-oracle.json
+
+      - name: Compare Deno parser with real Android certificate fixture outputs
+        working-directory: .
+        env:
+          SUPREME_ATTESTATION_FIXTURE_INDEX: /tmp/supreme-attestation-fixtures.json
+          SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX: /tmp/supreme-attestation-fixtures.json
+          SUPREME_X509_ORACLE_INDEX: /tmp/supreme-x509-oracle.json
+          SUPREME_GOOGLE_ROOTS_FIXTURE_PATH: android-keyattestation/roots.json
+          SUPREME_PATH_POLICY_FIXTURE_INDEX: /tmp/supreme-path-policy-fixtures.json
+          SUPREME_ATTESTATION_UPSTREAM_DIR: android-keyattestation
+          SUPREME_RKP_EXPECTED_INDEX: /tmp/supreme-rkp-expected.json
+        run: |
+          deno test --allow-env=SUPREME_ATTESTATION_FIXTURE_INDEX,SUPREME_ATTESTATION_UPSTREAM_DIR,SUPREME_RKP_EXPECTED_INDEX \
+            --allow-read=android-keyattestation,/tmp/supreme-attestation-fixtures.json,/tmp/supreme-rkp-expected.json \
+            supabase/functions/_shared/supreme-android-keydescription_fixture_test.ts
+          deno test --allow-env=SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX,SUPREME_X509_ORACLE_INDEX --allow-read=/tmp/supreme-attestation-fixtures.json,/tmp/supreme-x509-oracle.json \
+            supabase/functions/_shared/supreme-x509-certificate_test.ts
+          deno test --allow-env=SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX,SUPREME_X509_ORACLE_INDEX --allow-read=/tmp/supreme-attestation-fixtures.json,/tmp/supreme-x509-oracle.json \
+            supabase/functions/_shared/supreme-x509-signature_test.ts
+          deno test --allow-env=SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX,SUPREME_GOOGLE_ROOTS_FIXTURE_PATH,SUPREME_PATH_POLICY_FIXTURE_INDEX --allow-read=android-keyattestation/roots.json,/tmp/supreme-attestation-fixtures.json,/tmp/supreme-path-policy-fixtures.json \
+            supabase/functions/_shared/supreme-x509-chain_test.ts
+          deno bench --allow-env=SUPREME_ATTESTATION_CERTIFICATE_FIXTURE_INDEX,SUPREME_GOOGLE_ROOTS_FIXTURE_PATH --allow-read=android-keyattestation/roots.json,/tmp/supreme-attestation-fixtures.json \
+            supabase/functions/_shared/supreme-x509-chain_bench.ts
+          deno test supabase/functions/_shared/supreme-android-attestation-policy_test.ts
+          deno test --allow-env=SUPREME_PATH_POLICY_FIXTURE_INDEX --allow-read=/tmp/supreme-path-policy-fixtures.json \
+            supabase/functions/_shared/supreme-attestation-verifier_test.ts

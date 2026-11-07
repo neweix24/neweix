@@ -25,7 +25,7 @@ create index if not exists supreme_attestation_challenges_expiry_idx
 
 alter table public.supreme_app_attestation_challenges enable row level security;
 
-revoke all on table public.supreme_app_attestation_challenges from anon, authenticated;
+revoke all on table public.supreme_app_attestation_challenges from public, anon, authenticated;
 grant select, insert, update, delete on table public.supreme_app_attestation_challenges to service_role;
 
 -- Issue at most 10 challenges per source IP hash in any rolling 10-minute window.
@@ -38,14 +38,17 @@ create or replace function public.issue_supreme_app_attestation_challenge(
 returns uuid
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = pg_catalog, public, pg_temp
 as $$
 declare
   v_id uuid;
   v_now timestamptz := clock_timestamp();
   v_recent_count integer;
 begin
-  if p_challenge_hash !~ '^[a-f0-9]{64}$'
+  if p_challenge_hash is null
+     or p_requester_ip_hash is null
+     or p_expires_at is null
+     or p_challenge_hash !~ '^[a-f0-9]{64}$'
      or p_requester_ip_hash !~ '^[a-f0-9]{64}$'
      or p_expires_at <= v_now
      or p_expires_at > v_now + interval '5 minutes 30 seconds' then

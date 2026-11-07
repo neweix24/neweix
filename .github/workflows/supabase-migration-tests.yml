@@ -2,9 +2,15 @@ name: Supabase database migration tests
 
 on:
   pull_request:
-    branches: ["main", "feat/neweix-supreme-mobile-workspace"]
+    branches: ["main", "feat/neweix-supreme-mobile-workspace", "feat/supreme-server-attestation-verifier"]
+    paths:
+      - "supabase/functions/_shared/supreme-*.ts"
+      - ".github/workflows/supabase-migration-tests.yml"
   push:
-    branches: ["main", "feat/neweix-supreme-dashboard-phase-1", "feat/neweix-supreme-dashboard-phase-1-mainline"]
+    branches: ["main", "feat/neweix-supreme-dashboard-phase-1", "feat/neweix-supreme-dashboard-phase-1-mainline", "feat/supreme-server-attestation-verifier"]
+    paths:
+      - "supabase/functions/_shared/supreme-*.ts"
+      - ".github/workflows/supabase-migration-tests.yml"
   workflow_dispatch:
 
 permissions:
@@ -22,6 +28,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Deno for the server-side attestation proof module
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Lint the attestation proof module
+        run: |
+          deno lint supabase/functions/_shared/supreme-attestation-der.ts supabase/functions/_shared/supreme-attestation-der_test.ts supabase/functions/_shared/supreme-android-keydescription.ts supabase/functions/_shared/supreme-android-keydescription_test.ts supabase/functions/_shared/supreme-android-keydescription_fixture_test.ts supabase/functions/_shared/supreme-android-provisioning-info.ts supabase/functions/_shared/supreme-android-provisioning-info_test.ts supabase/functions/_shared/supreme-attestation-application-id.ts supabase/functions/_shared/supreme-attestation-application-id_test.ts supabase/functions/_shared/supreme-attestation-proof.ts supabase/functions/_shared/supreme-attestation-proof_test.ts supabase/functions/_shared/supreme-google-attestation-metadata.ts supabase/functions/_shared/supreme-google-attestation-metadata_test.ts
+
+      - name: Type-check and test the attestation proof module
+        run: |
+          deno check supabase/functions/_shared/supreme-attestation-der.ts supabase/functions/_shared/supreme-attestation-der_test.ts supabase/functions/_shared/supreme-android-keydescription.ts supabase/functions/_shared/supreme-android-keydescription_test.ts supabase/functions/_shared/supreme-android-keydescription_fixture_test.ts supabase/functions/_shared/supreme-android-provisioning-info.ts supabase/functions/_shared/supreme-android-provisioning-info_test.ts supabase/functions/_shared/supreme-attestation-application-id.ts supabase/functions/_shared/supreme-attestation-application-id_test.ts supabase/functions/_shared/supreme-attestation-proof.ts supabase/functions/_shared/supreme-attestation-proof_test.ts supabase/functions/_shared/supreme-google-attestation-metadata.ts supabase/functions/_shared/supreme-google-attestation-metadata_test.ts
+          deno test --allow-env=SUPREME_ATTESTATION_FIXTURE_INDEX,SUPREME_ATTESTATION_UPSTREAM_DIR supabase/functions/_shared/supreme-android-provisioning-info_test.ts supabase/functions/_shared/supreme-android-keydescription_test.ts supabase/functions/_shared/supreme-attestation-application-id_test.ts supabase/functions/_shared/supreme-attestation-der_test.ts supabase/functions/_shared/supreme-attestation-proof_test.ts supabase/functions/_shared/supreme-google-attestation-metadata_test.ts
 
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v1
@@ -147,5 +167,11 @@ jobs:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/supreme_notification_security_test.sql
+
+      - name: Verify Supreme Android attestation challenge replay protection
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/supreme_android_attestation_challenge_test.sql
 
       # GitHub-hosted runners are ephemeral; Docker containers are discarded after the job.
