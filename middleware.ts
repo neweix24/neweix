@@ -207,7 +207,9 @@ export async function middleware(request: NextRequest) {
   if (isSupremeMfaPath) {
     if (claimsError || typeof userId !== "string" || !userId) {
       const destination = request.nextUrl.clone();
-      destination.pathname = "/auth/supreme-login";
+      // Preserve the existing workforce MFA entry point. If a Supreme
+      // account signs in there, the shared login rejects it before MFA.
+      destination.pathname = "/auth/login";
       destination.search = "";
       const redirectResponse = NextResponse.redirect(destination);
       return copySessionState(redirectResponse);
