@@ -18,6 +18,7 @@ on:
       - "supabase/functions/_shared/supreme-x509-signature*"
       - "supabase/functions/_shared/supreme-x509-chain*"
       - "supabase/functions/_shared/supreme-x509-chain_bench.ts"
+      - "supabase/functions/_shared/supreme-attestation-runtime_bench.ts"
       - "supabase/functions/_shared/supreme-android-attestation-policy*"
       - "supabase/functions/_shared/supreme-attestation-verifier*"
   pull_request:
