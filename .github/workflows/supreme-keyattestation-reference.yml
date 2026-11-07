@@ -20,7 +20,6 @@ on:
       - "supabase/functions/_shared/supreme-attestation-verifier*"
   pull_request:
     branches:
-      - main
       - feat/supreme-server-attestation-verifier
     paths:
       - ".github/workflows/supreme-keyattestation-reference.yml"
