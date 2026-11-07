@@ -320,6 +320,12 @@ export async function middleware(request: NextRequest) {
     return redirectWithCookies("/unauthorized");
   }
 
+  // The Supreme identity is not a general workforce/admin login. Even an
+  // existing Supreme session must never enter the browser-based /admin area.
+  if (isAdminPath && profile.role === "supreme") {
+    return redirectWithCookies("/unauthorized");
+  }
+
   if (isSupremePath) {
     if (profile.role !== "supreme") return redirectWithCookies("/unauthorized");
 
