@@ -38,7 +38,13 @@ class PathPolicyReferenceFixtureTest {
 
     val fixtures = listOf(
       Fixture("factory_valid", CertLists.validFactoryProvisioned),
+      Fixture("factory_strongbox_valid", CertLists.validStrongboxFactoryProvisioned),
       Fixture("rkp_valid", CertLists.validRemotelyProvisioned),
+      Fixture("rkp_strongbox_valid", CertLists.validStrongBoxRemotelyProvisioned),
+      Fixture("no_leaf", CertLists.noLeaf),
+      Fixture("extended_chain", CertLists.extended),
+      Fixture("certificate_after_target", CertLists.certAfterTarget),
+      Fixture("wrong_leaf_signature_algorithm", Chains.wrongAlgorithm.certificatesWithAnchor),
       Fixture("factory_expired_intermediate_and_attestation", Chains.expiredFactoryProvisioned.certificatesWithAnchor),
       Fixture("rkp_expired_attestation", Chains.expiredRemotelyProvisioned.certificatesWithAnchor),
       Fixture("rkp_malformed_provisioning_info", CertLists.malformedProvisioningInfo),
