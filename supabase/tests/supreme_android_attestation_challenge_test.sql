@@ -6,6 +6,9 @@ declare
   v_expired_id uuid;
   v_hash text := repeat('a', 64);
   v_expired_hash text := repeat('b', 64);
+  v_rate_ip_hash text := repeat('f', 64);
+  v_rate_challenge_id uuid;
+  v_rate_index integer;
   v_previous_role text;
   v_previous_claims text;
 begin
@@ -74,6 +77,28 @@ begin
     clock_timestamp() - interval '10 minutes',
     clock_timestamp() - interval '1 second'
   ) returning id into v_expired_id;
+
+  -- Ten issues are permitted per IP hash in a rolling ten-minute window;
+  -- the eleventh must be rate-limited without inserting a row.
+  for v_rate_index in 1..10 loop
+    v_rate_challenge_id := public.issue_supreme_app_attestation_challenge(
+      md5('rate-limit-challenge-' || v_rate_index::text) ||
+        md5('rate-limit-extra-' || v_rate_index::text),
+      v_rate_ip_hash,
+      clock_timestamp() + interval '2 minutes'
+    );
+    if v_rate_challenge_id is null then
+      raise exception 'Supreme challenge rate limit rejected one of the first ten requests.';
+    end if;
+  end loop;
+
+  if public.issue_supreme_app_attestation_challenge(
+    md5('rate-limit-challenge-eleven') || md5('rate-limit-extra-eleven'),
+    v_rate_ip_hash,
+    clock_timestamp() + interval '2 minutes'
+  ) is not null then
+    raise exception 'Supreme challenge rate limit accepted an eleventh request.';
+  end if;
 
   v_previous_role := current_setting('request.jwt.claim.role', true);
   v_previous_claims := current_setting('request.jwt.claims', true);
