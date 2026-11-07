@@ -24,6 +24,12 @@ on:
       - "supabase/functions/_shared/supreme-attestation-application-id*"
       - "supabase/functions/_shared/supreme-attestation-der*"
       - "supabase/functions/_shared/supreme-android-provisioning-info*"
+      - "supabase/functions/_shared/supreme-x509-certificate*"
+      - "supabase/functions/_shared/supreme-x509-signature*"
+      - "supabase/functions/_shared/supreme-x509-chain*"
+      - "supabase/functions/_shared/supreme-x509-chain_bench.ts"
+      - "supabase/functions/_shared/supreme-android-attestation-policy*"
+      - "supabase/functions/_shared/supreme-attestation-verifier*"
   workflow_dispatch:
 
 permissions:
