@@ -42,6 +42,9 @@ class MainActivity : FragmentActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Prevent sensitive dashboard content from appearing in screenshots,
+        // screen recordings, and Android's recent-apps snapshot.
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
 
         val browser = WebView(this).apply {
             settings.javaScriptEnabled = true
@@ -227,6 +230,10 @@ class MainActivity : FragmentActivity() {
                 textSize = 15f
                 setTextColor(Color.WHITE)
                 gravity = Gravity.CENTER
+            })
+            addView(Button(this@MainActivity).apply {
+                text = "Try again"
+                setOnClickListener { authenticateToUnlock() }
             })
         }
         root.addView(
