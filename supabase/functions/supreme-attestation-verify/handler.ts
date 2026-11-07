@@ -181,7 +181,9 @@ function parseSha256Hex(value: string): Uint8Array {
 }
 
 async function sha256Hex(value: Uint8Array): Promise<string> {
-  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", value));
+  const copy = new Uint8Array(value.byteLength);
+  copy.set(value);
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", copy.buffer));
   return Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
