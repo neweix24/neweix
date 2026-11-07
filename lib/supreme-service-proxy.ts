@@ -1,0 +1,79 @@
+import { NextResponse } from "next/server";
+import { getServerSetting } from "@/lib/phone-verification";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+const headers = { "Cache-Control": "private, no-store, max-age=0" };
+
+type Service = "neweix" | "eixon";
+
+function fail(message: string, status: number) {
+  return NextResponse.json({ error: message }, { status, headers });
+}
+
+export async function proxySupremeService(service: Service, resource: string) {
+  if (!["overview", "accounts", "journal-entries"].includes(resource)) {
+    return fail("অনুমোদিত সার্ভিস রিসোর্স নয়।", 404);
+  }
+  if (service === "neweix" && resource !== "overview") {
+    return fail("অনুমোদিত সার্ভিস রিসোর্স নয়।", 404);
+  }
+
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return fail("Supreme লগইন প্রয়োজন।", 401);
+
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session?.access_token) return fail("Supreme সেশন পাওয়া যায়নি।", 401);
+
+    const { data: assurance, error: mfaError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (mfaError || assurance?.currentLevel !== "aal2") {
+      return fail("Supreme-এর সাম্প্রতিক MFA যাচাই প্রয়োজন।", 403);
+    }
+
+    const { data: active, error: sessionCheckError } =
+      await supabase.rpc("supreme_has_active_attested_session");
+    if (sessionCheckError) {
+      console.error("Supreme attested-session check failed:", sessionCheckError.code);
+      return fail("Supreme device security configuration is not ready.", 503);
+    }
+    if (active !== true) return fail("সক্রিয় attested Supreme ডিভাইস সেশন প্রয়োজন।", 403);
+
+    const supabaseUrl = service === "neweix"
+      ? getServerSetting("NEXT_PUBLIC_SUPABASE_URL")
+      : getServerSetting("EIXON_SUPABASE_URL");
+    const apiKey = service === "neweix"
+      ? getServerSetting("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+      : getServerSetting("EIXON_SUPABASE_ANON_KEY");
+
+    if (!supabaseUrl || !apiKey) return fail("সার্ভিস সংযোগের কনফিগারেশন অসম্পূর্ণ।", 503);
+
+    const base = supabaseUrl.replace(/\/$/, "") + "/functions/v1/" +
+      (service === "neweix" ? "supreme-neweix-api" : "supreme-eixon-api");
+    const url = base + "/" + resource;
+    const upstream = await fetch(url, {
+      method: "GET",
+      headers: {
+        apikey: apiKey,
+        authorization: "Bearer " + session.access_token,
+        accept: "application/json",
+      },
+      cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    const body = await upstream.text();
+    if (body.length > 64 * 1024) return fail("সার্ভিসের উত্তর নির্ধারিত সীমার বেশি।", 502);
+    let payload: unknown;
+    try { payload = JSON.parse(body); } catch {
+      console.error("Supreme service returned non-JSON response:", service, upstream.status);
+      return fail("সংযুক্ত সার্ভিস থেকে সঠিক উত্তর পাওয়া যায়নি।", 502);
+    }
+
+    return NextResponse.json(payload, { status: upstream.status, headers });
+  } catch (error) {
+    console.error("Supreme service proxy failed:", service, error);
+    return fail("সংযুক্ত সার্ভিস সাময়িকভাবে পাওয়া যাচ্ছে না।", 503);
+  }
+}
