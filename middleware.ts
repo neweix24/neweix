@@ -264,7 +264,7 @@ export async function middleware(request: NextRequest) {
 
   if (claimsError || typeof userId !== "string" || !userId) {
     const destination = request.nextUrl.clone();
-    destination.pathname = "/auth/login";
+    destination.pathname = isPrivateSupremePath ? "/auth/supreme-login" : "/auth/login";
     destination.search = "";
     destination.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
     const redirectResponse = NextResponse.redirect(destination);
@@ -288,6 +288,14 @@ export async function middleware(request: NextRequest) {
 
   if (isSupremePath) {
     if (profile.role !== "supreme") return redirectWithCookies("/unauthorized");
+
+    // Fail closed until the complete Google Android Key Attestation verifier,
+    // revocation checks, replay protection and server-side app proof are wired
+    // into this request path. A private URL or WebView header is not app proof.
+    return copySessionState(new NextResponse(
+      "Supreme sign-in is temporarily locked while verified Android device attestation is completed.",
+      { status: 503, headers: { "Cache-Control": "private, no-store, max-age=0", "X-Robots-Tag": "noindex, nofollow" } },
+    ));
 
     const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
     if (factorsError) {
