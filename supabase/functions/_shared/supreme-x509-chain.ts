@@ -178,8 +178,16 @@ function enforceAndroidChainRoles(
   chain: readonly ParsedX509Certificate[],
 ): AndroidProvisioningMethod {
   const provisioningMethod = classifyAndroidProvisioningMethod(chain[chain.length - 2].subject);
-  if (provisioningMethod === "FACTORY_PROVISIONED" && chain.length !== 4) {
-    throw new TypeError("Factory-provisioned Android chain must contain exactly 4 certificates.");
+  // Google’s pinned verifier accepts both the normal factory path
+  // (target, attestation, factory intermediate, root) and the legacy
+  // collapsed path (target/attestation, factory intermediate, root).
+  // The latter is the upstream no_leaf fixture: its first certificate is
+  // still the target and must carry the attestation extension below.
+  if (
+    provisioningMethod === "FACTORY_PROVISIONED" &&
+    chain.length !== 3 && chain.length !== 4
+  ) {
+    throw new TypeError("Factory-provisioned Android chain must contain exactly 3 or 4 certificates.");
   }
   if (provisioningMethod === "REMOTELY_PROVISIONED" && chain.length !== 5) {
     throw new TypeError("RKP Android chain must contain exactly 5 certificates.");
