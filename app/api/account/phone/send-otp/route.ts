@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   }
 
   const { data: profile, error: profileError } = await supabase
-    .from("customer_profiles")
+    .from("account")
     .select("phone, phone_verified_at")
     .eq("user_id", user.id)
     .maybeSingle();
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   }
 
   const { data: phoneOwner, error: ownerError } = await supabase
-    .from("customer_profiles")
+    .from("account")
     .select("user_id")
     .eq("phone", phone)
     .not("phone_verified_at", "is", null)

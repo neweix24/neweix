@@ -17,7 +17,7 @@ export async function GET() {
     const admin = await createRuntimeServiceClient();
 
     const [profileResult, addressesResult, preferencesResult, consentsResult, ordersResult] = await Promise.all([
-      admin.from("customer_profiles")
+      admin.from("account")
         .select("full_name,display_name,email,avatar_url,date_of_birth,preferred_language,phone,phone_verified_at,created_at,updated_at")
         .eq("user_id", user.id).maybeSingle(),
       admin.from("customer_addresses")

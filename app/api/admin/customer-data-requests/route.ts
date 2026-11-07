@@ -23,7 +23,7 @@ export async function GET() {
     }
     const userIds = [...new Set((data ?? []).map((item) => item.user_id))];
     const { data: profiles, error: profileError } = userIds.length
-      ? await admin.from("customer_profiles").select("user_id,full_name,display_name,phone").in("user_id", userIds)
+      ? await admin.from("account").select("user_id,full_name,display_name,phone").in("user_id", userIds)
       : { data: [], error: null };
     if (profileError) {
       console.error("Admin request customer details failed:", profileError.message);

@@ -29,27 +29,27 @@ export async function GET(request: Request) {
     let queryError: { code?: string } | null = null;
 
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(query)) {
-      const result = await admin.from("customer_profiles").select(columns).eq("user_id", query).limit(1);
+      const result = await admin.from("account").select(columns).eq("user_id", query).limit(1);
       rows = result.data ?? [];
       queryError = result.error;
     } else if (query.includes("@")) {
-      const result = await admin.from("customer_profiles").select(columns).eq("email", query.toLowerCase()).limit(1);
+      const result = await admin.from("account").select(columns).eq("email", query.toLowerCase()).limit(1);
       rows = result.data ?? [];
       queryError = result.error;
     } else {
       const phone = normalizeBangladeshPhone(query);
       if (phone) {
-        const result = await admin.from("customer_profiles").select(columns).eq("phone", phone).limit(1);
+        const result = await admin.from("account").select(columns).eq("phone", phone).limit(1);
         rows = result.data ?? [];
         queryError = result.error;
       } else {
         const safe = query.replace(/[,%_().\\\\]/g, "").trim();
         if (safe.length < 3) return fail("অনুসন্ধানের শব্দটি সঠিক নয়।", 400);
-        const byFullName = await admin.from("customer_profiles").select(columns).ilike("full_name", "%" + safe + "%").limit(10);
+        const byFullName = await admin.from("account").select(columns).ilike("full_name", "%" + safe + "%").limit(10);
         rows = byFullName.data ?? [];
         queryError = byFullName.error;
         if (!queryError && rows.length === 0) {
-          const byDisplayName = await admin.from("customer_profiles").select(columns).ilike("display_name", "%" + safe + "%").limit(10);
+          const byDisplayName = await admin.from("account").select(columns).ilike("display_name", "%" + safe + "%").limit(10);
           rows = byDisplayName.data ?? [];
           queryError = byDisplayName.error;
         }

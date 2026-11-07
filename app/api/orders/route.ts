@@ -546,7 +546,7 @@ export async function POST(request: Request) {
 
     if (signedInCustomerId) {
       const { data: customerProfile, error: profileError } = await supabase
-        .from("customer_profiles")
+        .from("account")
         .select("phone, phone_verified_at")
         .eq("user_id", signedInCustomerId)
         .maybeSingle();

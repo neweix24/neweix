@@ -75,7 +75,7 @@ export async function POST(request: Request) {
 
     const admin = createAdminSupabaseClient();
     const { data: existing, error: readError } = await admin
-      .from("customer_profiles")
+      .from("account")
       .select("full_name,date_of_birth,avatar_url,preferred_language,phone,phone_verified_at")
       .eq("user_id", user.id)
       .maybeSingle();
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       : existing?.date_of_birth ?? null;
 
     const { data: saved, error: saveError } = await admin
-      .from("customer_profiles")
+      .from("account")
       .upsert({
         user_id: user.id,
         email: user.email ?? null,
