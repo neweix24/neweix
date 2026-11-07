@@ -105,22 +105,22 @@ function makeDependencies(
     serviceRoleKey: SERVICE_ROLE_KEY,
     signingCertificateSha256: "ab".repeat(32),
     minimumPackageVersion: "2",
-    fetchMetadata: async () => {
+    fetchMetadata: () => {
       calls.push("metadata");
-      return metadata();
+      return Promise.resolve(metadata());
     },
     parseCertificate: () => fakeCertificate,
-    verifyAttestation: async (_input: SupremeAttestationVerificationInput) => {
+    verifyAttestation: (_input: SupremeAttestationVerificationInput) => {
       calls.push("verify");
-      return verificationResult();
+      return Promise.resolve(verificationResult());
     },
-    assertChallengeAvailable: async () => {
+    assertChallengeAvailable: () => {
       calls.push("challenge-available");
-      return true;
+      return Promise.resolve(true);
     },
-    consumeChallenge: async () => {
+    consumeChallenge: () => {
       calls.push("consume");
-      return true;
+      return Promise.resolve(true);
     },
     ...overrides,
   };
@@ -229,9 +229,9 @@ Deno.test("challenge availability is checked before metadata fetch and expensive
   const response = await handleSupremeAttestationVerify(
     makeRequest(),
     makeDependencies({
-      assertChallengeAvailable: async () => {
+      assertChallengeAvailable: () => {
         calls.push("challenge-available");
-        return false;
+        return Promise.resolve(false);
       },
     }, calls),
   );
@@ -244,9 +244,9 @@ Deno.test("failed cryptographic verification never consumes a challenge", async 
   const response = await handleSupremeAttestationVerify(
     makeRequest(),
     makeDependencies({
-      verifyAttestation: async () => {
+      verifyAttestation: () => {
         calls.push("verify");
-        throw new Error("invalid certificate chain");
+        return Promise.reject(new Error("invalid certificate chain"));
       },
     }, calls),
   );
@@ -259,9 +259,9 @@ Deno.test("challenge is rejected if another request already consumed it", async 
   const response = await handleSupremeAttestationVerify(
     makeRequest(),
     makeDependencies({
-      consumeChallenge: async () => {
+      consumeChallenge: () => {
         calls.push("consume");
-        return false;
+        return Promise.resolve(false);
       },
     }, calls),
   );
@@ -272,9 +272,7 @@ Deno.test("challenge service and Google metadata failures fail closed", async ()
   const challengeFailure = await handleSupremeAttestationVerify(
     makeRequest(),
     makeDependencies({
-      assertChallengeAvailable: async () => {
-        throw new Error("database unavailable");
-      },
+      assertChallengeAvailable: () => Promise.reject(new Error("database unavailable")),
     }),
   );
   assertEquals(challengeFailure.status, 503, "challenge service status");
@@ -282,9 +280,7 @@ Deno.test("challenge service and Google metadata failures fail closed", async ()
   const metadataFailure = await handleSupremeAttestationVerify(
     makeRequest(),
     makeDependencies({
-      fetchMetadata: async () => {
-        throw new Error("Google unreachable");
-      },
+      fetchMetadata: () => Promise.reject(new Error("Google unreachable")),
     }),
   );
   assertEquals(metadataFailure.status, 503, "metadata service status");
@@ -292,9 +288,7 @@ Deno.test("challenge service and Google metadata failures fail closed", async ()
   const consumeFailure = await handleSupremeAttestationVerify(
     makeRequest(),
     makeDependencies({
-      consumeChallenge: async () => {
-        throw new Error("database unavailable");
-      },
+      consumeChallenge: () => Promise.reject(new Error("database unavailable")),
     }),
   );
   assertEquals(consumeFailure.status, 503, "challenge consumption status");
