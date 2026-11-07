@@ -69,8 +69,8 @@ async function consumeChallenge(
 Deno.serve((request) =>
   handleSupremeAttestationVerify(request, {
     serviceRoleKey: serviceRoleKey || null,
-    signingCertificateSha256: Deno.env.get("SUPREME_ANDROID_SIGNING_CERT_SHA256"),
-    minimumPackageVersion: Deno.env.get("SUPREME_ANDROID_MIN_VERSION_CODE"),
+    signingCertificateSha256: Deno.env.get("SUPREME_ANDROID_SIGNING_CERT_SHA256") ?? null,
+    minimumPackageVersion: Deno.env.get("SUPREME_ANDROID_MIN_VERSION_CODE") ?? null,
     fetchMetadata: fetchGoogleAttestationMetadata,
     parseCertificate: parseX509Certificate,
     verifyAttestation: verifySupremeAndroidAttestation,
