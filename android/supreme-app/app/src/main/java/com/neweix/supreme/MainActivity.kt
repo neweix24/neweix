@@ -1,7 +1,6 @@
 package com.neweix.supreme
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -22,12 +21,13 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import kotlin.math.max
 
-class MainActivity : Activity() {
+class MainActivity : FragmentActivity() {
     private var webView: WebView? = null
     private var progressBar: ProgressBar? = null
     private var errorPanel: LinearLayout? = null
