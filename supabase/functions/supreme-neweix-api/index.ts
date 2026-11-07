@@ -146,7 +146,8 @@ async function callEixon(resource: "overview" | "accounts" | "journal-entries", 
   }
   return json(payload, upstream.status, requestId);
 }
-\nasync function overview(requestId: string): Promise<Response> {
+
+async function overview(requestId: string): Promise<Response> {
   if (!db) return json({ error: { code: "SERVICE_NOT_CONFIGURED", request_id: requestId } }, 503, requestId);
   const [products, orders, warehouses] = await Promise.all([
     db.unsafe(
