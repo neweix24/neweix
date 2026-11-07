@@ -164,12 +164,19 @@ if (supremePrivatePath) {
 
   await runCheck("Private Supreme entry requires authentication", supremePrivatePath, async (response) => {
     const location = response.headers.get("location") || "";
-    const redirectedToLogin = response.status >= 300 && response.status < 400 &&
-      location.includes("/auth/login") &&
-      location.includes(encodeURIComponent(supremePrivatePath));
-    return redirectedToLogin
+    let loginUrl;
+    try {
+      loginUrl = new URL(location, baseUrl);
+    } catch {
+      return { ok: false, reason: "Supreme entry returned an invalid login redirect URL" };
+    }
+    const redirectedToSupremeLogin = response.status >= 300 && response.status < 400 &&
+      loginUrl.origin === baseUrl &&
+      loginUrl.pathname === "/auth/supreme-login" &&
+      loginUrl.searchParams.get("next") === supremePrivatePath;
+    return redirectedToSupremeLogin
       ? { ok: true }
-      : { ok: false, reason: `Expected login redirect preserving private path, received HTTP ${response.status} (${location || "no Location header"})` };
+      : { ok: false, reason: `Expected redirect to dedicated Supreme login preserving private path, received HTTP ${response.status} (${location || "no Location header"})` };
   });
 } else {
   process.stdout.write("SKIP  Supreme private-route smoke checks — set SUPREME_PRIVATE_PATH in the smoke-test environment.\n");
