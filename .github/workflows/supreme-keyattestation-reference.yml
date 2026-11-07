@@ -1,4 +1,5 @@
 name: Supreme Android Key Attestation reference verifier
+# Push validation on this branch exercises the full pinned Kotlin-to-Deno differential suite.
 
 on:
   push:
