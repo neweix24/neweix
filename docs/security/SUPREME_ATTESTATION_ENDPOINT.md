@@ -43,30 +43,29 @@ If either Supreme policy value is absent or invalid, the endpoint returns 503 an
 
 The function uses `verify_jwt = true` at the Supabase gateway and also checks that both the Authorization bearer and apikey headers match the server-side service-role key. The public Next.js proxy is the only intended caller.
 
-## Database dependencies
+## Database dependencies and production status
 
-The function depends on these migrations being applied to the target Supabase database:
+The verifier depends on these three migrations, which have now been applied to the production Supabase project and verified against the live schema:
 
-- `20261107030000_supreme_android_attestation_challenges.sql`
-- `20261107043000_supreme_android_attestation_challenge_consume.sql`
-- `20261107080000_supreme_attestation_verification_attempt_budget.sql`
+- `20261107073200_20261107030000_supreme_android_attestation_challenges.sql`
+- `20261107073201_20261107043000_supreme_android_attestation_challenge_consume.sql`
+- `20261107073203_20261107080000_supreme_attestation_verification_attempt_budget.sql`
 
-The production project has not yet been migrated with these tables/RPCs. Until the migrations are separately reviewed and applied, the endpoint cannot complete verification. This PR does not apply any production database migration.
+The migration version prefixes intentionally match the versions recorded by Supabase production when the migrations were applied through the management API. This keeps the repository migration history aligned and prevents a later CLI migration push from trying to reapply already-applied DDL.
 
-Challenge issuance is rate-limited to 10 challenges per source-IP hash per rolling 10-minute window. Verification attempts are independently capped at three per challenge using an atomic database reservation bound to the original requester IP hash. The attempt budget limits concurrent cryptographic work amplification; challenge consumption remains a separate atomic operation that occurs only after successful verification.
+The challenge table has RLS enabled and no client-facing policies. Table access and all three RPCs are restricted to `service_role`; the verification-attempt RPC atomically caps each challenge at three attempts and checks the original requester IP hash. Challenge issuance is rate-limited to 10 challenges per source-IP hash per rolling 10-minute window. Challenge consumption remains a separate atomic operation that occurs only after successful verification.
 
 ## Runtime and release gates
 
 The verifier runs in Supabase Edge Functions rather than on the Cloudflare Worker CPU budget. Supabase currently documents a 256 MB memory limit, 2 seconds of CPU time per request, and a 150-second Free-plan wall-clock limit. The existing benchmark numbers were collected on GitHub-hosted runners only; they are not proof of Supabase Edge Runtime compliance.
 
-Before deployment or login enablement:
+Before login enablement:
 
 1. Run the full verifier under the actual Supabase Edge Runtime and record CPU/memory behavior.
-2. Apply and verify the two challenge migrations in production.
-3. Configure the permanent production APK signer digest and minimum version code.
-4. Wire a short-lived attested-device session to the same Supabase user and AAL2 session.
-5. Implement native app attestation transport and test on a real Android device.
-6. Keep Supreme login disabled until all gates pass.
+2. Configure the permanent production APK signer digest and minimum version code.
+3. Wire a short-lived attested-device session to the same Supabase user and AAL2 session.
+4. Verify the native transport on a real production-signed Android device.
+5. Keep Supreme login disabled until all gates pass.
 
 ## Failure behavior
 
