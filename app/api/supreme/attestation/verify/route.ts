@@ -106,7 +106,7 @@ export async function POST(request: Request) {
       body: bodyText,
       cache: "no-store",
       redirect: "error",
-      signal: AbortSignal.timeout(12_000),
+      signal: AbortSignal.timeout(25_000),
     });
 
     const responseText = await upstream.text();
