@@ -56,32 +56,49 @@ function activeAppSession(claims: Claims): { sessionId: string; deviceId: string
   return { sessionId: binding.session_id, deviceId: binding.device_id };
 }
 
-async function authorize(request: Request): Promise<{ userId: string; authSessionId: string } | null> {
-  if (!db || !SUPABASE_URL) return null;
-  const claims = decodeClaims(request);
+async function authorize(request: Request): Promise<{ userId: string } | null> {
+  const sessionApiUrl = Deno.env.get("SUPREME_SESSION_API_URL");
+  if (!sessionApiUrl || !SUPABASE_URL) return null;
+  const authorization = request.headers.get("authorization") ?? "";
+  const match = /^Bearer ([A-Za-z0-9._~-]+)$/.exec(authorization);
+  if (!match) return null;
+  const token = match[1];
+  const claims = decodeClaims(new Request(request.url, { headers: { authorization: "Bearer " + token } }));
   if (!claims || !validFreshAal2(claims)) return null;
-  const binding = activeAppSession(claims);
-  if (!binding) return null;
 
-  const rows = await db.unsafe(
-    "select i.user_id::text as user_id, s.id::text as session_id " +
-    "from supreme.identities i " +
-    "join supreme.app_sessions s on s.user_id = i.user_id and s.auth_session_id = $2::uuid " +
-    "join supreme.devices d on d.id = s.device_id and d.user_id = i.user_id " +
-    "where i.user_id = $1::uuid and i.public_id = 'supreme' and i.role = 'ruler' and i.is_active = true " +
-    "and s.id = $3::uuid and s.device_id = $4::uuid and s.status = 'active' and s.expires_at > now() " +
-    "and d.status = 'active' and d.app_package = 'com.neweix.supreme' " +
-    "and d.security_level in ('trusted_environment', 'strongbox') " +
-    "and d.attested_at > now() - interval '30 days' limit 2",
-    [claims.sub as string, claims.session_id as string, binding.sessionId, binding.deviceId],
-  );
-  if (rows.length !== 1 || rows[0].user_id !== claims.sub) return null;
-  const identityCount = await db.unsafe(
-    "select count(*)::integer as count from supreme.identities " +
-    "where public_id = 'supreme' and role = 'ruler' and is_active = true",
-  );
-  if (Number(identityCount[0]?.count) !== 1) return null;
-  return { userId: claims.sub as string, authSessionId: claims.session_id as string };
+  let response: Response;
+  try {
+    response = await fetch(sessionApiUrl, {
+      method: "GET",
+      headers: { authorization: "Bearer " + token, accept: "application/json" },
+      redirect: "error",
+      signal: AbortSignal.timeout(8_000),
+    });
+  } catch {
+    return null;
+  }
+  if (!response.ok) {
+    await response.body?.cancel();
+    return null;
+  }
+  let result: Record<string, unknown>;
+  try {
+    const value: unknown = await response.json();
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    result = value as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+  const appSession = claims.supreme_app_session;
+  if (!appSession || typeof appSession !== "object" || Array.isArray(appSession)) return null;
+  const binding = appSession as Record<string, unknown>;
+  const activeSession = result.session;
+  if (result.authenticated !== true || result.device_session_active !== true ||
+      !activeSession || typeof activeSession !== "object" || Array.isArray(activeSession)) return null;
+  const active = activeSession as Record<string, unknown>;
+  if (binding.status !== "active" ||
+      active.session_id !== binding.session_id || active.device_id !== binding.device_id) return null;
+  return { userId: claims.sub as string };
 }
 
 async function overview(requestId: string): Promise<Response> {
