@@ -4,12 +4,12 @@ on:
   pull_request:
     branches: ["main", "feat/neweix-supreme-mobile-workspace", "feat/supreme-server-attestation-verifier"]
     paths:
-      - "supabase/functions/_shared/supreme-*.ts"
+      - "supabase/**"
       - ".github/workflows/supabase-migration-tests.yml"
   push:
     branches: ["main", "feat/neweix-supreme-dashboard-phase-1", "feat/neweix-supreme-dashboard-phase-1-mainline", "feat/supreme-server-attestation-verifier"]
     paths:
-      - "supabase/functions/_shared/supreme-*.ts"
+      - "supabase/**"
       - ".github/workflows/supabase-migration-tests.yml"
   workflow_dispatch:
 

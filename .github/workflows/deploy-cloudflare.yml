@@ -58,7 +58,39 @@ jobs:
         with:
           script: |
             const sha = context.sha;
-            const required = ["CI", "Supabase database migration tests"];
+            let databaseChanged = true;
+
+            // A normal main push only needs the migration suite when this exact
+            // commit changes Supabase schema, functions, tests or migration CI.
+            // For manual dispatch (no reliable before-SHA), keep the stricter gate.
+            const before = context.payload.before;
+            if (
+              context.eventName === "push" &&
+              typeof before === "string" &&
+              !/^0+$/.test(before)
+            ) {
+              const { data: comparison } = await github.rest.repos.compareCommitsWithBasehead({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                basehead: `${before}...${sha}`
+              });
+              const changedFiles = comparison.files;
+              // Compare API file lists are capped. Missing/truncated file lists
+              // must conservatively require database validation, never skip it.
+              databaseChanged = !Array.isArray(changedFiles) ||
+                changedFiles.length >= 300 ||
+                changedFiles.some(({ filename }) =>
+                  filename.startsWith("supabase/") ||
+                  filename === ".github/workflows/supabase-migration-tests.yml"
+                );
+              core.info(`Supabase files changed or could not be ruled out for ${sha}: ${databaseChanged}`);
+            } else {
+              core.info("No trustworthy push base SHA; requiring migration validation.");
+            }
+
+            const required = databaseChanged
+              ? ["CI", "Supabase database migration tests"]
+              : ["CI"];
             for (const workflowName of required) {
               let matched = false;
               for (let attempt = 0; attempt < 36; attempt += 1) {
