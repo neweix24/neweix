@@ -51,6 +51,8 @@ The function depends on these migrations being applied to the target Supabase da
 
 The production project has not yet been migrated with these tables/RPCs. Until the migrations are separately reviewed and applied, the endpoint cannot complete verification. This PR does not apply any production database migration.
 
+Challenge issuance is rate-limited to 10 challenges per source-IP hash per rolling 10-minute window. This endpoint also rejects expired, mismatched, and already-consumed challenges before certificate parsing. A separate per-challenge failed-verification attempt budget is not yet implemented; add that control or an equivalent verified edge rate limit before public production enablement.
+
 ## Runtime and release gates
 
 The verifier runs in Supabase Edge Functions rather than on the Cloudflare Worker CPU budget. Supabase currently documents a 256 MB memory limit, 2 seconds of CPU time per request, and a 150-second Free-plan wall-clock limit. The existing benchmark numbers were collected on GitHub-hosted runners only; they are not proof of Supabase Edge Runtime compliance.
