@@ -118,10 +118,16 @@ export async function POST(request: Request) {
       return errorResponse("Attestation verification service is temporarily unavailable.", 503);
     }
 
-    return new NextResponse(responseText, {
+    let responseBody: unknown;
+    try {
+      responseBody = JSON.parse(responseText);
+    } catch {
+      return errorResponse("Attestation verification service returned an invalid response.", 502);
+    }
+
+    return NextResponse.json(responseBody, {
       status: upstream.status,
       headers: {
-        "Content-Type": "application/json; charset=utf-8",
         ...NO_STORE_HEADERS,
         "X-Content-Type-Options": "nosniff",
       },
