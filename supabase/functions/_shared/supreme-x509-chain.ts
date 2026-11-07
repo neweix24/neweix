@@ -196,11 +196,26 @@ function enforceAndroidChainRoles(
     throw new TypeError("Unknown Android chain must contain exactly 3 or 4 certificates.");
   }
 
+  // Google’s KeyAttestationCertPathValidator accepts the explicit
+  // factory-provisioned no-leaf form [attestation, intermediate, root].
+  // In that form there is no target certificate and the attestation
+  // certificate itself must NOT carry a KeyDescription extension. This is
+  // path validation parity only: verifySupremeAndroidAttestation separately
+  // requires a KeyDescription on chain[0], so a no-leaf path can never
+  // authenticate a Supreme device.
+  const factoryNoLeafPath =
+    provisioningMethod === "FACTORY_PROVISIONED" && chain.length === 3;
   for (let index = 0; index < chain.length - 1; index++) {
     const extensions = chain[index].extensions.filter((extension) =>
       extension.oid === ANDROID_ATTESTATION_OID
     );
-    if (index === 0) {
+    if (factoryNoLeafPath) {
+      if (extensions.length !== 0) {
+        throw new TypeError(
+          `Google factory no-leaf path must not contain an Android attestation extension (index ${index}).`,
+        );
+      }
+    } else if (index === 0) {
       if (extensions.length !== 1 || extensions[0].critical) {
         throw new TypeError("Android attestation extension must appear exactly once as non-critical on the target certificate.");
       }
