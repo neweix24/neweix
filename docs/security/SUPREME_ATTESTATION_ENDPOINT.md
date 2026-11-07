@@ -26,6 +26,14 @@ The Supreme login UI and middleware therefore remain fail-closed until a separat
 8. Only after every cryptographic and policy check succeeds does the handler call `consume_supreme_app_attestation_challenge`. The database conditional update is the replay fence.
 9. A successful response reports verification facts only. It is not a login token.
 
+## Production deployment status — 2026-11-07
+
+- The Supabase project currently reports `supreme-attestation-verify` as ACTIVE version 1 with `verify_jwt=true`.
+- The Cloudflare same-origin proxy has also been deployed to the production Worker.
+- A read-only production SQL check confirmed that `public.supreme_app_attestation_challenges` and `public.consume_supreme_app_attestation_challenge(uuid,text)` do not exist in the production database.
+- Therefore the deployed verifier cannot pass its challenge preflight and fails closed with 503. It does not create a Supabase Auth session, grant a role, or authorize the Supreme dashboard.
+- No production database migration has been applied for this feature.
+
 ## Required server configuration
 
 The Supabase Edge Function requires these platform-provided variables:
