@@ -7,7 +7,7 @@ const db = DATABASE_URL ? postgres(DATABASE_URL, { max: 2, prepare: false, ssl: 
 type Claims = Record<string, unknown>;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function json(body: unknown, status = 200, requestId = crypto.randomUUID()): Response {
+function json(body: unknown, status = 200, requestId: string = crypto.randomUUID()): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
