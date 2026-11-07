@@ -15,6 +15,7 @@ import java.security.cert.PKIXParameters
 import java.util.Base64
 import java.util.Date
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -43,6 +44,11 @@ class PathPolicyReferenceFixtureTest {
       Fixture("rkp_malformed_provisioning_info", CertLists.malformedProvisioningInfo),
       Fixture("expired_leaf", Chains.expiredLeaf.certificatesWithAnchor),
       Fixture("not_yet_valid_attestation", Chains.notYetValid.certificatesWithAnchor),
+      Fixture("wrong_trust_anchor", Chains.wrongTrustAnchor.certificatesWithAnchor),
+      Fixture("wrong_intermediate_subject", Chains.wrongIntermediateSubject.certificatesWithAnchor),
+      Fixture("wrong_issuer", Chains.wrongIssuer.certificatesWithAnchor),
+      Fixture("wrong_signature", Chains.wrongSignature.certificatesWithAnchor),
+      Fixture("forged_keybox", Chains.forgedKeybox.certificatesWithAnchor),
     )
 
     val referenceDate = Date.from(FakeCalendar.DEFAULT.now())
@@ -76,7 +82,10 @@ class PathPolicyReferenceFixtureTest {
         "\"" + Base64.getEncoder().encodeToString(certificate.encoded) + "\""
       }
       val trustAnchor = Base64.getEncoder().encodeToString(Certs.root.encoded)
-      assertEquals("Expected chain to terminate in the generated test root", Certs.root, fixture.certificates.last())
+      assertTrue(
+        "Expected every test chain terminator to be self-issued",
+        fixture.certificates.last().issuerX500Principal == fixture.certificates.last().subjectX500Principal,
+      )
       val provisioningCount = provisioningInfo?.certificatesIssued?.toString() ?: "null"
       """{"name":"${fixture.name}","provisioningMethod":"${expectedProvisioningMethod}","valid":$valid,"provisioningInfoValid":$provisioningInfoValid,"provisioningCertificatesIssued":$provisioningCount,"validationTimeMs":${referenceDate.time},"certificatesBase64":[$chain],"trustAnchorBase64":"$trustAnchor"}"""
     }
