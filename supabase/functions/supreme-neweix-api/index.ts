@@ -107,7 +107,7 @@ async function overview(requestId: string): Promise<Response> {
   ]);
   return json({
     success: true,
-    service: "neweix-shop",
+    service: "neweix",
     capability_scope: ["commerce.overview.read", "commerce.orders.read"],
     read_only: true,
     overview: { products: products[0], orders: orders[0], warehouses: warehouses[0] },
@@ -135,7 +135,7 @@ async function recentOrders(url: URL, requestId: string): Promise<Response> {
         "from public.orders order by created_at desc limit $1",
         [limit],
       );
-  return json({ success: true, service: "neweix-shop", orders: rows, request_id: requestId }, 200, requestId);
+  return json({ success: true, service: "neweix", orders: rows, request_id: requestId }, 200, requestId);
 }
 
 Deno.serve(async (request: Request) => {
@@ -147,7 +147,7 @@ Deno.serve(async (request: Request) => {
     if (!actor) return json({ error: { code: "SUPREME_ATTESTED_AAL2_SESSION_REQUIRED", request_id: requestId } }, 403, requestId);
     const pathname = new URL(request.url).pathname.replace(/\/+$/, "");
     if (pathname.endsWith("/health")) {
-      return json({ success: true, service: "neweix-shop", status: "available", request_id: requestId }, 200, requestId);
+      return json({ success: true, service: "neweix", status: "available", request_id: requestId }, 200, requestId);
     }
     if (pathname.endsWith("/overview")) return await overview(requestId);
     if (pathname.endsWith("/orders")) return await recentOrders(new URL(request.url), requestId);
