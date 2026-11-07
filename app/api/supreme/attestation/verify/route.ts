@@ -73,6 +73,13 @@ export async function POST(request: Request) {
     );
   }
 
+  let bodyText: string;
+  try {
+    bodyText = new TextDecoder("utf-8", { fatal: true }).decode(body);
+  } catch {
+    return errorResponse("Attestation request must be valid UTF-8 JSON.", 400);
+  }
+
   try {
     const { env } = await getCloudflareContext();
     const runtimeEnv = env as Record<string, unknown>;
@@ -96,7 +103,7 @@ export async function POST(request: Request) {
         apikey: serviceRoleKey,
         "Content-Type": "application/json",
       },
-      body,
+      body: bodyText,
       cache: "no-store",
       redirect: "error",
       signal: AbortSignal.timeout(12_000),
