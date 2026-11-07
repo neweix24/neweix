@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   try {
     const admin = await createRuntimeServiceClient();
     let profileQuery = admin
-      .from("customer_profiles")
+      .from("account")
       .select("user_id,full_name,display_name,email,avatar_url,date_of_birth,phone,phone_verified_at,created_at", { count: "exact" })
       .order("created_at", { ascending: false })
       .order("user_id", { ascending: true });

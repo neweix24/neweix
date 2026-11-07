@@ -226,13 +226,13 @@ export async function GET(request: NextRequest) {
       const preferredLanguage = rawLocale && /^[a-z]{2}(-[A-Z]{2})?$/.test(rawLocale) ? rawLocale : null;
 
       try {
-        // customer_profiles intentionally denies INSERT and general UPDATE to
+        // account intentionally denies INSERT and general UPDATE to
         // authenticated clients so they cannot forge phone verification.
         // Profile synchronization therefore runs server-side with service_role,
         // and never accepts phone or phone_verified_at from OAuth metadata.
         const admin = createAdminSupabaseClient();
         const { data: existingProfile, error: profileReadError } = await admin
-          .from("customer_profiles")
+          .from("account")
           .select("full_name,avatar_url,preferred_language,date_of_birth")
           .eq("user_id", user.id)
           .maybeSingle();
@@ -241,7 +241,7 @@ export async function GET(request: NextRequest) {
           console.error("Customer OAuth profile lookup failed:", profileReadError.message);
         } else {
           const { error: profileSyncError } = await admin
-            .from("customer_profiles")
+            .from("account")
             .upsert({
               user_id: user.id,
               email: user.email ?? null,

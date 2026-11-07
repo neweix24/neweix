@@ -17,7 +17,7 @@ export async function GET() {
   try {
     const supabase = createAdminSupabaseClient();
     const { data, error } = await supabase
-      .from("customer_profiles")
+      .from("account")
       .select("phone, phone_verified_at")
       .eq("user_id", user.id)
       .maybeSingle();

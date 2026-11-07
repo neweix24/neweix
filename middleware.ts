@@ -258,7 +258,7 @@ export async function middleware(request: NextRequest) {
     }
 
     const { data: customerProfile, error: customerProfileError } = await supabase
-      .from("customer_profiles")
+      .from("account")
       .select("phone, phone_verified_at")
       .eq("user_id", userId)
       .maybeSingle();
