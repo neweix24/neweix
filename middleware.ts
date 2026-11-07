@@ -328,27 +328,6 @@ export async function middleware(request: NextRequest) {
       "Supreme sign-in is temporarily locked while verified Android device attestation is completed.",
       { status: 503, headers: { "Cache-Control": "private, no-store, max-age=0", "X-Robots-Tag": "noindex, nofollow" } },
     ));
-
-    const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
-    if (factorsError) {
-      return copySessionState(new NextResponse("MFA verification unavailable.", {
-        status: 503,
-        headers: { "Cache-Control": "private, no-store" },
-      }));
-    }
-
-    const verifiedFactor = factors.totp.find((factor) => factor.status === "verified");
-    if (!verifiedFactor) return redirectWithCookies("/auth/mfa/setup");
-
-    const { data: assurance, error: assuranceError } =
-      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (assuranceError) {
-      return copySessionState(new NextResponse("MFA verification unavailable.", {
-        status: 503,
-        headers: { "Cache-Control": "private, no-store" },
-      }));
-    }
-    if (assurance.currentLevel !== "aal2") return redirectWithCookies("/auth/mfa");
   }
 
   if (isPrivateSupremePath && hasValidPrivateSupremePath) {
