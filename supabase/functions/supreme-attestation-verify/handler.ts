@@ -134,6 +134,9 @@ function parsePayload(value: unknown, parseCertificate: (der: Uint8Array) => Par
   if (typeof object.challenge_id !== "string" || !UUID_V4.test(object.challenge_id)) {
     throw new TypeError("Invalid attestation challenge ID.");
   }
+  if (typeof object.challenge !== "string") {
+    throw new TypeError("Invalid attestation challenge.");
+  }
   const challenge = decodeSupremeChallenge(object.challenge);
 
   if (
