@@ -174,4 +174,10 @@ jobs:
         run: |
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/supreme_android_attestation_challenge_test.sql
 
+      - name: Verify bounded Supreme Android attestation verification attempts
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/supreme_android_attestation_attempt_budget_test.sql
+
       # GitHub-hosted runners are ephemeral; Docker containers are discarded after the job.

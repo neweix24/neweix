@@ -23,24 +23,25 @@ async function assertChallengeAvailable(
     throw new Error("Supabase server credentials are unavailable.");
   }
 
-  const url = new URL("/rest/v1/supreme_app_attestation_challenges", supabaseUrl);
-  url.searchParams.set("select", "id");
-  url.searchParams.set("limit", "1");
-  url.searchParams.set("id", `eq.${challengeId}`);
-  url.searchParams.set("challenge_hash", `eq.${challengeHash}`);
-  url.searchParams.set("requester_ip_hash", `eq.${requesterIpHash}`);
-  url.searchParams.set("consumed_at", "is.null");
-  url.searchParams.set("expires_at", `gt.${new Date().toISOString()}`);
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: restHeaders(),
-    redirect: "error",
-    signal: AbortSignal.timeout(5_000),
-  });
-  if (!response.ok) throw new Error("Challenge lookup failed.");
-  const rows: unknown = await response.json();
-  return Array.isArray(rows) && rows.length === 1;
+  // This is an atomic reservation, not a read-only lookup. The database
+  // permits at most three concurrent/repeated verification attempts per
+  // challenge and enforces the original requester IP binding.
+  const response = await fetch(
+    new URL("/rest/v1/rpc/reserve_supreme_app_attestation_verification_attempt", supabaseUrl),
+    {
+      method: "POST",
+      headers: restHeaders(),
+      body: JSON.stringify({
+        p_challenge_id: challengeId,
+        p_challenge_hash: challengeHash,
+        p_requester_ip_hash: requesterIpHash,
+      }),
+      redirect: "error",
+      signal: AbortSignal.timeout(5_000),
+    },
+  );
+  if (!response.ok) throw new Error("Challenge attempt reservation failed.");
+  return await response.json() === true;
 }
 
 async function consumeChallenge(
