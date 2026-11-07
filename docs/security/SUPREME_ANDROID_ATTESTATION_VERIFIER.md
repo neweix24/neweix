@@ -145,6 +145,19 @@ The app-ID unit suite now includes expected semantic vectors transcribed from th
 These are semantic compatibility vectors copied from upstream's decoded JSON expectations; they are **not** direct parsing of the PEM certificate fixtures and do not demonstrate end-to-end X.509 extension extraction. The pinned upstream Kotlin workflow separately runs its own real-certificate test suite. A true cross-runtime differential harness that extracts the extension from each PEM fixture and compares Deno output with Kotlin output remains a release gate.
 
 
+## Latest branch validation status — 2026-11-07
+
+The completed reference workflow run `42343639680` passed the pinned Kotlin verifier suite, real-certificate Deno differential checks, X.509 signature comparisons, Google-root path validation, Android chain-role/validity fixtures, and both Deno benchmark harnesses. Its tested commit was `3cbb7151a0fea9fc0432adb5a60a9aac9ed99092`.
+
+The current PR #172 head is `98d9765a347e9f4b46d7b30fc4862b3611c9af79`, which is two commits ahead of that tested commit. Therefore the successful run is evidence for the earlier ancestor only; it is **not** evidence that the current PR head passed. A fresh reference run on the exact PR head is required before this verifier spike can advance.
+
+On the earlier tested commit, the GitHub-hosted runner measured:
+- Real Google TEE X.509 path validation: approximately 3.1 ms average.
+- Bounded 55,000-entry Google status JSON parse: approximately 34.0 ms average.
+- Combined bounded status parse plus real X.509 path validation: approximately 42.1 ms average.
+
+These are GitHub runner measurements, not Supabase Edge Runtime measurements. They do not establish compliance with Supabase's CPU or memory limits.
+
 ## Verified fixture and policy scope
 
 The most recent completed reference runs before the app-policy change are:
