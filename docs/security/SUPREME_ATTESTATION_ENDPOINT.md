@@ -21,10 +21,11 @@ The Supreme login UI and middleware therefore remain fail-closed until a separat
 3. The app posts the challenge ID, base64url challenge, base64 certificate chain, and DER ECDSA proof signature to `POST /api/supreme/attestation/verify`.
 4. The Next.js route applies a strict 96 KiB body limit and proxies the request to the Supabase Edge Function. It adds the service-role credential server-side; it never forwards that credential to the app.
 5. The Edge Function requires the exact server-side service-role credential and rejects all other callers.
-6. The handler validates the request shape and sizes, hashes the challenge, and checks that the matching challenge row is present, unconsumed, and unexpired before doing expensive cryptographic work.
-7. The verifier fetches Google's current root and status feeds, validates freshness, validates the Android-specific X.509 chain and revocation status, enforces the package and production APK signer policy, validates hardware-backed KeyDescription and RootOfTrust, and verifies proof of possession.
-8. Only after every cryptographic and policy check succeeds does the handler call `consume_supreme_app_attestation_challenge`. The database conditional update is the replay fence.
-9. A successful response reports verification facts only. It is not a login token.
+6. The handler validates the request shape and sizes, hashes the challenge, and reserves a verification attempt through a database RPC before fetching external metadata or doing expensive cryptographic work.
+7. The reservation is an atomic row update bound to the challenge ID, challenge hash, original requester IP hash, unconsumed state, and expiry. A challenge allows at most three verification attempts, including concurrent requests. Failed attempts do not consume the challenge, preserving a small retry window for transient upstream failures.
+8. The verifier fetches Google's current root and status feeds, validates freshness, validates the Android-specific X.509 chain and revocation status, enforces the package and production APK signer policy, validates hardware-backed KeyDescription and RootOfTrust, and verifies proof of possession.
+9. Only after every cryptographic and policy check succeeds does the handler call `consume_supreme_app_attestation_challenge`. The database conditional update is the replay fence.
+10. A successful response reports verification facts only. It is not a login token.
 
 ## Required server configuration
 
@@ -48,10 +49,11 @@ The function depends on these migrations being applied to the target Supabase da
 
 - `20261107030000_supreme_android_attestation_challenges.sql`
 - `20261107043000_supreme_android_attestation_challenge_consume.sql`
+- `20261107080000_supreme_attestation_verification_attempt_budget.sql`
 
 The production project has not yet been migrated with these tables/RPCs. Until the migrations are separately reviewed and applied, the endpoint cannot complete verification. This PR does not apply any production database migration.
 
-Challenge issuance is rate-limited to 10 challenges per source-IP hash per rolling 10-minute window. This endpoint also rejects expired, mismatched, and already-consumed challenges before certificate parsing. A separate per-challenge failed-verification attempt budget is not yet implemented; add that control or an equivalent verified edge rate limit before public production enablement.
+Challenge issuance is rate-limited to 10 challenges per source-IP hash per rolling 10-minute window. Verification attempts are independently capped at three per challenge using an atomic database reservation bound to the original requester IP hash. The attempt budget limits concurrent cryptographic work amplification; challenge consumption remains a separate atomic operation that occurs only after successful verification.
 
 ## Runtime and release gates
 
