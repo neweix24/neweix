@@ -190,6 +190,38 @@ type PathPolicyFixture = {
 };
 
 Deno.test({
+  name: "Google factory no-leaf path is never accepted as a Supreme device",
+  ignore: !fixtureIndex,
+  fn: async () => {
+    const fixtures = JSON.parse(
+      await Deno.readTextFile(fixtureIndex!),
+    ) as PathPolicyFixture[];
+    const fixture = fixtures.find((item) => item.name === "no_leaf");
+    if (!fixture) throw new Error("Pinned Google no-leaf path fixture is missing.");
+    const chain = fixture.certificatesBase64.map((value) =>
+      parseX509Certificate(fromBase64(value))
+    );
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    await assertRejects(
+      () => verifySupremeAndroidAttestation({
+        chain,
+        googleRoots: rootMetadata(fromBase64(fixture.trustAnchorBase64), fixture.validationTimeMs),
+        revocationStatus: emptyStatus(fixture.validationTimeMs),
+        validationTimeMs: fixture.validationTimeMs,
+        challengeId: "b8f3e5b2-1b5a-4a7e-8a1a-2d0c6f4e9b11",
+        proofSignature: new Uint8Array([0x30, 0x00]),
+        keyPolicy: {
+          expectedChallenge: challenge,
+          minimumPackageVersion: 1n,
+          signingCertificateSha256: Uint8Array.from({ length: 32 }, (_, index) => index + 1),
+        },
+      }),
+      "Supreme attestation leaf must contain exactly one non-critical KeyDescription extension",
+    );
+  },
+});
+
+Deno.test({
   name: "Supreme verification pipeline reaches the app policy only after a trusted path",
   ignore: !fixtureIndex,
   fn: async () => {
