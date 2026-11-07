@@ -270,7 +270,12 @@ Deno.test({
       extensions: [...misplaced[2].extensions, provisioningExtension],
     };
     await assertRejects(
-      () => validateX509CertificatePath(misplaced, [trustAnchor], emptyStatus(), rkpFixture.validationTimeMs),
+      () => validateX509CertificatePath(
+        misplaced,
+        [trustAnchor],
+        emptyStatus(rkpFixture.validationTimeMs),
+        rkpFixture.validationTimeMs,
+      ),
       "must appear exactly once on the attestation certificate at index 1",
     );
 
