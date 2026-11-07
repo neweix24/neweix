@@ -74,12 +74,16 @@ jobs:
                 repo: context.repo.repo,
                 basehead: `${before}...${sha}`
               });
-              const changedFiles = comparison.files ?? [];
-              databaseChanged = changedFiles.some(({ filename }) =>
-                filename.startsWith("supabase/") ||
-                filename === ".github/workflows/supabase-migration-tests.yml"
-              );
-              core.info(`Supabase files changed for ${sha}: ${databaseChanged}`);
+              const changedFiles = comparison.files;
+              // Compare API file lists are capped. Missing/truncated file lists
+              // must conservatively require database validation, never skip it.
+              databaseChanged = !Array.isArray(changedFiles) ||
+                changedFiles.length >= 300 ||
+                changedFiles.some(({ filename }) =>
+                  filename.startsWith("supabase/") ||
+                  filename === ".github/workflows/supabase-migration-tests.yml"
+                );
+              core.info(`Supabase files changed or could not be ruled out for ${sha}: ${databaseChanged}`);
             } else {
               core.info("No trustworthy push base SHA; requiring migration validation.");
             }
