@@ -29,6 +29,10 @@ Neweix is the central public entry point to the Neweix ecosystem. The website sh
 - Header remains visually compact and consistent across public pages.
 - Desktop may expand spacing, but must retain the same information hierarchy.
 
+### Full-width search row
+
+A full-width search bar is the second horizontal row directly below the header on the homepage and remains available across public pages. It searches service and public-page entries through the backend `/api/search` route.
+
 ### Persistent bottom navigation
 
 Four destinations, in this exact order:
@@ -226,4 +230,8 @@ All Figma screens must use editable layers and reusable components, not flattene
 - [ ] Validate screenshots, layout, and responsive states.
 - [ ] Finalize confirmed service destination URLs.
 
-The Figma canvas was created successfully, but the Figma Starter plan's MCP tool-call limit prevented the editable design composition from being authored in this session. Do not treat the blank Figma canvas as completed designs.
+The Figma canvas was created successfully, but the Figma Starter plan's MCP tool-call limit prevented editable design composition in this session. Do not treat the blank Figma canvas as completed designs.
+
+## 11. Initial implementation status
+
+A first runnable Next.js 15 + React 19 + TypeScript website foundation has been committed on branch `feat/public-website-foundation`. It includes the homepage, shared header/search row/sidebar/bottom navigation, responsive styling, public information and service landing routes, `/api/search`, and `/api/health`. Search currently uses a static server-side catalogue; authentication, database, CMS, persistent notifications, and live service integrations are intentionally deferred.
