@@ -7,10 +7,10 @@ export const services = [
 {id:"account",name:"Neweix Account",category:"Identity",description:"Central customer identity ও account access.",href:"/services/account",mark:"A",tone:"green"}
 ];
 export const pages = [
-{title:"Home",description:"Neweix-এর মূল পাতা",href:"/",keywords:["home","হোম","neweix"],category:"Page"},
+{title:"Home",description:"Neweix-এর মূল পাতা",href:"/home",keywords:["home","হোম","eixora","feed"],category:"Page"},
 {title:"All Services",description:"Neweix-এর সব সার্ভিস",href:"/services",keywords:["services","সার্ভিস","সেবা"],category:"Page"},
 {title:"Eixon",description:"Wallet ও financial service",href:"https://eixon.neweix.com",keywords:["eixon","wallet","ওয়ালেট"],category:"Service"},
-{title:"Neweix Shop",description:"Online shopping service",href:"/services/shop",keywords:["shop","সপ","shopping","কেনাকাটা"],category:"Service"},
+{title:"Neweix Shop",description:"Online shopping service",href:"/",keywords:["shop","সপ","shopping","কেনাকাটা"],category:"Service"},
 {title:"Neweix+",description:"Premium subscription",href:"/services/neweix-plus",keywords:["plus","premium"],category:"Service"},
 {title:"Connect",description:"Messaging ও communication",href:"/services/connect",keywords:["connect","কানেক্ট","chat"],category:"Service"},
 {title:"Eixora",description:"Social platform",href:"/services/eixora",keywords:["eixora","social"],category:"Service"},
