@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 
 type Result={title:string;description:string;href:string;category:string};
-const destinations={home:"/",shop:process.env.NEXT_PUBLIC_SHOP_URL||"/services/shop",wallet:"https://eixon.neweix.com",account:process.env.NEXT_PUBLIC_ACCOUNT_URL||"/services/account",connect:process.env.NEXT_PUBLIC_CONNECT_URL||"/services/connect",eixora:process.env.NEXT_PUBLIC_EIXORA_URL||"/services/eixora",plus:process.env.NEXT_PUBLIC_PLUS_URL||"/services/neweix-plus"};
+const destinations={home:"/home",shop:process.env.NEXT_PUBLIC_SHOP_URL||"/",wallet:"https://eixon.neweix.com",account:process.env.NEXT_PUBLIC_ACCOUNT_URL||"/services/account",connect:process.env.NEXT_PUBLIC_CONNECT_URL||"/services/connect",eixora:process.env.NEXT_PUBLIC_EIXORA_URL||"/services/eixora",plus:process.env.NEXT_PUBLIC_PLUS_URL||"/services/neweix-plus"};
 function SmartLink({href,children,className,onClick}:{href:string;children:ReactNode;className?:string;onClick?:()=>void}){return href.startsWith("http")?<a href={href} className={className} onClick={onClick}>{children}</a>:<Link href={href} className={className} onClick={onClick}>{children}</Link>;}
 const groups=[{title:"সার্ভিস",items:[["Home",destinations.home,"⌂"],["Neweix Shop",destinations.shop,"▧"],["Eixon",destinations.wallet,"◉"],["Account",destinations.account,"○"],["Connect",destinations.connect,"⌁"],["Eixora",destinations.eixora,"✳"],["Neweix+",destinations.plus,"✦"]]},{title:"Explore",items:[["All Services","/services","▦"],["Ecosystem","/ecosystem","◎"],["Business","/business","▣"]]},{title:"তথ্য ও সহায়তা",items:[["About Neweix","/about","i"],["News & Updates","/updates","↗"],["Help Center","/help","?"],["FAQ","/faq","≡"],["Contact Us","/contact","✉"]]}] as const;
 
@@ -15,7 +15,7 @@ export default function SiteShell({children}:{children:ReactNode}){
  useEffect(()=>{localStorage.setItem("neweix-language",language);},[language]);
  useEffect(()=>{setDrawer(false);setSearchOpen(false);},[pathname]);
  async function search(event:FormEvent<HTMLFormElement>){event.preventDefault();const q=query.trim();setSearchOpen(true);if(q.length<2){setResults([]);return;}setSearching(true);try{const response=await fetch("/api/search?q="+encodeURIComponent(q));const data=await response.json();setResults(data.results||[]);}catch{setResults([]);}finally{setSearching(false);}}
- const active=pathname==="/"?"home":pathname.startsWith("/services/shop")?"shop":pathname.startsWith("/services/account")?"account":"";
+ const active=pathname==="/home"?"home":pathname==="/"||pathname.startsWith("/services/shop")?"shop":pathname.startsWith("/services/account")?"account":"";
  const bottom=[["home",language==="bn"?"হোম":"Home",destinations.home,"⌂"],["shop",language==="bn"?"শপ":"Shop",destinations.shop,"▧"],["wallet",language==="bn"?"ওয়ালেট":"Wallet",destinations.wallet,"◉"],["account",language==="bn"?"একাউন্ট":"Account",destinations.account,"○"]] as const;
  return <>
  <header className="site-header"><div className="header-inner"><Link href="/" className="wordmark">Neweix<span>.</span></Link><div className="header-actions"><SmartLink href={destinations.connect} className="connect-link">Connect</SmartLink><button className="menu-trigger" aria-label="Open menu" aria-expanded={drawer} onClick={()=>setDrawer(true)}><span/><span/><span/></button></div></div>
