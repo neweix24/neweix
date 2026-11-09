@@ -1,0 +1,34 @@
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { FormEvent, ReactNode, useEffect, useState } from "react";
+
+type Result={title:string;description:string;href:string;category:string};
+const destinations={home:"/",shop:process.env.NEXT_PUBLIC_SHOP_URL||"/services/shop",wallet:"https://eixon.neweix.com",account:process.env.NEXT_PUBLIC_ACCOUNT_URL||"/services/account",connect:process.env.NEXT_PUBLIC_CONNECT_URL||"/services/connect",eixora:process.env.NEXT_PUBLIC_EIXORA_URL||"/services/eixora",plus:process.env.NEXT_PUBLIC_PLUS_URL||"/services/neweix-plus"};
+function SmartLink({href,children,className,onClick}:{href:string;children:ReactNode;className?:string;onClick?:()=>void}){return href.startsWith("http")?<a href={href} className={className} onClick={onClick}>{children}</a>:<Link href={href} className={className} onClick={onClick}>{children}</Link>;}
+const groups=[{title:"সার্ভিস",items:[["Home",destinations.home,"⌂"],["Neweix Shop",destinations.shop,"▧"],["Eixon",destinations.wallet,"◉"],["Account",destinations.account,"○"],["Connect",destinations.connect,"⌁"],["Eixora",destinations.eixora,"✳"],["Neweix+",destinations.plus,"✦"]]},{title:"Explore",items:[["All Services","/services","▦"],["Ecosystem","/ecosystem","◎"],["Business","/business","▣"]]},{title:"তথ্য ও সহায়তা",items:[["About Neweix","/about","i"],["News & Updates","/updates","↗"],["Help Center","/help","?"],["FAQ","/faq","≡"],["Contact Us","/contact","✉"]]}] as const;
+
+export default function SiteShell({children}:{children:ReactNode}){
+ const pathname=usePathname();const [drawer,setDrawer]=useState(false);const [query,setQuery]=useState("");const [results,setResults]=useState<Result[]>([]);const [searchOpen,setSearchOpen]=useState(false);const [searching,setSearching]=useState(false);const [theme,setTheme]=useState<"light"|"dark">("light");const [language,setLanguage]=useState<"bn"|"en">("bn");
+ useEffect(()=>{const t=localStorage.getItem("neweix-theme");const l=localStorage.getItem("neweix-language");if(t==="dark"||t==="light")setTheme(t);if(l==="bn"||l==="en")setLanguage(l);},[]);
+ useEffect(()=>{document.documentElement.dataset.theme=theme;localStorage.setItem("neweix-theme",theme);},[theme]);
+ useEffect(()=>{localStorage.setItem("neweix-language",language);},[language]);
+ useEffect(()=>{setDrawer(false);setSearchOpen(false);},[pathname]);
+ async function search(event:FormEvent<HTMLFormElement>){event.preventDefault();const q=query.trim();setSearchOpen(true);if(q.length<2){setResults([]);return;}setSearching(true);try{const response=await fetch("/api/search?q="+encodeURIComponent(q));const data=await response.json();setResults(data.results||[]);}catch{setResults([]);}finally{setSearching(false);}}
+ const active=pathname==="/"?"home":pathname.startsWith("/services/shop")?"shop":pathname.startsWith("/services/account")?"account":"";
+ const bottom=[["home",language==="bn"?"হোম":"Home",destinations.home,"⌂"],["shop",language==="bn"?"শপ":"Shop",destinations.shop,"▧"],["wallet",language==="bn"?"ওয়ালেট":"Wallet",destinations.wallet,"◉"],["account",language==="bn"?"একাউন্ট":"Account",destinations.account,"○"]] as const;
+ return <>
+ <header className="site-header"><div className="header-inner"><Link href="/" className="wordmark">Neweix<span>.</span></Link><div className="header-actions"><SmartLink href={destinations.connect} className="connect-link">Connect</SmartLink><button className="menu-trigger" aria-label="Open menu" aria-expanded={drawer} onClick={()=>setDrawer(true)}><span/><span/><span/></button></div></div>
+ <div className="search-row"><form className="global-search" onSubmit={search} role="search"><span className="search-icon">⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={language==="bn"?"Neweix-এ কী খুঁজছেন?":"Search Neweix services and pages"} aria-label="Search Neweix"/>{query&&<button type="button" className="clear-search" onClick={()=>{setQuery("");setResults([]);setSearchOpen(false);}}>×</button>}<button className="search-submit">Search</button></form>
+ {searchOpen&&<div className="search-results"><div className="search-results-head"><span>{searching?"খোঁজা হচ্ছে...":"Search results"}</span><button type="button" onClick={()=>setSearchOpen(false)}>×</button></div>{results.length?results.map(item=><SmartLink key={item.href+item.title} href={item.href} className="search-result" onClick={()=>setSearchOpen(false)}><span><strong>{item.title}</strong><small>{item.description}</small></span><em>{item.category}</em></SmartLink>):<p className="search-empty">{searching?"অনুগ্রহ করে অপেক্ষা করুন":query.trim().length<2?"কমপক্ষে ২টি অক্ষর লিখুন":"কোনো ফলাফল পাওয়া যায়নি"}</p>}</div>}</div></header>
+ <main className="site-main">{children}</main>
+ <nav className="bottom-nav" aria-label="Primary navigation">{bottom.map(([id,label,href,icon])=><SmartLink key={id} href={href} className={"bottom-item "+(active===id?"active":"")}><span className="bottom-icon">{icon}</span><span>{label}</span></SmartLink>)}</nav>
+ {drawer&&<button className="drawer-backdrop" aria-label="Close menu" onClick={()=>setDrawer(false)}/>}
+ <aside className={"side-drawer "+(drawer?"open":"")} aria-hidden={!drawer}><div className="drawer-head"><Link href="/" className="wordmark" onClick={()=>setDrawer(false)}>Neweix<span>.</span></Link><button className="drawer-close" onClick={()=>setDrawer(false)} aria-label="Close menu">×</button></div><div className="drawer-scroll">
+ {groups.map(group=><section className="drawer-group" key={group.title}><h2>{group.title}</h2>{group.items.map(([label,href,icon])=><SmartLink key={label} href={href} className="drawer-link" onClick={()=>setDrawer(false)}><span className="drawer-icon">{icon}</span>{label}</SmartLink>)}</section>)}
+ <section className="drawer-group"><h2>Preferences</h2><button className="preference-row" onClick={()=>setLanguage(language==="bn"?"en":"bn")}>Language <strong>{language==="bn"?"বাংলা":"English"}</strong></button><button className="preference-row" onClick={()=>setTheme(theme==="light"?"dark":"light")}>Appearance <strong>{theme==="light"?"Light":"Dark"}</strong></button></section>
+ <section className="drawer-group"><h2>Legal</h2><Link className="drawer-link" href="/legal/terms">Terms of Service</Link><Link className="drawer-link" href="/legal/privacy">Privacy Policy</Link><Link className="drawer-link" href="/legal/cookies">Cookie Policy</Link></section>
+ </div><div className="drawer-foot">A connected digital ecosystem.</div></aside>
+ <footer className="desktop-footer"><div className="footer-inner"><strong className="footer-brand">Neweix<span>.</span></strong><span>One ecosystem. Connected experiences.</span><div><Link href="/about">About</Link><Link href="/help">Help</Link><Link href="/legal/privacy">Privacy</Link></div></div></footer>
+ </>;
+}
