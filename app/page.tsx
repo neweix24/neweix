@@ -36,6 +36,7 @@ export default function NeweixHomePage() {
           <Link href="/shop" className="quick-card"><span className="quick-symbol shop-symbol">S</span><span className="quick-card-copy"><strong>Neweix Shop</strong><small>পণ্য ও কেনাকাটা</small></span><span className="quick-arrow">↗</span></Link>
           <Link href="/coming-soon?service=eixon" className="quick-card"><span className="quick-symbol wallet-symbol">E</span><span className="quick-card-copy"><strong>Eixon</strong><small>Wallet ও financial service</small></span><span className="quick-arrow">↗</span></Link>
           <Link href="/coming-soon?service=eixora" className="quick-card eixora-feature"><span className="quick-symbol">X</span><span className="quick-card-copy"><strong>Eixora</strong><small>Social ও Home Feed</small></span><span className="quick-arrow">↗</span></Link>
+          <a href="https://www.accounts.neweix.com" className="quick-card"><span className="quick-symbol account-symbol">A</span><span className="quick-card-copy"><strong>Neweix Account</strong><small>Central Account ও পরিচয় ব্যবস্থাপনা</small></span><span className="quick-arrow">↗</span></a>
         </div>
       </section>
 
