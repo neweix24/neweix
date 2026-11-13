@@ -62,7 +62,14 @@ The global search row remains directly below the header on public pages. Search 
 - Eixora Home Feed is separate from the default Shop page.
 - No live product, social, authentication, or payment data is claimed until connected.
 
-## 9. Execution status
+## 9. Service availability states
+
+- Services not yet started display a clear **Coming Soon / শীঘ্রই চালু হবে** page when selected.
+- Services with implementation already underway but not publicly launched display **In Development / উন্নয়নাধীন** instead.
+- Eixon and Central Account are marked In Development; Neweix Shop, Neweix+, Connect, and Eixora are marked Coming Soon.
+- No unavailable service link should send visitors to an inactive Worker or imply that login, payment, orders, or social actions are live.
+
+## 10. Execution status
 
 - [x] Public shell, header, search row, sidebar, and bottom navigation.
 - [x] Root URL set as Neweix Shop entry.
