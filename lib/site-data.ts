@@ -1,10 +1,10 @@
 export const services = [
-{id:"eixon",name:"Eixon",category:"Finance",description:"Neweix ecosystem-এর নিজস্ব financial service ও wallet experience.",href:"/coming-soon?service=eixon",mark:"E",tone:"blue",status:"coming-soon"},
+{id:"eixon",name:"Eixon",category:"Finance",description:"Neweix ecosystem-এর নিজস্ব financial service ও wallet experience.",href:"/coming-soon?service=eixon",mark:"E",tone:"blue",status:"in-development"},
 {id:"shop",name:"Neweix Shop",category:"Shopping",description:"পণ্য আবিষ্কার, কেনাকাটা ও অর্ডারের অভিজ্ঞতা.",href:"/coming-soon?service=shop",mark:"S",tone:"violet",status:"coming-soon"},
 {id:"neweix-plus",name:"Neweix+",category:"Membership",description:"Ecosystem জুড়ে premium subscription ও সুবিধা.",href:"/coming-soon?service=neweix-plus",mark:"+",tone:"amber",status:"coming-soon"},
 {id:"connect",name:"Connect",category:"Communication",description:"মানুষ ও সার্ভিসের মধ্যে যোগাযোগের অভিজ্ঞতা.",href:"/coming-soon?service=connect",mark:"C",tone:"cyan",status:"coming-soon"},
 {id:"eixora",name:"Eixora",category:"Social",description:"আলোচনা, পোস্ট ও কমিউনিটির social platform.",href:"/coming-soon?service=eixora",mark:"X",tone:"pink",status:"coming-soon"},
-{id:"account",name:"Neweix Account",category:"Identity",description:"Central customer identity ও account access.",href:"/coming-soon?service=account",mark:"A",tone:"green",status:"coming-soon"}
+{id:"account",name:"Neweix Account",category:"Identity",description:"Central customer identity ও account access.",href:"/coming-soon?service=account",mark:"A",tone:"green",status:"in-development"}
 ];
 export const pages = [
 {title:"Home",description:"Neweix-এর মূল পাতা",href:"/coming-soon?service=eixora",keywords:["home","হোম","eixora","feed"],category:"Service"},
