@@ -85,6 +85,7 @@ The global search row remains directly below the header on public pages. Search 
 - [x] Public search and health API foundation.
 - [x] Public sitemap, robots directives, and social metadata.
 - [x] ESLint 9 flat configuration and CI TypeScript check.
+- [x] Escape-key dismissal and hidden-drawer focus exclusion for navigation overlays.
 - [ ] Build and test validation.
 - [ ] Real product catalogue, inventory, and checkout.
 - [ ] Real Eixora feed and social interactions.
