@@ -7,7 +7,7 @@
 
 ## 1. Product direction
 
-Neweix is the central public entry point to the Neweix ecosystem. The root URL opens Neweix Shop by default. The persistent Home destination opens the Eixora Home Feed.
+Neweix is the central public entry point to the Neweix ecosystem. The root URL (`www.neweix.com`) opens the complete Neweix Homepage, showing the ecosystem overview, services, updates, and information. Each navigation item opens its own page. Neweix Shop has its own `/shop` route. The Home destination returns to `/`.
 
 ## 2. Global application shell
 
@@ -24,9 +24,9 @@ Neweix is the central public entry point to the Neweix ecosystem. The root URL o
 - Second row: full-width global search field.
 
 ### Persistent bottom navigation
-1. Home — Eixora Home Feed at `/home`.
-2. Shop — Neweix Shop at `/`.
-3. Wallet — Eixon at `https://eixon.neweix.com`.
+1. Home — Neweix Homepage at `/`.
+2. Shop — Neweix Shop at `/shop`.
+3. Wallet — Eixon service entry.
 4. Account — Central Account entry.
 
 ### Hamburger sidebar
@@ -34,25 +34,30 @@ Includes primary service destinations, Explore pages, information/help, preferen
 
 ## 3. Public page inventory
 
-- `/` — Neweix Shop storefront entry (default website page).
-- `/home` — Eixora Home Feed.
+- `/` — Complete Neweix Homepage and ecosystem overview.
+- `/shop` — Neweix Shop page.
+- Eixora Home Feed remains a separate service destination and is not the root Homepage.
 - `/services` — All Services.
 - `/services/eixon`, `/services/shop`, `/services/neweix-plus`, `/services/connect`, `/services/eixora` — Service information pages.
 - `/ecosystem`, `/business`, `/about`, `/updates`, `/contact`, `/help`, `/faq`, `/docs`, and legal pages.
 
-## 4. Root Shop page
+## 4. Neweix Homepage
+
+The root page presents the full public Neweix ecosystem: primary services, service availability states, ecosystem information, announcements, and help links. Navigation items take visitors to dedicated pages. The Homepage must not be replaced by the Shop or an Eixora feed.
+
+## 5. Neweix Shop page
 
 The root page is the default storefront entry. It introduces Neweix Shop and links to the wider ecosystem. Product listings, prices, stock, and checkout must only be displayed when backed by real catalog and inventory data; the initial visual foundation must not invent products or availability.
 
-## 5. Eixora Home Feed
+## 6. Eixora Home Feed
 
 The bottom-navigation Home item opens `/home`, the Eixora Home Feed. The initial page may show the feed structure and development state, but must not fabricate posts, users, or engagement counts.
 
-## 6. Search and navigation
+## 7. Search and navigation
 
 The global search row remains directly below the header on public pages. Search initially uses a server-side static catalogue of public services/pages. Product search will require a real product catalogue integration.
 
-## 7. Responsive and accessibility requirements
+## 8. Responsive and accessibility requirements
 
 - Mobile-first responsive layout.
 - Fixed bottom navigation with four destinations.
@@ -60,7 +65,7 @@ The global search row remains directly below the header on public pages. Search 
 - Bengali and English text wrapping must be checked.
 - Respect reduced motion and maintain readable contrast.
 
-## 8. Implementation boundaries
+## 9. Implementation boundaries
 
 - Neweix public pages link to independent services; they do not replace service interfaces.
 - Eixon remains the financial service.
@@ -69,18 +74,19 @@ The global search row remains directly below the header on public pages. Search 
 - Eixora Home Feed is separate from the default Shop page.
 - No live product, social, authentication, or payment data is claimed until connected.
 
-## 9. Service availability states
+## 10. Service availability states
 
 - Services not yet started display a clear **Coming Soon / শীঘ্রই চালু হবে** page when selected.
 - Services with implementation already underway but not publicly launched display **In Development / উন্নয়নাধীন** instead.
 - Eixon and Central Account are marked In Development; Neweix Shop, Neweix+, Connect, and Eixora are marked Coming Soon.
 - No unavailable service link should send visitors to an inactive Worker or imply that login, payment, orders, or social actions are live.
 
-## 10. Execution status
+## 11. Execution status
 
 - [x] Public shell, header, search row, sidebar, and bottom navigation.
-- [x] Root URL set as Neweix Shop entry.
-- [x] Home navigation set to Eixora Home Feed.
+- [x] Root URL set as complete Neweix Homepage.
+- [x] Dedicated Neweix Shop page at `/shop`.
+- [x] Home navigation returns to the Neweix Homepage.
 - [x] Initial Shop and Eixora page structures.
 - [x] Public search and health API foundation.
 - [x] Public sitemap, robots directives, and social metadata.
@@ -92,7 +98,7 @@ The global search row remains directly below the header on public pages. Search 
 - [ ] Editable Figma foundations, components, and responsive screens.
 - [ ] Confirm remaining service destination URLs.
 
-## 11. Search engine visibility
+## 12. Search engine visibility
 
 - `/sitemap.xml` is generated from the public informational route list.
 - `/robots.txt` allows public pages and disallows API routes from crawling.
@@ -100,7 +106,7 @@ The global search row remains directly below the header on public pages. Search 
 - Global metadata defines the canonical public host, Open Graph previews, Twitter summary previews, and crawler directives.
 - Private dashboards, authenticated pages, and admin routes must remain outside the public sitemap and must use appropriate no-index/access controls if introduced.
 
-## 12. Continuous integration
+## 13. Continuous integration
 
 The GitHub Actions workflow validates:
 1. ESLint.
