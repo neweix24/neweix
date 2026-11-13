@@ -1,7 +1,74 @@
 import Link from "next/link";
-export default function ShopHomePage(){return <div className="home-page">
-<section className="hero-section"><div className="hero-copy"><span className="eyebrow"><i/> NEWEIX SHOP</span><h1>আপনার পছন্দের<br/><span>কেনাকাটা শুরু হোক।</span></h1><p>Neweix Shop-এ পণ্য আবিষ্কার, পছন্দের জিনিস খোঁজা এবং সহজে অর্ডার করার অভিজ্ঞতা তৈরি হচ্ছে। সার্ভিসটি চালু হলে এখানে পণ্য ও ক্যাটালগ দেখা যাবে।</p><div className="hero-actions"><Link href="/coming-soon?service=shop" className="button-primary">Shop-এর অবস্থা দেখুন <span>↗</span></Link><Link href="/services" className="button-secondary">অন্যান্য সার্ভিস</Link></div></div><div className="hero-art"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="orbit-core"><strong>S</strong><small>SHOP</small></div><div className="orbit-node node-top">N</div><div className="orbit-node node-right">+</div><div className="orbit-node node-bottom">E</div><div className="orbit-node node-left">W</div><span className="art-caption">NEWEIX SHOP</span></div><div className="hero-glow"/></section>
-<section className="quick-section"><div className="section-heading"><div><span className="eyebrow">NEWEIX ECOSYSTEM</span><h2>দ্রুত প্রবেশ</h2></div><Link href="/services" className="text-link">সব সার্ভিস ↗</Link></div><div className="quick-grid"><Link href="/coming-soon?service=eixora" className="quick-card eixora-feature"><span className="quick-symbol">X</span><span className="quick-card-copy"><strong>Eixora</strong><small>Home Feed ও কমিউনিটি</small></span><span className="quick-arrow">↗</span></Link><Link href="/coming-soon?service=eixon" className="quick-card"><span className="quick-symbol wallet-symbol">E</span><span className="quick-card-copy"><strong>Eixon</strong><small>Wallet ও payment service</small></span><span className="quick-arrow">↗</span></Link><Link href="/coming-soon?service=neweix-plus" className="quick-card"><span className="quick-symbol shop-symbol">+</span><span className="quick-card-copy"><strong>Neweix+</strong><small>Premium membership</small></span><span className="quick-arrow">↗</span></Link></div></section>
-<section className="updates-section"><div className="section-heading"><div><span className="eyebrow">SHOPPING EXPERIENCE</span><h2>Neweix Shop প্রস্তুত হচ্ছে</h2></div><span className="update-label">COMING SOON</span></div><div className="update-card"><span className="update-dot"/><div><strong>পণ্য ও ক্যাটালগ শিগগিরই এখানে</strong><p>বাস্তব পণ্য, মূল্য ও প্রাপ্যতার তথ্য যুক্ত হলে এই জায়গায় দেখা যাবে।</p></div></div></section>
-<section className="help-strip"><div><span className="eyebrow">DISCOVER NEWEIX</span><h2>Neweix-এর অন্যান্য সার্ভিস</h2><p>একই ওয়েবসাইট থেকে Neweix ecosystem-এর অন্যান্য সেবায় প্রবেশ করুন।</p></div><Link href="/services" className="button-secondary">সব সার্ভিস দেখুন ↗</Link></section>
-</div>}
+import { services } from "@/lib/site-data";
+
+const highlights = [
+  { title: "একটি কেন্দ্রীয় Ecosystem", description: "বিভিন্ন প্রয়োজনের জন্য আলাদা সার্ভিস, একই পরিচিত Neweix অভিজ্ঞতার অধীনে।" },
+  { title: "নিজস্ব সার্ভিস অভিজ্ঞতা", description: "প্রতিটি সেবার জন্য আলাদা পেজ, কাজের ধরন ও ভবিষ্যৎ ফিচার।" },
+  { title: "ধাপে ধাপে উন্নয়ন", description: "প্রতিটি সার্ভিসের বর্তমান অবস্থা স্পষ্টভাবে জানানো হবে।" },
+];
+
+export default function NeweixHomePage() {
+  return (
+    <div className="home-page">
+      <section className="hero-section">
+        <div className="hero-copy">
+          <span className="eyebrow"><i /> THE NEWEIX ECOSYSTEM</span>
+          <h1>একটি জায়গা থেকে<br /><span>পুরো Neweix আবিষ্কার করুন।</span></h1>
+          <p>Neweix-এর সব সার্ভিস, ডিজিটাল অভিজ্ঞতা, গুরুত্বপূর্ণ তথ্য ও আপডেট একসঙ্গে দেখুন। আপনার প্রয়োজনের বিভাগে প্রবেশ করুন সহজেই।</p>
+          <div className="hero-actions">
+            <Link href="/services" className="button-primary">সব সার্ভিস দেখুন <span>↗</span></Link>
+            <Link href="/about" className="button-secondary">Neweix সম্পর্কে</Link>
+          </div>
+        </div>
+        <div className="hero-art" aria-hidden="true">
+          <div className="orbit orbit-one" /><div className="orbit orbit-two" />
+          <div className="orbit-core"><strong>N</strong><small>NEWEIX</small></div>
+          <div className="orbit-node node-top">S</div><div className="orbit-node node-right">E</div>
+          <div className="orbit-node node-bottom">X</div><div className="orbit-node node-left">C</div>
+          <span className="art-caption">ONE CONNECTED ECOSYSTEM</span>
+        </div>
+        <div className="hero-glow" />
+      </section>
+
+      <section className="quick-section">
+        <div className="section-heading"><div><span className="eyebrow">EXPLORE NEWEIX</span><h2>প্রধান বিভাগ</h2></div><Link href="/services" className="text-link">সব বিভাগ ↗</Link></div>
+        <div className="quick-grid">
+          <Link href="/shop" className="quick-card"><span className="quick-symbol shop-symbol">S</span><span className="quick-card-copy"><strong>Neweix Shop</strong><small>পণ্য ও কেনাকাটা</small></span><span className="quick-arrow">↗</span></Link>
+          <Link href="/coming-soon?service=eixon" className="quick-card"><span className="quick-symbol wallet-symbol">E</span><span className="quick-card-copy"><strong>Eixon</strong><small>Wallet ও financial service</small></span><span className="quick-arrow">↗</span></Link>
+          <Link href="/coming-soon?service=eixora" className="quick-card eixora-feature"><span className="quick-symbol">X</span><span className="quick-card-copy"><strong>Eixora</strong><small>Social ও Home Feed</small></span><span className="quick-arrow">↗</span></Link>
+        </div>
+      </section>
+
+      <section className="services-section">
+        <div className="section-heading"><div><span className="eyebrow">OUR SERVICES</span><h2>Neweix-এর সব সার্ভিস</h2><p>প্রতিটি সার্ভিসের বিস্তারিত ও বর্তমান অবস্থা দেখুন।</p></div><Link href="/services" className="text-link">সার্ভিস ডিরেক্টরি ↗</Link></div>
+        <div className="service-grid">
+          {services.map((service) => <Link href={service.id === "shop" ? "/shop" : service.href} className="service-card" key={service.id}>
+            <span className={"service-mark " + service.tone}>{service.mark}</span>
+            <span className="service-category">{service.category}</span>
+            <strong>{service.name}</strong>
+            <p>{service.description}</p>
+            <span className="service-open"><span>{service.status === "in-development" ? "উন্নয়নাধীন" : "শীঘ্রই চালু হবে"}</span><span>↗</span></span>
+          </Link>)}
+        </div>
+      </section>
+
+      <section className="ecosystem-banner">
+        <div className="banner-orb" />
+        <div><span className="eyebrow">CONNECTED BY DESIGN</span><h2>একটি Ecosystem.<br />বিভিন্ন অভিজ্ঞতা।</h2><p>Neweix-এর প্রতিটি সার্ভিস নিজস্ব কাজ ও অভিজ্ঞতা নিয়ে তৈরি হচ্ছে, যাতে ব্যবহারকারীরা প্রয়োজন অনুযায়ী সঠিক জায়গায় যেতে পারেন।</p></div>
+        <Link href="/ecosystem" className="banner-link">Ecosystem সম্পর্কে জানুন ↗</Link>
+      </section>
+
+      <section className="updates-section">
+        <div className="section-heading"><div><span className="eyebrow">LATEST INFORMATION</span><h2>ঘোষণা ও আপডেট</h2></div><Link href="/updates" className="text-link">সব আপডেট ↗</Link></div>
+        <div className="update-card"><span className="update-dot" /><div><strong>Neweix সার্ভিসগুলো ধাপে ধাপে প্রস্তুত হচ্ছে</strong><p>প্রতিটি সার্ভিসের পেজে তার বর্তমান উন্নয়ন অবস্থা দেখানো হবে। চালু হওয়ার আগে কোনো ফিচারকে সক্রিয় হিসেবে দেখানো হবে না।</p></div><span className="update-label">ECOSYSTEM UPDATE</span></div>
+      </section>
+
+      <section className="quick-section">
+        <div className="section-heading"><div><span className="eyebrow">WHY NEWEIX</span><h2>এক নজরে Neweix</h2></div></div>
+        <div className="related-grid">{highlights.map((item) => <article className="related-card" key={item.title}><span>✓</span><strong>{item.title}</strong><small>{item.description}</small></article>)}</div>
+      </section>
+
+      <section className="help-strip"><div><span className="eyebrow">NEED MORE INFORMATION?</span><h2>আরও জানতে বা সাহায্য পেতে</h2><p>Neweix সম্পর্কে জানুন, সাধারণ প্রশ্ন দেখুন অথবা যোগাযোগ করুন।</p></div><Link href="/help" className="button-secondary">Help Center ↗</Link></section>
+    </div>
+  );
+}
