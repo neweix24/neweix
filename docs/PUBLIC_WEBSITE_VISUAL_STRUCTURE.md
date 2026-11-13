@@ -83,8 +83,27 @@ The global search row remains directly below the header on public pages. Search 
 - [x] Home navigation set to Eixora Home Feed.
 - [x] Initial Shop and Eixora page structures.
 - [x] Public search and health API foundation.
+- [x] Public sitemap, robots directives, and social metadata.
+- [x] ESLint 9 flat configuration and CI TypeScript check.
 - [ ] Build and test validation.
 - [ ] Real product catalogue, inventory, and checkout.
 - [ ] Real Eixora feed and social interactions.
 - [ ] Editable Figma foundations, components, and responsive screens.
 - [ ] Confirm remaining service destination URLs.
+
+## 11. Search engine visibility
+
+- `/sitemap.xml` is generated from the public informational route list.
+- `/robots.txt` allows public pages and disallows API routes from crawling.
+- Coming Soon pages and API endpoints are not included in the sitemap.
+- Global metadata defines the canonical public host, Open Graph previews, Twitter summary previews, and crawler directives.
+- Private dashboards, authenticated pages, and admin routes must remain outside the public sitemap and must use appropriate no-index/access controls if introduced.
+
+## 12. Continuous integration
+
+The GitHub Actions workflow validates:
+1. ESLint.
+2. TypeScript with `tsc --noEmit`.
+3. Next.js production build.
+
+CI execution is currently blocked before job steps because GitHub has assigned no hosted runner (runner ID 0). This is an infrastructure/runner availability issue; source-code validation remains pending until a runner can start the job.
