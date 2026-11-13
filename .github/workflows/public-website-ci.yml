@@ -4,14 +4,19 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, "feat/public-website-foundation"]
+    branches: [main, "feat/public-website-foundation", "feat/public-website-seo-quality"]
 
 permissions:
   contents: read
 
+concurrency:
+  group: public-website-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,8 +25,10 @@ jobs:
         with:
           node-version: 20
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
       - name: Lint
         run: npm run lint
+      - name: TypeScript check
+        run: npx tsc --noEmit
       - name: Production build
         run: npm run build
