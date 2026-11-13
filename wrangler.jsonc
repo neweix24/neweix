@@ -2,8 +2,13 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "neweix",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2026-11-13",
+  "compatibility_date": "2026-10-23",
   "compatibility_flags": ["nodejs_compat"],
+  "keep_vars": true,
+  "workers_dev": false,
+  "ai": {
+    "binding": "AI"
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -16,5 +21,20 @@
   ],
   "images": {
     "binding": "IMAGES"
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": false,
+      "persist": true,
+      "head_sampling_rate": 1
+    }
   }
 }
