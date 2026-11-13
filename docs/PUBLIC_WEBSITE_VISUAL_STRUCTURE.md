@@ -11,15 +11,16 @@ Neweix is the central public entry point to the Neweix ecosystem. The root URL o
 
 ## 2. Global application shell
 
-### Central notification bar
-- A compact, full-width announcement strip sits at the very top, above the header.
-- It carries ecosystem-wide service announcements and links to the News & Updates page.
-- Visitors can dismiss the current notice; the dismissal is remembered in that browser.
-- Initial copy is static UI content. A central admin-managed notification feed, targeting, scheduling, and delivery history are future backend work.
+### Header notification menu
+- The header's right-side action order is Connect, Notification bell, then hamburger menu.
+- Selecting the bell opens a compact notification dropdown below the header action.
+- The dropdown shows the latest central announcement and links to the News & Updates page.
+- A small dot indicates that an announcement is available.
+- Initial notification content is static UI. Admin-managed notifications, targeting, scheduling, unread state, and delivery history require a later backend implementation.
 
 ### Header
 - Left: Neweix wordmark; links to the root URL (Neweix Shop).
-- Right: Connect link, then hamburger menu.
+- Right: Connect link, notification bell/menu, then hamburger menu.
 - Second row: full-width global search field.
 
 ### Persistent bottom navigation
