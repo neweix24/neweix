@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 type Result={title:string;description:string;href:string;category:string};
-const destinations={home:"/coming-soon?service=eixora",shop:process.env.NEXT_PUBLIC_SHOP_URL||"/",wallet:"/coming-soon?service=eixon",account:"/coming-soon?service=account",connect:"/coming-soon?service=connect",eixora:"/coming-soon?service=eixora",plus:"/coming-soon?service=neweix-plus"};
+const destinations={home:"/coming-soon?service=eixora",shop:"/",wallet:"/coming-soon?service=eixon",account:"/coming-soon?service=account",connect:"/coming-soon?service=connect",eixora:"/coming-soon?service=eixora",plus:"/coming-soon?service=neweix-plus"};
 function SmartLink({href,children,className,onClick}:{href:string;children:ReactNode;className?:string;onClick?:()=>void}){return href.startsWith("http")?<a href={href} className={className} onClick={onClick}>{children}</a>:<Link href={href} className={className} onClick={onClick}>{children}</Link>;}
 const groups=[{title:"সার্ভিস",items:[["Home",destinations.home,"⌂"],["Neweix Shop",destinations.shop,"▧"],["Eixon",destinations.wallet,"◉"],["Account",destinations.account,"○"],["Connect",destinations.connect,"⌁"],["Eixora",destinations.eixora,"✳"],["Neweix+",destinations.plus,"✦"]]},{title:"Explore",items:[["All Services","/services","▦"],["Ecosystem","/ecosystem","◎"],["Business","/business","▣"]]},{title:"তথ্য ও সহায়তা",items:[["About Neweix","/about","i"],["News & Updates","/updates","↗"],["Help Center","/help","?"],["FAQ","/faq","≡"],["Contact Us","/contact","✉"]]}] as const;
 export default function SiteShell({children}:{children:ReactNode}){
