@@ -19,7 +19,7 @@ Neweix is the central public entry point to the Neweix ecosystem. The root URL (
 - Initial notification content is static UI. Admin-managed notifications, targeting, scheduling, unread state, and delivery history require a later backend implementation.
 
 ### Header
-- Left: Neweix wordmark; links to the root URL (Neweix Shop).
+- Left: Neweix wordmark; links to the root URL (Neweix Homepage).
 - Right: Connect link, notification bell/menu, then hamburger menu.
 - Second row: full-width global search field.
 
@@ -47,11 +47,11 @@ The root page presents the full public Neweix ecosystem: primary services, servi
 
 ## 5. Neweix Shop page
 
-The root page is the default storefront entry. It introduces Neweix Shop and links to the wider ecosystem. Product listings, prices, stock, and checkout must only be displayed when backed by real catalog and inventory data; the initial visual foundation must not invent products or availability.
+The `/shop` page is the dedicated storefront entry. It introduces Neweix Shop and links back to the wider ecosystem. Product listings, prices, stock, and checkout must only be displayed when backed by real catalog and inventory data; the initial visual foundation must not invent products or availability.
 
 ## 6. Eixora Home Feed
 
-The bottom-navigation Home item opens `/home`, the Eixora Home Feed. The initial page may show the feed structure and development state, but must not fabricate posts, users, or engagement counts.
+The Home navigation item opens `/`, the complete Neweix Homepage. Eixora Home Feed is a separate service destination at its own service entry point. The initial page may show the feed structure and development state, but must not fabricate posts, users, or engagement counts.
 
 ## 7. Search and navigation
 
