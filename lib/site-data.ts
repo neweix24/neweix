@@ -7,7 +7,7 @@ export const services = [
 {id:"account",name:"Neweix Account",category:"Identity",description:"Central customer identity ও account access.",href:"/coming-soon?service=account",mark:"A",tone:"green",status:"in-development"}
 ];
 export const pages = [
-{title:"Home",description:"Neweix-এর মূল পাতা",href:"/coming-soon?service=eixora",keywords:["home","হোম","eixora","feed"],category:"Service"},
+{title:"Home",description:"Neweix-এর মূল পাতা",href:"/home",keywords:["home","হোম","eixora","feed"],category:"Service"},
 {title:"All Services",description:"Neweix-এর সব সার্ভিস",href:"/services",keywords:["services","সার্ভিস","সেবা"],category:"Page"},
 {title:"Eixon",description:"Wallet ও financial service",href:"/coming-soon?service=eixon",keywords:["eixon","wallet","ওয়ালেট"],category:"Service"},
 {title:"Neweix Shop",description:"Online shopping service",href:"/coming-soon?service=shop",keywords:["shop","সপ","shopping","কেনাকাটা"],category:"Service"},
