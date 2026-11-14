@@ -37,3 +37,6 @@
 .notification-item a{font-size:11px;font-weight:700;color:var(--blue)}
 @media(max-width:760px){.header-actions{gap:12px}.notification-trigger{width:39px;height:39px}.notification-panel{right:-48px;top:calc(100% + 10px)}}
 @media(max-width:380px){.header-actions{gap:9px}.connect-link{font-size:12px}.notification-trigger{width:36px;height:36px}.menu-trigger{width:36px;height:36px}}
+
+/* Consistent Lucide icon alignment */
+.drawer-icon svg,.quick-symbol svg,.service-mark svg,.related-card span svg,.button-primary svg,.button-secondary svg,.text-link svg,.quick-arrow svg,.service-open svg,.notification-item-icon svg{display:block;flex:none}.drawer-icon{display:flex;align-items:center;justify-content:center}.quick-symbol,.service-mark,.related-card span,.notification-item-icon{display:flex;align-items:center;justify-content:center}.search-icon{display:flex;align-items:center;justify-content:center}.menu-trigger svg{display:block}
