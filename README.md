@@ -19,6 +19,10 @@ First runnable public website foundation for the Neweix ecosystem.
 - Responsive mobile and desktop layouts
 - Initial theme and language controls
 
+## Developer-facing products
+
+Neweix does not provide a Developer Marketplace, Developer Portal/Dashboard, third-party Developer API Platform, developer onboarding, developer subscriptions/billing, or developer integration/publishing program. These capabilities are cancelled under Supreme governance policy. See the [Supreme cancellation policy](https://github.com/neweix24/supreme/blob/main/docs/developer-program-cancellation.md).
+
 ## Local development
 Requires Node.js 20.9+.
 
