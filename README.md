@@ -35,7 +35,7 @@ Requires Node.js 20.9+.
 The Shop destination is https://www.shop.neweix.com. The service directory lists six customer-facing services plus the planned internal Employees service with explicit statuses. Shop's storefront is available, but its API and checkout remain disabled. Account uses https://www.accounts.neweix.com.
 
 ## Backend status
-Search currently uses a server-side catalogue and does not require a database. Authentication, CMS, notifications, persistent user preferences and service integrations are later phases. This is not a production launch.
+The public portal is deployed, and search currently uses a server-side catalogue without a database. Authentication, CMS, notifications, persistent user preferences, the unified Admin workspace and service integrations are not yet complete. Do not treat the portal deployment as a full Neweix ecosystem production launch.
 
 
 ## Ecosystem governance
