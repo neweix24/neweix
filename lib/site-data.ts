@@ -79,6 +79,17 @@ export const services: NeweixService[] = [
     statusLabel: "পরিকল্পনাধীন",
     actionLabel: "বিস্তারিত দেখুন",
   },
+  {
+    id: "employees",
+    name: "Employees",
+    category: "Administration",
+    description: "Admin ও কর্মীদের পরিচয়, দায়িত্ব এবং অনুমোদিত কর্মপরিচালনার অভ্যন্তরীণ ব্যবস্থা। এখনো পরিকল্পনাধীন।",
+    href: "/coming-soon?service=employees",
+    tone: "blue",
+    status: "planned",
+    statusLabel: "পরিকল্পনাধীন",
+    actionLabel: "বিস্তারিত দেখুন",
+  },
 ];
 
 export const pages = [
@@ -90,4 +101,5 @@ export const pages = [
   { title: "Neweix Connect", description: "Messaging ও communication service", href: "/coming-soon?service=connect", keywords: ["connect", "কানেক্ট", "chat", "message", "মেসেজ"], category: "Service" },
   { title: "Neweix+", description: "Premium subscription ও membership সুবিধা", href: "/coming-soon?service=neweix-plus", keywords: ["plus", "premium", "membership", "সদস্যতা"], category: "Service" },
   { title: "Eixora", description: "Social platform, Home Feed ও community", href: "/coming-soon?service=eixora", keywords: ["eixora", "social", "সোশ্যাল"], category: "Service" },
+  { title: "Employees", description: "Admin ও workforce identity এবং দায়িত্ব ব্যবস্থাপনা", href: "/coming-soon?service=employees", keywords: ["employees", "কর্মী", "admin", "workforce", "প্রশাসন"], category: "Internal Service" },
 ];
