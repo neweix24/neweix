@@ -36,7 +36,7 @@ export default function NeweixHomePage() {
       <section className="quick-section">
         <div className="section-heading"><div><span className="eyebrow">EXPLORE NEWEIX</span><h2>প্রধান বিভাগ</h2></div><Link href="/services" className="text-link">সব বিভাগ <ArrowUpRight size={15}/></Link></div>
         <div className="quick-grid">
-          <Link href="/shop" className="quick-card"><span className="quick-symbol shop-symbol"><ShoppingBag size={23} strokeWidth={1.8}/></span><span className="quick-card-copy"><strong>Neweix Shop</strong><small>পণ্য ও কেনাকাটা</small></span><span className="quick-arrow"><ArrowUpRight size={18}/></span></Link>
+          <a href="https://www.shop.neweix.com" className="quick-card"><span className="quick-symbol shop-symbol"><ShoppingBag size={23} strokeWidth={1.8}/></span><span className="quick-card-copy"><strong>Neweix Shop</strong><small>পণ্য ও কেনাকাটা</small></span><span className="quick-arrow"><ArrowUpRight size={18}/></span></a>
           <Link href="/coming-soon?service=eixon" className="quick-card"><span className="quick-symbol wallet-symbol"><Wallet size={23} strokeWidth={1.8}/></span><span className="quick-card-copy"><strong>Eixon</strong><small>Wallet ও financial service</small></span><span className="quick-arrow"><ArrowUpRight size={18}/></span></Link>
           <Link href="/coming-soon?service=eixora" className="quick-card eixora-feature"><span className="quick-symbol"><Sparkles size={23} strokeWidth={1.8}/></span><span className="quick-card-copy"><strong>Eixora</strong><small>Social ও Home Feed</small></span><span className="quick-arrow"><ArrowUpRight size={18}/></span></Link>
           <a href="https://www.accounts.neweix.com" className="quick-card"><span className="quick-symbol account-symbol"><UserRound size={23} strokeWidth={1.8}/></span><span className="quick-card-copy"><strong>Neweix Account</strong><small>Central Account ও পরিচয় ব্যবস্থাপনা</small></span><span className="quick-arrow"><ArrowUpRight size={18}/></span></a>
@@ -46,7 +46,7 @@ export default function NeweixHomePage() {
       <section className="services-section">
         <div className="section-heading"><div><span className="eyebrow">OUR SERVICES</span><h2>Neweix-এর সব সার্ভিস</h2><p>প্রতিটি সার্ভিসের বিস্তারিত ও বর্তমান অবস্থা দেখুন।</p></div><Link href="/services" className="text-link">সার্ভিস ডিরেক্টরি <ArrowUpRight size={15}/></Link></div>
         <div className="service-grid">
-          {services.map((service) => { const Icon = serviceIcons[service.id as keyof typeof serviceIcons] || LayoutGrid; return <Link href={service.id === "shop" ? "/shop" : service.href} className="service-card" key={service.id}>
+          {services.map((service) => { const Icon = serviceIcons[service.id as keyof typeof serviceIcons] || LayoutGrid; return <Link href={service.href} className="service-card" key={service.id}>
             <span className={"service-mark " + service.tone}><Icon size={21} strokeWidth={1.8}/></span>
             <span className="service-category">{service.category}</span>
             <strong>{service.name}</strong>
