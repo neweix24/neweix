@@ -5,16 +5,43 @@ export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ fileId: string }> };
 
-export async function GET(_request: Request, context: RouteContext) {
+async function constantTimeMatch(a: string, b: string): Promise<boolean> {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+async function signFileId(fileId: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(fileId));
+  return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function GET(request: Request, context: RouteContext) {
   const { fileId } = await context.params;
   if (!fileId || fileId.length > 512 || !/^[A-Za-z0-9_-]+$/.test(fileId)) {
     return NextResponse.json({ error: "INVALID_FILE_ID" }, { status: 400 });
   }
 
   const { env } = await getCloudflareContext({ async: true });
-  const token = (env as Record<string, string | undefined>).TELEGRAM_BOT_TOKEN;
-  if (!token) {
+  const secrets = env as Record<string, string | undefined>;
+  const token = secrets.TELEGRAM_BOT_TOKEN;
+  const signingSecret = secrets.NEWEIX_MEDIA_UPLOAD_SECRET;
+  if (!token || !signingSecret) {
     return NextResponse.json({ error: "MEDIA_STORAGE_NOT_CONFIGURED" }, { status: 503 });
+  }
+
+  const suppliedSignature = new URL(request.url).searchParams.get("sig") ?? "";
+  const expectedSignature = await signFileId(fileId, signingSecret);
+  if (!/^[a-f0-9]{64}$/.test(suppliedSignature) || !(await constantTimeMatch(suppliedSignature, expectedSignature))) {
+    return NextResponse.json({ error: "INVALID_MEDIA_SIGNATURE" }, { status: 403 });
   }
 
   let metadataResponse: Response;
@@ -28,7 +55,6 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const metadata = await metadataResponse.json().catch(() => null) as {
     ok?: boolean;
-    description?: string;
     result?: { file_path?: string; file_size?: number };
   } | null;
 
@@ -51,7 +77,7 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   const contentType = imageResponse.headers.get("content-type") ?? "application/octet-stream";
-  if (!contentType.startsWith("image/")) {
+  if (!/^image\/(jpeg|png|webp|gif)$/.test(contentType)) {
     return NextResponse.json({ error: "UNEXPECTED_MEDIA_TYPE" }, { status: 502 });
   }
 
@@ -61,6 +87,7 @@ export async function GET(_request: Request, context: RouteContext) {
       "Content-Type": contentType,
       "Cache-Control": "public, max-age=3600, s-maxage=86400",
       "X-Content-Type-Options": "nosniff",
+      "Vary": "Accept-Encoding",
     },
   });
 }
