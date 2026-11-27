@@ -31,7 +31,7 @@ Requires Node.js 20.9+.
 3. Open http://localhost:3000
 
 ## Optional service destinations
-NEXT_PUBLIC_SHOP_URL, NEXT_PUBLIC_ACCOUNT_URL, NEXT_PUBLIC_CONNECT_URL, NEXT_PUBLIC_EIXORA_URL and NEXT_PUBLIC_PLUS_URL may be configured when final service domains are approved. Eixon currently links to https://eixon.neweix.com.
+The Shop destination is https://www.shop.neweix.com (used by the homepage, service directory, sidebar and bottom navigation). NEXT_PUBLIC_ACCOUNT_URL, NEXT_PUBLIC_CONNECT_URL, NEXT_PUBLIC_EIXORA_URL and NEXT_PUBLIC_PLUS_URL may be configured when final service domains are approved. Eixon currently links to https://eixon.neweix.com.
 
 ## Backend status
 Search currently uses a server-side catalogue and does not require a database. Authentication, CMS, notifications, persistent user preferences and service integrations are later phases. This is not a production launch.
