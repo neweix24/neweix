@@ -5,6 +5,8 @@ import { useState } from "react";
 type UploadResult = {
   ok?: boolean;
   error?: string;
+  reason?: string;
+  telegram_status?: number;
   display_url?: string;
   file_id?: string;
   file_unique_id?: string;
@@ -18,15 +20,15 @@ export default function TelegramMediaDemoPage() {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<UploadResult | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<UploadResult | null>(null);
 
   async function upload() {
     if (!file || !secret) {
-      setError("ছবি এবং Upload Secret দুটিই দিতে হবে।");
+      setError({ error: "ছবি এবং Upload Secret দুটিই দিতে হবে।" });
       return;
     }
     setBusy(true);
-    setError("");
+    setError(null);
     setResult(null);
     try {
       const body = new FormData();
@@ -37,14 +39,21 @@ export default function TelegramMediaDemoPage() {
         headers: { Authorization: `Bearer ${secret}` },
         body,
       });
-      const data = (await response.json()) as UploadResult;
+      const raw = await response.text();
+      let data: UploadResult;
+      try {
+        data = JSON.parse(raw) as UploadResult;
+      } catch {
+        data = { error: raw.slice(0, 500) || `HTTP_${response.status}` };
+      }
       if (!response.ok || !data.ok || !data.display_url) {
-        throw new Error(data.error || `UPLOAD_FAILED_${response.status}`);
+        setError({ ...data, error: data.error || `UPLOAD_FAILED_${response.status}` });
+        return;
       }
       setResult(data);
       setSecret("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "UPLOAD_FAILED");
+      setError({ error: e instanceof Error ? e.message : "UPLOAD_FAILED" });
     } finally {
       setBusy(false);
     }
@@ -87,7 +96,14 @@ export default function TelegramMediaDemoPage() {
         >
           {busy ? "আপলোড হচ্ছে…" : "Telegram-এ ছবি আপলোড করুন"}
         </button>
-        {error && <p role="alert" style={{ color: "#ff9c9c", marginTop: 16 }}>{error}</p>}
+        {error && (
+          <div role="alert" style={{ color: "#ffb2b2", marginTop: 16, padding: 14, border: "1px solid #854b55", borderRadius: 10, background: "#321c2a" }}>
+            <strong>আপলোড ব্যর্থ: {error.error}</strong>
+            {error.telegram_status !== undefined && <p>Telegram HTTP Status: {error.telegram_status}</p>}
+            {error.reason && <p>Telegram-এর কারণ: {error.reason}</p>}
+            <p style={{ fontSize: 12, color: "#d9bfc5" }}>এই তথ্য থেকে সমস্যা শনাক্ত করা যাবে। Bot Token বা Secret এখানে দেখানো হয় না।</p>
+          </div>
+        )}
       </section>
 
       {result?.display_url && (
