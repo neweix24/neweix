@@ -18,7 +18,7 @@ const serviceIcons = {
   eixon: Wallet,
   connect: Plug,
   "neweix-plus": Plus,
-  eixora: Sparkles,
+  eixora: Sparkles,\n  employees: UserRound,
 };
 
 export const metadata = {
