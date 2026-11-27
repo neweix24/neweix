@@ -8,14 +8,15 @@ First runnable public website foundation for the Neweix ecosystem.
 - Responsive custom CSS
 
 ## First-phase features
-- Public homepage and service directory
+- Service-first public homepage and a dedicated `/services` directory
+- Six Neweix services with current status and direct service entry points
 - Header with Neweix wordmark, Connect and hamburger menu
 - Full-width search bar directly below the header
 - Server-side search endpoint at /api/search
 - Health endpoint at /api/health
-- Persistent four-item bottom navigation: Home, Shop, Wallet, Account
+- Persistent four-item bottom navigation: Home, Services, Shop, Account
 - Sidebar with services, Explore, Information, Preferences and Legal
-- Eixora featured on Home
+- Unified Neweix navy, electric-blue and cyan visual system
 - Responsive mobile and desktop layouts
 - Initial theme and language controls
 
@@ -31,7 +32,7 @@ Requires Node.js 20.9+.
 3. Open http://localhost:3000
 
 ## Optional service destinations
-The Shop destination is https://www.shop.neweix.com (used by the homepage, service directory, sidebar and bottom navigation). NEXT_PUBLIC_ACCOUNT_URL, NEXT_PUBLIC_CONNECT_URL, NEXT_PUBLIC_EIXORA_URL and NEXT_PUBLIC_PLUS_URL may be configured when final service domains are approved. Eixon currently links to https://eixon.neweix.com.
+The Shop destination is https://www.shop.neweix.com. The homepage and service directory show six services with explicit statuses. Shop's storefront is available, but catalog, order and checkout flows remain incomplete. Account uses https://www.accounts.neweix.com.
 
 ## Backend status
 Search currently uses a server-side catalogue and does not require a database. Authentication, CMS, notifications, persistent user preferences and service integrations are later phases. This is not a production launch.
