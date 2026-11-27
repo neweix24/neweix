@@ -19,6 +19,18 @@ async function constantTimeMatch(a: string, b: string): Promise<boolean> {
   return diff === 0;
 }
 
+async function signFileId(fileId: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(fileId));
+  return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 export async function POST(request: Request) {
   const { env } = await getCloudflareContext({ async: true });
   const secrets = env as Record<string, string | undefined>;
@@ -93,15 +105,15 @@ export async function POST(request: Request) {
   }
 
   const photo = payload.result.photo[payload.result.photo.length - 1];
+  const signature = await signFileId(photo.file_id, uploadSecret);
   return NextResponse.json({
     ok: true,
     provider: "telegram",
-    chat_id: chatId,
     message_id: payload.result.message_id,
     file_id: photo.file_id,
     file_unique_id: photo.file_unique_id,
     file_size: photo.file_size ?? image.size,
     mime_type: image.type,
-    display_url: `/api/media/telegram/${encodeURIComponent(photo.file_id)}`,
+    display_url: `/api/media/telegram/${encodeURIComponent(photo.file_id)}?sig=${signature}`,
   }, { status: 201, headers: { "Cache-Control": "no-store" } });
 }
