@@ -32,7 +32,7 @@ Requires Node.js 20.9+.
 3. Open http://localhost:3000
 
 ## Optional service destinations
-The Shop destination is https://www.shop.neweix.com. The service directory lists six customer-facing services plus the planned internal Employees service with explicit statuses. Shop's storefront is available, but catalog, order and checkout flows remain incomplete. Account uses https://www.accounts.neweix.com.
+The Shop destination is https://www.shop.neweix.com. The service directory lists six customer-facing services plus the planned internal Employees service with explicit statuses. Shop's storefront is available, but its API and checkout remain disabled. Account uses https://www.accounts.neweix.com.
 
 ## Backend status
 Search currently uses a server-side catalogue and does not require a database. Authentication, CMS, notifications, persistent user preferences and service integrations are later phases. This is not a production launch.
@@ -40,7 +40,7 @@ Search currently uses a server-side catalogue and does not require a database. A
 
 ## Ecosystem governance
 
-Supreme is the highest and final authority. Admin conducts day-to-day operations through approved service interfaces. Neweix is the public hub and service directory, not the owner of other services' private data.
+Supreme is the highest and final authority. Admin is the single day-to-day operational authority across services, using Supreme-approved scoped grants and each owning service's authenticated interface/API. A unified Neweix Admin workspace is not yet implemented. Neweix is the public hub and service directory, not the owner of other services' private data.
 
 - Canonical rules: [Supreme Ecosystem Governance Charter](https://github.com/neweix24/supreme/blob/main/docs/ecosystem-governance-charter.md)
 - Local ownership: [ECOSYSTEM_ALIGNMENT.md](./ECOSYSTEM_ALIGNMENT.md)
