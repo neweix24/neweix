@@ -20,6 +20,7 @@ const serviceIcons = {
   connect: Plug,
   "neweix-plus": Plus,
   eixora: Sparkles,
+  employees: UserRound,
 };
 
 function ServiceCard({ service }: { service: (typeof services)[number] }) {
