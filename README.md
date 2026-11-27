@@ -36,3 +36,12 @@ The Shop destination is https://www.shop.neweix.com. The homepage and service di
 
 ## Backend status
 Search currently uses a server-side catalogue and does not require a database. Authentication, CMS, notifications, persistent user preferences and service integrations are later phases. This is not a production launch.
+
+
+## Ecosystem governance
+
+Supreme is the highest and final authority. Admin conducts day-to-day operations through approved service interfaces. Neweix is the public hub and service directory, not the owner of other services' private data.
+
+- Canonical rules: [Supreme Ecosystem Governance Charter](https://github.com/neweix24/supreme/blob/main/docs/ecosystem-governance-charter.md)
+- Local ownership: [ECOSYSTEM_ALIGNMENT.md](./ECOSYSTEM_ALIGNMENT.md)
+- The public directory lists customer-facing services and the planned workforce service. Supreme's protected authority app is not a public customer service.
