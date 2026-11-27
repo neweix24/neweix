@@ -95,6 +95,7 @@ export const services: NeweixService[] = [
 export const pages = [
   { title: "Home", description: "Neweix-এর মূল পাতা", href: "/", keywords: ["home", "হোম", "homepage", "মূল পাতা", "neweix"], category: "Page" },
   { title: "All Services", description: "Neweix-এর সব সার্ভিস ও তাদের বর্তমান অবস্থা", href: "/services", keywords: ["services", "সার্ভিস", "সেবা", "সব সার্ভিস"], category: "Directory" },
+  { title: "Ecosystem", description: "Supreme, Admin এবং প্রতিটি সার্ভিসের দায়িত্ব ও সম্পর্ক", href: "/ecosystem", keywords: ["ecosystem", "ইকোসিস্টেম", "supreme", "admin", "কর্তৃত্ব", "পরিচালনা"], category: "Guide" },
   { title: "Neweix Shop", description: "Neweix-এর অনলাইন স্টোরফ্রন্ট", href: "https://www.shop.neweix.com", keywords: ["shop", "সপ", "shopping", "কেনাকাটা"], category: "Service" },
   { title: "Neweix Account", description: "Central account ও identity management", href: "https://www.accounts.neweix.com", keywords: ["account", "অ্যাকাউন্ট", "login", "পরিচয়"], category: "Service" },
   { title: "Eixon", description: "EIX token ও Neweix Wallet experience", href: "/coming-soon?service=eixon", keywords: ["eixon", "wallet", "ওয়ালেট", "eix"], category: "Service" },
